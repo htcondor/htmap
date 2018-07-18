@@ -41,7 +41,7 @@ def condormap(fn, args):
             str(fn_path),
         ]),
         transfer_output_remaps = '"' + ';'.join([
-            f'$(ProcId).in={outputs_dir}/$(ProcId).in',
+            f'$(ProcId).out={outputs_dir}/$(ProcId).out',
         ]) + '"',
     )
     print(submit_dict)
