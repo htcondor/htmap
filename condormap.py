@@ -64,7 +64,7 @@ class Job:
     def __iter__(self):
         for procid in self.jobid_to_arg:
             path = self.outputs_dir / f'{procid}.out'
-            if not path.exists():
+            while not path.exists():
                 time.sleep(1)
             with path.open(mode = 'rb') as file:
                 yield cloudpickle.load(file)
