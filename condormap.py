@@ -30,12 +30,12 @@ def condormap(fn, args):
         input = str(logs_dir / '$(Item).input'),
         output = str(logs_dir / '$(Item).output'),
         error = str(logs_dir / '$(Item).error'),
-        transfer_input_files = [
+        transfer_input_files = ','.join([
             'http://proxy.chtc.wisc.edu/SQUID/karpel/condormap.tar.gz',
             str(Path(__file__).parent / 'run.py'),
             str(inputs_dir / '$(Item).in'),
             str(fn_path),
-        ],
+        ]),
     )
     print(submit_dict)
     sub = htcondor.Submit(submit_dict)
