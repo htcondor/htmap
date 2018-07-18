@@ -105,14 +105,14 @@ class Job:
                     yield cloudpickle.load(file)
             time.sleep(1)
 
-    def query(self, attr_list = []):
+    def query(self, projection = []):
         yield from htcondor.Schedd().xquery(
             requirements = f'ClusterId=={self.clusterid}',
-            attr_list = attr_list,
+            projection = projection,
         )
 
     def status(self):
-        query = self.query(attr_list = ['JobStatus', 'ProcId'])
+        query = self.query(projection = ['JobStatus', 'ProcId'])
 
         status_counts = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
 
