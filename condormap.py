@@ -112,7 +112,7 @@ class Job:
         )
 
     def status(self):
-        query = self.query(projection = ['JobStatus', 'ProcId'])
+        query = tuple(self.query(projection = ['JobStatus', 'ProcId']))
 
         status_counts = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
 
