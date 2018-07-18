@@ -23,21 +23,22 @@ def condormap(fn, args):
         with (inputs_dir / f'{index}.in').open(mode = 'wb') as file:
             cloudpickle.dump(arg, file)
 
-    sub = htcondor.Submit(
-        dict(
-            executable = Path(__file__).parent / 'run.sh',
-            arguments = '$(Item)',
-            log = job_dir / 'job.log',
-            input = logs_dir / f'$(Item).input',
-            output = logs_dir / f'$(Item).output',
-            error = logs_dir / f'$(Item).error',
-            transfer_input_files = [
-                'http://proxy.chtc.wisc.edu/SQUID/karpel/condormap.tar.gz',
-                str(Path(__file__).parent / 'run.py'),
-                str(inputs_dir / '$(Item).in'),
-            ],
-        )
+    submit_dict = dict(
+        executable = str(Path(__file__).parent / 'run.sh'),
+        arguments = '$(Item)',
+        log = str(job_dir / 'job.log'),
+        input = str(logs_dir / '$(Item).input'),
+        output = str(logs_dir / '$(Item).output'),
+        error = str(logs_dir / '$(Item).error'),
+        transfer_input_files = [
+            'http://proxy.chtc.wisc.edu/SQUID/karpel/condormap.tar.gz',
+            str(Path(__file__).parent / 'run.py'),
+            str(inputs_dir / '$(Item).in'),
+            str(fn_path),
+        ],
     )
+    print(submit_dict)
+    sub = htcondor.Submit(submit_dict)
 
     schedd = htcondor.Schedd()
     with schedd.transaction() as txn:
