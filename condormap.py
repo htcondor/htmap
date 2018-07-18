@@ -8,9 +8,9 @@ import cloudpickle
 def condormap(fn, args):
     job_dir = Path.cwd() / 'tmp'
     inputs_dir = job_dir / 'inputs'
-    outputs_dir = job_dir / 'inputs'
+    outputs_dir = job_dir / 'outputs'
     logs_dir = job_dir / 'logs'
-    for path in (job_dir, inputs_dir, outputs_dir):
+    for path in (job_dir, inputs_dir, outputs_dir, logs_dir):
         path.mkdir(parents = True, exist_ok = True)
 
     fn_path = (job_dir / 'fn.pkl')
@@ -27,9 +27,13 @@ def condormap(fn, args):
         executable = str(Path(__file__).parent / 'run.sh'),
         arguments = '$(ProcId)',
         log = str(job_dir / 'job.log'),
-        input = str(logs_dir / '$(ProcId).input'),
         output = str(logs_dir / '$(ProcId).output'),
         error = str(logs_dir / '$(ProcId).error'),
+        should_transfer_files = 'YES',
+        when_to_transfer_output = 'ON_EXIT',
+        request_cpus = '1',
+        request_memory = '100MB',
+        request_disk = '5GB',
         transfer_input_files = ','.join([
             'http://proxy.chtc.wisc.edu/SQUID/karpel/condormap.tar.gz',
             str(Path(__file__).parent / 'run.py'),
