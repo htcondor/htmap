@@ -129,7 +129,7 @@ class Job:
                 procid_ranges.append((start, procid))
             previous = procid
 
-        status_str = 'JobStatus' + ', '.join(f'{status}: {count}' for status, count in status_counts)
+        status_str = 'JobStatus' + ', '.join(f'{status}: {count}' for status, count in status_counts.items())
         procid_str = f'ClusterId: {self.clusterid}, ' + 'ProcIds: ' + ', '.join(f'{start}...{stop}' for start, stop in procid_ranges)
 
         return '\n'.join((status_str, procid_str))
