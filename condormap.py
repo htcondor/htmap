@@ -105,11 +105,10 @@ class Job:
                     yield cloudpickle.load(file)
             time.sleep(1)
 
-    def query(self, attr_list = (), callback = None):
+    def query(self, attr_list = []):
         yield from htcondor.Schedd().xquery(
             requirements = f'ClusterId=={self.clusterid}',
             attr_list = attr_list,
-            callback = callback,
         )
 
     def status(self):
