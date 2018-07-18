@@ -40,6 +40,9 @@ def condormap(fn, args):
             str(inputs_dir / '$(ProcId).in'),
             str(fn_path),
         ]),
+        transfer_output_remaps = ';'.join([
+            f'$(ProdId).in={outputs_dir}/$(ProcId).in',
+        ]),
     )
     print(submit_dict)
     sub = htcondor.Submit(submit_dict)
