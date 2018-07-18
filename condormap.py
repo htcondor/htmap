@@ -25,15 +25,15 @@ def condormap(fn, args):
 
     submit_dict = dict(
         executable = str(Path(__file__).parent / 'run.sh'),
-        arguments = '$(Item)',
+        arguments = '$(ProcId)',
         log = str(job_dir / 'job.log'),
-        input = str(logs_dir / '$(Item).input'),
-        output = str(logs_dir / '$(Item).output'),
-        error = str(logs_dir / '$(Item).error'),
+        input = str(logs_dir / '$(ProcId).input'),
+        output = str(logs_dir / '$(ProcId).output'),
+        error = str(logs_dir / '$(ProcId).error'),
         transfer_input_files = ','.join([
             'http://proxy.chtc.wisc.edu/SQUID/karpel/condormap.tar.gz',
             str(Path(__file__).parent / 'run.py'),
-            str(inputs_dir / '$(Item).in'),
+            str(inputs_dir / '$(ProcId).in'),
             str(fn_path),
         ]),
     )
@@ -42,7 +42,7 @@ def condormap(fn, args):
 
     schedd = htcondor.Schedd()
     with schedd.transaction() as txn:
-        cluster = sub.queue_with_iter(txn, 1, range(len(procid_to_arg)))
+        cluster = sub.queue(txn, len(procid_to_arg))
 
     return Job(cluster, job_dir, procid_to_arg, outputs_dir)
 
