@@ -51,3 +51,4 @@ As they finish, the results from each should be printed.
 * What if the wrapper script needs additional setup?
   For example, mine needs some flags set, but that could maybe happen through a submit file option.
   But others may need more complicated setup.
+* Investigate differences between `dill` (https://github.com/uqfoundation/dill) and `cloudpickle` (https://github.com/cloudpipe/cloudpickle).
