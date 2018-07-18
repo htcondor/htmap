@@ -2,7 +2,7 @@
 
 set -e
 
-tar -xzf python.tar.gz
+tar -xzf condormap.tar.gz
 
 export PATH=$(pwd)/python/bin:$PATH
 

@@ -32,7 +32,7 @@ def condormap(fn, args):
             output = logs_dir / f'$(Item).output',
             error = logs_dir / f'$(Item).error',
             transfer_input_files = [
-                'http://proxy.chtc.wisc.edu/SQUID/karpel/python.tar.gz',
+                'http://proxy.chtc.wisc.edu/SQUID/karpel/condormap.tar.gz',
                 str(Path(__file__).parent / 'run.py'),
                 str(inputs_dir / '$(Item).in'),
             ],

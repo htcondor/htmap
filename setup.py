@@ -8,5 +8,5 @@ setup(
     version = '0.1.0',
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
-    packages = 'condormap',
+    packages = ['condormap'],
 )
