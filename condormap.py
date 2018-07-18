@@ -102,6 +102,7 @@ class Job:
                 if not path.exists():
                     continue
                 with path.open(mode = 'rb') as file:
+                    paths.remove(path)
                     yield cloudpickle.load(file)
             time.sleep(1)
 
@@ -129,7 +130,7 @@ class Job:
                 procid_ranges.append((start, procid))
             previous = procid
 
-        status_str = 'JobStatus' + ', '.join(f'{status}: {count}' for status, count in status_counts.items())
+        status_str = 'JobStatus Counts: ' + ', '.join(f'{str(status)}: {count}' for status, count in status_counts.items())
         procid_str = f'ClusterId: {self.clusterid}, ' + 'ProcIds: ' + ', '.join(f'{start}...{stop}' for start, stop in procid_ranges)
 
         return '\n'.join((status_str, procid_str))
