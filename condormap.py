@@ -1,5 +1,7 @@
 from pathlib import Path
 import time
+import collections
+import enum
 
 import htcondor
 import cloudpickle
@@ -49,22 +51,86 @@ def condormap(fn, args):
 
     schedd = htcondor.Schedd()
     with schedd.transaction() as txn:
-        cluster = sub.queue(txn, len(procid_to_arg))
+        clusterid = sub.queue(txn, len(procid_to_arg))
 
-    return Job(cluster, job_dir, procid_to_arg, outputs_dir)
+    return Job(clusterid, job_dir, procid_to_arg, outputs_dir)
+
+
+class JobStatus(enum.IntEnum):
+    IDLE = 1
+    RUNNING = 2
+    REMOVED = 3
+    COMPLETED = 4
+    HELD = 5
+    TRANSFERRING_OUTPUT = 6
+    SUSPENDED = 7
+
+    def __str__(self):
+        return JOB_STATUS_STRINGS[self]
+
+
+JOB_STATUS_STRINGS = {
+    JobStatus.IDLE: 'Idle',
+    JobStatus.RUNNING: 'Running',
+    JobStatus.REMOVED: 'Removed',
+    JobStatus.COMPLETED: 'Completed',
+    JobStatus.HELD: 'Held',
+    JobStatus.TRANSFERRING_OUTPUT: 'Transferring Output',
+    JobStatus.SUSPENDED: 'Suspended',
+}
 
 
 class Job:
-    def __init__(self, cluster, job_dir, jobid_to_arg, outputs_dir):
-        self.cluster = cluster
-        self.jobdir = job_dir
-        self.jobid_to_arg = jobid_to_arg
+    def __init__(self, clusterid, job_dir, jobid_to_arg, outputs_dir):
+        self.clusterid = clusterid
+        self.job_dir = job_dir
+        self.procid_to_arg = jobid_to_arg
         self.outputs_dir = outputs_dir
 
     def __iter__(self):
-        for procid in self.jobid_to_arg:
+        for procid in self.procid_to_arg:
             path = self.outputs_dir / f'{procid}.out'
             while not path.exists():
                 time.sleep(1)
             with path.open(mode = 'rb') as file:
                 yield cloudpickle.load(file)
+
+    def iter_as_available(self):
+        paths = [self.outputs_dir / f'{procid}.out' for procid in self.procid_to_arg]
+        while len(paths) > 0:
+            for path in paths:
+                if not path.exists():
+                    continue
+                with path.open(mode = 'rb') as file:
+                    yield cloudpickle.load(file)
+            time.sleep(1)
+
+    def query(self, attr_list = (), callback = None):
+        yield from htcondor.Schedd().xquery(
+            requirements = f'ClusterId=={self.clusterid}',
+            attr_list = attr_list,
+            callback = callback,
+        )
+
+    def status(self):
+        query = self.query(attr_list = ['JobStatus', 'ProcId'])
+
+        status_counts = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
+
+        procids = sorted(classad['ProcId'] for classad in query)
+        procid_ranges = []
+        start = procids[0]
+        previous = procids[0]
+        for procid in procids[1:]:
+            if procid != previous + 1:
+                print('triggered', start, previous)
+                procid_ranges.append((start, previous))
+                start = procid
+            if procid == procids[-1]:
+                procid_ranges.append((start, procid))
+            previous = procid
+
+        status_str = 'JobStatus' + ', '.join(f'{status}: {count}' for status, count in status_counts)
+        procid_str = f'ClusterId: {self.clusterid}, ' + 'ProcIds: ' + ', '.join(f'{start}...{stop}' for start, stop in procid_ranges)
+
+        return '\n'.join((status_str, procid_str))
