@@ -16,9 +16,9 @@ with open('fn.pkl', mode = 'rb') as file:
     fn = cloudpickle.load(file)
 
 with open(f'{sys.argv[1]}.in', mode = 'rb') as file:
-    input = cloudpickle.load(file)
+    args, kwargs = cloudpickle.load(file)
 
-output = fn(input)
+output = fn(*args, **kwargs)
 print(output)
 
 with open(f'{sys.argv[1]}.out', mode = 'wb') as file:

@@ -4,9 +4,13 @@ import os
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 setup(
-    name = 'condormap',
+    name = 'htcmap',
     version = '0.1.0',
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
-    py_modules = ['condormap'],
+    packages = find_packages(),
+    install_requires = [
+        'htcondor>=8.7.9',
+        'cloudpickle',
+    ]
 )
