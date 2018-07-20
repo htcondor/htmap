@@ -2,7 +2,7 @@
 
 set -e
 
-tar -xzf condormap.tar.gz
+tar -xzf htcmap.tar.gz
 
 export PATH=$(pwd)/python/bin:$PATH
 
