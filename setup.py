@@ -10,7 +10,7 @@ setup(
     author_email = 'josh.karpel@gmail.com',
     packages = find_packages(),
     install_requires = [
-        'htcondor>=8.7.9',
-        'cloudpickle',
+        # 'htcondor>=8.7.9',
+        # 'cloudpickle',
     ]
 )

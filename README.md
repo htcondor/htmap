@@ -7,7 +7,7 @@
    Install wherever you want.
 1. Set up your `PATH` so that it includes `miniconda3/bin` (the `bin` directory in that fresh Python install, wherever it is), at least temporarily.
    `which python` and `which pip` should both point to executables in that `bin` directory.
-1. `pip install cloudpickle htcondor` - install cloudpickle and the HTCondor bindings.
+1. `pip install cloudpickle htcondor==8.7.9rc3` - install cloudpickle and the HTCondor bindings.
 1. `git clone https://github.com/JoshKarpel/htcmap` somewhere.
 1. `pip install -e path/to/htcmap/` - do a local, editable install of htcmap so that you can run it on the submit node.
 
@@ -26,6 +26,8 @@ for result in job:
 ```
 This should block while waiting for the jobs to finish in order.
 As they finish, the results from each should be printed.
+
+To update `htcmap`, just do a `git pull` inside that directory (or `git checkout <branch>` to switch branches, etc.).
 
 
 ## Things That Don't Exist Yet But Definitely Should and Other Problems

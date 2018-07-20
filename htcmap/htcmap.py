@@ -37,11 +37,16 @@ def load(path: Path) -> Any:
 
 def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
     def wrapper(func):
+        print(func, name)
         return HTCMapper(
             func,
-            name = name or func.__name__,
+            name = name if isinstance(name, str) else func.__name__,
             submit_descriptors = submit_descriptors,
         )
+
+    # if called like @htcmap, without parens, name is actually the function
+    if callable(name):
+        return wrapper(name)
 
     return wrapper
 
@@ -93,9 +98,11 @@ class MapResult:
                     yield cloudpickle.load(file)
             time.sleep(1)
 
-    def query(self, projection = []):
+    def query(self, projection = None):
         if self.clusterid is None:
             yield from ()
+        if projection is None:
+            projection = []
         yield from htcondor.Schedd().xquery(
             requirements = f'ClusterId=={self.clusterid}',
             projection = projection,
@@ -107,6 +114,8 @@ class MapResult:
 
 class HTCMapper:
     def __init__(self, func, name, submit_descriptors = None):
+        print(func, name)
+
         self.func = func
         self.name = name
         self.submit_descriptors = submit_descriptors or {}
