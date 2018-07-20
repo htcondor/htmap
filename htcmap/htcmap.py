@@ -37,7 +37,6 @@ def load(path: Path) -> Any:
 
 def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
     def wrapper(func):
-        print(func, name)
         return HTCMapper(
             func,
             name = name if isinstance(name, str) else func.__name__,
@@ -108,14 +107,24 @@ class MapResult:
             projection = projection,
         )
 
+    def tail(self):
+        with (self.mapper.cluster_logs_dir / f'{self.clusterid}.log').open() as file:
+            file.seek(0, 2)
+            while True:
+                current = file.tell()
+                line = file.readline()
+                if line == '':
+                    file.seek(current)
+                    time.sleep(.1)
+                else:
+                    print(line)
+
     def __repr__(self):
         return f'{self.__class__.__name__}(htcmap = {self.mapper}, clusterid = {self.clusterid})'
 
 
 class HTCMapper:
     def __init__(self, func, name, submit_descriptors = None):
-        print(func, name)
-
         self.func = func
         self.name = name
         self.submit_descriptors = submit_descriptors or {}
@@ -227,8 +236,8 @@ class HTCMapper:
         )
 
     def clean(self):
-        # clean out the input and output dirs
-        raise NotImplementedError
+        for path in itertools.chain(self.inputs_dir.iterdir(), self.outputs_dir.iterdir()):
+            path.unlink()
 
     def status(self):
         # status of any running cluster jobs
