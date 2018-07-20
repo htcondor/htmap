@@ -117,7 +117,7 @@ class MapResult:
                     file.seek(current)
                     time.sleep(.1)
                 else:
-                    print(line)
+                    print(line, end = '')
 
     def __repr__(self):
         return f'{self.__class__.__name__}(htcmap = {self.mapper}, clusterid = {self.clusterid})'
