@@ -35,6 +35,21 @@ def load(path: Path) -> Any:
         return cloudpickle.load(file)
 
 
+def map(func, args, **kwargs) -> 'MapResult':
+    mapper = htcmap(func)
+    return mapper.map(args, **kwargs)
+
+
+def productmap(func, *args, **kwargs) -> 'MapResult':
+    mapper = htcmap(func)
+    return mapper.productmap(*args, **kwargs)
+
+
+def starmap(func, args, kwargs) -> 'MapResult':
+    mapper = htcmap(func)
+    return mapper.starmap(args, kwargs)
+
+
 def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
     def wrapper(func):
         return HTCMapper(
