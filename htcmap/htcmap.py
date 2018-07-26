@@ -51,6 +51,10 @@ def starmap(func, args, kwargs) -> 'MapResult':
     return mapper.starmap(args, kwargs)
 
 
+def build_job(func):
+    return htcmap(func).build_job()
+
+
 def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
     def wrapper(func):
         return HTCMapper(
