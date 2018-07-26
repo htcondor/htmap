@@ -135,7 +135,34 @@ class MapResult:
                     print(line, end = '')
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(htcmap = {self.mapper}, clusterid = {self.clusterid})'
+        return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
+
+
+class JobBuilder:
+    def __init__(self, mapper):
+        self.mapper = mapper
+
+        self.args = []
+        self.kwargs = []
+
+        self.results = None
+
+    def __enter__(self):
+        print('enter')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # todo: should do nothing if exception occured inside with block
+        print('exit')
+        print(self.args, self.kwargs)
+        self.results = self.mapper.starmap(self.args, self.kwargs)
+
+    def __call__(self, *args, **kwargs):
+        self.args.append(args)
+        self.kwargs.append(kwargs)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(mapper = {self.mapper})'
 
 
 class HTCMapper:
@@ -164,7 +191,7 @@ class HTCMapper:
             save(self.func, self.fn_path)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(name={self.name}, func={self.func})'
+        return f'{self.__class__.__name__}(name = {self.name}, func = {self.func})'
 
     def __call__(self, *args, **kwargs):
         # todo: this should also store in inputs/ and outputs/
@@ -191,6 +218,9 @@ class HTCMapper:
     def starmap(self, args: Iterable[Tuple] = (), kwargs: Iterable[Dict] = ()) -> MapResult:
         args_and_kwargs = zip_args_and_kwargs(args, kwargs)
         return self._map(args_and_kwargs)
+
+    def build_job(self):
+        return JobBuilder(mapper = self)
 
     def _map(self, args_and_kwargs) -> MapResult:
         hashes = []
