@@ -66,6 +66,10 @@ def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None
 
 
 class MapResult:
+    # todo: can rm itself
+    # todo: classmethod from_clusterid
+    # todo: look at output and error files from the jobs in this cluster (.stdout and .stderr methods)
+    # todo: specialized versions of query to do condor_q, condor_q --held
     def __init__(self, mapper: 'HTCMapper', clusterid: Optional[int], hashes: List[str]):
         self.mapper = mapper
         self.clusterid = clusterid
@@ -88,6 +92,8 @@ class MapResult:
                 time.sleep(1)
             yield load(path)
 
+    # todo: look at ipyparallel asyn get timeout TimeoutError
+
     def iter_with_inputs(self) -> Iterable[Tuple[Any, Any]]:
         for h in self.hashes:
             input_path = self.mapper.inputs_dir / f'{h}.out'
@@ -96,6 +102,7 @@ class MapResult:
                 time.sleep(1)
             yield load(input_path), load(output_path)
 
+    # todo: add callback to iterator
     def iter_as_available(self) -> Iterable[Any]:
         paths = {self.mapper.outputs_dir / f'{h}.out' for h in self.hashes}
         while len(paths) > 0:
@@ -118,6 +125,7 @@ class MapResult:
         )
 
     def tail(self):
+        # todo: run in separate thread
         with (self.mapper.cluster_logs_dir / f'{self.clusterid}.log').open() as file:
             file.seek(0, 2)
             while True:
@@ -158,6 +166,7 @@ class JobBuilder:
 
 
 class HTCMapper:
+    # todo: reconnect(clusterid) -> MapResult.from_clusterid
     def __init__(self, func: Callable, name: str, submit_descriptors = None):
         self.func = func
         self.name = name

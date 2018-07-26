@@ -9,6 +9,7 @@ setup(
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
     packages = find_packages(),
+    # todo: needs to find htcmap/run dir (package_data, list of files)
     install_requires = [
         # 'htcondor>=8.7.9',
         # 'cloudpickle',

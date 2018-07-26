@@ -11,6 +11,8 @@
 1. `git clone https://github.com/JoshKarpel/htcmap` somewhere.
 1. `pip install -e path/to/htcmap/` - do a local, editable install of htcmap so that you can run it on the submit node.
 
+Alternate: pip install +git thing
+
 Fun example:
 ```python
 from htcmap import htcmap
