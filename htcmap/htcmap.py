@@ -4,7 +4,7 @@ from pathlib import Path
 import time
 import hashlib
 import itertools
-from copy import deepcopy
+from copy import deepcopy, copy
 
 import htcondor
 from htcondor import JobAction
@@ -139,7 +139,7 @@ class MapResult:
 
         paths = {self.mapper.outputs_dir / f'{h}.out' for h in self.hashes}
         while len(paths) > 0:
-            for path in paths:
+            for path in copy(paths):
                 if not path.exists():
                     continue
                 with path.open(mode = 'rb') as file:
