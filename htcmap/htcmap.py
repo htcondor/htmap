@@ -7,6 +7,7 @@ import itertools
 from copy import deepcopy
 
 import htcondor
+from htcondor import JobAction
 import cloudpickle
 
 from .settings import settings
@@ -66,20 +67,29 @@ def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None
 
 
 class MapResult:
-    # todo: can rm itself
-    # todo: classmethod from_clusterid
-    # todo: look at output and error files from the jobs in this cluster (.stdout and .stderr methods)
     # todo: specialized versions of query to do condor_q, condor_q --held
-    def __init__(self, mapper: 'HTCMapper', clusterid: Optional[int], hashes: List[str]):
+    def __init__(self, mapper: 'HTCMapper', clusterid: Optional[int], hashes: Iterable[str]):
         self.mapper = mapper
         self.clusterid = clusterid
         self.hashes = tuple(hashes)
 
-    def __getitem__(self, item: Union[int, str]) -> Any:
+    @classmethod
+    def from_clusterid(cls, mapper: 'HTCMapper', clusterid: Union[int, str]):
+        with (mapper.cluster_hashes_dir / str(clusterid)).open() as file:
+            hashes = (h.strip() for h in file)
+
+            return cls(mapper = mapper, clusterid = clusterid, hashes = hashes)
+
+    def item_to_hash(self, item: Union[int, str]) -> str:
         if isinstance(item, int):
             item = self.hashes[item]
 
-        path = self.mapper.outputs_dir / f'{item}.out'
+        return item
+
+    def __getitem__(self, item: Union[int, str]) -> Any:
+        h = self.item_to_hash(item)
+
+        path = self.mapper.outputs_dir / f'{h}.out'
         while not path.exists():
             time.sleep(1)
 
@@ -94,16 +104,32 @@ class MapResult:
 
     # todo: look at ipyparallel asyn get timeout TimeoutError
 
-    def iter_with_inputs(self) -> Iterable[Tuple[Any, Any]]:
+    def iter(self, callback: Callable = None):
+        if callback is None:
+            callback = lambda _: _
+
+        for obj in self:
+            callback(obj)
+            yield obj
+
+    def iter_with_inputs(self, callback: Callable = None) -> Iterable[Tuple[Any, Any]]:
+        if callback is None:
+            callback = lambda *_: _
+
         for h in self.hashes:
-            input_path = self.mapper.inputs_dir / f'{h}.out'
+            input_path = self.mapper.inputs_dir / f'{h}.in'
             output_path = self.mapper.inputs_dir / f'{h}.out'
             while not output_path.exists():
                 time.sleep(1)
-            yield load(input_path), load(output_path)
+            inp = load(input_path)
+            out = load(output_path)
+            callback(inp, out)
+            yield inp, out
 
-    # todo: add callback to iterator
-    def iter_as_available(self) -> Iterable[Any]:
+    def iter_as_available(self, callback: Callable = None) -> Iterable[Any]:
+        if callback is None:
+            callback = lambda _: _
+
         paths = {self.mapper.outputs_dir / f'{h}.out' for h in self.hashes}
         while len(paths) > 0:
             for path in paths:
@@ -111,7 +137,9 @@ class MapResult:
                     continue
                 with path.open(mode = 'rb') as file:
                     paths.remove(path)
-                    yield cloudpickle.load(file)
+                    obj = cloudpickle.load(file)
+                    callback(obj)
+                    yield obj
             time.sleep(1)
 
     def query(self, projection = None):
@@ -123,6 +151,28 @@ class MapResult:
             requirements = f'ClusterId=={self.clusterid}',
             projection = projection,
         )
+
+    def act(self, action: JobAction):
+        return htcondor.Schedd().act(action, f'ClusterId=={self.clusterid}')
+
+    def remove(self):
+        return self.act(JobAction.Remove)
+
+    def iter_output(self, item: Union[int, str]) -> Iterable[str]:
+        h = self.item_to_hash(item)
+        with (self.mapper.job_logs_dir / f'{h}.out').open() as file:
+            yield from file
+
+    def iter_error(self, item: Union[int, str]) -> Iterable[str]:
+        h = self.item_to_hash(item)
+        with (self.mapper.job_logs_dir / f'{h}.err').open() as file:
+            yield from file
+
+    def output(self, item: Union[int, str]):
+        return ''.join(self.iter_output(item))
+
+    def error(self, item: Union[int, str]):
+        return ''.join(self.iter_error(item))
 
     def tail(self):
         # todo: run in separate thread
@@ -177,6 +227,7 @@ class HTCMapper:
         self.outputs_dir = self.job_dir / 'outputs'
         self.job_logs_dir = self.job_dir / 'job_logs'
         self.cluster_logs_dir = self.job_dir / 'cluster_logs'
+        self.cluster_hashes_dir = self.job_dir / 'cluster_hashes'
 
         for path in (
             self.job_dir,
@@ -274,11 +325,19 @@ class HTCMapper:
         with schedd.transaction() as txn:
             submit_result = sub.queue_with_itemdata(txn, 1, iter(new_hashes))
 
+        clusterid = submit_result.cluster()
+
+        with (self.cluster_hashes_dir / str(clusterid)).open(mode = 'w') as file:
+            file.write('\n'.join(hashes))
+
         return MapResult(
             mapper = self,
-            clusterid = submit_result.cluster(),
+            clusterid = clusterid,
             hashes = hashes,
         )
+
+    def connect(self, clusterid: Union[int, str]):
+        return MapResult.from_clusterid(self, clusterid)
 
     def clean(self):
         self.clean_inputs()
