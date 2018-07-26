@@ -9,7 +9,7 @@ from copy import deepcopy
 import htcondor
 import cloudpickle
 
-HTCMAP_DIR = Path.home() / '.htcmap'
+from .settings import settings
 
 
 def hash_bytes(bytes: bytes) -> str:
@@ -144,7 +144,7 @@ class HTCMapper:
         self.name = name
         self.submit_descriptors = submit_descriptors or {}
 
-        self.job_dir = HTCMAP_DIR / name
+        self.job_dir = settings.HTCMAP_DIR / name
         self.inputs_dir = self.job_dir / 'inputs'
         self.outputs_dir = self.job_dir / 'outputs'
         self.job_logs_dir = self.job_dir / 'job_logs'

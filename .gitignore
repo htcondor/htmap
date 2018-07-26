@@ -90,11 +90,11 @@ ENV/
 env.bak/
 venv.bak/
 
-# Spyder project settings
+# Spyder project _settings
 .spyderproject
 .spyproject
 
-# Rope project settings
+# Rope project _settings
 .ropeproject
 
 # mkdocs documentation
