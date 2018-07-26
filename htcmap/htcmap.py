@@ -140,17 +140,14 @@ class JobBuilder:
         self.args = []
         self.kwargs = []
 
-        self.results = None
+        self.result = None
 
     def __enter__(self):
-        print('enter')
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # todo: should do nothing if exception occured inside with block
-        print('exit')
-        print(self.args, self.kwargs)
-        self.results = self.mapper.starmap(self.args, self.kwargs)
+        # todo: should do nothing if exception occurred inside with block
+        self.result = self.mapper.starmap(self.args, self.kwargs)
 
     def __call__(self, *args, **kwargs):
         self.args.append(args)

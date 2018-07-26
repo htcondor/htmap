@@ -11,7 +11,7 @@ results = []
 for x in range(10):
     results.append(double(x))
 
-# print(results)
+# print(result)
 
 with double.build_job() as job_builder:
     print(job_builder)
@@ -20,5 +20,5 @@ with double.build_job() as job_builder:
 
 print(job_builder.results)
 
-# for r in job_builder.results:
+# for r in job_builder.result:
 #     print(r)
