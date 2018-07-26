@@ -9,7 +9,7 @@ from copy import deepcopy
 import htcondor
 import cloudpickle
 
-HTCMAP_DIR = Path.home() / '.htcmap'
+from .settings import settings
 
 
 def hash_bytes(bytes: bytes) -> str:
@@ -69,12 +69,7 @@ class MapResult:
     def __init__(self, mapper: 'HTCMapper', clusterid: Optional[int], hashes: List[str]):
         self.mapper = mapper
         self.clusterid = clusterid
-        self.hashes = hashes
-
-        self.len = len(self.hashes)
-
-    def __len__(self):
-        return self.len
+        self.hashes = tuple(hashes)
 
     def __getitem__(self, item: Union[int, str]) -> Any:
         if isinstance(item, int):
@@ -144,7 +139,7 @@ class HTCMapper:
         self.name = name
         self.submit_descriptors = submit_descriptors or {}
 
-        self.job_dir = HTCMAP_DIR / name
+        self.job_dir = settings.HTCMAP_DIR / name
         self.inputs_dir = self.job_dir / 'inputs'
         self.outputs_dir = self.job_dir / 'outputs'
         self.job_logs_dir = self.job_dir / 'job_logs'
@@ -167,7 +162,6 @@ class HTCMapper:
         return f'{self.__class__.__name__}(name={self.name}, func={self.func})'
 
     def __call__(self, *args, **kwargs):
-        # todo: this should also store in inputs/ and outputs/
         return self.func(*args, **kwargs)
 
     def map(self, args, **kwargs) -> MapResult:
@@ -251,7 +245,25 @@ class HTCMapper:
         )
 
     def clean(self):
-        for path in itertools.chain(self.inputs_dir.iterdir(), self.outputs_dir.iterdir()):
+        self.clean_inputs()
+        self.clean_outputs()
+        self.clean_job_logs()
+        self.clean_cluster_logs()
+
+    def clean_inputs(self):
+        self._clean(self.inputs_dir)
+
+    def clean_outputs(self):
+        self._clean(self.outputs_dir)
+
+    def clean_job_logs(self):
+        self._clean(self.job_logs_dir)
+
+    def clean_cluster_logs(self):
+        self._clean(self.cluster_logs_dir)
+
+    def _clean(self, target_dir):
+        for path in target_dir.iter_dir():
             path.unlink()
 
     def status(self):
