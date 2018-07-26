@@ -28,6 +28,10 @@ def run_func(arg_hash):
         cloudpickle.dump(output, file)
 
 
-def main():
+def main(arg_hash):
     print_node_info()
-    run_func(arg_hash = sys.argv[1])
+    run_func(arg_hash = arg_hash)
+
+
+if __name__ == '__main__':
+    main(arg_hash = sys.argv[1])
