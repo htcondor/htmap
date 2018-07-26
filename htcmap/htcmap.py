@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable, TypeVar
+from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable
 
 from pathlib import Path
 import time
@@ -133,6 +133,30 @@ class MapResult:
         return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
 
 
+class JobBuilder:
+    def __init__(self, mapper):
+        self.mapper = mapper
+
+        self.args = []
+        self.kwargs = []
+
+        self.result = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # todo: should do nothing if exception occurred inside with block
+        self.result = self.mapper.starmap(self.args, self.kwargs)
+
+    def __call__(self, *args, **kwargs):
+        self.args.append(args)
+        self.kwargs.append(kwargs)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(mapper = {self.mapper})'
+
+
 class HTCMapper:
     def __init__(self, func: Callable, name: str, submit_descriptors = None):
         self.func = func
@@ -159,7 +183,7 @@ class HTCMapper:
             save(self.func, self.fn_path)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(name={self.name}, func={self.func})'
+        return f'{self.__class__.__name__}(name = {self.name}, func = {self.func})'
 
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
@@ -185,6 +209,9 @@ class HTCMapper:
     def starmap(self, args: Iterable[Tuple] = (), kwargs: Iterable[Dict] = ()) -> MapResult:
         args_and_kwargs = zip_args_and_kwargs(args, kwargs)
         return self._map(args_and_kwargs)
+
+    def build_job(self):
+        return JobBuilder(mapper = self)
 
     def _map(self, args_and_kwargs) -> MapResult:
         hashes = []
