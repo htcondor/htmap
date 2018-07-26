@@ -1,5 +1,4 @@
 import collections
-import configparser
 from pathlib import Path
 from typing import Mapping, Any
 
@@ -40,7 +39,7 @@ DEFAULT_SETTINGS = DotMap(
     HTCMAP_DIR = Path.home() / '.htcmap',
 )
 
-user_settings_path = Path.home() / '.htcmaprc'
+user_settings_path = Path.home() / '.htcmap.toml'
 try:
     with user_settings_path.open() as file:
         user_settings = toml.load(file, _dict = DotMap)
