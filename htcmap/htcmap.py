@@ -216,7 +216,6 @@ class JobBuilder:
 
 
 class HTCMapper:
-    # todo: reconnect(clusterid) -> MapResult.from_clusterid
     def __init__(self, func: Callable, name: str, submit_descriptors = None):
         self.func = func
         self.name = name
@@ -235,6 +234,7 @@ class HTCMapper:
             self.outputs_dir,
             self.job_logs_dir,
             self.cluster_logs_dir,
+            self.cluster_hashes_dir,
         ):
             path.mkdir(parents = True, exist_ok = True)
 
