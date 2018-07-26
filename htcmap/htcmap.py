@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Iterable, Dict, Union, Optional, List
+from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable, TypeVar
 
 from pathlib import Path
 import time
@@ -130,11 +130,11 @@ class MapResult:
                     print(line, end = '')
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(htcmap = {self.mapper}, clusterid = {self.clusterid})'
+        return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
 
 
 class HTCMapper:
-    def __init__(self, func, name, submit_descriptors = None):
+    def __init__(self, func: Callable, name: str, submit_descriptors = None):
         self.func = func
         self.name = name
         self.submit_descriptors = submit_descriptors or {}
@@ -286,7 +286,7 @@ def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):
                 value = next(it)
             except StopIteration:
                 num_active -= 1
-                if not num_active:
+                if num_active == 0:
                     return
                 iterators[i] = itertools.repeat(fills[i])
                 value = fills[i]

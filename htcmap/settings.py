@@ -1,6 +1,7 @@
+from typing import Mapping, Any
+
 import collections
 from pathlib import Path
-from typing import Mapping, Any
 
 import toml
 
