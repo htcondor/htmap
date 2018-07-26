@@ -73,6 +73,9 @@ class MapResult:
         self.clusterid = clusterid
         self.hashes = tuple(hashes)
 
+        if self.clusterid is None:
+            print('No new hashes, no jobs were submitted')
+
     @classmethod
     def from_clusterid(cls, mapper: 'HTCMapper', clusterid: Union[int, str]):
         with (mapper.cluster_hashes_dir / str(clusterid)).open() as file:
@@ -118,7 +121,7 @@ class MapResult:
 
         for h in self.hashes:
             input_path = self.mapper.inputs_dir / f'{h}.in'
-            output_path = self.mapper.inputs_dir / f'{h}.out'
+            output_path = self.mapper.outputs_dir / f'{h}.out'
             while not output_path.exists():
                 time.sleep(1)
             inp = load(input_path)
@@ -175,7 +178,6 @@ class MapResult:
         return ''.join(self.iter_error(item))
 
     def tail(self):
-        # todo: run in separate thread
         with (self.mapper.cluster_logs_dir / f'{self.clusterid}.log').open() as file:
             file.seek(0, 2)
             while True:
