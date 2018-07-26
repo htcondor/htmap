@@ -12,5 +12,6 @@ setup(
     install_requires = [
         # 'htcondor>=8.7.9',
         # 'cloudpickle',
+        # 'toml',
     ]
 )
