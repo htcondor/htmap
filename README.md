@@ -7,11 +7,19 @@
    Install wherever you want.
 1. Set up your `PATH` so that it includes `miniconda3/bin` (the `bin` directory in that fresh Python install, wherever it is), at least temporarily.
    `which python` and `which pip` should both point to executables in that `bin` directory.
-1. `pip install cloudpickle toml htcondor==8.7.9rc3` - install cloudpickle, toml, and the HTCondor bindings.
-1. `git clone https://github.com/JoshKarpel/htcmap` somewhere.
-1. `pip install -e path/to/htcmap/` - do a local, editable install of htcmap so that you can run it on the submit node.
+1. `pip install cloudpickle toml htcondor==8.7.9rc3` - install `cloudpickle`, `toml`, and the HTCondor bindings.
 
-Alternate: pip install +git thing
+There are two ways to install `htcmap` itself.
+The first is better if you want to do some local development, or want to switch between different branches.
+The second is more convenient if you don't.
+
+1. `git clone https://github.com/JoshKarpel/htcmap` somewhere.
+1. `pip install -e path/to/htcmap/` - do a local, editable install of `htcmap`.
+   Any changes to the local repo will be reflected when you re-import the module.
+
+Or:
+
+1. `pip install git+https://github.com/JoshKarpel/htcmap`, to install directly from GitHub.
 
 Fun example:
 ```python

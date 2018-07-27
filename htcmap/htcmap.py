@@ -37,18 +37,15 @@ def load(path: Path) -> Any:
 
 
 def map(func, args, **kwargs) -> 'MapResult':
-    mapper = htcmap(func)
-    return mapper.map(args, **kwargs)
+    return htcmap(func).map(args, **kwargs)
 
 
 def productmap(func, *args, **kwargs) -> 'MapResult':
-    mapper = htcmap(func)
-    return mapper.productmap(*args, **kwargs)
+    return htcmap(func).productmap(*args, **kwargs)
 
 
 def starmap(func, args, kwargs) -> 'MapResult':
-    mapper = htcmap(func)
-    return mapper.starmap(args, kwargs)
+    return htcmap(func).starmap(args, kwargs)
 
 
 def build_job(func):
@@ -303,28 +300,27 @@ class HTCMapper:
                 hashes = hashes,
             )
 
-        submit_dict = dict(
-            jobbatchname = self.name,
-            executable = str(Path(__file__).parent / 'run' / 'run.sh'),
-            arguments = '$(Item)',
-            log = str(self.cluster_logs_dir / '$(ClusterId).log'),
-            output = str(self.job_logs_dir / '$(Item).output'),
-            error = str(self.job_logs_dir / '$(Item).error'),
-            should_transfer_files = 'YES',
-            when_to_transfer_output = 'ON_EXIT',
-            request_cpus = '1',
-            request_memory = '100MB',
-            request_disk = '5GB',
-            transfer_input_files = ','.join([
+        submit_dict = {
+            'JobBatchName': self.name,
+            'executable': str(Path(__file__).parent / 'run' / 'run.sh'),
+            'arguments': '$(Item)',
+            'log': str(self.cluster_logs_dir / '$(ClusterId).log'),
+            'output': str(self.job_logs_dir / '$(Item).output'),
+            'error': str(self.job_logs_dir / '$(Item).error'),
+            'should_transfer_files': 'YES',
+            'when_to_transfer_output': 'ON_EXIT',
+            'request_cpus': '1',
+            'request_memory': '100MB',
+            'request_disk': '5GB',
+            'transfer_input_files': ','.join([
                 'http://proxy.chtc.wisc.edu/SQUID/karpel/htcmap.tar.gz',
                 str(Path(__file__).parent / 'run' / 'run.py'),
                 str(self.inputs_dir / '$(Item).in'),
                 str(self.fn_path),
-            ]),
-            transfer_output_remaps = '"' + ';'.join([
+            ]), 'transfer_output_remaps': '"' + ';'.join([
                 f'$(Item).out={self.outputs_dir / "$(Item).out"}',
-            ]) + '"',
-        )
+            ]) + '"'
+        }
         sub = htcondor.Submit(submit_dict)
 
         schedd = htcondor.Schedd()
