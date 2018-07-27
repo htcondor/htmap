@@ -7,7 +7,7 @@ EXPECTED_DIR_NAMES = [
     'outputs',
     'job_logs',
     'cluster_logs',
-    'cluster_hashes',
+    'hashes_by_clusterid',
 ]
 
 
@@ -17,9 +17,8 @@ def test_dir_exists(dir, mapped_doubler):
 
 
 @pytest.mark.parametrize('dir', EXPECTED_DIR_NAMES)
-def test_dir_exists_when_given_name(dir):
-    @htcmap.htcmap(name = 'joe')
-    def func(x):
-        return x
+def test_dir_exists_when_given_name(dir, doubler):
+    n = 'joe'
+    htcmap.htcmap(name = n)(doubler)
 
-    assert (htcmap.settings.HTCMAP_DIR / func.name / dir).exists()
+    assert (htcmap.settings.HTCMAP_DIR / n / dir).exists()

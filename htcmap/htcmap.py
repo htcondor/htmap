@@ -79,7 +79,7 @@ class MapResult:
 
     @classmethod
     def from_clusterid(cls, mapper: 'HTCMapper', clusterid: Union[int, str]):
-        with (mapper.cluster_hashes_dir / str(clusterid)).open() as file:
+        with (mapper.hashes_dir / f'{clusterid}.hashes').open() as file:
             hashes = (h.strip() for h in file)
 
             return cls(mapper = mapper, clusterid = clusterid, hashes = hashes)
@@ -229,21 +229,24 @@ class HTCMapper:
         self.outputs_dir = self.job_dir / 'outputs'
         self.job_logs_dir = self.job_dir / 'job_logs'
         self.cluster_logs_dir = self.job_dir / 'cluster_logs'
-        self.cluster_hashes_dir = self.job_dir / 'cluster_hashes'
+        self.hashes_dir = self.job_dir / 'hashes_by_clusterid'
 
+        self._mkdirs()
+
+        self.fn_path = self.job_dir / 'fn.pkl'
+        if not self.fn_path.exists():
+            save(self.func, self.fn_path)
+
+    def _mkdirs(self):
         for path in (
             self.job_dir,
             self.inputs_dir,
             self.outputs_dir,
             self.job_logs_dir,
             self.cluster_logs_dir,
-            self.cluster_hashes_dir,
+            self.hashes_dir,
         ):
             path.mkdir(parents = True, exist_ok = True)
-
-        self.fn_path = self.job_dir / 'fn.pkl'
-        if not self.fn_path.exists():
-            save(self.func, self.fn_path)
 
     def __repr__(self):
         return f'{self.__class__.__name__}(name = {self.name}, func = {self.func})'
@@ -329,7 +332,7 @@ class HTCMapper:
 
         clusterid = submit_result.cluster()
 
-        with (self.cluster_hashes_dir / str(clusterid)).open(mode = 'w') as file:
+        with (self.hashes_dir / f'{clusterid}.hashes').open(mode = 'w') as file:
             file.write('\n'.join(hashes))
 
         return MapResult(
