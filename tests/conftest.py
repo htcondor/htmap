@@ -1,6 +1,11 @@
-import pytest
+import sys
+from . import mock_htcondor
+
+sys.modules['htcondor'] = mock_htcondor
 
 from pathlib import Path
+
+import pytest
 
 import htcmap
 
@@ -22,3 +27,16 @@ def doubler():
 @pytest.fixture(scope = 'function')
 def mapped_doubler(doubler):
     return htcmap.htcmap(doubler)
+
+
+@pytest.fixture(scope = 'function')
+def power():
+    def power(x = 0, p = 0):
+        return x ** p
+
+    return power
+
+
+@pytest.fixture(scope = 'function')
+def mapped_power(power):
+    return htcmap.htcmap(power)
