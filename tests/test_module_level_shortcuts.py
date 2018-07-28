@@ -1,20 +1,27 @@
-import pytest
-
 import htcmap
+
 from htcmap.htcmap import HTCMapper
 
 
-@pytest.mark.parametrize(
-    'shortcut',
-    [
-        'map',
-        'productmap',
-        'starmap',
-    ]
-)
-def test_shortcut_function_calls_method(mocker, doubler, shortcut):
-    setattr(HTCMapper, shortcut, mocker.MagicMock())
+def test_map_shortcut_calls_map_method(mocker, doubler):
+    mocked = mocker.patch.object(HTCMapper, 'map')
 
-    getattr(HTCMapper, shortcut)(doubler, range(10))
+    htcmap.map(doubler, range(10))
 
-    assert getattr(HTCMapper, shortcut).called
+    assert mocked.was_called
+
+
+def test_productmap_shortcut_calls_productmap_method(mocker, doubler):
+    mocked = mocker.patch.object(HTCMapper, 'productmap')
+
+    htcmap.productmap(doubler, range(10))
+
+    assert mocked.was_called
+
+
+def test_starmap_shortcut_calls_starmap_method(mocker, doubler):
+    mocked = mocker.patch.object(HTCMapper, 'starmap')
+
+    htcmap.starmap(doubler, range(10), [])
+
+    assert mocked.was_called

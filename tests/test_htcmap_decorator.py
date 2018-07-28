@@ -43,3 +43,7 @@ def test_repeated_htcmap_has_same_func_if_name_given(mapped_doubler):
 
     assert mapper.name == n
     assert mapper.func is mapped_doubler.func
+
+
+def test_can_still_call_function_as_normal(mapped_doubler):
+    assert mapped_doubler(5) == 10

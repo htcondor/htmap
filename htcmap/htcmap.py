@@ -56,10 +56,7 @@ def build_job(func):
 def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
     def wrapper(func):
         if isinstance(func, HTCMapper):
-            if name is None:
-                return func
-            else:
-                func = func.func
+            func = func.func
 
         return HTCMapper(
             func,
@@ -358,7 +355,7 @@ class HTCMapper:
             hashes = hashes,
         )
 
-    def connect(self, clusterid: Union[int, str]):
+    def reconstruct(self, clusterid: Union[int, str]):
         return MapResult.from_clusterid(self, clusterid)
 
     def clean(self):

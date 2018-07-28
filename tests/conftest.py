@@ -58,8 +58,8 @@ def set_mapper():
     mock_htcondor._mapper = None
 
 
-@pytest.fixture(scope = 'function', autouse = True)
-def create_pool():
-    with multiprocessing.Pool() as pool:
+@pytest.fixture(scope = 'function')
+def mock_pool():
+    with multiprocessing.Pool(2) as pool:
         mock_htcondor._pool = pool
         yield

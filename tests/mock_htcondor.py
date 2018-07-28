@@ -12,7 +12,7 @@ integer_generator = itertools.count(0)
 # this variable is used to communicate the current mapper from the test environment
 _mapper = None
 
-# this variable is used by pytest to managed the pool of workers that simulate the cluster
+# this variable is used by pytest to managed the mock_pool of workers that simulate the cluster
 _pool = None
 
 
@@ -46,7 +46,7 @@ class Submit:
                 ((_mapper.map_dir, _mapper.inputs_dir, _mapper.outputs_dir, item) for item in items),
             )
         except AttributeError as e:
-            raise Exception('Did you forget to use set_mapper or create_pool?')
+            raise Exception('Did you forget to use set_mapper or mock_pool?')
 
         return SubmitResult(next(integer_generator))
 
