@@ -43,7 +43,7 @@ class Submit:
         try:
             _pool.starmap_async(
                 htc_run,
-                ((_mapper.job_dir, _mapper.inputs_dir, _mapper.outputs_dir, item) for item in items),
+                ((_mapper.map_dir, _mapper.inputs_dir, _mapper.outputs_dir, item) for item in items),
             )
         except AttributeError as e:
             raise Exception('Did you forget to use set_mapper or create_pool?')
