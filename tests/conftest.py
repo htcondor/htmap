@@ -12,6 +12,7 @@ import htcmap
 
 @pytest.fixture(scope = 'function', autouse = True)
 def set_htcmap_dir(tmpdir_factory):
+    """Use a fresh HTCMAP_DIR for every test."""
     path = Path(tmpdir_factory.mktemp('.htcmap'))
     htcmap.settings.HTCMAP_DIR = path
 

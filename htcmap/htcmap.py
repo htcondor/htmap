@@ -17,7 +17,7 @@ def hash_bytes(bytes: bytes) -> str:
     return hashlib.md5(bytes).hexdigest()
 
 
-def save(obj: Any, path: Path):
+def save(obj: Any, path: Path) -> None:
     with path.open(mode = 'wb') as file:
         cloudpickle.dump(obj, file)
 
@@ -26,7 +26,7 @@ def to_bytes(obj: Any) -> bytes:
     return cloudpickle.dumps(obj)
 
 
-def save_bytes(bytes, path: Path):
+def save_bytes(bytes, path: Path) -> None:
     with path.open(mode = 'wb') as file:
         file.write(bytes)
 
@@ -54,6 +54,12 @@ def build_job(func):
 
 def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
     def wrapper(func):
+        if isinstance(func, HTCMapper):
+            if name is None:
+                return func
+            else:
+                func = func.func
+
         return HTCMapper(
             func,
             name = name if isinstance(name, str) else func.__name__,

@@ -28,3 +28,18 @@ def test_name_is_given_name(doubler):
     mapper = htcmap.htcmap(name = n)(doubler)
 
     assert mapper.name == n
+
+
+def test_htcmap_is_idempotent_if_no_name_given(mapped_doubler):
+    mapper = htcmap.htcmap(mapped_doubler)
+
+    assert mapper.name == mapped_doubler.name
+    assert mapper.func is mapped_doubler.func
+
+
+def test_repeated_htcmap_has_same_func_if_name_given(mapped_doubler):
+    n = 'joe'
+    mapper = htcmap.htcmap(name = n)(mapped_doubler)
+
+    assert mapper.name == n
+    assert mapper.func is mapped_doubler.func
