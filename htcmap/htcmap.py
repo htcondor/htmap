@@ -241,22 +241,22 @@ class HTCMapper:
         self.name = name
         self.submit_descriptors = submit_descriptors or {}
 
-        self.job_dir = settings.HTCMAP_DIR / name
-        self.inputs_dir = self.job_dir / 'inputs'
-        self.outputs_dir = self.job_dir / 'outputs'
-        self.job_logs_dir = self.job_dir / 'job_logs'
-        self.cluster_logs_dir = self.job_dir / 'cluster_logs'
-        self.hashes_dir = self.job_dir / 'hashes_by_clusterid'
+        self.map_dir = settings.HTCMAP_DIR / name
+        self.inputs_dir = self.map_dir / 'inputs'
+        self.outputs_dir = self.map_dir / 'outputs'
+        self.job_logs_dir = self.map_dir / 'job_logs'
+        self.cluster_logs_dir = self.map_dir / 'cluster_logs'
+        self.hashes_dir = self.map_dir / 'hashes_by_clusterid'
 
         self._mkdirs()
 
-        self.fn_path = self.job_dir / 'fn.pkl'
+        self.fn_path = self.map_dir / 'fn.pkl'
         if not self.fn_path.exists():
             save(self.func, self.fn_path)
 
     def _mkdirs(self):
         for path in (
-            self.job_dir,
+            self.map_dir,
             self.inputs_dir,
             self.outputs_dir,
             self.job_logs_dir,
