@@ -4,6 +4,7 @@ from . import mock_htcondor
 sys.modules['htcondor'] = mock_htcondor
 
 from pathlib import Path
+import multiprocessing
 
 import pytest
 
@@ -26,8 +27,10 @@ def doubler():
 
 
 @pytest.fixture(scope = 'function')
-def mapped_doubler(doubler):
-    return htcmap.htcmap(doubler)
+def mapped_doubler(doubler, set_mapper):
+    mapper = htcmap.htcmap(doubler)
+    set_mapper(mapper)
+    return mapper
 
 
 @pytest.fixture(scope = 'function')
@@ -39,5 +42,24 @@ def power():
 
 
 @pytest.fixture(scope = 'function')
-def mapped_power(power):
-    return htcmap.htcmap(power)
+def mapped_power(power, set_mapper):
+    mapper = htcmap.htcmap(power)
+    set_mapper(mapper)
+    return mapper
+
+
+@pytest.fixture(scope = 'function')
+def set_mapper():
+    def set(mapper):
+        mock_htcondor._mapper = mapper
+
+    yield set
+
+    mock_htcondor._mapper = None
+
+
+@pytest.fixture(scope = 'function', autouse = True)
+def create_pool():
+    with multiprocessing.Pool() as pool:
+        mock_htcondor._pool = pool
+        yield

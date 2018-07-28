@@ -4,3 +4,7 @@ class HTCMapException(Exception):
 
 class MissingSetting(Exception):
     pass
+
+
+class Timeout(Exception):
+    pass

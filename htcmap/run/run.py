@@ -16,15 +16,15 @@ def print_node_info():
 
 
 def run_func(arg_hash):
-    with open('fn.pkl', mode = 'rb') as file:
+    with Path('fn.pkl').open(mode = 'rb') as file:
         fn = cloudpickle.load(file)
 
-    with open(f'{arg_hash}.in', mode = 'rb') as file:
+    with Path(f'{arg_hash}.in').open(mode = 'rb') as file:
         args, kwargs = cloudpickle.load(file)
 
     output = fn(*args, **kwargs)
 
-    with open(f'{arg_hash}.out', mode = 'wb') as file:
+    with Path(f'{arg_hash}.out').open(mode = 'wb') as file:
         cloudpickle.dump(output, file)
 
 

@@ -11,6 +11,7 @@ from htcondor import JobAction
 import cloudpickle
 
 from .settings import settings
+from . import exceptions
 
 
 def hash_bytes(bytes: bytes) -> str:
@@ -104,6 +105,16 @@ class MapResult:
             time.sleep(1)
 
         return load(path)
+
+    def wait(self, timeout = None):
+        expected = len(self.hashes)
+        start_time = time.time()
+
+        while not len(tuple(self.mapper.outputs_dir.iterdir())) == expected:
+            print(len(tuple(self.mapper.outputs_dir.iterdir())), expected)
+            time.sleep(1)
+            if timeout is not None and time.time() - timeout > start_time:
+                raise exceptions.Timeout
 
     def __iter__(self) -> Iterable[Any]:
         for h in self.hashes:
