@@ -1,6 +1,6 @@
 import pytest
 
-from htcmap.htcmap import zip_args_and_kwargs
+from htcmap.mapper import zip_args_and_kwargs
 
 
 def test_only_args():

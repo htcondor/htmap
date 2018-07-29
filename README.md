@@ -52,3 +52,5 @@ To update `htcmap`, just do a `git pull` inside that directory (or `git checkout
 * What if the wrapper script needs additional setup?
   For example, mine needs some flags set, but that could maybe happen through a submit file option.
   But others may need more complicated setup.
+* If your inputs are random, you need to use a seed to recover them.
+* How to recover output for inputs that you can't generate anymore?

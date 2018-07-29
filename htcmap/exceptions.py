@@ -6,5 +6,9 @@ class MissingSetting(Exception):
     pass
 
 
-class Timeout(Exception):
+class HashNotInResult(Exception):
+    pass
+
+
+class OutputNotFound(Exception):
     pass

@@ -1,6 +1,6 @@
 import htcmap
 
-from htcmap.htcmap import HTCMapper
+from htcmap.mapper import HTCMapper
 
 
 def test_map_shortcut_calls_map_method(mocker, doubler):

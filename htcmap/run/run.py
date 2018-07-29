@@ -8,7 +8,7 @@ import cloudpickle
 
 
 def print_node_info():
-    print(f'Landed on execute node {socket.getfqdn()} ({socket.gethostbyname(socket.gethostname())}) at {datetime.datetime.utcnow()}.')
+    print(f'Landed on execute node {socket.getfqdn()} ({socket.gethostbyname(socket.gethostname())}) at {datetime.datetime.utcnow()}')
     print(f'Execute node operating system: {os.uname()}')
 
     dir_contents = ", ".join(str(x) for x in Path.cwd().iterdir())

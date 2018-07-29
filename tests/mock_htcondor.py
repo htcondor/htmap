@@ -17,7 +17,6 @@ _pool = None
 
 
 def htc_run(job_dir, inputs_dir, outputs_dir, arg_hash):
-    print('running')
     job_dir = Path(job_dir)
     inputs_dir = Path(inputs_dir)
     outputs_dir = Path(outputs_dir)
@@ -31,8 +30,6 @@ def htc_run(job_dir, inputs_dir, outputs_dir, arg_hash):
 
     with (outputs_dir / f'{arg_hash}.out').open(mode = 'wb') as file:
         cloudpickle.dump(output, file)
-
-    print('done')
 
 
 class Submit:

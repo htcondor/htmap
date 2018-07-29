@@ -1,5 +1,7 @@
 import pytest
 
+import htcmap
+
 
 def get_num_input_files(mapper):
     return len(tuple(mapper.inputs_dir.iterdir()))
@@ -94,3 +96,58 @@ def test_starmap_creates_correct_number_of_input_files(mapped_power):
     )
 
     assert list(result) == [x ** p for x, p in zip(range(n), range(n))]
+
+
+@pytest.mark.usefixtures('mock_pool')
+def test___getitem__with_index_with_timeout(mapped_doubler):
+    n = 10
+    result = mapped_doubler.map(range(n))
+
+    result.wait(timeout = 10)
+
+    assert result[3] == 6
+
+
+@pytest.mark.usefixtures('mock_pool')
+def test___getitem__with_index_without_timeout_too_fast_raises_output_not_found(mapped_doubler):
+    n = 10
+    result = mapped_doubler.map(range(n))
+
+    with pytest.raises(htcmap.exceptions.OutputNotFound):
+        result[n - 1]
+
+
+@pytest.mark.usefixtures('mock_pool')
+def test_get_with_index_waits_until_ready(mapped_doubler):
+    n = 10
+    result = mapped_doubler.map(range(n))
+
+    assert result.get(3) == 6
+
+
+@pytest.mark.usefixtures('mock_pool')
+def test_get_on_bogus_hash_raises_hash_not_in_result(mapped_doubler):
+    result = mapped_doubler.map(tuple())  # empty map, no hashes
+
+    with pytest.raises(htcmap.exceptions.HashNotInResult):
+        result['a']
+
+
+@pytest.mark.usefixtures('mock_pool')
+def test_clean_inputs(mapped_doubler):
+    result = mapped_doubler.map(range(10))
+    result.wait(timeout = 10)
+
+    mapped_doubler.clean_inputs()
+
+    assert len(tuple(mapped_doubler.inputs_dir.iterdir())) == 0
+
+
+@pytest.mark.usefixtures('mock_pool')
+def test_clean_outputs(mapped_doubler):
+    result = mapped_doubler.map(range(10))
+    result.wait(timeout = 10)
+
+    mapped_doubler.clean_outputs()
+
+    assert len(tuple(mapped_doubler.outputs_dir.iterdir())) == 0
