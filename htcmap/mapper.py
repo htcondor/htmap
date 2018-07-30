@@ -126,7 +126,7 @@ class MapResult:
 
     def iter(self, callback: Optional[Callable] = None):
         if callback is None:
-            callback = lambda _: _
+            callback = lambda o: o
 
         for obj in self:
             callback(obj)
@@ -134,7 +134,7 @@ class MapResult:
 
     def iter_with_inputs(self, callback: Optional[Callable] = None) -> Iterable[Tuple[Any, Any]]:
         if callback is None:
-            callback = lambda *_: _
+            callback = lambda i, o: (i, o)
 
         for h in self.hashes:
             input_path = self.mapper.inputs_dir / f'{h}.in'
@@ -148,7 +148,7 @@ class MapResult:
 
     def iter_as_available(self, callback: Optional[Callable] = None) -> Iterable[Any]:
         if callback is None:
-            callback = lambda _: _
+            callback = lambda o: o
 
         paths = {self.mapper.outputs_dir / f'{h}.out' for h in self.hashes}
         while len(paths) > 0:
@@ -160,6 +160,24 @@ class MapResult:
                 obj = htcio.load_object(path)
                 callback(obj)
                 yield obj
+            time.sleep(1)
+
+    def iter_as_available_with_inputs(self, callback: Optional[Callable] = None) -> Iterable[Tuple[Any, Any]]:
+        if callback is None:
+            callback = lambda i, o: (i, o)
+
+        paths = {(self.mapper.outputs_dir / f'{h}.out', self.mapper.outputs_dir / f'{h}.out') for h in self.hashes}
+        while len(paths) > 0:
+            for input_output_paths in copy(paths):
+                input_path, output_path = input_output_paths
+                if not output_path.exists():
+                    continue
+
+                paths.remove(input_output_paths)
+                inp = htcio.load_object(input_path)
+                out = htcio.load_object(output_path)
+                callback(inp, out)
+                yield inp, out
             time.sleep(1)
 
     def query(self, projection: Optional[List[str]] = None):
