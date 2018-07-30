@@ -47,6 +47,9 @@ def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None
     return wrapper
 
 
+IndexOrHash = Union[int, str]
+
+
 class MapResult:
     # todo: specialized versions of query to do condor_q, condor_q --held
     def __init__(self, mapper: 'HTCMapper', clusterid: Optional[int], hashes: Iterable[str]):
@@ -59,7 +62,7 @@ class MapResult:
             print('no new hashes, no jobs were submitted')
 
     @classmethod
-    def from_clusterid(cls, mapper: 'HTCMapper', clusterid: Union[int, str]):
+    def from_clusterid(cls, mapper: 'HTCMapper', clusterid: int):
         with (mapper.hashes_dir / f'{clusterid}.hashes').open() as file:
             return cls(
                 mapper = mapper,
@@ -70,16 +73,16 @@ class MapResult:
     def __repr__(self):
         return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
 
-    def item_to_hash(self, item: Union[int, str]) -> str:
+    def item_to_hash(self, item: IndexOrHash) -> str:
         if isinstance(item, int):
             return self.hashes[item]
         return item
 
-    def __getitem__(self, item: Union[int, str]) -> Any:
+    def __getitem__(self, item: IndexOrHash) -> Any:
         """Non-Blocking get."""
         h = self.item_to_hash(item)
         if h not in self.hash_set:
-            raise exceptions.HashNotInResult(f'hash {h} not in this result')
+            raise exceptions.HashNotInResult(f'hash {h} is not in this result')
 
         path = self.mapper.outputs_dir / f'{h}.out'
 
@@ -88,7 +91,7 @@ class MapResult:
         except FileNotFoundError:
             raise exceptions.OutputNotFound(f'output for hash {h} not found')
 
-    def get(self, item: Union[int, str], timeout = None):
+    def get(self, item: IndexOrHash, timeout = None):
         """Blocking get with timeout."""
         start_time = time.time()
 
@@ -175,20 +178,20 @@ class MapResult:
     def remove(self):
         return self.act(JobAction.Remove)
 
-    def iter_output(self, item: Union[int, str]) -> Iterable[str]:
+    def iter_output(self, item: IndexOrHash) -> Iterable[str]:
         h = self.item_to_hash(item)
         with (self.mapper.job_logs_dir / f'{h}.out').open() as file:
             yield from file
 
-    def iter_error(self, item: Union[int, str]) -> Iterable[str]:
+    def iter_error(self, item: IndexOrHash) -> Iterable[str]:
         h = self.item_to_hash(item)
         with (self.mapper.job_logs_dir / f'{h}.err').open() as file:
             yield from file
 
-    def output(self, item: Union[int, str]):
+    def output(self, item: IndexOrHash):
         return ''.join(self.iter_output(item))
 
-    def error(self, item: Union[int, str]):
+    def error(self, item: IndexOrHash):
         return ''.join(self.iter_error(item))
 
     def tail(self):
@@ -351,26 +354,33 @@ class HTCMapper:
             hashes = hashes,
         )
 
-    def reconstruct(self, clusterid: Union[int, str]):
+    def reconstruct(self, clusterid: int):
         return MapResult.from_clusterid(self, clusterid)
 
-    def clean(self):
-        self.clean_inputs()
-        self.clean_outputs()
-        self.clean_job_logs()
-        self.clean_cluster_logs()
+    def clean(self) -> (int, int):
+        outs = (
+            self.clean_inputs(),
+            self.clean_outputs(),
+            self.clean_job_logs(),
+            self.clean_cluster_logs(),
+        )
 
-    def clean_inputs(self):
-        utils.clean_dir(self.inputs_dir)
+        num_files = sum(o[0] for o in outs)
+        num_bytes = sum(o[1] for o in outs)
 
-    def clean_outputs(self):
-        utils.clean_dir(self.outputs_dir)
+        return num_files, num_bytes
 
-    def clean_job_logs(self):
-        utils.clean_dir(self.job_logs_dir)
+    def clean_inputs(self) -> (int, int):
+        return utils.clean_dir(self.inputs_dir)
 
-    def clean_cluster_logs(self):
-        utils.clean_dir(self.cluster_logs_dir)
+    def clean_outputs(self) -> (int, int):
+        return utils.clean_dir(self.outputs_dir)
+
+    def clean_job_logs(self) -> (int, int):
+        return utils.clean_dir(self.job_logs_dir)
+
+    def clean_cluster_logs(self) -> (int, int):
+        return utils.clean_dir(self.cluster_logs_dir)
 
 
 def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):

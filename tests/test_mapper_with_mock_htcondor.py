@@ -138,8 +138,9 @@ def test_clean_inputs(mapped_doubler):
     result = mapped_doubler.map(range(10))
     result.wait(timeout = 10)
 
-    mapped_doubler.clean_inputs()
+    num_files, num_bytes = mapped_doubler.clean_inputs()
 
+    assert num_files == 10
     assert len(tuple(mapped_doubler.inputs_dir.iterdir())) == 0
 
 
@@ -148,6 +149,7 @@ def test_clean_outputs(mapped_doubler):
     result = mapped_doubler.map(range(10))
     result.wait(timeout = 10)
 
-    mapped_doubler.clean_outputs()
+    num_files, num_bytes = mapped_doubler.clean_outputs()
 
+    assert num_files == 10
     assert len(tuple(mapped_doubler.outputs_dir.iterdir())) == 0

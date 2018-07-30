@@ -1,6 +1,7 @@
+from typing import Any
+
 import hashlib
 from pathlib import Path
-from typing import Any
 
 import cloudpickle
 
@@ -14,8 +15,7 @@ def hash_bytes(bytes: bytes) -> str:
 
 
 def save_bytes(bytes, path: Path) -> None:
-    with path.open(mode = 'wb') as file:
-        file.write(bytes)
+    path.write_bytes(bytes)
 
 
 def save_object(obj: Any, path: Path) -> None:
