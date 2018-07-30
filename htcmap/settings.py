@@ -14,7 +14,7 @@ class Settings:
 
     def __getitem__(self, item):
         try:
-            path = item.split('.')
+            path = item.split('.')  # drill through dotted attributes access
             r = self._settings
             for component in path:
                 r = r[component]

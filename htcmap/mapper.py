@@ -2,53 +2,27 @@ from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable
 
 from pathlib import Path
 import time
-import hashlib
 import itertools
 from copy import deepcopy, copy
 
 import htcondor
-from htcondor import JobAction
-import cloudpickle
+from htcondor import JobAction  # re-import JobAction for users
 
+from . import htcio, utils
 from .settings import settings
-
-
-def hash_bytes(bytes: bytes) -> str:
-    return hashlib.md5(bytes).hexdigest()
-
-
-def save(obj: Any, path: Path):
-    with path.open(mode = 'wb') as file:
-        cloudpickle.dump(obj, file)
-
-
-def to_bytes(obj: Any) -> bytes:
-    return cloudpickle.dumps(obj)
-
-
-def save_bytes(bytes, path: Path):
-    with path.open(mode = 'wb') as file:
-        file.write(bytes)
-
-
-def load(path: Path) -> Any:
-    with path.open(mode = 'rb') as file:
-        return cloudpickle.load(file)
+from . import exceptions
 
 
 def map(func, args, **kwargs) -> 'MapResult':
-    mapper = htcmap(func)
-    return mapper.map(args, **kwargs)
+    return htcmap(func).map(args, **kwargs)
 
 
 def productmap(func, *args, **kwargs) -> 'MapResult':
-    mapper = htcmap(func)
-    return mapper.productmap(*args, **kwargs)
+    return htcmap(func).productmap(*args, **kwargs)
 
 
 def starmap(func, args, kwargs) -> 'MapResult':
-    mapper = htcmap(func)
-    return mapper.starmap(args, kwargs)
+    return htcmap(func).starmap(args, kwargs)
 
 
 def build_job(func):
@@ -57,6 +31,9 @@ def build_job(func):
 
 def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
     def wrapper(func):
+        if isinstance(func, HTCMapper):
+            func = func.func
+
         return HTCMapper(
             func,
             name = name if isinstance(name, str) else func.__name__,
@@ -70,48 +47,84 @@ def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None
     return wrapper
 
 
+IndexOrHash = Union[int, str]
+
+
 class MapResult:
     # todo: specialized versions of query to do condor_q, condor_q --held
     def __init__(self, mapper: 'HTCMapper', clusterid: Optional[int], hashes: Iterable[str]):
         self.mapper = mapper
         self.clusterid = clusterid
         self.hashes = tuple(hashes)
+        self.hash_set = set(self.hashes)
 
         if self.clusterid is None:
-            print('No new hashes, no jobs were submitted')
+            print('no new hashes, no jobs were submitted')
 
     @classmethod
-    def from_clusterid(cls, mapper: 'HTCMapper', clusterid: Union[int, str]):
-        with (mapper.cluster_hashes_dir / str(clusterid)).open() as file:
-            hashes = (h.strip() for h in file)
+    def from_clusterid(cls, mapper: 'HTCMapper', clusterid: int):
+        with (mapper.hashes_dir / f'{clusterid}.hashes').open() as file:
+            return cls(
+                mapper = mapper,
+                clusterid = clusterid,
+                hashes = (h.strip() for h in file),
+            )
 
-            return cls(mapper = mapper, clusterid = clusterid, hashes = hashes)
+    def __repr__(self):
+        return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
 
-    def item_to_hash(self, item: Union[int, str]) -> str:
+    def item_to_hash(self, item: IndexOrHash) -> str:
         if isinstance(item, int):
-            item = self.hashes[item]
-
+            return self.hashes[item]
         return item
 
-    def __getitem__(self, item: Union[int, str]) -> Any:
+    def __getitem__(self, item: IndexOrHash) -> Any:
+        """Non-Blocking get."""
         h = self.item_to_hash(item)
+        if h not in self.hash_set:
+            raise exceptions.HashNotInResult(f'hash {h} is not in this result')
 
         path = self.mapper.outputs_dir / f'{h}.out'
-        while not path.exists():
+
+        try:
+            return htcio.load_object(path)
+        except FileNotFoundError:
+            raise exceptions.OutputNotFound(f'output for hash {h} not found')
+
+    def get(self, item: IndexOrHash, timeout = None):
+        """Blocking get with timeout."""
+        start_time = time.time()
+
+        while True:
+            try:
+                return self[item]
+            except exceptions.OutputNotFound:
+                pass
+
             time.sleep(1)
 
-        return load(path)
+            if timeout is not None and time.time() - timeout > start_time:
+                raise TimeoutError(f'timeout while waiting for {"index" if isinstance(item, int) else "hash"} {item} from {self}')
+
+    def wait(self, timeout = None):
+        """Block until ready."""
+        start_time = time.time()
+
+        while not len(self.hash_set - set(f.stem for f in self.mapper.outputs_dir.iterdir())) == 0:
+            time.sleep(1)
+            if timeout is not None and time.time() - timeout > start_time:
+                raise TimeoutError(f'timeout while waiting for {self}')
 
     def __iter__(self) -> Iterable[Any]:
         for h in self.hashes:
             path = self.mapper.outputs_dir / f'{h}.out'
             while not path.exists():
                 time.sleep(1)
-            yield load(path)
+            yield htcio.load_object(path)
 
-    # todo: look at ipyparallel asyn get timeout TimeoutError
+    # todo: look at ipyparallel async get timeout TimeoutError
 
-    def iter(self, callback: Callable = None):
+    def iter(self, callback: Optional[Callable] = None):
         if callback is None:
             callback = lambda _: _
 
@@ -119,7 +132,7 @@ class MapResult:
             callback(obj)
             yield obj
 
-    def iter_with_inputs(self, callback: Callable = None) -> Iterable[Tuple[Any, Any]]:
+    def iter_with_inputs(self, callback: Optional[Callable] = None) -> Iterable[Tuple[Any, Any]]:
         if callback is None:
             callback = lambda *_: _
 
@@ -128,12 +141,12 @@ class MapResult:
             output_path = self.mapper.outputs_dir / f'{h}.out'
             while not output_path.exists():
                 time.sleep(1)
-            inp = load(input_path)
-            out = load(output_path)
+            inp = htcio.load_object(input_path)
+            out = htcio.load_object(output_path)
             callback(inp, out)
             yield inp, out
 
-    def iter_as_available(self, callback: Callable = None) -> Iterable[Any]:
+    def iter_as_available(self, callback: Optional[Callable] = None) -> Iterable[Any]:
         if callback is None:
             callback = lambda _: _
 
@@ -142,14 +155,14 @@ class MapResult:
             for path in copy(paths):
                 if not path.exists():
                     continue
-                with path.open(mode = 'rb') as file:
-                    paths.remove(path)
-                    obj = cloudpickle.load(file)
-                    callback(obj)
-                    yield obj
+
+                paths.remove(path)
+                obj = htcio.load_object(path)
+                callback(obj)
+                yield obj
             time.sleep(1)
 
-    def query(self, projection = None):
+    def query(self, projection: Optional[List[str]] = None):
         if self.clusterid is None:
             yield from ()
         if projection is None:
@@ -165,20 +178,20 @@ class MapResult:
     def remove(self):
         return self.act(JobAction.Remove)
 
-    def iter_output(self, item: Union[int, str]) -> Iterable[str]:
+    def iter_output(self, item: IndexOrHash) -> Iterable[str]:
         h = self.item_to_hash(item)
         with (self.mapper.job_logs_dir / f'{h}.out').open() as file:
             yield from file
 
-    def iter_error(self, item: Union[int, str]) -> Iterable[str]:
+    def iter_error(self, item: IndexOrHash) -> Iterable[str]:
         h = self.item_to_hash(item)
         with (self.mapper.job_logs_dir / f'{h}.err').open() as file:
             yield from file
 
-    def output(self, item: Union[int, str]):
+    def output(self, item: IndexOrHash):
         return ''.join(self.iter_output(item))
 
-    def error(self, item: Union[int, str]):
+    def error(self, item: IndexOrHash):
         return ''.join(self.iter_error(item))
 
     def tail(self):
@@ -193,12 +206,9 @@ class MapResult:
                 else:
                     print(line, end = '')
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
-
 
 class JobBuilder:
-    def __init__(self, mapper):
+    def __init__(self, mapper: 'HTCMapper'):
         self.mapper = mapper
 
         self.args = []
@@ -227,26 +237,29 @@ class HTCMapper:
         self.name = name
         self.submit_descriptors = submit_descriptors or {}
 
-        self.job_dir = settings.HTCMAP_DIR / name
-        self.inputs_dir = self.job_dir / 'inputs'
-        self.outputs_dir = self.job_dir / 'outputs'
-        self.job_logs_dir = self.job_dir / 'job_logs'
-        self.cluster_logs_dir = self.job_dir / 'cluster_logs'
-        self.cluster_hashes_dir = self.job_dir / 'cluster_hashes'
+        self.map_dir = settings.HTCMAP_DIR / name
+        self.inputs_dir = self.map_dir / 'inputs'
+        self.outputs_dir = self.map_dir / 'outputs'
+        self.job_logs_dir = self.map_dir / 'job_logs'
+        self.cluster_logs_dir = self.map_dir / 'cluster_logs'
+        self.hashes_dir = self.map_dir / 'hashes_by_clusterid'
 
+        self._mkdirs()
+
+        self.fn_path = self.map_dir / 'fn.pkl'
+        if not self.fn_path.exists():
+            htcio.save_object(self.func, self.fn_path)
+
+    def _mkdirs(self):
         for path in (
-            self.job_dir,
+            self.map_dir,
             self.inputs_dir,
             self.outputs_dir,
             self.job_logs_dir,
             self.cluster_logs_dir,
-            self.cluster_hashes_dir,
+            self.hashes_dir,
         ):
             path.mkdir(parents = True, exist_ok = True)
-
-        self.fn_path = self.job_dir / 'fn.pkl'
-        if not self.fn_path.exists():
-            save(self.func, self.fn_path)
 
     def __repr__(self):
         return f'{self.__class__.__name__}(name = {self.name}, func = {self.func})'
@@ -283,8 +296,8 @@ class HTCMapper:
         hashes = []
         new_hashes = []
         for a_and_k in args_and_kwargs:
-            b = to_bytes(a_and_k)
-            h = hash_bytes(b)
+            b = htcio.to_bytes(a_and_k)
+            h = htcio.hash_bytes(b)
             hashes.append(h)
 
             # if output already exists, don't re-do it
@@ -293,7 +306,7 @@ class HTCMapper:
                 continue
 
             input_path = self.inputs_dir / f'{h}.in'
-            save_bytes(b, input_path)
+            htcio.save_bytes(b, input_path)
             new_hashes.append(h)
 
         if len(new_hashes) == 0:
@@ -303,28 +316,27 @@ class HTCMapper:
                 hashes = hashes,
             )
 
-        submit_dict = dict(
-            jobbatchname = self.name,
-            executable = str(Path(__file__).parent / 'run' / 'run.sh'),
-            arguments = '$(Item)',
-            log = str(self.cluster_logs_dir / '$(ClusterId).log'),
-            output = str(self.job_logs_dir / '$(Item).output'),
-            error = str(self.job_logs_dir / '$(Item).error'),
-            should_transfer_files = 'YES',
-            when_to_transfer_output = 'ON_EXIT',
-            request_cpus = '1',
-            request_memory = '100MB',
-            request_disk = '5GB',
-            transfer_input_files = ','.join([
+        submit_dict = {
+            'JobBatchName': self.name,
+            'executable': str(Path(__file__).parent / 'run' / 'run.sh'),
+            'arguments': '$(Item)',
+            'log': str(self.cluster_logs_dir / '$(ClusterId).log'),
+            'output': str(self.job_logs_dir / '$(Item).output'),
+            'error': str(self.job_logs_dir / '$(Item).error'),
+            'should_transfer_files': 'YES',
+            'when_to_transfer_output': 'ON_EXIT',
+            'request_cpus': '1',
+            'request_memory': '100MB',
+            'request_disk': '5GB',
+            'transfer_input_files': ','.join([
                 'http://proxy.chtc.wisc.edu/SQUID/karpel/htcmap.tar.gz',
                 str(Path(__file__).parent / 'run' / 'run.py'),
                 str(self.inputs_dir / '$(Item).in'),
                 str(self.fn_path),
-            ]),
-            transfer_output_remaps = '"' + ';'.join([
+            ]), 'transfer_output_remaps': '"' + ';'.join([
                 f'$(Item).out={self.outputs_dir / "$(Item).out"}',
-            ]) + '"',
-        )
+            ]) + '"'
+        }
         sub = htcondor.Submit(submit_dict)
 
         schedd = htcondor.Schedd()
@@ -333,7 +345,7 @@ class HTCMapper:
 
         clusterid = submit_result.cluster()
 
-        with (self.cluster_hashes_dir / str(clusterid)).open(mode = 'w') as file:
+        with (self.hashes_dir / f'{clusterid}.hashes').open(mode = 'w') as file:
             file.write('\n'.join(hashes))
 
         return MapResult(
@@ -342,38 +354,33 @@ class HTCMapper:
             hashes = hashes,
         )
 
-    def connect(self, clusterid: Union[int, str]):
+    def reconstruct(self, clusterid: int):
         return MapResult.from_clusterid(self, clusterid)
 
-    def clean(self):
-        self.clean_inputs()
-        self.clean_outputs()
-        self.clean_job_logs()
-        self.clean_cluster_logs()
+    def clean(self) -> (int, int):
+        outs = (
+            self.clean_inputs(),
+            self.clean_outputs(),
+            self.clean_job_logs(),
+            self.clean_cluster_logs(),
+        )
 
-    def clean_inputs(self):
-        self._clean(self.inputs_dir)
+        num_files = sum(o[0] for o in outs)
+        num_bytes = sum(o[1] for o in outs)
 
-    def clean_outputs(self):
-        self._clean(self.outputs_dir)
+        return num_files, num_bytes
 
-    def clean_job_logs(self):
-        self._clean(self.job_logs_dir)
+    def clean_inputs(self) -> (int, int):
+        return utils.clean_dir(self.inputs_dir)
 
-    def clean_cluster_logs(self):
-        self._clean(self.cluster_logs_dir)
+    def clean_outputs(self) -> (int, int):
+        return utils.clean_dir(self.outputs_dir)
 
-    def _clean(self, target_dir):
-        for path in target_dir.iter_dir():
-            path.unlink()
+    def clean_job_logs(self) -> (int, int):
+        return utils.clean_dir(self.job_logs_dir)
 
-    def status(self):
-        # status of any running cluster jobs
-        raise NotImplementedError
-
-    def stats(self):
-        # number of inputs and outputs, size of input/output dirs, etc.
-        raise NotImplementedError
+    def clean_cluster_logs(self) -> (int, int):
+        return utils.clean_dir(self.cluster_logs_dir)
 
 
 def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):

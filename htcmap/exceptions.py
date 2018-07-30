@@ -4,3 +4,11 @@ class HTCMapException(Exception):
 
 class MissingSetting(Exception):
     pass
+
+
+class HashNotInResult(Exception):
+    pass
+
+
+class OutputNotFound(Exception):
+    pass

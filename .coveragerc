@@ -1,0 +1,19 @@
+[run]
+branch = True
+
+include =
+    htcmap/*
+
+omit =
+    tests/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+
+    def __repr__
+
+    raise NotImplementedError
+
+    for _ in \[\]:
+
