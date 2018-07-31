@@ -234,6 +234,9 @@ class JobBuilder:
 
         self.result = None
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}(mapper = {self.mapper})'
+
     def __enter__(self):
         return self
 
@@ -245,8 +248,18 @@ class JobBuilder:
         self.args.append(args)
         self.kwargs.append(kwargs)
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}(mapper = {self.mapper})'
+    @property
+    def result(self):
+        if self._result is None:
+            raise exceptions.NoResultYet('result does not exist until after with block')
+        return self._result
+
+    @result.setter
+    def result(self, result: MapResult):
+        self._result = result
+
+    def __len__(self):
+        return len(self.args)
 
 
 class HTCMapper:

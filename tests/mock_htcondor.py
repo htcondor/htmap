@@ -3,7 +3,6 @@ from typing import Iterable
 import enum
 import itertools
 from pathlib import Path
-import multiprocessing
 
 import cloudpickle
 

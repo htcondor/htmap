@@ -2,13 +2,17 @@ class HTCMapException(Exception):
     pass
 
 
-class MissingSetting(Exception):
+class MissingSetting(HTCMapException):
     pass
 
 
-class HashNotInResult(Exception):
+class HashNotInResult(HTCMapException):
     pass
 
 
-class OutputNotFound(Exception):
+class OutputNotFound(HTCMapException):
+    pass
+
+
+class NoResultYet(HTCMapException):
     pass
