@@ -1,8 +1,8 @@
-Welcome to HTCMap's documentation!
-==================================
+HTCMap
+======
 
 :doc:`tutorial`
-   A brief tutorial in using `htcmap`.
+   A brief tutorial in using ``htcmap``.
 
 :doc:`api`
    API documentation.
