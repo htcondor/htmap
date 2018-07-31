@@ -14,24 +14,41 @@ from .settings import settings
 from . import exceptions
 
 
-def map(func, args, **kwargs) -> 'MapResult':
+def map(func: Callable, args, **kwargs) -> 'MapResult':
     return htcmap(func).map(args, **kwargs)
 
 
-def productmap(func, *args, **kwargs) -> 'MapResult':
+def productmap(func: Callable, *args, **kwargs) -> 'MapResult':
     return htcmap(func).productmap(*args, **kwargs)
 
 
-def starmap(func, args, kwargs) -> 'MapResult':
+def starmap(func: Callable, args, kwargs) -> 'MapResult':
     return htcmap(func).starmap(args, kwargs)
 
 
-def build_job(func):
+def build_job(func: Callable) -> 'JobBuilder':
     return htcmap(func).build_job()
 
 
 def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
-    def wrapper(func):
+    """
+    A function decorator that wraps a function in an :class:`HTCMapper`,
+    which provides an interface for mapping functions calls out to an HTCondor cluster.
+
+    Parameters
+    ----------
+    name
+        An optional name for the mapper.
+        If not given, defaults to the name of the mapped function.
+    submit_descriptors
+
+    Returns
+    -------
+    mapper : HTCMapper
+        An :class:`HTCMapper` that wraps the function.
+    """
+
+    def wrapper(func: Callable) -> HTCMapper:
         if isinstance(func, HTCMapper):
             func = func.func
 
@@ -52,7 +69,6 @@ IndexOrHash = Union[int, str]
 
 
 class MapResult:
-    # todo: specialized versions of query to do condor_q, condor_q --held
     def __init__(self, mapper: 'HTCMapper', clusterid: Optional[int], hashes: Iterable[str]):
         self.mapper = mapper
         self.clusterid = clusterid
@@ -213,6 +229,8 @@ class MapResult:
             projection = projection,
         )
 
+    # todo: specialized versions of query to do condor_q, condor_q --held
+
     def act(self, action: JobAction):
         return htcondor.Schedd().act(action, f'ClusterId=={self.clusterid}')
 
@@ -339,7 +357,12 @@ class HTCMapper:
 
         return self._map(args_and_kwargs)
 
-    def starmap(self, args: Iterable[Tuple] = (), kwargs: Iterable[Dict] = ()) -> MapResult:
+    def starmap(self, args: Optional[Iterable[Tuple]] = None, kwargs: Optional[Iterable[Dict]] = None) -> MapResult:
+        if args is None:
+            args = ()
+        if kwargs is None:
+            kwargs = ()
+
         args_and_kwargs = zip_args_and_kwargs(args, kwargs)
         return self._map(args_and_kwargs)
 
