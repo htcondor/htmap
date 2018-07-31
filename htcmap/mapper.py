@@ -30,7 +30,7 @@ def build_job(func: Callable) -> 'JobBuilder':
     return htcmap(func).build_job()
 
 
-def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None):
+def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None) -> Union[Callable, 'HTCMapper']:
     """
     A function decorator that wraps a function in an :class:`HTCMapper`,
     which provides an interface for mapping functions calls out to an HTCondor cluster.
@@ -44,8 +44,8 @@ def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None
 
     Returns
     -------
-    mapper : HTCMapper
-        An :class:`HTCMapper` that wraps the function.
+    mapper
+        An :class:`HTCMapper` that wraps the function (or a wrapper function that does the wrapping).
     """
 
     def wrapper(func: Callable) -> HTCMapper:
@@ -91,6 +91,7 @@ class MapResult:
         return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
 
     def _item_to_hash(self, item: IndexOrHash) -> str:
+        """Return the hash associated with an index, or pass a hash through."""
         if isinstance(item, int):
             return self.hashes[item]
         return item
@@ -124,8 +125,17 @@ class MapResult:
 
         return htcio.load_object(path)
 
-    def wait(self, timeout: Optional[Union[int, datetime.timedelta]] = None):
-        """Block until ready."""
+    def wait(
+        self,
+        timeout: Optional[Union[int, datetime.timedelta]] = None,
+    ):
+        """
+        Wait until all output associated with this :class:`MapResult` is available.
+
+        Parameters
+        ----------
+        timeout
+        """
         start_time = time.time()
         if isinstance(timeout, datetime.timedelta):
             timeout = timeout.total_seconds()
@@ -290,7 +300,11 @@ class JobBuilder:
         self.kwargs.append(kwargs)
 
     @property
-    def result(self):
+    def result(self) -> MapResult:
+        """
+        The :class:`MapResult` associated with this :class:`JobBuilder`.
+        Will raise :class:`htcmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`JobBuilder` completes.
+        """
         if self._result is None:
             raise exceptions.NoResultYet('result does not exist until after with block')
         return self._result
@@ -323,6 +337,7 @@ class HTCMapper:
             htcio.save_object(self.func, self.fn_path)
 
     def _mkdirs(self):
+        """Create the various directories needed by the mapper."""
         for path in (
             self.map_dir,
             self.inputs_dir,
@@ -431,7 +446,8 @@ class HTCMapper:
             hashes = hashes,
         )
 
-    def reconstruct(self, clusterid: int):
+    def reconstruct(self, clusterid: int) -> MapResult:
+        """Reconstruct a :class:`MapResult` from the `clusterid` it was assigned."""
         return MapResult.from_clusterid(self, clusterid)
 
     def clean(self) -> (int, int):

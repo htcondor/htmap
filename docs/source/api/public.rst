@@ -17,6 +17,9 @@ The mapper can distribute (i.e., map) function calls out over an HTCondor cluste
 .. autoclass:: htcmap.HTCMapper
    :members:
 
+.. autoclass:: htcmap.JobBuilder
+   :members:
+
 Module-Level Shortcut Functions
 -------------------------------
 
