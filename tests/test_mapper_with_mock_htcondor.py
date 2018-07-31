@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 import htcmap
@@ -109,12 +111,28 @@ def test___getitem__with_index_with_timeout(mapped_doubler):
 
 
 @pytest.mark.usefixtures('mock_pool')
-def test___getitem__with_index_without_timeout_too_fast_raises_output_not_found(mapped_doubler):
-    n = 10
-    result = mapped_doubler.map(range(n))
+def test_getitem_too_soon_raises_output_not_found(mapped_sleepy_double):
+    n = 5
+    result = mapped_sleepy_double.map(range(n))
 
     with pytest.raises(htcmap.exceptions.OutputNotFound):
-        result[n - 1]
+        print(result[n - 1])
+
+
+@pytest.mark.usefixtures('mock_pool')
+@pytest.mark.parametrize(
+    'timeout',
+    [
+        0.1,
+        datetime.timedelta(seconds = 0.1),
+    ]
+)
+def test_get_with_short_timeout_raises_timeout_error(mapped_sleepy_double, timeout):
+    n = 5
+    result = mapped_sleepy_double.map(range(n))
+
+    with pytest.raises(htcmap.exceptions.TimeoutError):
+        print(result.get(n - 1, timeout = timeout))
 
 
 @pytest.mark.usefixtures('mock_pool')

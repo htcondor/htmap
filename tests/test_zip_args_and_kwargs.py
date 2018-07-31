@@ -1,5 +1,3 @@
-import pytest
-
 from htcmap.mapper import zip_args_and_kwargs
 
 

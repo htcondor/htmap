@@ -16,3 +16,7 @@ class OutputNotFound(HTCMapException):
 
 class NoResultYet(HTCMapException):
     pass
+
+
+class TimeoutError(TimeoutError, HTCMapException):
+    pass

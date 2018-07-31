@@ -1,3 +1,4 @@
+import datetime
 from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable
 
 from pathlib import Path
@@ -73,80 +74,99 @@ class MapResult:
     def __repr__(self):
         return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
 
-    def item_to_hash(self, item: IndexOrHash) -> str:
+    def _item_to_hash(self, item: IndexOrHash) -> str:
         if isinstance(item, int):
             return self.hashes[item]
         return item
 
     def __getitem__(self, item: IndexOrHash) -> Any:
         """Non-Blocking get."""
-        h = self.item_to_hash(item)
+        return self.get(item, timeout = 0)
+
+    def get(
+        self,
+        item: IndexOrHash,
+        timeout: Optional[Union[int, datetime.timedelta]] = None,
+    ) -> Any:
+        """Blocking get with timeout."""
+        if isinstance(timeout, datetime.timedelta):
+            timeout = timeout.total_seconds()
+
+        h = self._item_to_hash(item)
         if h not in self.hash_set:
             raise exceptions.HashNotInResult(f'hash {h} is not in this result')
 
         path = self.mapper.outputs_dir / f'{h}.out'
 
         try:
-            return htcio.load_object(path)
-        except FileNotFoundError:
-            raise exceptions.OutputNotFound(f'output for hash {h} not found')
+            utils.wait_for_path_to_exist(path, timeout)
+        except exceptions.TimeoutError as e:
+            if timeout <= 0:
+                raise exceptions.OutputNotFound(f'output for hash {h} not found')
+            else:
+                raise e
 
-    def get(self, item: IndexOrHash, timeout = None):
-        """Blocking get with timeout."""
-        start_time = time.time()
+        return htcio.load_object(path)
 
-        while True:
-            try:
-                return self[item]
-            except exceptions.OutputNotFound:
-                pass
-
-            time.sleep(1)
-
-            if timeout is not None and time.time() - timeout > start_time:
-                raise TimeoutError(f'timeout while waiting for {"index" if isinstance(item, int) else "hash"} {item} from {self}')
-
-    def wait(self, timeout = None):
+    def wait(self, timeout: Optional[Union[int, datetime.timedelta]] = None):
         """Block until ready."""
         start_time = time.time()
+        if isinstance(timeout, datetime.timedelta):
+            timeout = timeout.total_seconds()
 
-        while not len(self.hash_set - set(f.stem for f in self.mapper.outputs_dir.iterdir())) == 0:
-            time.sleep(1)
+        def is_missing_hashes():
+            output_hashes = set(f.stem for f in self.mapper.outputs_dir.iterdir())
+            missing_hashes = self.hash_set - output_hashes
+            return len(missing_hashes) != 0
+
+        while is_missing_hashes():
             if timeout is not None and time.time() - timeout > start_time:
-                raise TimeoutError(f'timeout while waiting for {self}')
+                raise exceptions.TimeoutError(f'timeout while waiting for {self}')
+            time.sleep(1)
 
     def __iter__(self) -> Iterable[Any]:
-        for h in self.hashes:
-            path = self.mapper.outputs_dir / f'{h}.out'
-            while not path.exists():
-                time.sleep(1)
-            yield htcio.load_object(path)
+        yield from self.iter()
 
-    # todo: look at ipyparallel async get timeout TimeoutError
-
-    def iter(self, callback: Optional[Callable] = None):
+    def iter(
+        self,
+        callback: Optional[Callable] = None,
+        timeout: Optional[Union[int, datetime.timedelta]] = None,
+    ) -> Iterable[Any]:
         if callback is None:
             callback = lambda o: o
 
-        for obj in self:
-            callback(obj)
-            yield obj
+        for h in self.hashes:
+            path = self.mapper.outputs_dir / f'{h}.out'
 
-    def iter_with_inputs(self, callback: Optional[Callable] = None) -> Iterable[Tuple[Any, Any]]:
+            utils.wait_for_path_to_exist(path, timeout)
+
+            out = htcio.load_object(path)
+            callback(out)
+            yield out
+
+    def iter_with_inputs(
+        self,
+        callback: Optional[Callable] = None,
+        timeout: Optional[Union[int, datetime.timedelta]] = None,
+    ) -> Iterable[Tuple[Any, Any]]:
         if callback is None:
             callback = lambda i, o: (i, o)
 
         for h in self.hashes:
             input_path = self.mapper.inputs_dir / f'{h}.in'
             output_path = self.mapper.outputs_dir / f'{h}.out'
-            while not output_path.exists():
-                time.sleep(1)
+
+            utils.wait_for_path_to_exist(output_path, timeout)
+
             inp = htcio.load_object(input_path)
             out = htcio.load_object(output_path)
             callback(inp, out)
             yield inp, out
 
-    def iter_as_available(self, callback: Optional[Callable] = None) -> Iterable[Any]:
+    def iter_as_available(
+        self,
+        callback: Optional[Callable] = None,
+    ) -> Iterable[Any]:
         if callback is None:
             callback = lambda o: o
 
@@ -162,7 +182,10 @@ class MapResult:
                 yield obj
             time.sleep(1)
 
-    def iter_as_available_with_inputs(self, callback: Optional[Callable] = None) -> Iterable[Tuple[Any, Any]]:
+    def iter_as_available_with_inputs(
+        self,
+        callback: Optional[Callable] = None,
+    ) -> Iterable[Tuple[Any, Any]]:
         if callback is None:
             callback = lambda i, o: (i, o)
 
@@ -197,12 +220,12 @@ class MapResult:
         return self.act(JobAction.Remove)
 
     def iter_output(self, item: IndexOrHash) -> Iterable[str]:
-        h = self.item_to_hash(item)
+        h = self._item_to_hash(item)
         with (self.mapper.job_logs_dir / f'{h}.out').open() as file:
             yield from file
 
     def iter_error(self, item: IndexOrHash) -> Iterable[str]:
-        h = self.item_to_hash(item)
+        h = self._item_to_hash(item)
         with (self.mapper.job_logs_dir / f'{h}.err').open() as file:
             yield from file
 

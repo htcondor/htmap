@@ -1,4 +1,6 @@
 import sys
+import time
+
 from . import mock_htcondor
 
 sys.modules['htcondor'] = mock_htcondor
@@ -44,6 +46,22 @@ def power():
 @pytest.fixture(scope = 'function')
 def mapped_power(power, set_mapper):
     mapper = htcmap.htcmap(power)
+    set_mapper(mapper)
+    return mapper
+
+
+@pytest.fixture(scope = 'function')
+def sleepy_double():
+    def sleepy_double(x):
+        time.sleep(x)
+        return 2 * x
+
+    return sleepy_double
+
+
+@pytest.fixture(scope = 'function')
+def mapped_sleepy_double(sleepy_double, set_mapper):
+    mapper = htcmap.htcmap(sleepy_double)
     set_mapper(mapper)
     return mapper
 
