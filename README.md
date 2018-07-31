@@ -1,5 +1,8 @@
 # htcmap
 
+[![Documentation Status](https://readthedocs.org/projects/htcmap/badge/?version=latest)](https://htcmap.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/JoshKarpel/htcmap.svg?branch=master)](https://travis-ci.org/JoshKarpel/htcmap)
+[![codecov](https://codecov.io/gh/JoshKarpel/htcmap/branch/master/graph/badge.svg)](https://codecov.io/gh/JoshKarpel/htcmap)
 
 ## Quick Install
 
@@ -21,6 +24,11 @@ Or:
 
 1. `pip install git+https://github.com/JoshKarpel/htcmap`, to install directly from GitHub.
 
+To update `htcmap`, just do a `git pull` inside that directory (or `git checkout <branch>` to switch branches, etc.).
+
+
+## Basic Usage
+
 Fun example:
 ```python
 from htcmap import htcmap
@@ -37,4 +45,3 @@ for result in job:
 This should block while waiting for the jobs to finish in order.
 As they finish, the results from each should be printed.
 
-To update `htcmap`, just do a `git pull` inside that directory (or `git checkout <branch>` to switch branches, etc.).
