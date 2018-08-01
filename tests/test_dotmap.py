@@ -1,4 +1,4 @@
-from htcmap.settings import DotMap
+from htmap.settings import DotMap
 
 
 def test_getitem():

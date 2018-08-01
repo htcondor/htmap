@@ -1,7 +1,7 @@
 import pytest
 
-import htcmap
-from htcmap.mapper import MapResult
+import htmap
+from htmap.mapper import MapResult
 
 
 @pytest.mark.usefixtures('mock_pool')
@@ -26,7 +26,7 @@ def test_job_builder_results(mapped_doubler):
 
 def test_getting_result_before_ending_with_raises_no_result_yet(mapped_doubler):
     with mapped_doubler.build_job() as jb:
-        with pytest.raises(htcmap.exceptions.NoResultYet):
+        with pytest.raises(htmap.exceptions.NoResultYet):
             jb.result
 
 

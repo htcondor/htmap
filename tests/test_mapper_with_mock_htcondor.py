@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-import htcmap
+import htmap
 
 
 def get_num_input_files(mapper):
@@ -115,7 +115,7 @@ def test_getitem_too_soon_raises_output_not_found(mapped_sleepy_double):
     n = 5
     result = mapped_sleepy_double.map(range(n))
 
-    with pytest.raises(htcmap.exceptions.OutputNotFound):
+    with pytest.raises(htmap.exceptions.OutputNotFound):
         print(result[n - 1])
 
 
@@ -131,7 +131,7 @@ def test_get_with_short_timeout_raises_timeout_error(mapped_sleepy_double, timeo
     n = 5
     result = mapped_sleepy_double.map(range(n))
 
-    with pytest.raises(htcmap.exceptions.TimeoutError):
+    with pytest.raises(htmap.exceptions.TimeoutError):
         print(result.get(n - 1, timeout = timeout))
 
 
@@ -147,7 +147,7 @@ def test_get_with_index_waits_until_ready(mapped_doubler):
 def test_get_on_bogus_hash_raises_hash_not_in_result(mapped_doubler):
     result = mapped_doubler.map(tuple())  # empty map, no hashes
 
-    with pytest.raises(htcmap.exceptions.HashNotInResult):
+    with pytest.raises(htmap.exceptions.HashNotInResult):
         result['a']
 
 

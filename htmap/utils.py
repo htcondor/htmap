@@ -47,7 +47,7 @@ def wait_for_path_to_exist(
     path
         The target path to watch.
     timeout
-        The maximum amount of time to wait for the path to exist before raising a :class:`htcmap.exceptions.TimeoutError`.
+        The maximum amount of time to wait for the path to exist before raising a :class:`htmap.exceptions.TimeoutError`.
     wait_time
         The time to wait between checks.
     """

@@ -14,24 +14,24 @@ from . import exceptions
 
 
 def map(func: Callable, args, **kwargs) -> 'MapResult':
-    return htcmap(func).map(args, **kwargs)
+    return htmap(func).map(args, **kwargs)
 
 
 def productmap(func: Callable, *args, **kwargs) -> 'MapResult':
-    return htcmap(func).productmap(*args, **kwargs)
+    return htmap(func).productmap(*args, **kwargs)
 
 
 def starmap(func: Callable, args, kwargs) -> 'MapResult':
-    return htcmap(func).starmap(args, kwargs)
+    return htmap(func).starmap(args, kwargs)
 
 
 def build_job(func: Callable) -> 'JobBuilder':
-    return htcmap(func).build_job()
+    return htmap(func).build_job()
 
 
-def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None) -> Union[Callable, 'HTCMapper']:
+def htmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None) -> Union[Callable, 'HTMapper']:
     """
-    A function decorator that wraps a function in an :class:`HTCMapper`,
+    A function decorator that wraps a function in an :class:`HTMapper`,
     which provides an interface for mapping functions calls out to an HTCondor cluster.
 
     Parameters
@@ -44,20 +44,20 @@ def htcmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None
     Returns
     -------
     mapper
-        An :class:`HTCMapper` that wraps the function (or a wrapper function that does the wrapping).
+        An :class:`HTMapper` that wraps the function (or a wrapper function that does the wrapping).
     """
 
-    def wrapper(func: Callable) -> HTCMapper:
-        if isinstance(func, HTCMapper):
+    def wrapper(func: Callable) -> HTMapper:
+        if isinstance(func, HTMapper):
             func = func.func
 
-        return HTCMapper(
+        return HTMapper(
             func,
             name = name if isinstance(name, str) else func.__name__,
             submit_descriptors = submit_descriptors,
         )
 
-    # if called like @htcmap, without parens, name is actually the function
+    # if called like @htmap, without parens, name is actually the function
     if callable(name):
         return wrapper(name)
 
@@ -68,7 +68,7 @@ IndexOrHash = Union[int, str]
 
 
 class MapResult:
-    def __init__(self, mapper: 'HTCMapper', clusterid: Optional[int], hashes: Iterable[str]):
+    def __init__(self, mapper: 'HTMapper', clusterid: Optional[int], hashes: Iterable[str]):
         self.mapper = mapper
         self.clusterid = clusterid
         self.hashes = tuple(hashes)
@@ -78,7 +78,7 @@ class MapResult:
             print('no new hashes, no jobs were submitted')
 
     @classmethod
-    def from_clusterid(cls, mapper: 'HTCMapper', clusterid: int):
+    def from_clusterid(cls, mapper: 'HTMapper', clusterid: int):
         with (mapper.hashes_dir / f'{clusterid}.hashes').open() as file:
             return cls(
                 mapper = mapper,
@@ -303,7 +303,7 @@ class MapResult:
 
 
 class JobBuilder:
-    def __init__(self, mapper: 'HTCMapper'):
+    def __init__(self, mapper: 'HTMapper'):
         self.mapper = mapper
 
         self.args = []
@@ -329,7 +329,7 @@ class JobBuilder:
     def result(self) -> MapResult:
         """
         The :class:`MapResult` associated with this :class:`JobBuilder`.
-        Will raise :class:`htcmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`JobBuilder` completes.
+        Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`JobBuilder` completes.
         """
         if self._result is None:
             raise exceptions.NoResultYet('result does not exist until after with block')
@@ -343,13 +343,13 @@ class JobBuilder:
         return len(self.args)
 
 
-class HTCMapper:
+class HTMapper:
     def __init__(self, func: Callable, name: str, submit_descriptors = None):
         self.func = func
         self.name = name
         self.submit_descriptors = submit_descriptors or {}
 
-        self.map_dir = settings.HTCMAP_DIR / name
+        self.map_dir = settings.HTMAP_DIR / name
         self.inputs_dir = self.map_dir / 'inputs'
         self.outputs_dir = self.map_dir / 'outputs'
         self.job_logs_dir = self.map_dir / 'job_logs'
@@ -447,7 +447,7 @@ class HTCMapper:
             'request_memory': '100MB',
             'request_disk': '5GB',
             'transfer_input_files': ','.join([
-                'http://proxy.chtc.wisc.edu/SQUID/karpel/htcmap.tar.gz',
+                'http://proxy.chtc.wisc.edu/SQUID/karpel/htmap.tar.gz',
                 str(Path(__file__).parent / 'run' / 'run.py'),
                 str(self.inputs_dir / '$(Item).in'),
                 str(self.fn_path),

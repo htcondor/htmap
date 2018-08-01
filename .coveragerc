@@ -2,7 +2,7 @@
 branch = True
 
 include =
-    htcmap/*
+    htmap/*
 
 omit =
     tests/*

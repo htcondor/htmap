@@ -1,7 +1,7 @@
 import pytest
 
-import htcmap
-from htcmap.settings import DotMap, Settings
+import htmap
+from htmap.settings import DotMap, Settings
 
 
 def test_setting_getitem_drills_down():
@@ -34,5 +34,5 @@ def test_setting_getattr_drills_down():
 def test_missing_raises():
     s = Settings()
 
-    with pytest.raises(htcmap.exceptions.MissingSetting):
+    with pytest.raises(htmap.exceptions.MissingSetting):
         s['nope']

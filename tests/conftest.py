@@ -10,14 +10,14 @@ import multiprocessing
 
 import pytest
 
-import htcmap
+import htmap
 
 
 @pytest.fixture(scope = 'function', autouse = True)
-def set_htcmap_dir(tmpdir_factory):
-    """Use a fresh HTCMAP_DIR for every test."""
-    path = Path(tmpdir_factory.mktemp('.htcmap'))
-    htcmap.settings.HTCMAP_DIR = path
+def set_htmap_dir(tmpdir_factory):
+    """Use a fresh HTMAP_DIR for every test."""
+    path = Path(tmpdir_factory.mktemp('.htmap'))
+    htmap.settings.HTMAP_DIR = path
 
 
 @pytest.fixture(scope = 'function')
@@ -30,7 +30,7 @@ def doubler():
 
 @pytest.fixture(scope = 'function')
 def mapped_doubler(doubler, set_mapper):
-    mapper = htcmap.htcmap(doubler)
+    mapper = htmap.htmap(doubler)
     set_mapper(mapper)
     return mapper
 
@@ -45,7 +45,7 @@ def power():
 
 @pytest.fixture(scope = 'function')
 def mapped_power(power, set_mapper):
-    mapper = htcmap.htcmap(power)
+    mapper = htmap.htmap(power)
     set_mapper(mapper)
     return mapper
 
@@ -61,7 +61,7 @@ def sleepy_double():
 
 @pytest.fixture(scope = 'function')
 def mapped_sleepy_double(sleepy_double, set_mapper):
-    mapper = htcmap.htcmap(sleepy_double)
+    mapper = htmap.htmap(sleepy_double)
     set_mapper(mapper)
     return mapper
 

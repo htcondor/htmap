@@ -1,27 +1,27 @@
-import htcmap
+import htmap
 
-from htcmap.mapper import HTCMapper
+from htmap.mapper import HTMapper
 
 
 def test_map_shortcut_calls_map_method(mocker, doubler):
-    mocked = mocker.patch.object(HTCMapper, 'map')
+    mocked = mocker.patch.object(HTMapper, 'map')
 
-    htcmap.map(doubler, range(10))
+    htmap.map(doubler, range(10))
 
     assert mocked.was_called
 
 
 def test_productmap_shortcut_calls_productmap_method(mocker, doubler):
-    mocked = mocker.patch.object(HTCMapper, 'productmap')
+    mocked = mocker.patch.object(HTMapper, 'productmap')
 
-    htcmap.productmap(doubler, range(10))
+    htmap.productmap(doubler, range(10))
 
     assert mocked.was_called
 
 
 def test_starmap_shortcut_calls_starmap_method(mocker, doubler):
-    mocked = mocker.patch.object(HTCMapper, 'starmap')
+    mocked = mocker.patch.object(HTMapper, 'starmap')
 
-    htcmap.starmap(doubler, range(10), [])
+    htmap.starmap(doubler, range(10), [])
 
     assert mocked.was_called

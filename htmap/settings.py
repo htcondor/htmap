@@ -36,10 +36,10 @@ class DotMap(dict):
 
 
 DEFAULT_SETTINGS = DotMap(
-    HTCMAP_DIR = Path.home() / '.htcmap',
+    HTMAP_DIR = Path.home() / '.htmap',
 )
 
-USER_SETTINGS_PATH = Path.home() / '.htcmap.toml'
+USER_SETTINGS_PATH = Path.home() / '.htmap.toml'
 try:
     with USER_SETTINGS_PATH.open() as file:  # toml-0.10.0 or more will have pathlib support
         user_settings = toml.load(file, _dict = DotMap)
