@@ -1,8 +1,8 @@
-HTCMap
+HTMap
 ======
 
 :doc:`tutorial`
-   A brief tutorial in using ``htcmap``.
+   A brief tutorial in using ``htmap``.
 
 :doc:`api`
    API documentation.

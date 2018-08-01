@@ -1,23 +1,23 @@
 Private API
 ===========
 
-.. py:currentmodule:: htcmap
+.. py:currentmodule:: htmap
 
 .. highlight:: python
 
 HTCIO
 -----
 
-.. automodule:: htcmap.htcio
+.. automodule:: htmap.htcio
    :members:
 
 Settings
 --------
 
-.. autoclass:: htcmap.settings.DotMap
+.. autoclass:: htmap.settings.DotMap
 
 Utils
 -----
 
-.. automodule:: htcmap.utils
+.. automodule:: htmap.utils
    :members:
