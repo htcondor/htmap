@@ -8,7 +8,7 @@ from copy import deepcopy, copy
 
 import htcondor
 
-from . import htcio, utils
+from . import htio, utils
 from .settings import settings
 from . import exceptions
 
@@ -130,7 +130,7 @@ class MapResult:
             else:
                 raise e
 
-        return htcio.load_object(path)
+        return htio.load_object(path)
 
     def wait(
         self,
@@ -171,7 +171,7 @@ class MapResult:
         for output_path in self._output_file_paths:
             utils.wait_for_path_to_exist(output_path, timeout)
 
-            out = htcio.load_object(output_path)
+            out = htio.load_object(output_path)
             callback(out)
             yield out
 
@@ -186,8 +186,8 @@ class MapResult:
         for input_path, output_path in zip(self._input_file_paths, self._output_file_paths):
             utils.wait_for_path_to_exist(output_path, timeout)
 
-            inp = htcio.load_object(input_path)
-            out = htcio.load_object(output_path)
+            inp = htio.load_object(input_path)
+            out = htio.load_object(output_path)
             callback(inp, out)
             yield inp, out
 
@@ -205,7 +205,7 @@ class MapResult:
                     continue
 
                 paths.remove(path)
-                obj = htcio.load_object(path)
+                obj = htio.load_object(path)
                 callback(obj)
                 yield obj
             time.sleep(1)
@@ -225,8 +225,8 @@ class MapResult:
                     continue
 
                 paths.remove(input_output_paths)
-                inp = htcio.load_object(input_path)
-                out = htcio.load_object(output_path)
+                inp = htio.load_object(input_path)
+                out = htio.load_object(output_path)
                 callback(inp, out)
                 yield inp, out
             time.sleep(1)
@@ -360,7 +360,7 @@ class HTMapper:
 
         self.fn_path = self.map_dir / 'fn.pkl'
         if not self.fn_path.exists():
-            htcio.save_object(self.func, self.fn_path)
+            htio.save_object(self.func, self.fn_path)
 
     def _mkdirs(self):
         """Create the various directories needed by the mapper."""
@@ -414,8 +414,8 @@ class HTMapper:
         hashes = []
         new_hashes = []
         for a_and_k in args_and_kwargs:
-            b = htcio.to_bytes(a_and_k)
-            h = htcio.hash_bytes(b)
+            b = htio.to_bytes(a_and_k)
+            h = htio.hash_bytes(b)
             hashes.append(h)
 
             # if output already exists, don't re-do it
@@ -424,7 +424,7 @@ class HTMapper:
                 continue
 
             input_path = self.inputs_dir / f'{h}.in'
-            htcio.save_bytes(b, input_path)
+            htio.save_bytes(b, input_path)
             new_hashes.append(h)
 
         if len(new_hashes) == 0:
