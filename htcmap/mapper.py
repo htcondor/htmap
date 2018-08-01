@@ -7,7 +7,6 @@ import itertools
 from copy import deepcopy, copy
 
 import htcondor
-from htcondor import JobAction  # re-import JobAction for users
 
 from . import htcio, utils
 from .settings import settings
@@ -87,6 +86,14 @@ class MapResult:
                 hashes = (h.strip() for h in file),
             )
 
+    @property
+    def _input_file_paths(self):
+        yield from (self.mapper.inputs_dir / f'{h}.out' for h in self.hashes)
+
+    @property
+    def _output_file_paths(self):
+        yield from (self.mapper.outputs_dir / f'{h}.out' for h in self.hashes)
+
     def __repr__(self):
         return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
 
@@ -161,12 +168,10 @@ class MapResult:
         if callback is None:
             callback = lambda o: o
 
-        for h in self.hashes:
-            path = self.mapper.outputs_dir / f'{h}.out'
+        for output_path in self._output_file_paths:
+            utils.wait_for_path_to_exist(output_path, timeout)
 
-            utils.wait_for_path_to_exist(path, timeout)
-
-            out = htcio.load_object(path)
+            out = htcio.load_object(output_path)
             callback(out)
             yield out
 
@@ -178,10 +183,7 @@ class MapResult:
         if callback is None:
             callback = lambda i, o: (i, o)
 
-        for h in self.hashes:
-            input_path = self.mapper.inputs_dir / f'{h}.in'
-            output_path = self.mapper.outputs_dir / f'{h}.out'
-
+        for input_path, output_path in zip(self._input_file_paths, self._output_file_paths):
             utils.wait_for_path_to_exist(output_path, timeout)
 
             inp = htcio.load_object(input_path)
@@ -196,7 +198,7 @@ class MapResult:
         if callback is None:
             callback = lambda o: o
 
-        paths = {self.mapper.outputs_dir / f'{h}.out' for h in self.hashes}
+        paths = set(self._output_file_paths)
         while len(paths) > 0:
             for path in copy(paths):
                 if not path.exists():
@@ -215,7 +217,7 @@ class MapResult:
         if callback is None:
             callback = lambda i, o: (i, o)
 
-        paths = {(self.mapper.outputs_dir / f'{h}.out', self.mapper.outputs_dir / f'{h}.out') for h in self.hashes}
+        paths = set((i, o) for i, o in zip(self._input_file_paths, self._output_file_paths))
         while len(paths) > 0:
             for input_output_paths in copy(paths):
                 input_path, output_path = input_output_paths
@@ -241,11 +243,35 @@ class MapResult:
 
     # todo: specialized versions of query to do condor_q, condor_q --held
 
-    def act(self, action: JobAction):
+    def act(self, action: htcondor.JobAction):
         return htcondor.Schedd().act(action, f'ClusterId=={self.clusterid}')
 
     def remove(self):
-        return self.act(JobAction.Remove)
+        """Remove the map job and delete all associated input and output files."""
+        act_result = self.act(htcondor.JobAction.Remove)
+
+        for path in itertools.chain(self._input_file_paths, self._output_file_paths):
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
+
+        return act_result
+
+    def hold(self):
+        return self.act(htcondor.JobAction.Hold)
+
+    def release(self):
+        return self.act(htcondor.JobAction.Release)
+
+    def pause(self):
+        return self.act(htcondor.JobAction.Suspend)
+
+    def resume(self):
+        return self.act(htcondor.JobAction.Continue)
+
+    def vacate(self):
+        return self.act(htcondor.JobAction.Vacate)
 
     def iter_output(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
