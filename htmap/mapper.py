@@ -1,4 +1,5 @@
 import datetime
+import shutil
 from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable
 
 from pathlib import Path
@@ -74,12 +75,16 @@ class MapResult:
         self.hash_set = set(self.hashes)
 
     @property
-    def inputs_dir(self):
+    def map_dir(self):
         return self.mapper.mapper_dir / self.map_id
 
     @property
+    def inputs_dir(self):
+        return self.map_dir / 'inputs'
+
+    @property
     def outputs_dir(self):
-        return self.mapper.mapper_dir / self.map_id
+        return self.map_dir / 'outputs'
 
     @property
     def _input_file_paths(self):
@@ -244,13 +249,7 @@ class MapResult:
     def remove(self):
         """Remove the map job and delete all associated input and output files."""
         act_result = self.act(htcondor.JobAction.Remove)
-
-        for path in itertools.chain(self._input_file_paths, self._output_file_paths):
-            try:
-                path.unlink()
-            except FileNotFoundError:
-                pass
-
+        shutil.rmtree(self.map_dir)
         return act_result
 
     def hold(self):
@@ -270,12 +269,12 @@ class MapResult:
 
     def iter_output(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
-        with (self.mapper.job_logs_dir / f'{h}.out').open() as file:
+        with (self.map_dir / 'job_logs' / f'{h}.out').open() as file:
             yield from file
 
     def iter_error(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
-        with (self.mapper.job_logs_dir / f'{h}.err').open() as file:
+        with (self.map_dir / 'job_logs' / f'{h}.err').open() as file:
             yield from file
 
     def output(self, item: IndexOrHash):
@@ -285,7 +284,7 @@ class MapResult:
         return ''.join(self.iter_error(item))
 
     def tail(self):
-        with (self.mapper.cluster_logs_dir / f'{self.cluster_id}.log').open() as file:
+        with (self.map_dir / 'cluster_logs' / f'{self.cluster_id}.log').open() as file:
             file.seek(0, 2)
             while True:
                 current = file.tell()
@@ -440,9 +439,9 @@ class HTMapper:
             'JobBatchName': self.name,
             'executable': str(Path(__file__).parent / 'run' / 'run.sh'),
             'arguments': '$(Item)',
-            'log': str(self.mapper_dir / map_id / 'cluster_logs_dir' / '$(ClusterId).log'),
-            'output': str(self.mapper_dir / map_id / 'job_logs_dir' / '$(Item).output'),
-            'error': str(self.mapper_dir / map_id / 'job_logs_dir' / '$(Item).error'),
+            'log': str(self.mapper_dir / map_id / 'cluster_logs' / '$(ClusterId).log'),
+            'output': str(self.mapper_dir / map_id / 'job_logs' / '$(Item).output'),
+            'error': str(self.mapper_dir / map_id / 'job_logs' / '$(Item).error'),
             'should_transfer_files': 'YES',
             'when_to_transfer_output': 'ON_EXIT',
             'request_cpus': '1',
