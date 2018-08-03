@@ -26,3 +26,7 @@ class NoResultYet(HTMapException):
 class TimeoutError(TimeoutError, HTMapException):
     """An operation has timed out because it took too long."""
     pass
+
+
+class MapIDAlreadyExists(HTMapException):
+    pass

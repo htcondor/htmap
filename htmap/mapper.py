@@ -68,34 +68,31 @@ IndexOrHash = Union[int, str]
 
 
 class MapResult:
-    def __init__(self, mapper: 'HTMapper', clusterid: Optional[int], hashes: Iterable[str]):
+    def __init__(self, mapper: 'HTMapper', map_id: str, cluster_id: Optional[int], hashes: Iterable[str]):
         self.mapper = mapper
-        self.clusterid = clusterid
+        self.map_id = map_id
+        self.cluster_id = cluster_id
         self.hashes = tuple(hashes)
         self.hash_set = set(self.hashes)
 
-        if self.clusterid is None:
-            print('no new hashes, no jobs were submitted')
+    @property
+    def inputs_dir(self):
+        return self.mapper.mapper_dir / self.map_id
 
-    @classmethod
-    def from_clusterid(cls, mapper: 'HTMapper', clusterid: int):
-        with (mapper.hashes_dir / f'{clusterid}.hashes').open() as file:
-            return cls(
-                mapper = mapper,
-                clusterid = clusterid,
-                hashes = (h.strip() for h in file),
-            )
+    @property
+    def outputs_dir(self):
+        return self.mapper.mapper_dir / self.map_id
 
     @property
     def _input_file_paths(self):
-        yield from (self.mapper.inputs_dir / f'{h}.out' for h in self.hashes)
+        yield from (self.inputs_dir / f'{h}.out' for h in self.hashes)
 
     @property
     def _output_file_paths(self):
-        yield from (self.mapper.outputs_dir / f'{h}.out' for h in self.hashes)
+        yield from (self.outputs_dir / f'{h}.out' for h in self.hashes)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
+        return f'{self.__class__.__name__}(mapper = {self.mapper}, map_id = {self.map_id})'
 
     def _item_to_hash(self, item: IndexOrHash) -> str:
         """Return the hash associated with an index, or pass a hash through."""
@@ -120,7 +117,7 @@ class MapResult:
         if h not in self.hash_set:
             raise exceptions.HashNotInResult(f'hash {h} is not in this result')
 
-        path = self.mapper.outputs_dir / f'{h}.out'
+        path = self.outputs_dir / f'{h}.out'
 
         try:
             utils.wait_for_path_to_exist(path, timeout)
@@ -148,7 +145,7 @@ class MapResult:
             timeout = timeout.total_seconds()
 
         def is_missing_hashes():
-            output_hashes = set(f.stem for f in self.mapper.outputs_dir.iterdir())
+            output_hashes = set(f.stem for f in self.outputs_dir.iterdir())
             missing_hashes = self.hash_set - output_hashes
             return len(missing_hashes) != 0
 
@@ -232,19 +229,19 @@ class MapResult:
             time.sleep(1)
 
     def query(self, projection: Optional[List[str]] = None):
-        if self.clusterid is None:
+        if self.cluster_id is None:
             yield from ()
         if projection is None:
             projection = []
         yield from htcondor.Schedd().xquery(
-            requirements = f'ClusterId=={self.clusterid}',
+            requirements = f'ClusterId=={self.cluster_id}',
             projection = projection,
         )
 
     # todo: specialized versions of query to do condor_q, condor_q --held
 
     def act(self, action: htcondor.JobAction):
-        return htcondor.Schedd().act(action, f'ClusterId=={self.clusterid}')
+        return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')
 
     def remove(self):
         """Remove the map job and delete all associated input and output files."""
@@ -290,7 +287,7 @@ class MapResult:
         return ''.join(self.iter_error(item))
 
     def tail(self):
-        with (self.mapper.cluster_logs_dir / f'{self.clusterid}.log').open() as file:
+        with (self.mapper.cluster_logs_dir / f'{self.cluster_id}.log').open() as file:
             file.seek(0, 2)
             while True:
                 current = file.tell()
@@ -303,8 +300,9 @@ class MapResult:
 
 
 class JobBuilder:
-    def __init__(self, mapper: 'HTMapper'):
+    def __init__(self, mapper: 'HTMapper', map_id: str):
         self.mapper = mapper
+        self.map_id = map_id
 
         self.args = []
         self.kwargs = []
@@ -319,7 +317,7 @@ class JobBuilder:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # todo: should do nothing if exception occurred inside with block
-        self.result = self.mapper.starmap(self.args, self.kwargs)
+        self.result = self.mapper.starmap(self.map_id, self.args, self.kwargs)
 
     def __call__(self, *args, **kwargs):
         self.args.append(args)
@@ -344,35 +342,33 @@ class JobBuilder:
 
 
 class HTMapper:
-    def __init__(self, func: Callable, name: str, submit_descriptors = None):
+    map_dir_names = (
+        'inputs',
+        'outputs',
+        'job_logs',
+        'cluster_logs',
+        'hashes_by_clusterid',
+    )
+
+    def __init__(self, func: Callable, name: str):
         self.func = func
         self.name = name
-        self.submit_descriptors = submit_descriptors or {}
 
-        self.map_dir = settings.HTMAP_DIR / name
-        self.inputs_dir = self.map_dir / 'inputs'
-        self.outputs_dir = self.map_dir / 'outputs'
-        self.job_logs_dir = self.map_dir / 'job_logs'
-        self.cluster_logs_dir = self.map_dir / 'cluster_logs'
-        self.hashes_dir = self.map_dir / 'hashes_by_clusterid'
+        self.mapper_dir = settings.HTMAP_DIR / name
+        # self.inputs_dir = self.mapper_dir / 'inputs'
+        # self.outputs_dir = self.mapper_dir / 'outputs'
+        # self.job_logs_dir = self.mapper_dir / 'job_logs'
+        # self.cluster_logs_dir = self.mapper_dir / 'cluster_logs'
+        # self.hashes_dir = self.mapper_dir / 'hashes_by_clusterid'
 
-        self._mkdirs()
-
-        self.fn_path = self.map_dir / 'fn.pkl'
-        if not self.fn_path.exists():
-            htio.save_object(self.func, self.fn_path)
-
-    def _mkdirs(self):
+    def _mkdirs(self, map_id: str):
         """Create the various directories needed by the mapper."""
-        for path in (
-            self.map_dir,
-            self.inputs_dir,
-            self.outputs_dir,
-            self.job_logs_dir,
-            self.cluster_logs_dir,
-            self.hashes_dir,
-        ):
+        for path in (self.mapper_dir / map_id / dir_name for dir_name in self.map_dir_names):
             path.mkdir(parents = True, exist_ok = True)
+
+    def _save_func(self, map_id):
+        self.fn_path = self.mapper_dir / map_id / 'fn.pkl'
+        htio.save_object(self.func, self.fn_path)
 
     def __repr__(self):
         return f'{self.__class__.__name__}(name = {self.name}, func = {self.func})'
@@ -380,12 +376,12 @@ class HTMapper:
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
 
-    def map(self, args, **kwargs) -> MapResult:
+    def map(self, map_id: str, args, **kwargs) -> MapResult:
         args = ((arg,) for arg in args)
         args_and_kwargs = zip(args, itertools.repeat(kwargs))
-        return self._map(args_and_kwargs)
+        return self._map(map_id, args_and_kwargs)
 
-    def productmap(self, *args, **kwargs) -> MapResult:
+    def productmap(self, map_id: str, *args, **kwargs) -> MapResult:
         dicts = [{}]
         for key, values in kwargs.items():
             values = tuple(values)
@@ -396,21 +392,29 @@ class HTMapper:
         args = itertools.repeat(args)
         args_and_kwargs = zip(args, dicts)
 
-        return self._map(args_and_kwargs)
+        return self._map(map_id, args_and_kwargs)
 
-    def starmap(self, args: Optional[Iterable[Tuple]] = None, kwargs: Optional[Iterable[Dict]] = None) -> MapResult:
+    def starmap(self, map_id: str, args: Optional[Iterable[Tuple]] = None, kwargs: Optional[Iterable[Dict]] = None) -> MapResult:
         if args is None:
             args = ()
         if kwargs is None:
             kwargs = ()
 
         args_and_kwargs = zip_args_and_kwargs(args, kwargs)
-        return self._map(args_and_kwargs)
+        return self._map(map_id, args_and_kwargs)
 
-    def build_job(self):
-        return JobBuilder(mapper = self)
+    def build_job(self, map_id: str):
+        return JobBuilder(mapper = self, map_id = map_id)
 
-    def _map(self, args_and_kwargs) -> MapResult:
+    def _check_map_id(self, map_id: str):
+        if (self.mapper_dir / map_id).exists():
+            raise exceptions.MapIDAlreadyExists('that mapid already exists')
+
+    def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> MapResult:
+        self._check_map_id(map_id)
+
+        self._mkdirs(map_id)
+
         hashes = []
         new_hashes = []
         for a_and_k in args_and_kwargs:
@@ -419,18 +423,19 @@ class HTMapper:
             hashes.append(h)
 
             # if output already exists, don't re-do it
-            output_path = self.outputs_dir / f'{h}.out'
+            output_path = self.mapper_dir / 'outputs' / f'{h}.out'
             if output_path.exists():
                 continue
 
-            input_path = self.inputs_dir / f'{h}.in'
+            input_path = self.mapper_dir / 'inputs' / f'{h}.in'
             htio.save_bytes(b, input_path)
             new_hashes.append(h)
 
         if len(new_hashes) == 0:
             return MapResult(
                 mapper = self,
-                clusterid = None,
+                map_id = map_id,
+                cluster_id = None,
                 hashes = hashes,
             )
 
@@ -461,45 +466,43 @@ class HTMapper:
         with schedd.transaction() as txn:
             submit_result = sub.queue_with_itemdata(txn, 1, iter(new_hashes))
 
-        clusterid = submit_result.cluster()
+        cluster_id = submit_result.cluster()
 
-        with (self.hashes_dir / f'{clusterid}.hashes').open(mode = 'w') as file:
+        with (self.hashes_dir / f'{cluster_id}.hashes').open(mode = 'w') as file:
             file.write('\n'.join(hashes))
 
         return MapResult(
             mapper = self,
-            clusterid = clusterid,
+            map_id = map_id,
+            cluster_id = cluster_id,
             hashes = hashes,
         )
 
-    def reconstruct(self, clusterid: int) -> MapResult:
-        """Reconstruct a :class:`MapResult` from the `clusterid` it was assigned."""
-        return MapResult.from_clusterid(self, clusterid)
-
-    def clean(self) -> (int, int):
-        outs = (
-            self.clean_inputs(),
-            self.clean_outputs(),
-            self.clean_job_logs(),
-            self.clean_cluster_logs(),
-        )
-
-        num_files = sum(o[0] for o in outs)
-        num_bytes = sum(o[1] for o in outs)
-
-        return num_files, num_bytes
-
-    def clean_inputs(self) -> (int, int):
-        return utils.clean_dir(self.inputs_dir)
-
-    def clean_outputs(self) -> (int, int):
-        return utils.clean_dir(self.outputs_dir)
-
-    def clean_job_logs(self) -> (int, int):
-        return utils.clean_dir(self.job_logs_dir)
-
-    def clean_cluster_logs(self) -> (int, int):
-        return utils.clean_dir(self.cluster_logs_dir)
+    # def clean(self) -> (int, int):
+    #     outs = (
+    #         self.clean_inputs(),
+    #         self.clean_outputs(),
+    #         self.clean_job_logs(),
+    #         self.clean_cluster_logs(),
+    #     )
+    #
+    #     num_files = sum(o[0] for o in outs)
+    #     num_bytes = sum(o[1] for o in outs)
+    #
+    #     return num_files, num_bytes
+    #
+    # def clean_inputs(self) -> (int, int):
+    #     return utils.clean_dir(self.inputs_dir)
+    #
+    # def clean_outputs(self) -> (int, int):
+    #     return utils.clean_dir(self.outputs_dir)
+    #
+    # def clean_job_logs(self) -> (int, int):
+    #     return utils.clean_dir(self.job_logs_dir)
+    #
+    # def clean_cluster_logs(self) -> (int, int):
+    #     return utils.clean_dir(self.cluster_logs_dir)
+    #
 
 
 def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):
