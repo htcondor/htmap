@@ -421,11 +421,11 @@ class HTMapper:
             hashes.append(h)
 
             # if output already exists, don't re-do it
-            output_path = self.mapper_dir / 'outputs' / f'{h}.out'
+            output_path = self.mapper_dir / map_id / 'outputs' / f'{h}.out'
             if output_path.exists():
                 continue
 
-            input_path = self.mapper_dir / 'inputs' / f'{h}.in'
+            input_path = self.mapper_dir / map_id / 'inputs' / f'{h}.in'
             htio.save_bytes(b, input_path)
             new_hashes.append(h)
 
@@ -441,9 +441,9 @@ class HTMapper:
             'JobBatchName': self.name,
             'executable': str(Path(__file__).parent / 'run' / 'run.sh'),
             'arguments': '$(Item)',
-            'log': str(self.cluster_logs_dir / '$(ClusterId).log'),
-            'output': str(self.job_logs_dir / '$(Item).output'),
-            'error': str(self.job_logs_dir / '$(Item).error'),
+            'log': str(self.mapper_dir / map_id / 'cluster_logs_dir' / '$(ClusterId).log'),
+            'output': str(self.mapper_dir / map_id / 'job_logs_dir' / '$(Item).output'),
+            'error': str(self.mapper_dir / map_id / 'job_logs_dir' / '$(Item).error'),
             'should_transfer_files': 'YES',
             'when_to_transfer_output': 'ON_EXIT',
             'request_cpus': '1',
@@ -452,10 +452,10 @@ class HTMapper:
             'transfer_input_files': ','.join([
                 'http://proxy.chtc.wisc.edu/SQUID/karpel/htmap.tar.gz',
                 str(Path(__file__).parent / 'run' / 'run.py'),
-                str(self.inputs_dir / '$(Item).in'),
+                str(self.mapper_dir / map_id / 'inputs' / '$(Item).in'),
                 str(self.fn_path),
             ]), 'transfer_output_remaps': '"' + ';'.join([
-                f'$(Item).out={self.outputs_dir / "$(Item).out"}',
+                f'$(Item).out={self.mapper_dir / map_id / "outputs" / "$(Item).out"}',
             ]) + '"'
         }
         sub = htcondor.Submit(submit_dict)
@@ -466,8 +466,8 @@ class HTMapper:
 
         cluster_id = submit_result.cluster()
 
-        with (self.hashes_dir / f'{cluster_id}.hashes').open(mode = 'w') as file:
-            file.write('\n'.join(hashes))
+        # with (self.hashes_dir / f'{cluster_id}.hashes').open(mode = 'w') as file:
+        #     file.write('\n'.join(hashes))
 
         return MapResult(
             mapper = self,
