@@ -269,12 +269,12 @@ class MapResult:
 
     def iter_output(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
-        with (self.map_dir / 'job_logs' / f'{h}.out').open() as file:
+        with (self.map_dir / 'job_logs' / f'{h}.output').open() as file:
             yield from file
 
     def iter_error(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
-        with (self.map_dir / 'job_logs' / f'{h}.err').open() as file:
+        with (self.map_dir / 'job_logs' / f'{h}.error').open() as file:
             yield from file
 
     def output(self, item: IndexOrHash):

@@ -2,7 +2,7 @@
 
 set -e
 
-tar -xzf htcmap.tar.gz
+tar -xzf htmap.tar.gz
 
 export PATH=$(pwd)/python/bin:$PATH
 
