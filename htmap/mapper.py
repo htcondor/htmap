@@ -364,10 +364,6 @@ class HTMapper:
         for path in (self.mapper_dir / map_id / dir_name for dir_name in self.map_dir_names):
             path.mkdir(parents = True, exist_ok = True)
 
-    def _save_func(self, map_id):
-        self.fn_path = self.mapper_dir / map_id / 'fn.pkl'
-        htio.save_object(self.func, self.fn_path)
-
     def __repr__(self):
         return f'{self.__class__.__name__}(name = {self.name}, func = {self.func})'
 
@@ -413,6 +409,9 @@ class HTMapper:
 
         self._mkdirs(map_id)
 
+        fn_path = self.mapper_dir / map_id / 'fn.pkl'
+        htio.save_object(self.func, fn_path)
+
         hashes = []
         new_hashes = []
         for a_and_k in args_and_kwargs:
@@ -453,7 +452,7 @@ class HTMapper:
                 'http://proxy.chtc.wisc.edu/SQUID/karpel/htmap.tar.gz',
                 str(Path(__file__).parent / 'run' / 'run.py'),
                 str(self.mapper_dir / map_id / 'inputs' / '$(Item).in'),
-                str(self.fn_path),
+                str(fn_path),
             ]), 'transfer_output_remaps': '"' + ';'.join([
                 f'$(Item).out={self.mapper_dir / map_id / "outputs" / "$(Item).out"}',
             ]) + '"'
