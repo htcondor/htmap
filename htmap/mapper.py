@@ -29,7 +29,7 @@ def build_job(func: Callable) -> 'JobBuilder':
     return htmap(func).build_job()
 
 
-def htmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None) -> Union[Callable, 'HTMapper']:
+def htmap(name: Optional[str] = None) -> Union[Callable, 'HTMapper']:
     """
     A function decorator that wraps a function in an :class:`HTMapper`,
     which provides an interface for mapping functions calls out to an HTCondor cluster.
@@ -39,7 +39,6 @@ def htmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None)
     name
         An optional name for the mapper.
         If not given, defaults to the name of the mapped function.
-    submit_descriptors
 
     Returns
     -------
@@ -54,7 +53,6 @@ def htmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None)
         return HTMapper(
             func,
             name = name if isinstance(name, str) else func.__name__,
-            submit_descriptors = submit_descriptors,
         )
 
     # if called like @htmap, without parens, name is actually the function
