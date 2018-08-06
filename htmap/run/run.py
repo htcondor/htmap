@@ -13,6 +13,7 @@ def print_node_info():
 
     dir_contents = ", ".join(str(x) for x in Path.cwd().iterdir())
     print(f'Local directory contents: {dir_contents}')
+    print()
 
 
 def run_func(arg_hash):
@@ -21,6 +22,9 @@ def run_func(arg_hash):
 
     with Path(f'{arg_hash}.in').open(mode = 'rb') as file:
         args, kwargs = cloudpickle.load(file)
+
+    print(f'Running\n    {fn}\nwith args\n    {args}\nand kwargs\n    {kwargs}')
+    print()
 
     output = fn(*args, **kwargs)
 
