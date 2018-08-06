@@ -8,7 +8,9 @@ setup(
     version = '0.1.0',
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
-    packages = ['htmap'],
+    packages = find_packages(
+        exclude = ['tests'],
+    ),
     package_data = {
         '': ['*.sh'],
     },
