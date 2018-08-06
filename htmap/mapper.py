@@ -31,7 +31,7 @@ class MapResult:
                 cluster_id = file.read()
 
             with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'hashes').open() as file:
-                hashes = (h.strip() for h in file)
+                hashes = tuple(h.strip() for h in file)
         except FileNotFoundError:
             raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
 
