@@ -59,7 +59,7 @@ class MapResult:
         yield from (self.outputs_dir / f'{h}.out' for h in self.hashes)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(mapper = {self.mapper}, map_id = {self.map_id})'
+        return f'{self.__class__.__name__}(map_id = {self.map_id})'
 
     def _item_to_hash(self, item: IndexOrHash) -> str:
         """Return the hash associated with an index, or pass a hash through."""

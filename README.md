@@ -1,8 +1,8 @@
-# htcmap
+# htmap
 
-[![Documentation Status](https://readthedocs.org/projects/htmap/badge/?version=latest)](https://htcmap.readthedocs.io/en/latest/?badge=latest)
-[![Build Status](https://travis-ci.org/JoshKarpel/htmap.svg?branch=master)](https://travis-ci.org/JoshKarpel/htcmap)
-[![codecov](https://codecov.io/gh/JoshKarpel/htmap/branch/master/graph/badge.svg)](https://codecov.io/gh/JoshKarpel/htcmap)
+[![Documentation Status](https://readthedocs.org/projects/htmap/badge/?version=latest)](https://htmap.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/JoshKarpel/htmap.svg?branch=master)](https://travis-ci.org/JoshKarpel/htmap)
+[![codecov](https://codecov.io/gh/JoshKarpel/htmap/branch/master/graph/badge.svg)](https://codecov.io/gh/JoshKarpel/htmap)
 
 ## Quick Install
 
@@ -10,26 +10,26 @@
    Install wherever you want.
 1. Set up your `PATH` so that it includes `miniconda3/bin` (the `bin` directory in that fresh Python install, wherever it is), at least temporarily.
    `which python` and `which pip` should both point to executables in that `bin` directory.
-1. `pip install cloudpickle toml htcondor==8.7.9rc3` - install `cloudpickle`, `toml`, and the HTCondor bindings.
+1. `pip install cloudpickle toml htcondor` - install dependencies: `cloudpickle`, `toml`, and the HTCondor bindings.
 
 There are two ways to install `htmap` itself.
 The first is better if you want to do some local development, or want to switch between different branches.
 The second is more convenient if you don't.
 
 1. `git clone https://github.com/JoshKarpel/htmap` somewhere.
-1. `pip install -e path/to/htmap/` - do a local, editable install of `htcmap`.
+1. `pip install -e path/to/htmap/` - do a local, editable install of `htmap`.
    Any changes to the local repo will be reflected when you re-import the module.
 
 Or:
 
-1. `pip install git+https://github.com/JoshKarpel/htcmap`, to install directly from GitHub.
+1. `pip install git+https://github.com/JoshKarpel/htmap`, to install directly from GitHub.
 
-To update `htcmap`, just do a `git pull` inside that directory (or `git checkout <branch>` to switch branches, etc.).
+To update `htmap`, just do a `git pull` inside that directory (or `git checkout <branch>` to switch branches, etc.).
 
 
 ## Basic Usage
 
-Fun example:
+Quick example:
 ```python
 from htmap import htmap
 
@@ -37,7 +37,7 @@ from htmap import htmap
 def double(x):
     return 2 * x
 
-job = double.map([5, 'foo', 10, 'bar'])
+job = double.map('double', [5, 'foo', 10, 'bar'])
 
 for result in job:
     print(result)
