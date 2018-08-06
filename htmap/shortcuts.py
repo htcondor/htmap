@@ -27,7 +27,10 @@ def recover(map_id: str) -> mapper.MapResult:
 
 def clean():
     for dir in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME).iterdir():
-        shutil.rmtree(dir)
+        try:
+            shutil.rmtree(dir)
+        except FileNotFoundError:
+            pass
 
 
 def maps() -> Tuple[str]:

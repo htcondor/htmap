@@ -55,7 +55,7 @@ class MapResult:
 
     @property
     def _input_file_paths(self):
-        yield from (self.inputs_dir / f'{h}.out' for h in self.hashes)
+        yield from (self.inputs_dir / f'{h}.in' for h in self.hashes)
 
     @property
     def _output_file_paths(self):
