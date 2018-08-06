@@ -1,6 +1,8 @@
-from typing import Callable
+from typing import Callable, Iterable
 
-from . import mapper
+import shutil
+
+from . import mapper, settings
 
 
 def map(map_id: str, func: Callable, args, **kwargs) -> mapper.MapResult:
@@ -21,3 +23,12 @@ def build_map(map_id: str, func: Callable) -> mapper.MapBuilder:
 
 def recover(map_id: str) -> mapper.MapResult:
     return mapper.MapResult.recover(map_id)
+
+
+def clean():
+    for dir in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME).iterdir():
+        shutil.rmtree(dir)
+
+
+def maps() -> Iterable[str]:
+    yield from (path for path in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME).iterdir())

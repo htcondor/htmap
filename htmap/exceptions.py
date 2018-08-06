@@ -30,3 +30,7 @@ class TimeoutError(TimeoutError, HTMapException):
 
 class MapIDAlreadyExists(HTMapException):
     pass
+
+
+class MapIDNotFound(HTMapException):
+    pass

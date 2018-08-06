@@ -26,11 +26,14 @@ class MapResult:
     @classmethod
     def recover(cls, map_id: str):
         """Reconstruct a :class:`MapResult` from its ``map_id``."""
-        with (settings.HTMAP_DIR / map_id / 'cluster_id').open() as file:
-            cluster_id = file.read()
+        try:
+            with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / 'cluster_id').open() as file:
+                cluster_id = file.read()
 
-        with (settings.HTMAP_DIR / map_id / 'hashes').open() as file:
-            hashes = tuple(file.readlines())
+            with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / 'hashes').open() as file:
+                hashes = tuple(file.readlines())
+        except FileNotFoundError:
+            raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
 
         return cls(
             map_id = map_id,
@@ -40,7 +43,7 @@ class MapResult:
 
     @property
     def map_dir(self):
-        return settings.HTMAP_DIR / self.map_id
+        return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / self.map_id
 
     @property
     def inputs_dir(self):
@@ -320,7 +323,7 @@ class HTMapper:
 
     def _mkdirs(self, map_id: str):
         """Create the various directories needed by the mapper."""
-        for path in (settings.HTMAP_DIR / map_id / dir_name for dir_name in self.map_dir_names):
+        for path in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / dir_name for dir_name in self.map_dir_names):
             path.mkdir(parents = True, exist_ok = True)
 
     def __repr__(self):
@@ -360,7 +363,7 @@ class HTMapper:
         return MapBuilder(mapper = self, map_id = map_id)
 
     def _check_map_id(self, map_id: str):
-        if (settings.HTMAP_DIR / map_id).exists():
+        if (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id).exists():
             raise exceptions.MapIDAlreadyExists('that map_id already exists')
 
     def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> MapResult:
@@ -368,7 +371,7 @@ class HTMapper:
 
         self._mkdirs(map_id)
 
-        fn_path = settings.HTMAP_DIR / map_id / 'fn.pkl'
+        fn_path = settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / 'fn.pkl'
         htio.save_object(self.func, fn_path)
 
         hashes = []
@@ -377,16 +380,16 @@ class HTMapper:
             h = htio.hash_bytes(b)
             hashes.append(h)
 
-            input_path = settings.HTMAP_DIR / map_id / 'inputs' / f'{h}.in'
+            input_path = settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / 'inputs' / f'{h}.in'
             htio.save_bytes(b, input_path)
 
         submit_dict = {
             'JobBatchName': map_id,
             'executable': str(Path(__file__).parent / 'run' / 'run.sh'),
             'arguments': '$(Item)',
-            'log': str(settings.HTMAP_DIR / map_id / 'cluster_logs' / '$(ClusterId).log'),
-            'output': str(settings.HTMAP_DIR / map_id / 'job_logs' / '$(Item).output'),
-            'error': str(settings.HTMAP_DIR / map_id / 'job_logs' / '$(Item).error'),
+            'log': str(settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'cluster_logs' / '$(ClusterId).log'),
+            'output': str(settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'job_logs' / '$(Item).output'),
+            'error': str(settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'job_logs' / '$(Item).error'),
             'should_transfer_files': 'YES',
             'when_to_transfer_output': 'ON_EXIT',
             'request_cpus': '1',
@@ -395,10 +398,10 @@ class HTMapper:
             'transfer_input_files': ','.join([
                 'http://proxy.chtc.wisc.edu/SQUID/karpel/htmap.tar.gz',
                 str(Path(__file__).parent / 'run' / 'run.py'),
-                str(settings.HTMAP_DIR / map_id / 'inputs' / '$(Item).in'),
+                str(settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'inputs' / '$(Item).in'),
                 str(fn_path),
             ]), 'transfer_output_remaps': '"' + ';'.join([
-                f'$(Item).out={settings.HTMAP_DIR / map_id / "outputs" / "$(Item).out"}',
+                f'$(Item).out={settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / "outputs" / "$(Item).out"}',
             ]) + '"'
         }
         sub = htcondor.Submit(submit_dict)
@@ -409,10 +412,10 @@ class HTMapper:
 
             cluster_id = submit_result.cluster()
 
-            with (settings.HTMAP_DIR / map_id / 'cluster_id').open(mode = 'w') as file:
+            with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'cluster_id').open(mode = 'w') as file:
                 file.write(str(cluster_id))
 
-            with (settings.HTMAP_DIR / map_id / 'hashes').open(mode = 'w') as file:
+            with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'hashes').open(mode = 'w') as file:
                 file.writelines(hashes)
 
             return MapResult(
@@ -420,32 +423,6 @@ class HTMapper:
                 cluster_id = cluster_id,
                 hashes = hashes,
             )
-
-    # def clean(self) -> (int, int):
-    #     outs = (
-    #         self.clean_inputs(),
-    #         self.clean_outputs(),
-    #         self.clean_job_logs(),
-    #         self.clean_cluster_logs(),
-    #     )
-    #
-    #     num_files = sum(o[0] for o in outs)
-    #     num_bytes = sum(o[1] for o in outs)
-    #
-    #     return num_files, num_bytes
-    #
-    # def clean_inputs(self) -> (int, int):
-    #     return utils.clean_dir(self.inputs_dir)
-    #
-    # def clean_outputs(self) -> (int, int):
-    #     return utils.clean_dir(self.outputs_dir)
-    #
-    # def clean_job_logs(self) -> (int, int):
-    #     return utils.clean_dir(self.job_logs_dir)
-    #
-    # def clean_cluster_logs(self) -> (int, int):
-    #     return utils.clean_dir(self.cluster_logs_dir)
-    #
 
 
 def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):

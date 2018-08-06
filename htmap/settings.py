@@ -37,6 +37,7 @@ class DotMap(dict):
 
 DEFAULT_SETTINGS = DotMap(
     HTMAP_DIR = Path.home() / '.htmap',
+    MAPS_DIR_NAME = 'maps',
 )
 
 USER_SETTINGS_PATH = Path.home() / '.htmap.toml'
