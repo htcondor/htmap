@@ -467,16 +467,13 @@ def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):
         yield tuple(values)
 
 
-def htmap(**submit_options) -> Union[Callable, HTMapper]:
+def htmap(*args, **submit_options) -> Union[Callable, HTMapper]:
     """
-    A function decorator that wraps a function in an :class:`HTMapper`,
+    A decorator that wraps a function in an :class:`HTMapper`,
     which provides an interface for mapping functions calls out to an HTCondor cluster.
 
     Parameters
     ----------
-    name
-        An optional name for the mapper.
-        If not given, defaults to the name of the mapped function.
 
     Returns
     -------
@@ -491,7 +488,7 @@ def htmap(**submit_options) -> Union[Callable, HTMapper]:
         return HTMapper(func)
 
     # support calling without extra parens
-    if len(submit_options) == 0:
-        return wrapper(submit_options)
+    if len(args) == 1:
+        return wrapper(args[0])
 
     return wrapper
