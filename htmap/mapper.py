@@ -27,10 +27,10 @@ class MapResult:
     def recover(cls, map_id: str):
         """Reconstruct a :class:`MapResult` from its ``map_id``."""
         try:
-            with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / 'cluster_id').open() as file:
+            with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'cluster_id').open() as file:
                 cluster_id = file.read()
 
-            with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / 'hashes').open() as file:
+            with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'hashes').open() as file:
                 hashes = tuple(file.readlines())
         except FileNotFoundError:
             raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
@@ -43,7 +43,7 @@ class MapResult:
 
     @property
     def map_dir(self):
-        return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / self.map_id
+        return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / self.map_id
 
     @property
     def inputs_dir(self):
@@ -323,7 +323,7 @@ class HTMapper:
 
     def _mkdirs(self, map_id: str):
         """Create the various directories needed by the mapper."""
-        for path in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / dir_name for dir_name in self.map_dir_names):
+        for path in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / dir_name for dir_name in self.map_dir_names):
             path.mkdir(parents = True, exist_ok = True)
 
     def __repr__(self):
@@ -363,7 +363,7 @@ class HTMapper:
         return MapBuilder(mapper = self, map_id = map_id)
 
     def _check_map_id(self, map_id: str):
-        if (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id).exists():
+        if (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id).exists():
             raise exceptions.MapIDAlreadyExists('that map_id already exists')
 
     def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> MapResult:
@@ -371,7 +371,7 @@ class HTMapper:
 
         self._mkdirs(map_id)
 
-        fn_path = settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / 'fn.pkl'
+        fn_path = settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'fn.pkl'
         htio.save_object(self.func, fn_path)
 
         hashes = []
@@ -380,7 +380,7 @@ class HTMapper:
             h = htio.hash_bytes(b)
             hashes.append(h)
 
-            input_path = settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / map_id / 'inputs' / f'{h}.in'
+            input_path = settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'inputs' / f'{h}.in'
             htio.save_bytes(b, input_path)
 
         submit_dict = {
