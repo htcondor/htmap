@@ -2,36 +2,8 @@ from typing import Optional, Union
 
 import time
 import datetime
-from pathlib import Path
 
 from . import exceptions
-
-
-def clean_dir(target_dir: Path) -> (int, int):
-    """
-    Remove the contents of the given directory `target_dir`.
-
-    Parameters
-    ----------
-    target_dir
-        The directory to clean up.
-
-    Returns
-    -------
-    (num_files, num_bytes)
-        The number of files and bytes that were deleted.
-    """
-    num_files = 0
-    num_bytes = 0
-    for path in target_dir.iterdir():
-        stat = path.stat()
-
-        path.unlink()
-
-        num_files += 1
-        num_bytes += stat.st_size
-
-    return num_files, num_bytes
 
 
 def wait_for_path_to_exist(

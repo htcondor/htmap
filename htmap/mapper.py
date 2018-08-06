@@ -13,49 +13,6 @@ from . import htio, utils
 from .settings import settings
 from . import exceptions
 
-
-def map(func: Callable, args, **kwargs) -> 'MapResult':
-    return htmap(func).map(args, **kwargs)
-
-
-def productmap(func: Callable, *args, **kwargs) -> 'MapResult':
-    return htmap(func).productmap(*args, **kwargs)
-
-
-def starmap(func: Callable, args, kwargs) -> 'MapResult':
-    return htmap(func).starmap(args, kwargs)
-
-
-def build_job(func: Callable) -> 'JobBuilder':
-    return htmap(func).build_job()
-
-
-def htmap() -> Union[Callable, 'HTMapper']:
-    """
-    A function decorator that wraps a function in an :class:`HTMapper`,
-    which provides an interface for mapping functions calls out to an HTCondor cluster.
-
-    Parameters
-    ----------
-    name
-        An optional name for the mapper.
-        If not given, defaults to the name of the mapped function.
-
-    Returns
-    -------
-    mapper
-        An :class:`HTMapper` that wraps the function (or a wrapper function that does the wrapping).
-    """
-
-    def wrapper(func: Callable) -> HTMapper:
-        if isinstance(func, HTMapper):
-            func = func.func
-
-        return HTMapper(func)
-
-    return wrapper
-
-
 IndexOrHash = Union[int, str]
 
 
@@ -68,6 +25,7 @@ class MapResult:
 
     @classmethod
     def recover(cls, map_id: str):
+        """Reconstruct a :class:`MapResult` from its ``map_id``."""
         with (settings.HTMAP_DIR / map_id / 'cluster_id') as file:
             cluster_id = file.read()
 
@@ -253,15 +211,17 @@ class MapResult:
         return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')
 
     def remove(self):
-        """Remove the map job and delete all associated input and output files."""
+        """Remove the map jobs and delete all associated input and output files."""
         act_result = self.act(htcondor.JobAction.Remove)
         shutil.rmtree(self.map_dir)
         return act_result
 
     def hold(self):
+        """Remove the map jobs from the queue until they are released."""
         return self.act(htcondor.JobAction.Hold)
 
     def release(self):
+        """Releases held map jobs back into the queue."""
         return self.act(htcondor.JobAction.Release)
 
     def pause(self):
@@ -271,6 +231,7 @@ class MapResult:
         return self.act(htcondor.JobAction.Continue)
 
     def vacate(self):
+        """Force map jobs to give up their currently claimed execute nodes."""
         return self.act(htcondor.JobAction.Vacate)
 
     def iter_output(self, item: IndexOrHash) -> Iterable[str]:
@@ -283,10 +244,12 @@ class MapResult:
         with (self.map_dir / 'job_logs' / f'{h}.error').open() as file:
             yield from file
 
-    def output(self, item: IndexOrHash):
+    def output(self, item: IndexOrHash) -> str:
+        """Return the stdout of a completed map job."""
         return ''.join(self.iter_output(item))
 
-    def error(self, item: IndexOrHash):
+    def error(self, item: IndexOrHash) -> str:
+        """Return the stderr of a completed map job."""
         return ''.join(self.iter_error(item))
 
     def tail(self):
@@ -302,7 +265,7 @@ class MapResult:
                     print(line, end = '')
 
 
-class JobBuilder:
+class MapBuilder:
     def __init__(self, mapper: 'HTMapper', map_id: str):
         self.mapper = mapper
         self.map_id = map_id
@@ -329,8 +292,8 @@ class JobBuilder:
     @property
     def result(self) -> MapResult:
         """
-        The :class:`MapResult` associated with this :class:`JobBuilder`.
-        Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`JobBuilder` completes.
+        The :class:`MapResult` associated with this :class:`MapBuilder`.
+        Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
         """
         if self._result is None:
             raise exceptions.NoResultYet('result does not exist until after with block')
@@ -393,8 +356,8 @@ class HTMapper:
         args_and_kwargs = zip_args_and_kwargs(args, kwargs)
         return self._map(map_id, args_and_kwargs)
 
-    def build_job(self, map_id: str):
-        return JobBuilder(mapper = self, map_id = map_id)
+    def build_map(self, map_id: str):
+        return MapBuilder(mapper = self, map_id = map_id)
 
     def _check_map_id(self, map_id: str):
         if (settings.HTMAP_DIR / map_id).exists():
@@ -502,3 +465,33 @@ def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):
                 value = fills[i]
             values.append(value)
         yield tuple(values)
+
+
+def htmap(**submit_options) -> Union[Callable, HTMapper]:
+    """
+    A function decorator that wraps a function in an :class:`HTMapper`,
+    which provides an interface for mapping functions calls out to an HTCondor cluster.
+
+    Parameters
+    ----------
+    name
+        An optional name for the mapper.
+        If not given, defaults to the name of the mapped function.
+
+    Returns
+    -------
+    mapper
+        An :class:`HTMapper` that wraps the function (or a wrapper function that does the wrapping).
+    """
+
+    def wrapper(func: Callable) -> HTMapper:
+        if isinstance(func, HTMapper):
+            func = func.func
+
+        return HTMapper(func)
+
+    # support calling without extra parens
+    if len(submit_options) == 0:
+        return wrapper(submit_options)
+
+    return wrapper

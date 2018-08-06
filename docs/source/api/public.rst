@@ -17,7 +17,7 @@ The mapper can distribute (i.e., map) function calls out over an HTCondor cluste
 .. autoclass:: htmap.HTMapper
    :members:
 
-.. autoclass:: htmap.JobBuilder
+.. autoclass:: htmap.MapBuilder
    :members:
 
 Module-Level Shortcut Functions
@@ -32,7 +32,9 @@ You can call these functions on your function, along with your inputs, to get ba
 
 .. autofunction:: htmap.productmap
 
-.. autofunction:: htmap.build_job
+.. autofunction:: htmap.build_map
+
+.. autofunction:: htmap.recover
 
 MapResult
 ---------

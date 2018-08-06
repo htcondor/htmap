@@ -19,7 +19,7 @@ class OutputNotFound(HTMapException):
 
 
 class NoResultYet(HTMapException):
-    """The :class:`htmap.JobBuilder` does not have an associated :class:`htmap.MapResult` yet."""
+    """The :class:`htmap.MapBuilder` does not have an associated :class:`htmap.MapResult` yet."""
     pass
 
 
