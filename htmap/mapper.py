@@ -26,7 +26,7 @@ class MapResult:
     @classmethod
     def recover(cls, map_id: str):
         """Reconstruct a :class:`MapResult` from its ``map_id``."""
-        with (settings.HTMAP_DIR / map_id / 'cluster_id') as file:
+        with (settings.HTMAP_DIR / map_id / 'cluster_id').open() as file:
             cluster_id = file.read()
 
         with (settings.HTMAP_DIR / map_id / 'hashes').open() as file:
@@ -361,7 +361,7 @@ class HTMapper:
 
     def _check_map_id(self, map_id: str):
         if (settings.HTMAP_DIR / map_id).exists():
-            raise exceptions.MapIDAlreadyExists('that mapid already exists')
+            raise exceptions.MapIDAlreadyExists('that map_id already exists')
 
     def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> MapResult:
         self._check_map_id(map_id)
