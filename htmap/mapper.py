@@ -31,7 +31,7 @@ class MapResult:
                 cluster_id = file.read()
 
             with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'hashes').open() as file:
-                hashes = tuple(file.readlines())
+                hashes = (h.strip() for h in file)
         except FileNotFoundError:
             raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
 
@@ -364,7 +364,7 @@ class HTMapper:
 
     def _check_map_id(self, map_id: str):
         if (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id).exists():
-            raise exceptions.MapIDAlreadyExists('that map_id already exists')
+            raise exceptions.MapIDAlreadyExists(f'the map_id {map_id} already exists')
 
     def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> MapResult:
         self._check_map_id(map_id)
@@ -416,7 +416,7 @@ class HTMapper:
                 file.write(str(cluster_id))
 
             with (settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id / 'hashes').open(mode = 'w') as file:
-                file.writelines(hashes)
+                file.write('\n'.join(hashes))
 
             return MapResult(
                 map_id = map_id,
