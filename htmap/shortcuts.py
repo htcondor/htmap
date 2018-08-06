@@ -1,8 +1,6 @@
-from typing import Callable, Iterable, Tuple
+from typing import Callable
 
-import shutil
-
-from . import mapper, settings
+from . import mapper
 
 
 def map(map_id: str, func: Callable, args, **kwargs) -> mapper.MapResult:
@@ -23,15 +21,3 @@ def build_map(map_id: str, func: Callable) -> mapper.MapBuilder:
 
 def recover(map_id: str) -> mapper.MapResult:
     return mapper.MapResult.recover(map_id)
-
-
-def clean():
-    for dir in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME).iterdir():
-        try:
-            shutil.rmtree(dir)
-        except FileNotFoundError:
-            pass
-
-
-def maps() -> Tuple[str]:
-    return tuple(path.stem for path in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME).iterdir())
