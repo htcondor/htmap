@@ -1,4 +1,4 @@
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Tuple
 
 import shutil
 
@@ -30,5 +30,5 @@ def clean():
         shutil.rmtree(dir)
 
 
-def maps() -> Iterable[str]:
-    yield from (path for path in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME).iterdir())
+def maps() -> Tuple[str]:
+    return tuple(path.stem for path in (settings.HTMAP_DIR / settings.MAPS_DIR_NAME).iterdir())
