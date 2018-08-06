@@ -117,6 +117,9 @@ class MapResult:
         def is_missing_hashes():
             output_hashes = set(f.stem for f in self.outputs_dir.iterdir())
             missing_hashes = self.hash_set - output_hashes
+            print(output_hashes)
+            print(missing_hashes)
+            print()
             return len(missing_hashes) != 0
 
         while is_missing_hashes():
