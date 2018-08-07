@@ -10,7 +10,7 @@ import itertools
 from copy import deepcopy, copy
 
 import htcondor
-from tqdm.autonotebook import tqdm
+from tqdm import tqdm
 
 from . import htio, utils
 from .settings import settings
@@ -145,7 +145,7 @@ class MapResult:
     def wait(
         self,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
-        show_progress_bar = False,
+        show_progress_bar: bool = False,
     ):
         """
         Wait until all output associated with this :class:`MapResult` is available.
@@ -153,25 +153,39 @@ class MapResult:
         Parameters
         ----------
         timeout
+        show_progress_bar
         """
         start_time = time.time()
         if isinstance(timeout, datetime.timedelta):
             timeout = timeout.total_seconds()
 
         if show_progress_bar:
-            pbar = tqdm(total = len(self))
+            pbar = tqdm(
+                total = len(self),
+                unit = '',
+                ncols = 40,
+            )
+
+        previous = 0
 
         def is_missing_hashes():
+            nonlocal previous
             output_hashes = set(f.stem for f in self.outputs_dir.iterdir())
             missing_hashes = self.hash_set - output_hashes
+
+            l = len(missing_hashes)
             if show_progress_bar:
-                pbar.update(len(self) - len(missing_hashes))
-            return len(missing_hashes) != 0
+                pbar.update(len(self) - len(missing_hashes) - previous)
+            previous = l
+            return l != 0
 
         while is_missing_hashes():
             if timeout is not None and time.time() - timeout > start_time:
                 raise exceptions.TimeoutError(f'timeout while waiting for {self}')
             time.sleep(1)
+
+        if show_progress_bar:
+            pbar.close()
 
     def __iter__(self) -> Iterable[Any]:
         yield from self.iter()
