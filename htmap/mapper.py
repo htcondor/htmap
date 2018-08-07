@@ -85,24 +85,24 @@ class MapResult:
         return len(self.hashes)
 
     @property
-    def map_dir(self) -> Path:
+    def _map_dir(self) -> Path:
         return map_dir_path(self.map_id)
 
     @property
-    def inputs_dir(self) -> Path:
-        return self.map_dir / 'inputs'
+    def _inputs_dir(self) -> Path:
+        return self._map_dir / 'inputs'
 
     @property
-    def outputs_dir(self) -> Path:
-        return self.map_dir / 'outputs'
+    def _outputs_dir(self) -> Path:
+        return self._map_dir / 'outputs'
 
     @property
     def _input_file_paths(self):
-        yield from (self.inputs_dir / f'{h}.in' for h in self.hashes)
+        yield from (self._inputs_dir / f'{h}.in' for h in self.hashes)
 
     @property
     def _output_file_paths(self):
-        yield from (self.outputs_dir / f'{h}.out' for h in self.hashes)
+        yield from (self._outputs_dir / f'{h}.out' for h in self.hashes)
 
     def __repr__(self):
         return f'{self.__class__.__name__}(map_id = {self.map_id})'
@@ -130,7 +130,7 @@ class MapResult:
         if h not in self.hash_set:
             raise exceptions.HashNotInResult(f'hash {h} is not in this result')
 
-        path = self.outputs_dir / f'{h}.out'
+        path = self._outputs_dir / f'{h}.out'
 
         try:
             utils.wait_for_path_to_exist(path, timeout)
@@ -173,7 +173,7 @@ class MapResult:
         expected_num_hashes = len(self)
 
         while True:
-            output_hashes = set(f.stem for f in self.outputs_dir.iterdir())
+            output_hashes = set(f.stem for f in self._outputs_dir.iterdir())
             missing_hashes = self.hash_set - output_hashes
 
             num_missing_hashes = len(missing_hashes)
@@ -323,7 +323,7 @@ class MapResult:
     def remove(self):
         """Remove the map jobs and delete all associated input and output files."""
         act_result = self.act(htcondor.JobAction.Remove)
-        shutil.rmtree(self.map_dir)
+        shutil.rmtree(self._map_dir)
         return act_result
 
     def hold(self):
@@ -346,12 +346,12 @@ class MapResult:
 
     def iter_output(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
-        with (self.map_dir / 'job_logs' / f'{h}.output').open() as file:
+        with (self._map_dir / 'job_logs' / f'{h}.output').open() as file:
             yield from file
 
     def iter_error(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
-        with (self.map_dir / 'job_logs' / f'{h}.error').open() as file:
+        with (self._map_dir / 'job_logs' / f'{h}.error').open() as file:
             yield from file
 
     def output(self, item: IndexOrHash) -> str:
@@ -363,7 +363,7 @@ class MapResult:
         return ''.join(self.iter_error(item))
 
     def tail(self):
-        with (self.map_dir / 'cluster_logs' / f'{self.cluster_id}.log').open() as file:
+        with (self._map_dir / 'cluster_logs' / f'{self.cluster_id}.log').open() as file:
             file.seek(0, 2)
             while True:
                 current = file.tell()
@@ -418,7 +418,7 @@ class MapBuilder:
 
 
 class HTMapper:
-    map_dir_names = (
+    _map_dir_names = (
         'inputs',
         'outputs',
         'job_logs',
@@ -431,7 +431,7 @@ class HTMapper:
 
     def _mkdirs(self, map_id: str):
         """Create the various directories needed by the mapper."""
-        for path in (map_dir_path(map_id) / dir_name for dir_name in self.map_dir_names):
+        for path in (map_dir_path(map_id) / dir_name for dir_name in self._map_dir_names):
             path.mkdir(parents = True, exist_ok = True)
 
     def __repr__(self):
@@ -492,6 +492,9 @@ class HTMapper:
             input_path = map_dir / 'inputs' / f'{h}.in'
             htio.save_bytes(b, input_path)
 
+        with (map_dir / 'hashes').open(mode = 'w') as file:
+            file.write('\n'.join(hashes))
+
         submit_dict = {
             'JobBatchName': map_id,
             'executable': str(Path(__file__).parent / 'run' / 'run.sh'),
@@ -515,22 +518,27 @@ class HTMapper:
         }
         sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
 
+        return self._submit(
+            map_id = map_id,
+            map_dir = map_dir,
+            submit_object = sub,
+            input_hashes = hashes,
+        )
+
+    def _submit(self, map_id, map_dir, submit_object, input_hashes) -> MapResult:
         schedd = htcondor.Schedd()
         with schedd.transaction() as txn:
-            submit_result = sub.queue_with_itemdata(txn, 1, iter(hashes))
+            submit_result = submit_object.queue_with_itemdata(txn, 1, iter(input_hashes))
 
             cluster_id = submit_result.cluster()
 
             with (map_dir / 'cluster_id').open(mode = 'w') as file:
                 file.write(str(cluster_id))
 
-            with (map_dir / 'hashes').open(mode = 'w') as file:
-                file.write('\n'.join(hashes))
-
             return MapResult(
                 map_id = map_id,
                 cluster_id = cluster_id,
-                hashes = hashes,
+                hashes = input_hashes,
             )
 
 
