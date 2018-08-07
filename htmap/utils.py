@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Iterable, Any
 
 import time
 import datetime
@@ -60,3 +60,50 @@ def temporary_cache(timeout: Optional[Union[int, datetime.timedelta]] = None):
         return wrapper
 
     return decorator
+
+
+def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
+    """
+    Return a string containing a simple table created from headers and rows of entries.
+
+    Parameters
+    ----------
+    headers
+        The column headers for the table.
+    rows
+        The entries for each row, for each column.
+        Should be an iterable of iterables, with the outer level containing the rows, and each inner iterable containing the entries for each column.
+        A ``None`` in the outer iterable produces a horizontal bar at that position.
+
+    Returns
+    -------
+    table
+        A string containing the table.
+    """
+    lengths = [len(h) for h in headers]
+    rows = [[str(entry) for entry in row] if row is not None else None for row in rows]
+    for row in rows:
+        if row is None:
+            continue
+
+        lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
+
+    header = ' ' + ' │ '.join(h.center(l) for h, l in zip(headers, lengths)) + ' '
+    bar = ''.join('─' if char != '│' else '┼' for char in header)
+    bottom_bar = bar.replace('┼', '┴')
+
+    lines = []
+    for row in rows:
+        if row is None:
+            lines.append(bar)
+        else:
+            lines.append(' ' + ' │ '.join(f.center(l) for f, l in zip(row, lengths)))
+
+    output = '\n'.join((
+        header,
+        bar,
+        *lines,
+        bottom_bar,
+    ))
+
+    return output

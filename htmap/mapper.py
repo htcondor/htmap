@@ -252,11 +252,11 @@ class MapResult:
         return collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
 
     def status(self):
-        msg = [f'Map {self.map_id} ({len(self)} inputs)']
         counts = self._status_counts()
-        msg.extend(f'{js}: {counts[js]}' for js in JobStatus)
+        stat = ' | '.join(f'{js} = {counts[js]}' for js in JobStatus)
+        msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
 
-        return '\n'.join(msg)
+        return msg
 
     def act(self, action: htcondor.JobAction):
         return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')

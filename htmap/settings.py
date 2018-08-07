@@ -38,7 +38,7 @@ class DotMap(dict):
 
 DEFAULT_SETTINGS = DotMap(
     HTMAP_DIR = Path.home() / '.htmap',
-    MAPS_DIR_NAME = 'maps',
+    MAPS_DIR_NAME = 'map_ids',
     TEMPORARY_CACHE_TIMEOUT = datetime.timedelta(seconds = 10),
 )
 
