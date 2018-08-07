@@ -62,6 +62,11 @@ def temporary_cache(timeout: Optional[Union[int, datetime.timedelta]] = None):
     return decorator
 
 
+class rstr(str):
+    def __repr__(self):
+        return self.__str__()
+
+
 def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
@@ -106,4 +111,4 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
         bottom_bar,
     ))
 
-    return output
+    return rstr(output)

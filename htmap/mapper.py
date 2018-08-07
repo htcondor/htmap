@@ -251,7 +251,6 @@ class MapResult:
             projection = []
 
         requirements = f'ClusterId=={self.cluster_id}' + (f' && {requirements}' if requirements is not None else '')
-        print(requirements)
         yield from htcondor.Schedd().xquery(
             requirements = requirements,
             projection = projection,
@@ -275,7 +274,7 @@ class MapResult:
         stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in JobStatus.display_statuses())
         msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
 
-        return msg
+        return utils.rstr(msg)
 
     def hold_reasons(self) -> str:
         query = self.query(
