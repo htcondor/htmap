@@ -454,7 +454,7 @@ class HTMapper:
                 f'$(Item).out={map_dir / "outputs" / "$(Item).out"}',
             ]) + '"'
         }
-        sub = htcondor.Submit(**collections.ChainMap(self.submit_options, submit_dict))
+        sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
 
         schedd = htcondor.Schedd()
         with schedd.transaction() as txn:
