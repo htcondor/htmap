@@ -240,13 +240,20 @@ class MapResult:
                 yield inp, out
             time.sleep(1)
 
-    def query(self, requirements: Optional[str] = None, projection: Optional[List[str]] = None):
+    def query(
+        self,
+        requirements: Optional[str] = None,
+        projection: Optional[List[str]] = None,
+    ) -> Iterator[htcondor.ClassAd]:
         if self.cluster_id is None:
             yield from ()
         if projection is None:
             projection = []
+
+        requirements = f'ClusterId=={self.cluster_id}' + (f' && {requirements}' if requirements is not None else '')
+        print(requirements)
         yield from htcondor.Schedd().xquery(
-            requirements = f'ClusterId=={self.cluster_id}' + (f'&& {requirements}' if requirements is not None else ''),
+            requirements = requirements,
             projection = projection,
         )
 
@@ -265,7 +272,7 @@ class MapResult:
 
     def status(self):
         counts = self._status_counts()
-        stat = ' | '.join(f'{js} = {counts[js]}' for js in JobStatus.display_statuses)
+        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in JobStatus.display_statuses)
         msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
 
         return msg
