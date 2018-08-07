@@ -261,7 +261,7 @@ class MapResult:
 
     @utils.temporary_cache()
     def _status_counts(self) -> collections.Counter:
-        query = self.query(['JobStatus'])
+        query = self.query(projection = ['JobStatus'])
         counter = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
 
         # if the job has fully completed, we'll get zero for everything
