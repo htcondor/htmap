@@ -35,6 +35,9 @@ def status() -> str:
         headers = ['Map ID'] + [str(d) for d in display],
         rows = [
             [map_id] + [count[d] for d in display]
-            for map_id, count in zip(maps, counts)
+            for map_id, count in sorted(
+                zip(maps, counts),
+                key = lambda mc: mc[1][mapper.JobStatus.RUNNING],
+            )
         ],
     )
