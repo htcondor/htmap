@@ -161,9 +161,11 @@ class MapResult:
 
         if show_progress_bar:
             pbar = tqdm(
+                desc = self.map_id,
                 total = len(self),
-                unit = '',
+                unit = 'input',
                 ncols = 80,
+                ascii = True,
             )
 
             previous_pbar_len = 0
