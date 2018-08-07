@@ -25,9 +25,9 @@ def status() -> str:
     counts = [result._status_counts() for result in results]
 
     return utils.table(
-        headers = ['Map ID'] + [str(d) for d in mapper.JobStatus.display_statuses],
+        headers = ['Map ID'] + [str(d) for d in mapper.JobStatus.display_statuses()],
         rows = [
-            [map_id] + [count[d] for d in mapper.JobStatus.display_statuses]
+            [map_id] + [count[d] for d in mapper.JobStatus.display_statuses()]
             for map_id, count in sorted(
                 zip(maps, counts),
                 key = lambda mc: mc[1][mapper.JobStatus.RUNNING],

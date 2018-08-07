@@ -34,13 +34,13 @@ class JobStatus(enum.IntEnum):
     def __str__(self):
         return JOB_STATUS_STRINGS[self]
 
-    @property
-    def display_statuses(self) -> Tuple['JobStatus', ...]:
+    @classmethod
+    def display_statuses(cls) -> Tuple['JobStatus', ...]:
         return (
-            self.HELD,
-            self.IDLE,
-            self.RUNNING,
-            self.COMPLETED,
+            cls.HELD,
+            cls.IDLE,
+            cls.RUNNING,
+            cls.COMPLETED,
         )
 
 
@@ -272,7 +272,7 @@ class MapResult:
 
     def status(self):
         counts = self._status_counts()
-        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in JobStatus.display_statuses)
+        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in JobStatus.display_statuses())
         msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
 
         return msg
