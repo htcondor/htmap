@@ -34,6 +34,15 @@ class JobStatus(enum.IntEnum):
     def __str__(self):
         return JOB_STATUS_STRINGS[self]
 
+    @property
+    def display_statuses(self) -> Tuple['JobStatus', ...]:
+        return (
+            self.HELD,
+            self.IDLE,
+            self.RUNNING,
+            self.COMPLETED,
+        )
+
 
 JOB_STATUS_STRINGS = {
     JobStatus.IDLE: 'Idle',
@@ -231,13 +240,13 @@ class MapResult:
                 yield inp, out
             time.sleep(1)
 
-    def query(self, projection: Optional[List[str]] = None):
+    def query(self, requirements: Optional[str] = None, projection: Optional[List[str]] = None):
         if self.cluster_id is None:
             yield from ()
         if projection is None:
             projection = []
         yield from htcondor.Schedd().xquery(
-            requirements = f'ClusterId=={self.cluster_id}',
+            requirements = f'ClusterId=={self.cluster_id}' + (f'&& {requirements}' if requirements is not None else ''),
             projection = projection,
         )
 
@@ -249,17 +258,31 @@ class MapResult:
         counter = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
 
         # if the job has fully completed, we'll get zero for everything
-        # so make sure everything is really completed
+        # so make sure the total makes sense
         counter[JobStatus.COMPLETED] += len(self) - sum(counter.values())
 
         return counter
 
     def status(self):
         counts = self._status_counts()
-        stat = ' | '.join(f'{js} = {counts[js]}' for js in JobStatus)
+        stat = ' | '.join(f'{js} = {counts[js]}' for js in JobStatus.display_statuses)
         msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
 
         return msg
+
+    def hold_reasons(self) -> str:
+        query = self.query(
+            requirements = f'JobStatus=={JobStatus.HELD}',
+            projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
+        )
+
+        return utils.table(
+            headers = ['Input Index', 'Hold Reason Code', 'Hold Reason'],
+            rows = [
+                [classad['ProcId'], classad['HoldReasonCode'], classad['HoldReason']]
+                for classad in query
+            ]
+        )
 
     def act(self, action: htcondor.JobAction):
         return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')
