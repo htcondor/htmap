@@ -8,11 +8,6 @@ class MissingSetting(HTMapException):
     pass
 
 
-class HashNotInResult(HTMapException):
-    """The given hash is not in this :class:`htmap.MapResult`."""
-    pass
-
-
 class OutputNotFound(HTMapException):
     """The output file that was requested does not exist."""
     pass

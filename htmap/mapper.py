@@ -16,8 +16,6 @@ from . import htio, utils
 from .settings import settings
 from . import exceptions
 
-IndexOrHash = Union[int, str]
-
 
 def map_dir_path(map_id: str) -> Path:
     return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id
@@ -107,19 +105,17 @@ class MapResult:
     def __repr__(self):
         return f'{self.__class__.__name__}(map_id = {self.map_id})'
 
-    def _item_to_hash(self, item: IndexOrHash) -> str:
-        """Return the hash associated with an index, or pass a hash through."""
-        if isinstance(item, int):
-            return self.hashes[item]
-        return item
+    def _item_to_hash(self, item: int) -> str:
+        """Return the hash associated with an input index."""
+        return self.hashes[item]
 
-    def __getitem__(self, item: IndexOrHash) -> Any:
+    def __getitem__(self, item: int) -> Any:
         """Non-Blocking get."""
         return self.get(item, timeout = 0)
 
     def get(
         self,
-        item: IndexOrHash,
+        item: int,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Any:
         """Blocking get with timeout."""
@@ -127,9 +123,6 @@ class MapResult:
             timeout = timeout.total_seconds()
 
         h = self._item_to_hash(item)
-        if h not in self.hash_set:
-            raise exceptions.HashNotInResult(f'hash {h} is not in this result')
-
         path = self._outputs_dir / f'{h}.out'
 
         try:
@@ -344,21 +337,21 @@ class MapResult:
         """Force map jobs to give up their currently claimed execute nodes."""
         return self.act(htcondor.JobAction.Vacate)
 
-    def iter_output(self, item: IndexOrHash) -> Iterable[str]:
+    def iter_output(self, item: int) -> Iterable[str]:
         h = self._item_to_hash(item)
         with (self._map_dir / 'job_logs' / f'{h}.output').open() as file:
             yield from file
 
-    def iter_error(self, item: IndexOrHash) -> Iterable[str]:
+    def iter_error(self, item: int) -> Iterable[str]:
         h = self._item_to_hash(item)
         with (self._map_dir / 'job_logs' / f'{h}.error').open() as file:
             yield from file
 
-    def output(self, item: IndexOrHash) -> str:
+    def output(self, item: int) -> str:
         """Return the stdout of a completed map job."""
         return ''.join(self.iter_output(item))
 
-    def error(self, item: IndexOrHash) -> str:
+    def error(self, item: int) -> str:
         """Return the stderr of a completed map job."""
         return ''.join(self.iter_error(item))
 
