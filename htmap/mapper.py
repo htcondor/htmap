@@ -163,7 +163,7 @@ class MapResult:
             pbar = tqdm(
                 total = len(self),
                 unit = '',
-                ncols = 40,
+                ncols = 80,
             )
 
             previous_pbar_len = 0
@@ -176,7 +176,7 @@ class MapResult:
 
             num_missing_hashes = len(missing_hashes)
             if show_progress_bar:
-                pbar_len = expected_num_hashes - num_missing_hashes - previous_pbar_len
+                pbar_len = expected_num_hashes - num_missing_hashes
                 pbar.update(pbar_len - previous_pbar_len)
                 previous_pbar_len = pbar_len
             if num_missing_hashes == 0:
