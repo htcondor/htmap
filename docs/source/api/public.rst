@@ -7,7 +7,7 @@ Public API
 
 
 HTMapper
----------
+--------
 
 The most powerful and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an `HTMapper`.
 The mapper can distribute (i.e., map) function calls out over an HTCondor cluster.
@@ -20,11 +20,26 @@ The mapper can distribute (i.e., map) function calls out over an HTCondor cluste
 .. autoclass:: htmap.MapBuilder
    :members:
 
-Module-Level Shortcut Functions
--------------------------------
 
-These functions provide module-level shortcuts to the mapping methods of :class:`HTMapper`.
-You can call these functions on your function, along with your inputs, to get back a :class:`MapResult` without having to see the :class:`HTMapper` in the middle.
+MapResult
+---------
+
+.. autoclass:: htmap.MapResult
+   :members:
+
+
+Management
+----------
+
+.. autofunction:: htmap.clean
+
+.. autofunction:: htmap.map_ids
+
+.. autofunction:: htmap.status
+
+
+Shortcut Functions
+-------------------------------
 
 .. autofunction:: htmap.map
 
@@ -36,11 +51,6 @@ You can call these functions on your function, along with your inputs, to get ba
 
 .. autofunction:: htmap.recover
 
-MapResult
----------
-
-.. autoclass:: htmap.MapResult
-   :members:
 
 Settings
 --------
@@ -53,5 +63,5 @@ Exceptions
 ----------
 
 .. automodule:: htmap.exceptions
-   :members: HTMapException, MissingSetting, HashNotInResult, OutputNotFound, NoResultYet, TimeoutError
+   :members:
 

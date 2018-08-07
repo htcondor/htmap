@@ -10,6 +10,7 @@ import itertools
 from copy import deepcopy, copy
 
 import htcondor
+from tqdm.autonotebook import tqdm
 
 from . import htio, utils
 from .settings import settings
@@ -144,6 +145,7 @@ class MapResult:
     def wait(
         self,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
+        show_progress_bar = False,
     ):
         """
         Wait until all output associated with this :class:`MapResult` is available.
@@ -156,9 +158,14 @@ class MapResult:
         if isinstance(timeout, datetime.timedelta):
             timeout = timeout.total_seconds()
 
+        if show_progress_bar:
+            pbar = tqdm(total = len(self))
+
         def is_missing_hashes():
             output_hashes = set(f.stem for f in self.outputs_dir.iterdir())
             missing_hashes = self.hash_set - output_hashes
+            if show_progress_bar:
+                pbar.update(len(self) - len(missing_hashes))
             return len(missing_hashes) != 0
 
         while is_missing_hashes():
@@ -276,6 +283,7 @@ class MapResult:
 
         return utils.rstr(msg)
 
+    @utils.temporary_cache()
     def hold_reasons(self) -> str:
         query = self.query(
             requirements = f'JobStatus=={JobStatus.HELD}',

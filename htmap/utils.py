@@ -63,6 +63,8 @@ def temporary_cache(timeout: Optional[Union[int, datetime.timedelta]] = None):
 
 
 class rstr(str):
+    """Identical to a normal Python string, except that it's __repr__ is its __str__, to make it work nicer in notebooks."""
+
     def __repr__(self):
         return self.__str__()
 
