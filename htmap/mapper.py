@@ -244,7 +244,7 @@ class MapResult:
         self,
         requirements: Optional[str] = None,
         projection: Optional[List[str]] = None,
-    ) -> Iterator[htcondor.ClassAd]:
+    ):
         if self.cluster_id is None:
             yield from ()
         if projection is None:
