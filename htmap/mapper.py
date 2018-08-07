@@ -150,9 +150,6 @@ class MapResult:
         def is_missing_hashes():
             output_hashes = set(f.stem for f in self.outputs_dir.iterdir())
             missing_hashes = self.hash_set - output_hashes
-            print(output_hashes)
-            print(missing_hashes)
-            print()
             return len(missing_hashes) != 0
 
         while is_missing_hashes():
@@ -249,7 +246,13 @@ class MapResult:
     @utils.temporary_cache()
     def _status_counts(self) -> collections.Counter:
         query = self.query(['JobStatus'])
-        return collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
+        counter = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
+
+        # if the job has fully completed, we'll get zero for everything
+        # so make sure everything is really completed
+        counter[JobStatus.COMPLETED] += len(self) - sum(counter.values())
+
+        return counter
 
     def status(self):
         counts = self._status_counts()

@@ -27,10 +27,14 @@ def status() -> str:
         mapper.JobStatus.COMPLETED,
     ]
 
-    results = [shortcuts.recover(map_id) for map_id in map_ids()]
+    maps = map_ids()
+    results = [shortcuts.recover(map_id) for map_id in maps]
     counts = [result._status_counts() for result in results]
 
     return utils.table(
-        headers = [str(d) for d in display],
-        rows = [[count[d] for d in display] for count in counts],
+        headers = ['Map ID'] + [str(d) for d in display],
+        rows = [
+            [map_id] + [count[d] for d in display]
+            for map_id, count in zip(maps, counts)
+        ],
     )
