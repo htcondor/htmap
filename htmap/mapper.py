@@ -168,21 +168,23 @@ class MapResult:
 
             previous_pbar_len = 0
 
-        def is_missing_hashes():
-            nonlocal previous
+        expected_num_hashes = len(self)
+
+        while True:
             output_hashes = set(f.stem for f in self.outputs_dir.iterdir())
             missing_hashes = self.hash_set - output_hashes
 
-            l = len(missing_hashes)
+            num_missing_hashes = len(missing_hashes)
             if show_progress_bar:
-                pbar_len = len(self) - l - previous
+                pbar_len = expected_num_hashes - num_missing_hashes - previous_pbar_len
                 pbar.update(pbar_len - previous_pbar_len)
                 previous_pbar_len = pbar_len
-            return l != 0
+            if num_missing_hashes == 0:
+                break
 
-        while is_missing_hashes():
             if timeout is not None and time.time() - timeout > start_time:
                 raise exceptions.TimeoutError(f'timeout while waiting for {self}')
+
             time.sleep(1)
 
         if show_progress_bar:
