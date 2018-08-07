@@ -166,7 +166,7 @@ class MapResult:
                 ncols = 40,
             )
 
-        previous = 0
+            previous_pbar_len = 0
 
         def is_missing_hashes():
             nonlocal previous
@@ -175,8 +175,9 @@ class MapResult:
 
             l = len(missing_hashes)
             if show_progress_bar:
-                pbar.update(len(self) - len(missing_hashes) - previous)
-            previous = l
+                pbar_len = len(self) - l - previous
+                pbar.update(pbar_len - previous_pbar_len)
+                previous_pbar_len = pbar_len
             return l != 0
 
         while is_missing_hashes():
