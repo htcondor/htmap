@@ -5,16 +5,20 @@ Private API
 
 .. highlight:: python
 
+
 HTCIO
 -----
 
 .. automodule:: htmap.htcio
    :members:
 
+
 Settings
 --------
 
-.. autoclass:: htmap.settings.DotMap
+.. automodule:: htmap.settings
+   :members:
+
 
 Utils
 -----

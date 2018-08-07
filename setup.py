@@ -8,7 +8,9 @@ setup(
     version = '0.1.0',
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
-    packages = find_packages(),
+    packages = find_packages(
+        exclude = ['tests'],
+    ),
     package_data = {
         '': ['*.sh'],
     },
@@ -16,5 +18,6 @@ setup(
         # 'htcondor>=8.7.9',
         'cloudpickle',
         'toml',
+        'tqdm',
     ]
 )

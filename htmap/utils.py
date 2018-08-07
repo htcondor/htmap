@@ -1,37 +1,10 @@
-from typing import Optional, Union
+from typing import Optional, Union, Iterable, Any
 
 import time
 import datetime
-from pathlib import Path
+import functools
 
-from . import exceptions
-
-
-def clean_dir(target_dir: Path) -> (int, int):
-    """
-    Remove the contents of the given directory `target_dir`.
-
-    Parameters
-    ----------
-    target_dir
-        The directory to clean up.
-
-    Returns
-    -------
-    (num_files, num_bytes)
-        The number of files and bytes that were deleted.
-    """
-    num_files = 0
-    num_bytes = 0
-    for path in target_dir.iterdir():
-        stat = path.stat()
-
-        path.unlink()
-
-        num_files += 1
-        num_bytes += stat.st_size
-
-    return num_files, num_bytes
+from . import settings, exceptions
 
 
 def wait_for_path_to_exist(
@@ -62,3 +35,82 @@ def wait_for_path_to_exist(
         if timeout is not None and (timeout == 0 or t > start_time + timeout):
             raise exceptions.TimeoutError(f'timeout while waiting for {path} to exist')
         time.sleep(wait_time)
+
+
+NEVER = object()
+
+
+def temporary_cache(timeout: Optional[Union[int, datetime.timedelta]] = None):
+    if isinstance(timeout, datetime.timedelta):
+        timeout = timeout.total_seconds()
+
+    def decorator(func):
+        last_call = NEVER
+        cached_value = None
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            nonlocal cached_value, last_call
+            t = timeout if timeout is not None else settings.TEMPORARY_CACHE_TIMEOUT
+            if last_call is NEVER or time.time() > last_call + t:
+                cached_value = func(*args, **kwargs)
+                last_call = time.time()
+            return cached_value
+
+        return wrapper
+
+    return decorator
+
+
+class rstr(str):
+    """Identical to a normal Python string, except that it's __repr__ is its __str__, to make it work nicer in notebooks."""
+
+    def __repr__(self):
+        return self.__str__()
+
+
+def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
+    """
+    Return a string containing a simple table created from headers and rows of entries.
+
+    Parameters
+    ----------
+    headers
+        The column headers for the table.
+    rows
+        The entries for each row, for each column.
+        Should be an iterable of iterables, with the outer level containing the rows, and each inner iterable containing the entries for each column.
+        A ``None`` in the outer iterable produces a horizontal bar at that position.
+
+    Returns
+    -------
+    table
+        A string containing the table.
+    """
+    lengths = [len(h) for h in headers]
+    rows = [[str(entry) for entry in row] if row is not None else None for row in rows]
+    for row in rows:
+        if row is None:
+            continue
+
+        lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
+
+    header = ' ' + ' │ '.join(h.center(l) for h, l in zip(headers, lengths)) + ' '
+    bar = ''.join('─' if char != '│' else '┼' for char in header)
+    bottom_bar = bar.replace('┼', '┴')
+
+    lines = []
+    for row in rows:
+        if row is None:
+            lines.append(bar)
+        else:
+            lines.append(' ' + ' │ '.join(f.center(l) for f, l in zip(row, lengths)))
+
+    output = '\n'.join((
+        header,
+        bar,
+        *lines,
+        bottom_bar,
+    ))
+
+    return rstr(output)

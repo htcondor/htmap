@@ -1,3 +1,4 @@
-htcondor==8.7.9rc3
+htcondor
 cloudpickle
 toml
+tqdm

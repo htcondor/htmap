@@ -19,10 +19,18 @@ class OutputNotFound(HTMapException):
 
 
 class NoResultYet(HTMapException):
-    """The :class:`htmap.JobBuilder` does not have an associated :class:`htmap.MapResult` yet."""
+    """The :class:`htmap.MapBuilder` does not have an associated :class:`htmap.MapResult` yet."""
     pass
 
 
 class TimeoutError(TimeoutError, HTMapException):
     """An operation has timed out because it took too long."""
+    pass
+
+
+class MapIDAlreadyExists(HTMapException):
+    pass
+
+
+class MapIDNotFound(HTMapException):
     pass

@@ -1,6 +1,7 @@
 from typing import Mapping, Any
 
 import collections
+import datetime
 from pathlib import Path
 
 import toml
@@ -37,6 +38,8 @@ class DotMap(dict):
 
 DEFAULT_SETTINGS = DotMap(
     HTMAP_DIR = Path.home() / '.htmap',
+    MAPS_DIR_NAME = 'maps',
+    TEMPORARY_CACHE_TIMEOUT = 1,
 )
 
 USER_SETTINGS_PATH = Path.home() / '.htmap.toml'

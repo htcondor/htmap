@@ -1,101 +1,111 @@
-import datetime
-from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable
+from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator
 
+import collections
+import datetime
+import shutil
+import enum
 from pathlib import Path
 import time
 import itertools
 from copy import deepcopy, copy
 
 import htcondor
+from tqdm import tqdm
 
 from . import htio, utils
 from .settings import settings
 from . import exceptions
 
-
-def map(func: Callable, args, **kwargs) -> 'MapResult':
-    return htmap(func).map(args, **kwargs)
-
-
-def productmap(func: Callable, *args, **kwargs) -> 'MapResult':
-    return htmap(func).productmap(*args, **kwargs)
-
-
-def starmap(func: Callable, args, kwargs) -> 'MapResult':
-    return htmap(func).starmap(args, kwargs)
-
-
-def build_job(func: Callable) -> 'JobBuilder':
-    return htmap(func).build_job()
-
-
-def htmap(name: Optional[str] = None, submit_descriptors: Optional[Dict] = None) -> Union[Callable, 'HTMapper']:
-    """
-    A function decorator that wraps a function in an :class:`HTMapper`,
-    which provides an interface for mapping functions calls out to an HTCondor cluster.
-
-    Parameters
-    ----------
-    name
-        An optional name for the mapper.
-        If not given, defaults to the name of the mapped function.
-    submit_descriptors
-
-    Returns
-    -------
-    mapper
-        An :class:`HTMapper` that wraps the function (or a wrapper function that does the wrapping).
-    """
-
-    def wrapper(func: Callable) -> HTMapper:
-        if isinstance(func, HTMapper):
-            func = func.func
-
-        return HTMapper(
-            func,
-            name = name if isinstance(name, str) else func.__name__,
-            submit_descriptors = submit_descriptors,
-        )
-
-    # if called like @htmap, without parens, name is actually the function
-    if callable(name):
-        return wrapper(name)
-
-    return wrapper
-
-
 IndexOrHash = Union[int, str]
 
 
+def map_dir_path(map_id: str) -> Path:
+    return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id
+
+
+class JobStatus(enum.IntEnum):
+    IDLE = 1
+    RUNNING = 2
+    REMOVED = 3
+    COMPLETED = 4
+    HELD = 5
+    TRANSFERRING_OUTPUT = 6
+    SUSPENDED = 7
+
+    def __str__(self):
+        return JOB_STATUS_STRINGS[self]
+
+    @classmethod
+    def display_statuses(cls) -> Tuple['JobStatus', ...]:
+        return (
+            cls.HELD,
+            cls.IDLE,
+            cls.RUNNING,
+            cls.COMPLETED,
+        )
+
+
+JOB_STATUS_STRINGS = {
+    JobStatus.IDLE: 'Idle',
+    JobStatus.RUNNING: 'Running',
+    JobStatus.REMOVED: 'Removed',
+    JobStatus.COMPLETED: 'Completed',
+    JobStatus.HELD: 'Held',
+    JobStatus.TRANSFERRING_OUTPUT: 'Transferring Output',
+    JobStatus.SUSPENDED: 'Suspended',
+}
+
+
 class MapResult:
-    def __init__(self, mapper: 'HTMapper', clusterid: Optional[int], hashes: Iterable[str]):
-        self.mapper = mapper
-        self.clusterid = clusterid
+    def __init__(self, map_id: str, cluster_id: Optional[int], hashes: Iterable[str]):
+        self.map_id = map_id
+        self.cluster_id = cluster_id
         self.hashes = tuple(hashes)
         self.hash_set = set(self.hashes)
 
-        if self.clusterid is None:
-            print('no new hashes, no jobs were submitted')
-
     @classmethod
-    def from_clusterid(cls, mapper: 'HTMapper', clusterid: int):
-        with (mapper.hashes_dir / f'{clusterid}.hashes').open() as file:
-            return cls(
-                mapper = mapper,
-                clusterid = clusterid,
-                hashes = (h.strip() for h in file),
-            )
+    def recover(cls, map_id: str):
+        """Reconstruct a :class:`MapResult` from its ``map_id``."""
+        try:
+            with (map_dir_path(map_id) / 'cluster_id').open() as file:
+                cluster_id = int(file.read())
+
+            with (map_dir_path(map_id) / 'hashes').open() as file:
+                hashes = tuple(h.strip() for h in file)
+        except FileNotFoundError:
+            raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
+
+        return cls(
+            map_id = map_id,
+            cluster_id = cluster_id,
+            hashes = hashes,
+        )
+
+    def __len__(self):
+        return len(self.hashes)
+
+    @property
+    def map_dir(self) -> Path:
+        return map_dir_path(self.map_id)
+
+    @property
+    def inputs_dir(self) -> Path:
+        return self.map_dir / 'inputs'
+
+    @property
+    def outputs_dir(self) -> Path:
+        return self.map_dir / 'outputs'
 
     @property
     def _input_file_paths(self):
-        yield from (self.mapper.inputs_dir / f'{h}.out' for h in self.hashes)
+        yield from (self.inputs_dir / f'{h}.in' for h in self.hashes)
 
     @property
     def _output_file_paths(self):
-        yield from (self.mapper.outputs_dir / f'{h}.out' for h in self.hashes)
+        yield from (self.outputs_dir / f'{h}.out' for h in self.hashes)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(mapper = {self.mapper}, clusterid = {self.clusterid})'
+        return f'{self.__class__.__name__}(map_id = {self.map_id})'
 
     def _item_to_hash(self, item: IndexOrHash) -> str:
         """Return the hash associated with an index, or pass a hash through."""
@@ -120,7 +130,7 @@ class MapResult:
         if h not in self.hash_set:
             raise exceptions.HashNotInResult(f'hash {h} is not in this result')
 
-        path = self.mapper.outputs_dir / f'{h}.out'
+        path = self.outputs_dir / f'{h}.out'
 
         try:
             utils.wait_for_path_to_exist(path, timeout)
@@ -135,6 +145,7 @@ class MapResult:
     def wait(
         self,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
+        show_progress_bar: bool = False,
     ):
         """
         Wait until all output associated with this :class:`MapResult` is available.
@@ -142,20 +153,44 @@ class MapResult:
         Parameters
         ----------
         timeout
+        show_progress_bar
         """
         start_time = time.time()
         if isinstance(timeout, datetime.timedelta):
             timeout = timeout.total_seconds()
 
-        def is_missing_hashes():
-            output_hashes = set(f.stem for f in self.mapper.outputs_dir.iterdir())
-            missing_hashes = self.hash_set - output_hashes
-            return len(missing_hashes) != 0
+        if show_progress_bar:
+            pbar = tqdm(
+                desc = self.map_id,
+                total = len(self),
+                unit = 'input',
+                ncols = 80,
+                ascii = True,
+            )
 
-        while is_missing_hashes():
+            previous_pbar_len = 0
+
+        expected_num_hashes = len(self)
+
+        while True:
+            output_hashes = set(f.stem for f in self.outputs_dir.iterdir())
+            missing_hashes = self.hash_set - output_hashes
+
+            num_missing_hashes = len(missing_hashes)
+            if show_progress_bar:
+                pbar_len = expected_num_hashes - num_missing_hashes
+                pbar.update(pbar_len - previous_pbar_len)
+                previous_pbar_len = pbar_len
+            if num_missing_hashes == 0:
+                break
+
             if timeout is not None and time.time() - timeout > start_time:
                 raise exceptions.TimeoutError(f'timeout while waiting for {self}')
+
             time.sleep(1)
+
+        if show_progress_bar:
+            pbar.close()
 
     def __iter__(self) -> Iterable[Any]:
         yield from self.iter()
@@ -164,7 +199,7 @@ class MapResult:
         self,
         callback: Optional[Callable] = None,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
-    ) -> Iterable[Any]:
+    ) -> Iterator[Any]:
         if callback is None:
             callback = lambda o: o
 
@@ -179,7 +214,7 @@ class MapResult:
         self,
         callback: Optional[Callable] = None,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
-    ) -> Iterable[Tuple[Any, Any]]:
+    ) -> Iterator[Tuple[Any, Any]]:
         if callback is None:
             callback = lambda i, o: (i, o)
 
@@ -194,7 +229,7 @@ class MapResult:
     def iter_as_available(
         self,
         callback: Optional[Callable] = None,
-    ) -> Iterable[Any]:
+    ) -> Iterator[Any]:
         if callback is None:
             callback = lambda o: o
 
@@ -213,7 +248,7 @@ class MapResult:
     def iter_as_available_with_inputs(
         self,
         callback: Optional[Callable] = None,
-    ) -> Iterable[Tuple[Any, Any]]:
+    ) -> Iterator[Tuple[Any, Any]]:
         if callback is None:
             callback = lambda i, o: (i, o)
 
@@ -231,37 +266,72 @@ class MapResult:
                 yield inp, out
             time.sleep(1)
 
-    def query(self, projection: Optional[List[str]] = None):
-        if self.clusterid is None:
+    def query(
+        self,
+        requirements: Optional[str] = None,
+        projection: Optional[List[str]] = None,
+    ):
+        if self.cluster_id is None:
             yield from ()
         if projection is None:
             projection = []
+
+        requirements = f'ClusterId=={self.cluster_id}' + (f' && {requirements}' if requirements is not None else '')
         yield from htcondor.Schedd().xquery(
-            requirements = f'ClusterId=={self.clusterid}',
+            requirements = requirements,
             projection = projection,
         )
 
     # todo: specialized versions of query to do condor_q, condor_q --held
 
+    @utils.temporary_cache()
+    def _status_counts(self) -> collections.Counter:
+        query = self.query(projection = ['JobStatus'])
+        counter = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
+
+        # if the job has fully completed, we'll get zero for everything
+        # so make sure the total makes sense
+        counter[JobStatus.COMPLETED] += len(self) - sum(counter.values())
+
+        return counter
+
+    def status(self):
+        counts = self._status_counts()
+        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in JobStatus.display_statuses())
+        msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
+
+        return utils.rstr(msg)
+
+    @utils.temporary_cache()
+    def hold_reasons(self) -> str:
+        query = self.query(
+            requirements = f'JobStatus=={JobStatus.HELD}',
+            projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
+        )
+
+        return utils.table(
+            headers = ['Input Index', 'Hold Reason Code', 'Hold Reason'],
+            rows = [
+                [classad['ProcId'], classad['HoldReasonCode'], classad['HoldReason']]
+                for classad in query
+            ]
+        )
+
     def act(self, action: htcondor.JobAction):
-        return htcondor.Schedd().act(action, f'ClusterId=={self.clusterid}')
+        return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')
 
     def remove(self):
-        """Remove the map job and delete all associated input and output files."""
+        """Remove the map jobs and delete all associated input and output files."""
         act_result = self.act(htcondor.JobAction.Remove)
-
-        for path in itertools.chain(self._input_file_paths, self._output_file_paths):
-            try:
-                path.unlink()
-            except FileNotFoundError:
-                pass
-
+        shutil.rmtree(self.map_dir)
         return act_result
 
     def hold(self):
+        """Remove the map jobs from the queue until they are released."""
         return self.act(htcondor.JobAction.Hold)
 
     def release(self):
+        """Releases held map jobs back into the queue."""
         return self.act(htcondor.JobAction.Release)
 
     def pause(self):
@@ -271,26 +341,29 @@ class MapResult:
         return self.act(htcondor.JobAction.Continue)
 
     def vacate(self):
+        """Force map jobs to give up their currently claimed execute nodes."""
         return self.act(htcondor.JobAction.Vacate)
 
     def iter_output(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
-        with (self.mapper.job_logs_dir / f'{h}.out').open() as file:
+        with (self.map_dir / 'job_logs' / f'{h}.output').open() as file:
             yield from file
 
     def iter_error(self, item: IndexOrHash) -> Iterable[str]:
         h = self._item_to_hash(item)
-        with (self.mapper.job_logs_dir / f'{h}.err').open() as file:
+        with (self.map_dir / 'job_logs' / f'{h}.error').open() as file:
             yield from file
 
-    def output(self, item: IndexOrHash):
+    def output(self, item: IndexOrHash) -> str:
+        """Return the stdout of a completed map job."""
         return ''.join(self.iter_output(item))
 
-    def error(self, item: IndexOrHash):
+    def error(self, item: IndexOrHash) -> str:
+        """Return the stderr of a completed map job."""
         return ''.join(self.iter_error(item))
 
     def tail(self):
-        with (self.mapper.cluster_logs_dir / f'{self.clusterid}.log').open() as file:
+        with (self.map_dir / 'cluster_logs' / f'{self.cluster_id}.log').open() as file:
             file.seek(0, 2)
             while True:
                 current = file.tell()
@@ -302,9 +375,10 @@ class MapResult:
                     print(line, end = '')
 
 
-class JobBuilder:
-    def __init__(self, mapper: 'HTMapper'):
+class MapBuilder:
+    def __init__(self, mapper: 'HTMapper', map_id: str):
         self.mapper = mapper
+        self.map_id = map_id
 
         self.args = []
         self.kwargs = []
@@ -319,7 +393,7 @@ class JobBuilder:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # todo: should do nothing if exception occurred inside with block
-        self.result = self.mapper.starmap(self.args, self.kwargs)
+        self.result = self.mapper.starmap(self.map_id, self.args, self.kwargs)
 
     def __call__(self, *args, **kwargs):
         self.args.append(args)
@@ -328,8 +402,8 @@ class JobBuilder:
     @property
     def result(self) -> MapResult:
         """
-        The :class:`MapResult` associated with this :class:`JobBuilder`.
-        Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`JobBuilder` completes.
+        The :class:`MapResult` associated with this :class:`MapBuilder`.
+        Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
         """
         if self._result is None:
             raise exceptions.NoResultYet('result does not exist until after with block')
@@ -344,48 +418,34 @@ class JobBuilder:
 
 
 class HTMapper:
-    def __init__(self, func: Callable, name: str, submit_descriptors = None):
+    map_dir_names = (
+        'inputs',
+        'outputs',
+        'job_logs',
+        'cluster_logs',
+    )
+
+    def __init__(self, func: Callable, **submit_options):
         self.func = func
-        self.name = name
-        self.submit_descriptors = submit_descriptors or {}
+        self.submit_options = submit_options
 
-        self.map_dir = settings.HTMAP_DIR / name
-        self.inputs_dir = self.map_dir / 'inputs'
-        self.outputs_dir = self.map_dir / 'outputs'
-        self.job_logs_dir = self.map_dir / 'job_logs'
-        self.cluster_logs_dir = self.map_dir / 'cluster_logs'
-        self.hashes_dir = self.map_dir / 'hashes_by_clusterid'
-
-        self._mkdirs()
-
-        self.fn_path = self.map_dir / 'fn.pkl'
-        if not self.fn_path.exists():
-            htio.save_object(self.func, self.fn_path)
-
-    def _mkdirs(self):
+    def _mkdirs(self, map_id: str):
         """Create the various directories needed by the mapper."""
-        for path in (
-            self.map_dir,
-            self.inputs_dir,
-            self.outputs_dir,
-            self.job_logs_dir,
-            self.cluster_logs_dir,
-            self.hashes_dir,
-        ):
+        for path in (map_dir_path(map_id) / dir_name for dir_name in self.map_dir_names):
             path.mkdir(parents = True, exist_ok = True)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(name = {self.name}, func = {self.func})'
+        return f'{self.__class__.__name__}(func = {self.func})'
 
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
 
-    def map(self, args, **kwargs) -> MapResult:
+    def map(self, map_id: str, args, **kwargs) -> MapResult:
         args = ((arg,) for arg in args)
         args_and_kwargs = zip(args, itertools.repeat(kwargs))
-        return self._map(args_and_kwargs)
+        return self._map(map_id, args_and_kwargs)
 
-    def productmap(self, *args, **kwargs) -> MapResult:
+    def productmap(self, map_id: str, *args, **kwargs) -> MapResult:
         dicts = [{}]
         for key, values in kwargs.items():
             values = tuple(values)
@@ -396,51 +456,49 @@ class HTMapper:
         args = itertools.repeat(args)
         args_and_kwargs = zip(args, dicts)
 
-        return self._map(args_and_kwargs)
+        return self._map(map_id, args_and_kwargs)
 
-    def starmap(self, args: Optional[Iterable[Tuple]] = None, kwargs: Optional[Iterable[Dict]] = None) -> MapResult:
+    def starmap(self, map_id: str, args: Optional[Iterable[Tuple]] = None, kwargs: Optional[Iterable[Dict]] = None) -> MapResult:
         if args is None:
             args = ()
         if kwargs is None:
             kwargs = ()
 
         args_and_kwargs = zip_args_and_kwargs(args, kwargs)
-        return self._map(args_and_kwargs)
+        return self._map(map_id, args_and_kwargs)
 
-    def build_job(self):
-        return JobBuilder(mapper = self)
+    def build_map(self, map_id: str):
+        return MapBuilder(mapper = self, map_id = map_id)
 
-    def _map(self, args_and_kwargs) -> MapResult:
+    def _check_map_id(self, map_id: str):
+        if (map_dir_path(map_id)).exists():
+            raise exceptions.MapIDAlreadyExists(f'the map_id {map_id} already exists')
+
+    def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> MapResult:
+        self._check_map_id(map_id)
+
+        self._mkdirs(map_id)
+        map_dir = map_dir_path(map_id)
+
+        fn_path = map_dir / 'fn.pkl'
+        htio.save_object(self.func, fn_path)
+
         hashes = []
-        new_hashes = []
         for a_and_k in args_and_kwargs:
             b = htio.to_bytes(a_and_k)
             h = htio.hash_bytes(b)
             hashes.append(h)
 
-            # if output already exists, don't re-do it
-            output_path = self.outputs_dir / f'{h}.out'
-            if output_path.exists():
-                continue
-
-            input_path = self.inputs_dir / f'{h}.in'
+            input_path = map_dir / 'inputs' / f'{h}.in'
             htio.save_bytes(b, input_path)
-            new_hashes.append(h)
-
-        if len(new_hashes) == 0:
-            return MapResult(
-                mapper = self,
-                clusterid = None,
-                hashes = hashes,
-            )
 
         submit_dict = {
-            'JobBatchName': self.name,
+            'JobBatchName': map_id,
             'executable': str(Path(__file__).parent / 'run' / 'run.sh'),
             'arguments': '$(Item)',
-            'log': str(self.cluster_logs_dir / '$(ClusterId).log'),
-            'output': str(self.job_logs_dir / '$(Item).output'),
-            'error': str(self.job_logs_dir / '$(Item).error'),
+            'log': str(map_dir / 'cluster_logs' / '$(ClusterId).log'),
+            'output': str(map_dir / 'job_logs' / '$(Item).output'),
+            'error': str(map_dir / 'job_logs' / '$(Item).error'),
             'should_transfer_files': 'YES',
             'when_to_transfer_output': 'ON_EXIT',
             'request_cpus': '1',
@@ -449,57 +507,31 @@ class HTMapper:
             'transfer_input_files': ','.join([
                 'http://proxy.chtc.wisc.edu/SQUID/karpel/htmap.tar.gz',
                 str(Path(__file__).parent / 'run' / 'run.py'),
-                str(self.inputs_dir / '$(Item).in'),
-                str(self.fn_path),
+                str(map_dir / 'inputs' / '$(Item).in'),
+                str(fn_path),
             ]), 'transfer_output_remaps': '"' + ';'.join([
-                f'$(Item).out={self.outputs_dir / "$(Item).out"}',
+                f'$(Item).out={map_dir / "outputs" / "$(Item).out"}',
             ]) + '"'
         }
-        sub = htcondor.Submit(submit_dict)
+        sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
 
         schedd = htcondor.Schedd()
         with schedd.transaction() as txn:
-            submit_result = sub.queue_with_itemdata(txn, 1, iter(new_hashes))
+            submit_result = sub.queue_with_itemdata(txn, 1, iter(hashes))
 
-        clusterid = submit_result.cluster()
+            cluster_id = submit_result.cluster()
 
-        with (self.hashes_dir / f'{clusterid}.hashes').open(mode = 'w') as file:
-            file.write('\n'.join(hashes))
+            with (map_dir / 'cluster_id').open(mode = 'w') as file:
+                file.write(str(cluster_id))
 
-        return MapResult(
-            mapper = self,
-            clusterid = clusterid,
-            hashes = hashes,
-        )
+            with (map_dir / 'hashes').open(mode = 'w') as file:
+                file.write('\n'.join(hashes))
 
-    def reconstruct(self, clusterid: int) -> MapResult:
-        """Reconstruct a :class:`MapResult` from the `clusterid` it was assigned."""
-        return MapResult.from_clusterid(self, clusterid)
-
-    def clean(self) -> (int, int):
-        outs = (
-            self.clean_inputs(),
-            self.clean_outputs(),
-            self.clean_job_logs(),
-            self.clean_cluster_logs(),
-        )
-
-        num_files = sum(o[0] for o in outs)
-        num_bytes = sum(o[1] for o in outs)
-
-        return num_files, num_bytes
-
-    def clean_inputs(self) -> (int, int):
-        return utils.clean_dir(self.inputs_dir)
-
-    def clean_outputs(self) -> (int, int):
-        return utils.clean_dir(self.outputs_dir)
-
-    def clean_job_logs(self) -> (int, int):
-        return utils.clean_dir(self.job_logs_dir)
-
-    def clean_cluster_logs(self) -> (int, int):
-        return utils.clean_dir(self.cluster_logs_dir)
+            return MapResult(
+                map_id = map_id,
+                cluster_id = cluster_id,
+                hashes = hashes,
+            )
 
 
 def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):
@@ -519,3 +551,32 @@ def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):
                 value = fills[i]
             values.append(value)
         yield tuple(values)
+
+
+def htmap(*args, **submit_options) -> Union[Callable, HTMapper]:
+    """
+    A decorator that wraps a function in an :class:`HTMapper`,
+    which provides an interface for mapping functions calls out to an HTCondor cluster.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    mapper
+        An :class:`HTMapper` that wraps the function (or a wrapper function that does the wrapping).
+    """
+
+    def wrapper(func: Callable) -> HTMapper:
+        # can't nest HTMappers inside each other by accident
+        if isinstance(func, HTMapper):
+            func = func.func
+
+        return HTMapper(func, **submit_options)
+
+    if len(args) == 0 and len(submit_options) >= 0:  # normal call
+        return wrapper
+    elif len(args) == 1 and len(submit_options) == 0:  # call without parens
+        return wrapper(args[0])  # if no parens, args[0] is the function
+    else:
+        raise exceptions.HTMapException('incorrect syntax for htmap decorator')

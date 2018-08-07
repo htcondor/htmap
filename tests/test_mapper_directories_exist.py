@@ -13,7 +13,7 @@ EXPECTED_DIR_NAMES = [
 
 @pytest.mark.parametrize('dir', EXPECTED_DIR_NAMES)
 def test_dir_exists(dir, mapped_doubler):
-    assert (htmap.settings.HTMAP_DIR / mapped_doubler.name / dir).exists()
+    assert (htmap.settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / mapped_doubler.name / dir).exists()
 
 
 @pytest.mark.parametrize('dir', EXPECTED_DIR_NAMES)
@@ -21,4 +21,4 @@ def test_dir_exists_when_given_name(dir, doubler):
     n = 'joe'
     htmap.htmap(name = n)(doubler)
 
-    assert (htmap.settings.HTMAP_DIR / n / dir).exists()
+    assert (htmap.settings.HTMAP_DIR / settings.MAPS_DIR_NAME / settings.MAPS_DIR_NAME / n / dir).exists()
