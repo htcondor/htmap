@@ -2,8 +2,9 @@ from typing import Optional, Union
 
 import time
 import datetime
+import functools
 
-from . import exceptions
+from . import settings, exceptions
 
 
 def wait_for_path_to_exist(
@@ -34,3 +35,28 @@ def wait_for_path_to_exist(
         if timeout is not None and (timeout == 0 or t > start_time + timeout):
             raise exceptions.TimeoutError(f'timeout while waiting for {path} to exist')
         time.sleep(wait_time)
+
+
+NEVER = object()
+
+
+def temporary_cache(timeout: Optional[Union[int, datetime.timedelta]] = None):
+    if isinstance(timeout, datetime.timedelta):
+        timeout = timeout.total_seconds()
+
+    def decorator(func):
+        last_call = NEVER
+        cached_value = None
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            nonlocal cached_value, last_call
+            t = timeout if timeout is not None else settings.TEMPORARY_CACHE_TIMEOUT
+            if last_call is NEVER or time.time() > last_call + t:
+                cached_value = func(*args, **kwargs)
+                last_call = time.time()
+            return cached_value
+
+        return wrapper
+
+    return decorator

@@ -1,8 +1,9 @@
+from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator
+
 import collections
 import datetime
 import shutil
-from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator
-
+import enum
 from pathlib import Path
 import time
 import itertools
@@ -19,6 +20,30 @@ IndexOrHash = Union[int, str]
 
 def map_dir_path(map_id: str) -> Path:
     return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id
+
+
+class JobStatus(enum.IntEnum):
+    IDLE = 1
+    RUNNING = 2
+    REMOVED = 3
+    COMPLETED = 4
+    HELD = 5
+    TRANSFERRING_OUTPUT = 6
+    SUSPENDED = 7
+
+    def __str__(self):
+        return JOB_STATUS_STRINGS[self]
+
+
+JOB_STATUS_STRINGS = {
+    JobStatus.IDLE: 'Idle',
+    JobStatus.RUNNING: 'Running',
+    JobStatus.REMOVED: 'Removed',
+    JobStatus.COMPLETED: 'Completed',
+    JobStatus.HELD: 'Held',
+    JobStatus.TRANSFERRING_OUTPUT: 'Transferring Output',
+    JobStatus.SUSPENDED: 'Suspended',
+}
 
 
 class MapResult:
@@ -45,6 +70,9 @@ class MapResult:
             cluster_id = cluster_id,
             hashes = hashes,
         )
+
+    def __len__(self):
+        return len(self.hashes)
 
     @property
     def map_dir(self) -> Path:
@@ -217,6 +245,18 @@ class MapResult:
         )
 
     # todo: specialized versions of query to do condor_q, condor_q --held
+
+    @utils.temporary_cache()
+    def _status_counts(self) -> collections.Counter:
+        query = self.query(['JobStatus'])
+        return collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
+
+    def status(self):
+        msg = [f'Map {self.map_id} ({len(self)} inputs)']
+        counts = self._status_counts()
+        msg.extend(f'{js}: {counts[js]}' for js in JobStatus)
+
+        return '\n'.join(msg)
 
     def act(self, action: htcondor.JobAction):
         return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')
