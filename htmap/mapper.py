@@ -92,11 +92,12 @@ class MapResult:
         result
             The result with the given ``map_id``.
         """
+        map_dir = map_dir_path(map_id)
         try:
-            with (map_dir_path(map_id) / 'cluster_id').open() as file:
+            with (map_dir / 'cluster_id').open() as file:
                 cluster_id = int(file.read())
 
-            with (map_dir_path(map_id) / 'hashes').open() as file:
+            with (map_dir / 'hashes').open() as file:
                 hashes = tuple(h.strip() for h in file)
         except FileNotFoundError:
             raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
@@ -137,7 +138,7 @@ class MapResult:
         yield from (self._outputs_dir / f'{h}.out' for h in self.hashes)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(map_id = {self.map_id})'
+        return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
 
     def _item_to_hash(self, item: int) -> str:
         """Return the hash associated with an input index."""
@@ -400,6 +401,7 @@ class MapResult:
         ----------
         requirements
             A ClassAd expression to use as the requirements for the query.
+            In addition to whatever restrictions given in this expression, the query will only target the jobs for this map.
         projection
             The ClassAd attributes to return from the query.
 
@@ -523,7 +525,7 @@ class MapBuilder:
         self._result = None
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(mapper = {self.mapper})'
+        return f'<{self.__class__.__name__}(mapper = {self.mapper})>'
 
     def __enter__(self):
         return self
@@ -575,7 +577,7 @@ class HTMapper:
             path.mkdir(parents = True, exist_ok = True)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(func = {self.func})'
+        return f'<{self.__class__.__name__}(func = {self.func})>'
 
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
@@ -618,31 +620,15 @@ class HTMapper:
         """
         return MapBuilder(mapper = self, map_id = map_id)
 
-    def _check_map_id(self, map_id: str):
-        """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
-        if (map_dir_path(map_id)).exists():
-            raise exceptions.MapIDAlreadyExists(f'the map_id {map_id} already exists')
-
     def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> MapResult:
         self._check_map_id(map_id)
 
         self._mkdirs(map_id)
         map_dir = map_dir_path(map_id)
 
-        fn_path = map_dir / 'fn.pkl'
-        htio.save_object(self.func, fn_path)
-
-        hashes = []
-        for a_and_k in args_and_kwargs:
-            b = htio.to_bytes(a_and_k)
-            h = htio.hash_bytes(b)
-            hashes.append(h)
-
-            input_path = map_dir / 'inputs' / f'{h}.in'
-            htio.save_bytes(b, input_path)
-
-        with (map_dir / 'hashes').open(mode = 'w') as file:
-            file.write('\n'.join(hashes))
+        fn_path = self._save_func(map_dir)
+        hashes = self._save_inputs(map_dir, args_and_kwargs)
+        self._save_hashes(map_dir, hashes)
 
         submit_dict = {
             'JobBatchName': map_id,
@@ -667,12 +653,46 @@ class HTMapper:
         }
         sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
 
-        return self._submit(
-            map_id = map_id,
-            map_dir = map_dir,
-            submit_object = sub,
-            input_hashes = hashes,
-        )
+        try:
+            return self._submit(
+                map_id = map_id,
+                map_dir = map_dir,
+                submit_object = sub,
+                input_hashes = hashes,
+            )
+        except Exception as e:
+            # something went wrong during submission, and the job is malformed
+            # so delete the entire map directory
+            # the condor bindings should prevent any jobs from being submitted
+            shutil.rmtree(map_dir)
+            raise e
+
+    def _check_map_id(self, map_id: str):
+        """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
+        if map_dir_path(map_id).exists():
+            raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
+
+    def _save_func(self, map_dir):
+        fn_path = map_dir / 'fn.pkl'
+        htio.save_object(self.func, fn_path)
+
+        return fn_path
+
+    def _save_inputs(self, map_dir: Path, args_and_kwargs) -> List[str]:
+        hashes = []
+        for a_and_k in args_and_kwargs:
+            b = htio.to_bytes(a_and_k)
+            h = htio.hash_bytes(b)
+            hashes.append(h)
+
+            input_path = map_dir / 'inputs' / f'{h}.in'
+            htio.save_bytes(b, input_path)
+
+        return hashes
+
+    def _save_hashes(self, map_dir: Path, hashes):
+        with (map_dir / 'hashes').open(mode = 'w') as file:
+            file.write('\n'.join(hashes))
 
     def _submit(self, map_id, map_dir, submit_object, input_hashes) -> MapResult:
         schedd = htcondor.Schedd()

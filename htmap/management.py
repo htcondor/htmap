@@ -22,10 +22,10 @@ def map_ids() -> Tuple[str]:
     return tuple(path.stem for path in _map_paths())
 
 
-def status() -> utils.rstr:
+def status() -> str:
     """Return a string containing a table showing the status of all existing maps."""
-    maps = map_ids()
-    results = [shortcuts.recover(map_id) for map_id in maps]
+    ids = map_ids()
+    results = [shortcuts.recover(map_id) for map_id in ids]
     counts = [result._status_counts() for result in results]
 
     return utils.table(
@@ -33,7 +33,7 @@ def status() -> utils.rstr:
         rows = [
             [map_id] + [count[d] for d in mapper.JobStatus.display_statuses()]
             for map_id, count in sorted(
-                zip(maps, counts),
+                zip(ids, counts),
                 key = lambda mc: mc[1][mapper.JobStatus.RUNNING],
             )
         ],

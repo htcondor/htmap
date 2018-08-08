@@ -3,12 +3,13 @@ from typing import Optional, Union, Iterable, Any
 import time
 import datetime
 import functools
+from pathlib import Path
 
 from . import settings, exceptions
 
 
 def wait_for_path_to_exist(
-    path,
+    path: Path,
     timeout: Optional[Union[int, datetime.timedelta]] = 1,
     wait_time: Union[int, datetime.timedelta] = 1,
 ):
@@ -92,7 +93,7 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
 
     Returns
     -------
-    table : rstr
+    table :
         A string containing the table.
     """
     lengths = [len(h) for h in headers]

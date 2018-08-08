@@ -23,7 +23,7 @@ def set_htmap_dir(tmpdir_factory):
     htmap.settings.HTMAP_DIR = path
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope = 'session')
 def doubler():
     def doubler(x):
         return 2 * x
@@ -31,13 +31,13 @@ def doubler():
     return doubler
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope = 'session')
 def mapped_doubler(doubler):
     mapper = htmap.htmap(doubler)
     return mapper
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope = 'session')
 def power():
     def power(x = 0, p = 0):
         return x ** p
@@ -45,13 +45,13 @@ def power():
     return power
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope = 'session')
 def mapped_power(power):
     mapper = htmap.htmap(power)
     return mapper
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope = 'session')
 def sleepy_double():
     def sleepy_double(x):
         time.sleep(x)
@@ -60,15 +60,15 @@ def sleepy_double():
     return sleepy_double
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope = 'session')
 def mapped_sleepy_double(sleepy_double):
     mapper = htmap.htmap(sleepy_double)
     return mapper
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope = 'session')
 def mock_pool():
-    with multiprocessing.Pool(2) as pool:
+    with multiprocessing.Pool() as pool:
         yield pool
 
 
