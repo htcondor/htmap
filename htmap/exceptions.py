@@ -9,7 +9,7 @@ class MissingSetting(HTMapException):
 
 
 class OutputNotFound(HTMapException):
-    """The output file that was requested does not exist."""
+    """The requested output file does not exist."""
     pass
 
 
@@ -24,8 +24,10 @@ class TimeoutError(TimeoutError, HTMapException):
 
 
 class MapIDAlreadyExists(HTMapException):
+    """The requested ``map_id`` already exists (recover the :class:`MapResult`, then either use or delete it)."""
     pass
 
 
 class MapIDNotFound(HTMapException):
+    """The requested ``map_id`` does not exist."""
     pass

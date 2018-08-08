@@ -55,15 +55,43 @@ JOB_STATUS_STRINGS = {
 
 
 class MapResult:
+    """
+    Represents the results from a map call.
+    """
+
     def __init__(self, map_id: str, cluster_id: Optional[int], hashes: Iterable[str]):
+        """
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this :class:`MapResult`.
+        cluster_id
+            The ``cluster_id`` for the jobs associated with this :class:`MapResult`.
+            This is an implementation detail and should not be relied on.
+        hashes
+            The hashes of the inputs for this :class:`MapResult`.
+            This is an implementation detail and should not be relied on.
+        """
         self.map_id = map_id
         self.cluster_id = cluster_id
         self.hashes = tuple(hashes)
         self.hash_set = set(self.hashes)
 
     @classmethod
-    def recover(cls, map_id: str):
-        """Reconstruct a :class:`MapResult` from its ``map_id``."""
+    def recover(cls, map_id: str) -> 'MapResult':
+        """
+        Reconstruct a :class:`MapResult` from its ``map_id``.
+
+        Parameters
+        ----------
+        map_id
+
+        Returns
+        -------
+        result
+            The result with the given ``map_id``.
+        """
         try:
             with (map_dir_path(map_id) / 'cluster_id').open() as file:
                 cluster_id = int(file.read())
@@ -80,26 +108,32 @@ class MapResult:
         )
 
     def __len__(self):
+        """The length of a :class:`MapResult` is the number of inputs it contains."""
         return len(self.hashes)
 
     @property
     def _map_dir(self) -> Path:
+        """The path to the map directory."""
         return map_dir_path(self.map_id)
 
     @property
     def _inputs_dir(self) -> Path:
+        """The path to the inputs directory, inside the map directory."""
         return self._map_dir / 'inputs'
 
     @property
     def _outputs_dir(self) -> Path:
+        """The path to the outputs directory, inside the map directory."""
         return self._map_dir / 'outputs'
 
     @property
     def _input_file_paths(self):
+        """The paths to the input files."""
         yield from (self._inputs_dir / f'{h}.in' for h in self.hashes)
 
     @property
     def _output_file_paths(self):
+        """The paths to the output files."""
         yield from (self._outputs_dir / f'{h}.out' for h in self.hashes)
 
     def __repr__(self):
@@ -110,7 +144,7 @@ class MapResult:
         return self.hashes[item]
 
     def __getitem__(self, item: int) -> Any:
-        """Non-Blocking get."""
+        """Return the output associated with the input index. Does not block."""
         return self.get(item, timeout = 0)
 
     def get(
@@ -118,7 +152,17 @@ class MapResult:
         item: int,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Any:
-        """Blocking get with timeout."""
+        """
+        Return the output associated with the input index.
+
+        Parameters
+        ----------
+        item
+            The index of the input to get the output for.
+        timeout
+            How long to wait for the output to exist before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+        """
         if isinstance(timeout, datetime.timedelta):
             timeout = timeout.total_seconds()
 
@@ -139,15 +183,24 @@ class MapResult:
         self,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
         show_progress_bar: bool = False,
-    ):
+    ) -> datetime.timedelta:
         """
         Wait until all output associated with this :class:`MapResult` is available.
 
         Parameters
         ----------
         timeout
+            How long to wait for the map to complete before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
         show_progress_bar
+            If ``True``, a progress bar will be displayed.
+
+        Returns
+        -------
+        elapsed_time
+            The time elapsed from the beginning of the wait to the end.
         """
+        t = datetime.datetime.now()
         start_time = time.time()
         if isinstance(timeout, datetime.timedelta):
             timeout = timeout.total_seconds()
@@ -185,7 +238,13 @@ class MapResult:
         if show_progress_bar:
             pbar.close()
 
+        return datetime.datetime.now() - t
+
     def __iter__(self) -> Iterable[Any]:
+        """
+        Iterating over the :class:`htmap.MapResult` yields the outputs in the same order as the inputs,
+        waiting on each individual output to become available.
+        """
         yield from self.iter()
 
     def iter(
@@ -193,6 +252,18 @@ class MapResult:
         callback: Optional[Callable] = None,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Iterator[Any]:
+        """
+        Returns an iterator over the output of the :class:`htmap.MapResult` in the same order as the inputs,
+        waiting on each individual output to become available.
+
+        Parameters
+        ----------
+        callback
+            A function to call on each output as the iteration proceeds.
+        timeout
+            How long to wait for each output to be available before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+        """
         if callback is None:
             callback = lambda o: o
 
@@ -208,6 +279,18 @@ class MapResult:
         callback: Optional[Callable] = None,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Iterator[Tuple[Any, Any]]:
+        """
+        Returns an iterator over the inputs and output of the :class:`htmap.MapResult` in the same order as the inputs,
+        waiting on each individual output to become available.
+
+        Parameters
+        ----------
+        callback
+            A function to call on each (input, output) pair as the iteration proceeds.
+        timeout
+            How long to wait for each output to be available before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+        """
         if callback is None:
             callback = lambda i, o: (i, o)
 
@@ -222,7 +305,26 @@ class MapResult:
     def iter_as_available(
         self,
         callback: Optional[Callable] = None,
+        timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Iterator[Any]:
+        """
+        Returns an iterator over the output of the :class:`htmap.MapResult`,
+        yielding individual outputs as they become available.
+
+        The iteration order is initially random, but is consistent within a single interpreter session once the map is completed.
+
+        Parameters
+        ----------
+        callback
+            A function to call on each output as the iteration proceeds.
+        timeout
+            How long to wait for the entire iteration to complete before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+        """
+        if isinstance(timeout, datetime.timedelta):
+            timeout = timeout.total_seconds()
+        start_time = time.time()
+
         if callback is None:
             callback = lambda o: o
 
@@ -236,12 +338,35 @@ class MapResult:
                 obj = htio.load_object(path)
                 callback(obj)
                 yield obj
+
+            if time.time() > start_time + timeout:
+                break
+
             time.sleep(1)
 
     def iter_as_available_with_inputs(
         self,
         callback: Optional[Callable] = None,
+        timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Iterator[Tuple[Any, Any]]:
+        """
+        Returns an iterator over the inputs and output of the :class:`htmap.MapResult`,
+        yielding individual ``(input, output)`` pairs as they become available.
+
+        The iteration order is initially random, but is consistent within a single interpreter session once the map is completed.
+
+        Parameters
+        ----------
+        callback
+            A function to call on each ``(input, output)`` as the iteration proceeds.
+        timeout
+            How long to wait for the entire iteration to complete before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+        """
+        if isinstance(timeout, datetime.timedelta):
+            timeout = timeout.total_seconds()
+        start_time = time.time()
+
         if callback is None:
             callback = lambda i, o: (i, o)
 
@@ -257,6 +382,10 @@ class MapResult:
                 out = htio.load_object(output_path)
                 callback(inp, out)
                 yield inp, out
+
+            if time.time() > start_time + timeout:
+                break
+
             time.sleep(1)
 
     def query(
@@ -264,6 +393,20 @@ class MapResult:
         requirements: Optional[str] = None,
         projection: Optional[List[str]] = None,
     ):
+        """
+        Perform a query against the HTCondor cluster to get information about the map jobs.
+
+        Parameters
+        ----------
+        requirements
+            A ClassAd expression to use as the requirements for the query.
+        projection
+            The ClassAd attributes to return from the query.
+
+        Returns
+        -------
+
+        """
         if self.cluster_id is None:
             yield from ()
         if projection is None:
@@ -274,8 +417,6 @@ class MapResult:
             requirements = requirements,
             projection = projection,
         )
-
-    # todo: specialized versions of query to do condor_q, condor_q --held
 
     @utils.temporary_cache()
     def _status_counts(self) -> collections.Counter:
@@ -288,7 +429,8 @@ class MapResult:
 
         return counter
 
-    def status(self):
+    def status(self) -> str:
+        """Return a string containing the number of jobs in each status."""
         counts = self._status_counts()
         stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in JobStatus.display_statuses())
         msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
@@ -297,6 +439,7 @@ class MapResult:
 
     @utils.temporary_cache()
     def hold_reasons(self) -> str:
+        """Return a string containing a table showing any held jobs, along with their hold reasons."""
         query = self.query(
             requirements = f'JobStatus=={JobStatus.HELD}',
             projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
@@ -314,13 +457,13 @@ class MapResult:
         return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')
 
     def remove(self):
-        """Remove the map jobs and delete all associated input and output files."""
+        """Permanently remove the map's jobs and delete all associated input and output files."""
         act_result = self.act(htcondor.JobAction.Remove)
         shutil.rmtree(self._map_dir)
         return act_result
 
     def hold(self):
-        """Remove the map jobs from the queue until they are released."""
+        """Temporarily remove the map's jobs from the queue, until they are released."""
         return self.act(htcondor.JobAction.Hold)
 
     def release(self):
@@ -334,28 +477,29 @@ class MapResult:
         return self.act(htcondor.JobAction.Continue)
 
     def vacate(self):
-        """Force map jobs to give up their currently claimed execute nodes."""
+        """Force the map's jobs to give up their currently claimed execute nodes."""
         return self.act(htcondor.JobAction.Vacate)
 
-    def iter_output(self, item: int) -> Iterable[str]:
+    def _iter_output(self, item: int) -> Iterator[str]:
         h = self._item_to_hash(item)
         with (self._map_dir / 'job_logs' / f'{h}.output').open() as file:
             yield from file
 
-    def iter_error(self, item: int) -> Iterable[str]:
+    def _iter_error(self, item: int) -> Iterator[str]:
         h = self._item_to_hash(item)
         with (self._map_dir / 'job_logs' / f'{h}.error').open() as file:
             yield from file
 
     def output(self, item: int) -> str:
-        """Return the stdout of a completed map job."""
-        return ''.join(self.iter_output(item))
+        """Return a string containing the stdout of a completed map job."""
+        return utils.rstr(''.join(self._iter_output(item)))
 
     def error(self, item: int) -> str:
-        """Return the stderr of a completed map job."""
-        return ''.join(self.iter_error(item))
+        """Return a string containing the stderr of a completed map job."""
+        return utils.rstr(''.join(self._iter_error(item)))
 
     def tail(self):
+        """Stream any new text added to the map job's cluster log file."""
         with (self._map_dir / 'cluster_logs' / f'{self.cluster_id}.log').open() as file:
             file.seek(0, 2)
             while True:
@@ -376,7 +520,7 @@ class MapBuilder:
         self.args = []
         self.kwargs = []
 
-        self.result = None
+        self._result = None
 
     def __repr__(self):
         return f'{self.__class__.__name__}(mapper = {self.mapper})'
@@ -385,8 +529,15 @@ class MapBuilder:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # todo: should do nothing if exception occurred inside with block
-        self.result = self.mapper.starmap(self.map_id, self.args, self.kwargs)
+        # if an exception is raised in the with, re-raise without submitting jobs
+        if exc_type is not None:
+            return False
+
+        self._result = self.mapper.starmap(
+            self.map_id,
+            self.args,
+            self.kwargs,
+        )
 
     def __call__(self, *args, **kwargs):
         self.args.append(args)
@@ -401,10 +552,6 @@ class MapBuilder:
         if self._result is None:
             raise exceptions.NoResultYet('result does not exist until after with block')
         return self._result
-
-    @result.setter
-    def result(self, result: MapResult):
-        self._result = result
 
     def __len__(self):
         return len(self.args)
@@ -461,9 +608,18 @@ class HTMapper:
         return self._map(map_id, args_and_kwargs)
 
     def build_map(self, map_id: str):
+        """
+        Return a :class:`htmap.MapBuilder` for the wrapped function.
+
+        Parameters
+        ----------
+        map_id
+
+        """
         return MapBuilder(mapper = self, map_id = map_id)
 
     def _check_map_id(self, map_id: str):
+        """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
         if (map_dir_path(map_id)).exists():
             raise exceptions.MapIDAlreadyExists(f'the map_id {map_id} already exists')
 
@@ -535,7 +691,20 @@ class HTMapper:
             )
 
 
-def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]):
+def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]) -> Iterator[Tuple[Tuple, Dict]]:
+    """
+    Combine iterables of arguments and keyword arguments into
+    an iterable zipped, filled iterator of arguments and keyword arguments.
+
+    Parameters
+    ----------
+    args
+    kwargs
+
+    Returns
+    -------
+
+    """
     iterators = [iter(args), iter(kwargs)]
     fills = {0: (), 1: {}}
     num_active = 2

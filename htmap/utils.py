@@ -41,6 +41,14 @@ NEVER = object()
 
 
 def temporary_cache(timeout: Optional[Union[int, datetime.timedelta]] = None):
+    """
+    Cache the result of a function for a certain amount of time.
+
+    Parameters
+    ----------
+    timeout
+        The length of time to cache the result of the function for.
+    """
     if isinstance(timeout, datetime.timedelta):
         timeout = timeout.total_seconds()
 
@@ -84,7 +92,7 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
 
     Returns
     -------
-    table
+    table : rstr
         A string containing the table.
     """
     lengths = [len(h) for h in headers]

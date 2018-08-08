@@ -1,5 +1,5 @@
-HTMap API Reference
-===================
+API Reference
+=============
 
 .. py:currentmodule:: htmap
 

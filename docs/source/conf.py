@@ -40,6 +40,7 @@ release = ''
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
@@ -169,8 +170,9 @@ intersphinx_mapping = {
 autodoc_member_order = 'bysource'
 autoclass_content = 'both'
 autodoc_default_flags = ['show-inheritance', 'undoc-members']
+autodoc_mock_imports = ['htcondor']
 
-napoleon_use_rtype = True
+napoleon_use_rtype = False
 
 # MONKEY PATCH GET_DOC TO PUT PARAMETERS BEFORE ATTRIBUTES
 
