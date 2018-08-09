@@ -18,11 +18,11 @@ from . import exceptions
 
 
 def map_dir_path(map_id: str) -> Path:
-    return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id
+    return utils.maps_dir_path() / map_id
 
 
 def get_schedd():
-    s = settings.get('HTCONDOR.SCHEDD')
+    s = settings.get('HTCONDOR.SCHEDD', default = None)
     if s is not None:
         return htcondor.schedd(s)
 

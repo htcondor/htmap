@@ -19,8 +19,8 @@ import htmap
 @pytest.fixture(scope = 'function', autouse = True)
 def set_htmap_dir(tmpdir_factory):
     """Use a fresh HTMAP_DIR for every test."""
-    path = Path(tmpdir_factory.mktemp('.htmap'))
-    htmap.settings.HTMAP_DIR = path
+    path = Path(tmpdir_factory.mktemp('htmap_dir'))
+    htmap.settings['HTMAP_DIR'] = path
 
 
 @pytest.fixture(scope = 'session')

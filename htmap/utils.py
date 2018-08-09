@@ -8,6 +8,10 @@ from pathlib import Path
 from . import settings, exceptions
 
 
+def maps_dir_path() -> Path:
+    return Path(settings['HTMAP_DIR']) / settings['MAPS_DIR_NAME']
+
+
 def wait_for_path_to_exist(
     path: Path,
     timeout: Optional[Union[int, datetime.timedelta]] = 1,
@@ -60,7 +64,7 @@ def temporary_cache(timeout: Optional[Union[int, datetime.timedelta]] = None):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             nonlocal cached_value, last_call
-            t = timeout if timeout is not None else settings.TEMPORARY_CACHE_TIMEOUT
+            t = timeout if timeout is not None else settings['TEMPORARY_CACHE_TIMEOUT']
             if last_call is NEVER or time.time() > last_call + t:
                 cached_value = func(*args, **kwargs)
                 last_call = time.time()

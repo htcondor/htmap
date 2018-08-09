@@ -1,79 +1,106 @@
 from typing import Mapping, Any
 
 import collections
+import itertools
 import datetime
 from pathlib import Path
+from copy import copy
 
 import toml
 
 from . import exceptions
 
 
+def nested_merge(map_1, map_2):
+    new = copy(map_1)
+    for key, value in map_2.items():
+        if not isinstance(value, dict):
+            new[key] = value
+        elif key in map_1 and isinstance(value, dict):
+            new[key] = nested_merge(map_1[key], value)
+        elif key not in map_1 and isinstance(value, dict):
+            new[key] = value
+
+    return new
+
+
 class Settings:
-    def __init__(self, *settings: Mapping[str, Any]):
-        print(settings)
-        self._settings = collections.ChainMap(*settings)
+    def __init__(self, *settings):
+        if len(settings) == 0:
+            settings = [{}]
+        self.maps = list(settings)
 
-    def __iter__(self):
-        yield from self._settings
-
-    def __getitem__(self, item):
-        try:
-            path = item.split('.')  # drill through dotted attributes access
-            r = self._settings
-            for component in path:
-                r = r[component]
-
+    def __getitem__(self, key):
+        for map in self.maps:
+            path = key.split('.')
+            r = map
+            try:
+                for component in path:
+                    r = r[component]
+            except KeyError:
+                continue
             return r
-        except KeyError:
-            raise exceptions.MissingSetting(f'{item} is not set')
 
-    def __getattr__(self, item):
-        try:
-            return self._settings[item]
-        except KeyError:
-            raise exceptions.MissingSetting(f'{item} is not set')
+        raise exceptions.MissingSetting()
 
-    def get(self, item, default = None):
+    def get(self, key, default = None):
         try:
-            return self[item]
+            return self[key]
         except exceptions.MissingSetting:
             return default
+
+    def __setitem__(self, key, value):
+        *path, final = key.split('.')
+        m = self.maps[0]
+        for component in path:
+            try:
+                m = m[component]
+            except KeyError:
+                m[component] = {}
+                m = m[component]
+
+        m[final] = value
+
+    def to_dict(self):
+        d = {}
+        for map in reversed(self.maps):
+            d = nested_merge(d, map)
+
+        return d
+
+    @classmethod
+    def from_settings(cls, *settings):
+        return cls(*itertools.chain.from_iterable(s.maps for s in settings))
 
     @classmethod
     def load(cls, path: Path):
         with path.open() as file:
-            return cls(toml.load(file, _dict = DotMap))
+            return cls(toml.load(file))
 
     def save(self, path: Path):
         with path.open(mode = 'w') as file:
-            toml.dump(self._settings, file)
+            toml.dump(self.maps[0], file)
+
+    def __str__(self):
+        return toml.dumps(self.to_dict())
 
     def __repr__(self):
-        return toml.dumps(self._settings)
+        return f'<{self.__class__.__name__}>'
 
 
-class DotMap(dict):
-    def __getattr__(self, item):
-        return self[item]
-
-
-BASE_SETTINGS = Settings(
-    DotMap(
-        HTMAP_DIR = Path.home() / '.htmap',
-        MAPS_DIR_NAME = 'maps',
-        TEMPORARY_CACHE_TIMEOUT = 1,
-        HTCONDOR = DotMap(
-            SCHEDD = None,
-        ),
-    )
-)
+BASE_SETTINGS = Settings(dict(
+    HTMAP_DIR = Path.home() / '.htmap',
+    MAPS_DIR_NAME = 'maps',
+    TEMPORARY_CACHE_TIMEOUT = 1,
+    HTCONDOR = dict(
+        SCHEDD = None,
+    ),
+))
 
 USER_SETTINGS_PATH = Path.home() / '.htmap.toml'
 try:
-    with USER_SETTINGS_PATH.open() as file:  # toml-0.10.0 or more will have pathlib support
-        user_settings = toml.load(file, _dict = DotMap)
+    user_settings = Settings.load(USER_SETTINGS_PATH)
 except FileNotFoundError:
     user_settings = Settings()
 
-settings = Settings(user_settings, BASE_SETTINGS)
+settings = Settings.from_settings(user_settings, BASE_SETTINGS)
