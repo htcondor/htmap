@@ -21,6 +21,14 @@ def map_dir_path(map_id: str) -> Path:
     return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id
 
 
+def get_schedd():
+    s = settings.get('HTCONDOR.SCHEDD')
+    if s is not None:
+        return htcondor.schedd(s)
+
+    return htcondor.schedd()
+
+
 class JobStatus(enum.IntEnum):
     IDLE = 1
     RUNNING = 2
@@ -415,7 +423,7 @@ class MapResult:
             projection = []
 
         requirements = f'ClusterId=={self.cluster_id}' + (f' && {requirements}' if requirements is not None else '')
-        yield from htcondor.Schedd().xquery(
+        yield from get_schedd().xquery(
             requirements = requirements,
             projection = projection,
         )
@@ -456,7 +464,7 @@ class MapResult:
         )
 
     def act(self, action: htcondor.JobAction):
-        return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')
+        return get_schedd().act(action, f'ClusterId=={self.cluster_id}')
 
     def remove(self):
         """Permanently remove the map's jobs and delete all associated input and output files."""
@@ -695,7 +703,7 @@ class HTMapper:
             file.write('\n'.join(hashes))
 
     def _submit(self, map_id, map_dir, submit_object, input_hashes) -> MapResult:
-        schedd = htcondor.Schedd()
+        schedd = get_schedd()
         with schedd.transaction() as txn:
             submit_result = submit_object.queue_with_itemdata(txn, 1, iter(input_hashes))
 
