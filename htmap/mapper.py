@@ -45,9 +45,9 @@ class JobStatus(enum.IntEnum):
 
 JOB_STATUS_STRINGS = {
     JobStatus.IDLE: 'Idle',
-    JobStatus.RUNNING: 'Running',
+    JobStatus.RUNNING: 'Run',
     JobStatus.REMOVED: 'Removed',
-    JobStatus.COMPLETED: 'Completed',
+    JobStatus.COMPLETED: 'Done',
     JobStatus.HELD: 'Held',
     JobStatus.TRANSFERRING_OUTPUT: 'Transferring Output',
     JobStatus.SUSPENDED: 'Suspended',
@@ -420,7 +420,6 @@ class MapResult:
             projection = projection,
         )
 
-    @utils.temporary_cache()
     def _status_counts(self) -> collections.Counter:
         query = self.query(projection = ['JobStatus'])
         counter = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
@@ -439,7 +438,6 @@ class MapResult:
 
         return utils.rstr(msg)
 
-    @utils.temporary_cache()
     def hold_reasons(self) -> str:
         """Return a string containing a table showing any held jobs, along with their hold reasons."""
         query = self.query(
