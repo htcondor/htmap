@@ -38,7 +38,7 @@ def status() -> str:
             [map_id] + [count[d] for d in mapper.JobStatus.display_statuses()] + [utils.get_dir_size_as_str(mapper.map_dir_path(map_id))]
             for map_id, count in sorted(
                 zip(ids, counts),
-                key = lambda map_id, count: count[mapper.JobStatus.RUNNING],
+                key = lambda map_id_and_count: map_id_and_count[1][mapper.JobStatus.RUNNING],
             )
         ],
     )
