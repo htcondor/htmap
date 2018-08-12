@@ -123,3 +123,26 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
     ))
 
     return rstr(output)
+
+
+def get_dir_size(path: Path) -> int:
+    size = 0
+    for p in path.iterdir():
+        if p.is_dir():
+            size += get_dir_size(p)
+        elif p.is_file():
+            size += p.stat().st_size
+    return size
+
+
+def num_bytes_to_str(num_bytes: int) -> str:
+    """Return a number of bytes as a human-readable string."""
+    for unit in ('B', 'KB', 'MB', 'GB'):
+        if num_bytes < 1024:
+            return f'{num_bytes:.1f} {unit}'
+        num_bytes /= 1024
+    return f'{num_bytes:.1f} TB'
+
+
+def get_dir_size_as_str(path: Path) -> str:
+    return num_bytes_to_str(get_dir_size(path))
