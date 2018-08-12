@@ -15,7 +15,7 @@ setup(
         '': ['*.sh'],
     },
     install_requires = [
-        'htcondor>=8.7.9',
+        # 'htcondor>=8.7.9',
         'cloudpickle',
         'toml',
         'tqdm',
