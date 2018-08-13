@@ -449,7 +449,7 @@ class MapResult:
 
         # if the job has fully completed, we'll get zero for everything
         # so make sure the total makes sense
-        counter[JobStatus.COMPLETED] += len(self) - sum(counter.values())
+        counter[JobStatus.COMPLETED] = len(self.hashes) - len(self._missing_hashes)
 
         return counter
 
@@ -558,7 +558,7 @@ class MapResult:
 
         dummy = HTMapper._submit(self.map_id, self._map_dir, self.submit, missing_hashes)
 
-        self.cluster_ids.extend(dummy.cluster_ids)
+        self.cluster_ids.append(dummy.cluster_ids[-1])
 
 
 class MapBuilder:
