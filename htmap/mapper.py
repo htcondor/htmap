@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator
+from typing import Any, Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator, Set
 
 import collections
 import datetime
@@ -19,6 +19,12 @@ from . import exceptions
 
 def map_dir_path(map_id: str) -> Path:
     return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id
+
+
+def check_map_id(map_id: str):
+    """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
+    if map_dir_path(map_id).exists():
+        raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
 
 
 class JobStatus(enum.IntEnum):
@@ -59,7 +65,7 @@ class MapResult:
     Represents the results from a map call.
     """
 
-    def __init__(self, map_id: str, cluster_id: Optional[int], hashes: Iterable[str]):
+    def __init__(self, map_id: str, cluster_ids: List[int], submit, hashes: Iterable[str]):
         """
 
         Parameters
@@ -74,7 +80,8 @@ class MapResult:
             This is an implementation detail and should not be relied on.
         """
         self.map_id = map_id
-        self.cluster_id = cluster_id
+        self.cluster_ids = cluster_ids
+        self.submit = submit
         self.hashes = tuple(hashes)
         self.hash_set = set(self.hashes)
 
@@ -94,17 +101,21 @@ class MapResult:
         """
         map_dir = map_dir_path(map_id)
         try:
-            with (map_dir / 'cluster_id').open() as file:
-                cluster_id = int(file.read())
+            with (map_dir / 'cluster_ids').open() as file:
+                cluster_ids = [int(cid.strip()) for cid in file]
 
             with (map_dir / 'hashes').open() as file:
                 hashes = tuple(h.strip() for h in file)
+
+            submit = htio.load_object(map_dir / 'submit')
+
         except FileNotFoundError:
             raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
 
         return cls(
             map_id = map_id,
-            cluster_id = cluster_id,
+            cluster_ids = cluster_ids,
+            submit = submit,
             hashes = hashes,
         )
 
@@ -220,10 +231,7 @@ class MapResult:
         expected_num_hashes = len(self)
 
         while True:
-            output_hashes = set(f.stem for f in self._outputs_dir.iterdir())
-            missing_hashes = self.hash_set - output_hashes
-
-            num_missing_hashes = len(missing_hashes)
+            num_missing_hashes = len(self._missing_hashes)
             if show_progress_bar:
                 pbar_len = expected_num_hashes - num_missing_hashes
                 pbar.update(pbar_len - previous_pbar_len)
@@ -240,6 +248,15 @@ class MapResult:
             pbar.close()
 
         return datetime.datetime.now() - t
+
+    @property
+    def _missing_hashes(self) -> List[str]:
+        done = set(f.stem for f in self._outputs_dir.iterdir())
+        return [h for h in self.hashes if h not in done]
+
+    @property
+    def is_done(self) -> bool:
+        return len(self._missing_hashes) == 0
 
     def __iter__(self) -> Iterable[Any]:
         """
@@ -389,6 +406,10 @@ class MapResult:
 
             time.sleep(1)
 
+    @property
+    def _requirements(self):
+        return ' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)
+
     def query(
         self,
         requirements: Optional[str] = None,
@@ -409,12 +430,12 @@ class MapResult:
         -------
 
         """
-        if self.cluster_id is None:
+        if self.cluster_ids is None:
             yield from ()
         if projection is None:
             projection = []
 
-        requirements = f'ClusterId=={self.cluster_id}' + (f' && {requirements}' if requirements is not None else '')
+        requirements = self._requirements + (f' && {requirements}' if requirements is not None else '')
         yield from htcondor.Schedd().xquery(
             requirements = requirements,
             projection = projection,
@@ -454,13 +475,22 @@ class MapResult:
         )
 
     def act(self, action: htcondor.JobAction):
-        return htcondor.Schedd().act(action, f'ClusterId=={self.cluster_id}')
+        return htcondor.Schedd().act(action, self._requirements)
 
     def remove(self):
         """Permanently remove the map's jobs and delete all associated input and output files."""
-        act_result = self.act(htcondor.JobAction.Remove)
-        shutil.rmtree(self._map_dir)
+        act_result = self._remove()
+        self._rm_map_dir()
         return act_result
+
+    def _remove(self):
+        return self.act(htcondor.JobAction.Remove)
+
+    def _rm_map_dir(self):
+        shutil.rmtree(self._map_dir)
+
+    def _clean_outputs_dir(self):
+        utils.clean_dir(self._outputs_dir)
 
     def hold(self):
         """Temporarily remove the map's jobs from the queue, until they are released."""
@@ -479,6 +509,9 @@ class MapResult:
     def vacate(self):
         """Force the map's jobs to give up their currently claimed execute nodes."""
         return self.act(htcondor.JobAction.Vacate)
+
+    def edit(self, attr: str, value: str):
+        return htcondor.Schedd().act(self._requirements, attr, value)
 
     def _iter_output(self, item: int) -> Iterator[str]:
         h = self._item_to_hash(item)
@@ -499,8 +532,8 @@ class MapResult:
         return utils.rstr(''.join(self._iter_error(item)))
 
     def tail(self):
-        """Stream any new text added to the map job's cluster log file."""
-        with (self._map_dir / 'cluster_logs' / f'{self.cluster_id}.log').open() as file:
+        """Stream any new text added to the map's most recent cluster log file."""
+        with (self._map_dir / 'cluster_logs' / f'{self.cluster_ids[-1]}.log').open() as file:
             file.seek(0, 2)
             while True:
                 current = file.tell()
@@ -510,6 +543,18 @@ class MapResult:
                     time.sleep(.1)
                 else:
                     print(line, end = '')
+
+    def rerun(self):
+        self._clean_outputs_dir()
+
+        self.rerun_incomplete()
+
+    def rerun_incomplete(self):
+        self._remove()
+
+        missing_hashes = self._missing_hashes
+
+        return HTMapper._submit(self.map_id, self._map_dir, self.submit, missing_hashes)
 
 
 class MapBuilder:
@@ -619,7 +664,7 @@ class HTMapper:
         return MapBuilder(mapper = self, map_id = map_id)
 
     def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> MapResult:
-        self._check_map_id(map_id)
+        check_map_id(map_id)
 
         self._mkdirs(map_id)
         map_dir = map_dir_path(map_id)
@@ -651,6 +696,8 @@ class HTMapper:
         }
         sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
 
+        self._save_submit(map_dir, sub)
+
         try:
             return self._submit(
                 map_id = map_id,
@@ -665,18 +712,14 @@ class HTMapper:
             shutil.rmtree(map_dir)
             raise e
 
-    def _check_map_id(self, map_id: str):
-        """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
-        if map_dir_path(map_id).exists():
-            raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
-
     def _save_func(self, map_dir):
         fn_path = map_dir / 'fn.pkl'
         htio.save_object(self.func, fn_path)
 
         return fn_path
 
-    def _save_inputs(self, map_dir: Path, args_and_kwargs) -> List[str]:
+    @staticmethod
+    def _save_inputs(map_dir: Path, args_and_kwargs) -> List[str]:
         hashes = []
         for a_and_k in args_and_kwargs:
             b = htio.to_bytes(a_and_k)
@@ -688,23 +731,33 @@ class HTMapper:
 
         return hashes
 
-    def _save_hashes(self, map_dir: Path, hashes):
+    @staticmethod
+    def _save_hashes(map_dir: Path, hashes: Iterable[str]):
         with (map_dir / 'hashes').open(mode = 'w') as file:
             file.write('\n'.join(hashes))
 
-    def _submit(self, map_id, map_dir, submit_object, input_hashes) -> MapResult:
+    @staticmethod
+    def _save_submit(map_dir: Path, submit):
+        htio.save_object(submit, map_dir / 'submit')
+
+    @staticmethod
+    def _submit(map_id, map_dir, submit_object, input_hashes) -> MapResult:
         schedd = htcondor.Schedd()
         with schedd.transaction() as txn:
             submit_result = submit_object.queue_with_itemdata(txn, 1, iter(input_hashes))
 
             cluster_id = submit_result.cluster()
 
-            with (map_dir / 'cluster_id').open(mode = 'w') as file:
+            with (map_dir / 'cluster_ids').open(mode = 'a') as file:
                 file.write(str(cluster_id))
+
+            with (map_dir / 'cluster_ids').open() as file:
+                cluster_ids = [int(cid.strip()) for cid in file]
 
             return MapResult(
                 map_id = map_id,
-                cluster_id = cluster_id,
+                cluster_ids = cluster_ids,
+                submit = submit_object,
                 hashes = input_hashes,
             )
 
