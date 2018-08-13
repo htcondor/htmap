@@ -753,7 +753,7 @@ class HTMapper:
             cluster_id = submit_result.cluster()
 
             with (map_dir / 'cluster_ids').open(mode = 'a') as file:
-                file.write(str(cluster_id))
+                file.write(str(cluster_id) + '\n')
 
             with (map_dir / 'cluster_ids').open() as file:
                 cluster_ids = [int(cid.strip()) for cid in file]
