@@ -8,6 +8,9 @@ class Submit:
     def __init__(self, submit_dictionary):
         self.submit_dictionary = submit_dictionary
 
+    def __iter__(self):
+        yield from self.submit_dictionary.items()
+
 
 class SubmitResult:
     def __init__(self):

@@ -107,7 +107,7 @@ class MapResult:
             with (map_dir / 'hashes').open() as file:
                 hashes = tuple(h.strip() for h in file)
 
-            submit = htio.load_object(map_dir / 'submit')
+            submit = htcondor.Submit(htio.load_object(map_dir / 'submit'))
 
         except FileNotFoundError:
             raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
@@ -738,7 +738,7 @@ class HTMapper:
 
     @staticmethod
     def _save_submit(map_dir: Path, submit):
-        htio.save_object(submit, map_dir / 'submit')
+        htio.save_object(dict(submit), map_dir / 'submit')
 
     @staticmethod
     def _submit(map_id, map_dir, submit_object, input_hashes) -> MapResult:
