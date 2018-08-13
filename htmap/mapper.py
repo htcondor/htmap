@@ -408,7 +408,7 @@ class MapResult:
 
     @property
     def _requirements(self):
-        return ' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)
+        return '(' + ' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids) + ')'
 
     def query(
         self,
@@ -434,6 +434,8 @@ class MapResult:
             yield from ()
         if projection is None:
             projection = []
+
+        print(self._requirements)
 
         requirements = self._requirements + (f' && {requirements}' if requirements is not None else '')
         yield from htcondor.Schedd().xquery(
@@ -547,14 +549,16 @@ class MapResult:
     def rerun(self):
         self._clean_outputs_dir()
 
-        self.rerun_incomplete()
+        return self.rerun_incomplete()
 
     def rerun_incomplete(self):
         self._remove()
 
         missing_hashes = self._missing_hashes
 
-        return HTMapper._submit(self.map_id, self._map_dir, self.submit, missing_hashes)
+        dummy = HTMapper._submit(self.map_id, self._map_dir, self.submit, missing_hashes)
+
+        self.cluster_ids.extend(dummy.cluster_ids)
 
 
 class MapBuilder:
