@@ -8,10 +8,10 @@ from copy import copy
 
 import toml
 
-from . import exceptions
+from . import exceptions, utils
 
 
-def nested_merge(map_1, map_2):
+def nested_merge(map_1: dict, map_2: dict):
     new = copy(map_1)
     for key, value in map_2.items():
         if not isinstance(value, dict):
@@ -61,7 +61,7 @@ class Settings:
 
         m[final] = value
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         d = {}
         for map in reversed(self.maps):
             d = nested_merge(d, map)
@@ -73,7 +73,7 @@ class Settings:
         return cls(*itertools.chain.from_iterable(s.maps for s in settings))
 
     @classmethod
-    def load(cls, path: Path):
+    def load(cls, path: Path) -> 'Settings':
         with path.open() as file:
             return cls(toml.load(file))
 
@@ -82,7 +82,7 @@ class Settings:
             toml.dump(self.maps[0], file)
 
     def __str__(self):
-        return toml.dumps(self.to_dict())
+        return utils.rstr(toml.dumps(self.to_dict()))
 
     def __repr__(self):
         return f'<{self.__class__.__name__}>'
