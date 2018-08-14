@@ -3,7 +3,8 @@ from typing import Tuple, Iterator
 import shutil
 from pathlib import Path
 
-from htmap import settings, mapper, shortcuts, utils
+from . import mapper, shortcuts, utils
+from htmap import settings
 
 
 def _map_paths() -> Iterator[Path]:

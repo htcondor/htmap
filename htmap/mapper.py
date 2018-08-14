@@ -12,13 +12,16 @@ from copy import deepcopy, copy
 import htcondor
 from tqdm import tqdm
 
-from . import htio, utils
-from .settings import settings
-from . import exceptions
+from . import htio, utils, exceptions
+from htmap import settings
+
+
+def maps_dir_path() -> Path:
+    return Path(settings['HTMAP_DIR']) / settings['MAPS_DIR_NAME']
 
 
 def map_dir_path(map_id: str) -> Path:
-    return utils.maps_dir_path() / map_id
+    return maps_dir_path() / map_id
 
 
 def get_schedd():

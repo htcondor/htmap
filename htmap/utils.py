@@ -5,11 +5,8 @@ import datetime
 import functools
 from pathlib import Path
 
-from . import settings, exceptions
-
-
-def maps_dir_path() -> Path:
-    return Path(settings['HTMAP_DIR']) / settings['MAPS_DIR_NAME']
+from . import exceptions
+from htmap import settings
 
 
 def wait_for_path_to_exist(
