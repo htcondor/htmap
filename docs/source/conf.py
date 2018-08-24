@@ -170,7 +170,7 @@ intersphinx_mapping = {
 autodoc_member_order = 'bysource'
 autoclass_content = 'both'
 autodoc_default_flags = ['show-inheritance', 'undoc-members']
-autodoc_mock_imports = ['htcondor']
+# autodoc_mock_imports = ['htcondor', 'classad']
 
 napoleon_use_rtype = False
 

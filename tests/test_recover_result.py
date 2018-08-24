@@ -16,7 +16,7 @@ def test_recover_shortcut(mapped_doubler):
 
 @pytest.mark.usefixtures('mock_submit')
 def test_recover_shortcut_calls_recover_method(mapped_doubler, mocker):
-    mocked = mocker.patch.object(htmap.MapResult, 'recover')
+    mocked = mocker.patch.object(htmap.result.MapResult, 'recover')
 
     htmap.recover('map')
 

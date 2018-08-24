@@ -107,7 +107,7 @@ def submit(map_id, map_dir, submit_object, input_hashes, pool = None):
             ),
         )
 
-        return htmap.MapResult(
+        return htmap.result.MapResult(
             map_id = map_id,
             cluster_ids = cluster_ids,
             submit = submit_object,

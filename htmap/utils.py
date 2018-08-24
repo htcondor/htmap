@@ -2,10 +2,9 @@ from typing import Optional, Union, Iterable, Any, Mapping
 
 import time
 import datetime
-import functools
 from pathlib import Path
 
-from . import settings, exceptions
+from htmap import settings, exceptions
 
 
 def clean_dir(target_dir: Path) -> (int, int):
@@ -64,39 +63,6 @@ def wait_for_path_to_exist(
         time.sleep(wait_time)
 
 
-NEVER = object()
-
-
-def temporary_cache(timeout: Optional[Union[int, datetime.timedelta]] = None):
-    """
-    Cache the result of a function for a certain amount of time.
-
-    Parameters
-    ----------
-    timeout
-        The length of time to cache the result of the function for.
-    """
-    if isinstance(timeout, datetime.timedelta):
-        timeout = timeout.total_seconds()
-
-    def decorator(func):
-        last_call = NEVER
-        cached_value = None
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            nonlocal cached_value, last_call
-            t = timeout if timeout is not None else settings.TEMPORARY_CACHE_TIMEOUT
-            if last_call is NEVER or time.time() > last_call + t:
-                cached_value = func(*args, **kwargs)
-                last_call = time.time()
-            return cached_value
-
-        return wrapper
-
-    return decorator
-
-
 class rstr(str):
     """Identical to a normal Python string, except that it's __repr__ is its __str__, to make it work nicer in notebooks."""
 
@@ -127,17 +93,17 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]], fill: str = '',
         A string containing the table.
     """
     lengths = [len(h) for h in headers]
-    cleaned_rows = []
+    processed_rows = []
 
     for row in rows:
         if row is None:
-            cleaned_rows.append(None)
+            processed_rows.append(None)
         elif isinstance(row, Mapping):
-            cleaned_rows.append([str(row.get(key, fill)) for key in headers])
+            processed_rows.append([str(row.get(key, fill)) for key in headers])
         else:
-            cleaned_rows.append([str(entry) for entry in row])
+            processed_rows.append([str(entry) for entry in row])
 
-    for row in cleaned_rows:
+    for row in processed_rows:
         if row is None:
             continue
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
@@ -147,7 +113,7 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]], fill: str = '',
     bottom_bar = bar.replace('┼', '┴')
 
     lines = []
-    for row in cleaned_rows:
+    for row in processed_rows:
         if row is None:
             lines.append(bar)
         else:
@@ -164,6 +130,7 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]], fill: str = '',
 
 
 def get_dir_size(path: Path) -> int:
+    """Return the size of a directory (including all contents recursively) in bytes."""
     size = 0
     for p in path.iterdir():
         if p.is_dir():
@@ -183,4 +150,15 @@ def num_bytes_to_str(num_bytes: int) -> str:
 
 
 def get_dir_size_as_str(path: Path) -> str:
+    """Return the size of a directory (including all contents recursively) as a human-readable string."""
     return num_bytes_to_str(get_dir_size(path))
+
+
+def map_dir_path(map_id: str) -> Path:
+    return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id
+
+
+def check_map_id(map_id: str):
+    """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
+    if map_dir_path(map_id).exists():
+        raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
