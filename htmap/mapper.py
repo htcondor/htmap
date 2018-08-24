@@ -630,9 +630,17 @@ class HTMapper:
         hashes = self._save_inputs(map_dir, args_and_kwargs)
         self._save_hashes(map_dir, hashes)
 
+        input_files = [
+            str(fn_path),
+            str(map_dir / 'inputs' / '$(Item).in'),
+        ]
+        output_remaps = [
+            f'$(Item).out={map_dir / "outputs" / "$(Item).out"}',
+        ]
+
         submit_dict = {
             'JobBatchName': map_id,
-            'executable': str(Path(__file__).parent / 'run' / 'run.sh'),
+            'executable': str(Path(__file__).parent / 'run' / 'run.py'),
             'arguments': '$(Item)',
             'log': str(map_dir / 'cluster_logs' / '$(ClusterId).log'),
             'output': str(map_dir / 'job_logs' / '$(Item).output'),
@@ -642,14 +650,8 @@ class HTMapper:
             'request_cpus': '1',
             'request_memory': '100MB',
             'request_disk': '5GB',
-            'transfer_input_files': ','.join([
-                'http://proxy.chtc.wisc.edu/SQUID/karpel/htmap.tar.gz',
-                str(Path(__file__).parent / 'run' / 'run.py'),
-                str(map_dir / 'inputs' / '$(Item).in'),
-                str(fn_path),
-            ]), 'transfer_output_remaps': '"' + ';'.join([
-                f'$(Item).out={map_dir / "outputs" / "$(Item).out"}',
-            ]) + '"'
+            'transfer_input_files': ','.join(input_files),
+            'transfer_output_remaps': f'"{";".join(output_remaps)}"'
         }
         sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
 
