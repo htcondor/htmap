@@ -1,4 +1,4 @@
-from typing import Optional, Union, Iterable, Any
+from typing import Optional, Union, Iterable, Any, Mapping
 
 import time
 import datetime
@@ -104,7 +104,7 @@ class rstr(str):
         return self.__str__()
 
 
-def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
+def table(headers: Iterable[str], rows: Iterable[Iterable[Any]], fill: str = '', ) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
 
@@ -114,8 +114,12 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
         The column headers for the table.
     rows
         The entries for each row, for each column.
-        Should be an iterable of iterables, with the outer level containing the rows, and each inner iterable containing the entries for each column.
+        Should be an iterable of iterables or mappings, with the outer level containing the rows, and each inner iterable containing the entries for each column.
         A ``None`` in the outer iterable produces a horizontal bar at that position.
+        An iterable-type row is printed in order.
+        A mapping-type row uses the headers as keys to align the output and can have missing values, which are filled using the ```fill`` value.
+    fill
+        The string to print in place of a missing value in a mapping-type row.
 
     Returns
     -------
@@ -123,11 +127,19 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
         A string containing the table.
     """
     lengths = [len(h) for h in headers]
-    rows = [[str(entry) for entry in row] if row is not None else None for row in rows]
+    cleaned_rows = []
+
     for row in rows:
         if row is None:
-            continue
+            cleaned_rows.append(None)
+        elif isinstance(row, Mapping):
+            cleaned_rows.append([str(row.get(key, fill)) for key in headers])
+        else:
+            cleaned_rows.append([str(entry) for entry in row])
 
+    for row in cleaned_rows:
+        if row is None:
+            continue
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
 
     header = ' ' + ' │ '.join(h.center(l) for h, l in zip(headers, lengths)) + ' '
@@ -135,7 +147,7 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
     bottom_bar = bar.replace('┼', '┴')
 
     lines = []
-    for row in rows:
+    for row in cleaned_rows:
         if row is None:
             lines.append(bar)
         else:
