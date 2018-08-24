@@ -685,7 +685,7 @@ class HTMapper:
 
         submit_dict = {
             'JobBatchName': map_id,
-            'executable': f"python3 {Path(__file__).parent / 'run' / 'run.py'}",
+            'executable': str(Path(__file__).parent / 'run' / 'run.py'),
             'arguments': '$(Item)',
             'log': str(map_dir / 'cluster_logs' / '$(ClusterId).log'),
             'output': str(map_dir / 'job_logs' / '$(Item).output'),
