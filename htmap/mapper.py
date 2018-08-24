@@ -676,20 +676,20 @@ class HTMapper:
         self._save_hashes(map_dir, hashes)
 
         input_files = [
-            str(fn_path),
-            str(map_dir / 'inputs' / '$(Item).in'),
+            fn_path.as_posix(),
+            (map_dir / 'inputs' / '$(Item).in').as_posix(),
         ]
         output_remaps = [
-            f'$(Item).out={map_dir / "outputs" / "$(Item).out"}',
+            f'$(Item).out={(map_dir / "outputs" / "$(Item).out").as_posix()}',
         ]
 
         submit_dict = {
             'JobBatchName': map_id,
-            'executable': str(Path(__file__).parent / 'run' / 'run.py'),
+            'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
             'arguments': '$(Item)',
-            'log': str(map_dir / 'cluster_logs' / '$(ClusterId).log'),
-            'output': str(map_dir / 'job_logs' / '$(Item).output'),
-            'error': str(map_dir / 'job_logs' / '$(Item).error'),
+            'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
+            'output': (map_dir / 'job_logs' / '$(Item).output').as_posix(),
+            'error': (map_dir / 'job_logs' / '$(Item).error').as_posix(),
             'should_transfer_files': 'YES',
             'when_to_transfer_output': 'ON_EXIT',
             'request_cpus': '1',
