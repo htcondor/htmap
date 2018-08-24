@@ -10,7 +10,7 @@ def test_recover_shortcut(mapped_doubler):
     recovered = htmap.recover('map')
 
     assert result.map_id == recovered.map_id
-    assert result.cluster_id == recovered.cluster_id
+    assert result.cluster_ids == recovered.cluster_ids
     assert result.hashes == recovered.hashes
 
 
@@ -30,5 +30,5 @@ def test_recover_classmethod(mapped_doubler):
     recovered = htmap.MapResult.recover('map')
 
     assert result.map_id == recovered.map_id
-    assert result.cluster_id == recovered.cluster_id
+    assert result.cluster_ids == recovered.cluster_ids
     assert result.hashes == recovered.hashes

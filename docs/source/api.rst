@@ -31,6 +31,8 @@ MapResult
 Management
 ----------
 
+These functions help you manage your maps.
+
 .. autofunction:: htmap.clean
 
 .. autofunction:: htmap.map_ids
@@ -39,7 +41,9 @@ Management
 
 
 Shortcut Functions
--------------------------------
+------------------
+
+These are module-level shortcut functions which let you produce and recover :class:`MapResult`\s.
 
 .. autofunction:: htmap.map
 
