@@ -435,8 +435,6 @@ class MapResult:
         if projection is None:
             projection = []
 
-        print(self._requirements)
-
         requirements = self._requirements + (f' && {requirements}' if requirements is not None else '')
         yield from htcondor.Schedd().xquery(
             requirements = requirements,
@@ -687,7 +685,7 @@ class HTMapper:
 
         submit_dict = {
             'JobBatchName': map_id,
-            'executable': str(Path(__file__).parent / 'run' / 'run.py'),
+            'executable': f"python3 {Path(__file__).parent / 'run' / 'run.py'}",
             'arguments': '$(Item)',
             'log': str(map_dir / 'cluster_logs' / '$(ClusterId).log'),
             'output': str(map_dir / 'job_logs' / '$(Item).output'),
@@ -815,7 +813,7 @@ def htmap(*args, **submit_options) -> Union[Callable, HTMapper]:
     """
 
     def wrapper(func: Callable) -> HTMapper:
-        # can't nest HTMappers inside each other by accident
+        # prevent nesting HTMappers inside each other by accident
         if isinstance(func, HTMapper):
             func = func.func
 
