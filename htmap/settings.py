@@ -1,3 +1,5 @@
+from typing import Union
+
 import itertools
 from pathlib import Path
 from copy import copy
@@ -58,30 +60,52 @@ class Settings:
         m[final] = value
 
     def to_dict(self) -> dict:
+        """Return a single dictionary with all of the settings in this :class:`Settings`."""
         d = {}
         for map in reversed(self.maps):
             d = nested_merge(d, map)
 
         return d
 
+    def replace(self, other: 'Settings'):
+        """Change the settings of this :class:`Settings` to be the settings from another :class:`Settings`."""
+        self.maps = other.maps
+
+    def append(self, other: Union['Settings', dict]):
+        """Add a map to the end of the search (i.e., it will be searched last, and be overridden by anything before it)."""
+        if isinstance(other, Settings):
+            self.maps.extend(other.maps)
+        else:
+            self.maps.append(other)
+
+    def prepend(self, other: Union['Settings', dict]):
+        """Add a map to the beginning of the search (i.e., it will be searched first, and override anything after it)."""
+        if isinstance(other, Settings):
+            self.maps = other.maps + self.maps
+        else:
+            self.maps.insert(0, other)
+
     @classmethod
     def from_settings(cls, *settings):
+        """Construct a new :class:`Settings` which is merged from other :class:`Settings`."""
         return cls(*itertools.chain.from_iterable(s.maps for s in settings))
 
     @classmethod
     def load(cls, path: Path) -> 'Settings':
+        """Load a :class:`Settings` from a file at the given path."""
         with path.open() as file:
             return cls(toml.load(file))
 
     def save(self, path: Path):
+        """Save this :class:`Settings` to a file at the given path."""
         with path.open(mode = 'w') as file:
             toml.dump(self.maps[0], file)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return utils.rstr(toml.dumps(self.to_dict()))
 
-    def __repr__(self):
-        return f'<{self.__class__.__name__}>'
+    def __repr__(self) -> str:
+        return utils.rstr(f'<{self.__class__.__name__}>')
 
 
 BASE_SETTINGS = Settings(dict(
