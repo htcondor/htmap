@@ -8,7 +8,18 @@ from copy import deepcopy
 
 import htcondor
 
-from . import htio, exceptions, result, utils
+from . import htio, exceptions, result, settings
+
+
+def map_dir_path(map_id: str) -> Path:
+    return settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME'] / map_id
+
+
+def check_map_id(map_id: str):
+    """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
+    if map_dir_path(map_id).exists():
+        raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
+
 
 def get_schedd():
     s = settings.get('HTCONDOR.SCHEDD', default = None)
@@ -16,6 +27,7 @@ def get_schedd():
         return htcondor.schedd(s)
 
     return htcondor.schedd()
+
 
 class MapBuilder:
     def __init__(self, mapper: 'HTMapper', map_id: str):
@@ -76,7 +88,7 @@ class HTMapper:
 
     def _mkdirs(self, map_id: str):
         """Create the various directories needed by the mapper."""
-        for path in (utils.map_dir_path(map_id) / dir_name for dir_name in self._map_dir_names):
+        for path in (map_dir_path(map_id) / dir_name for dir_name in self._map_dir_names):
             path.mkdir(parents = True, exist_ok = True)
 
     def __repr__(self):
@@ -124,10 +136,10 @@ class HTMapper:
         return MapBuilder(mapper = self, map_id = map_id)
 
     def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> result.MapResult:
-        utils.check_map_id(map_id)
+        check_map_id(map_id)
 
         self._mkdirs(map_id)
-        map_dir = utils.map_dir_path(map_id)
+        map_dir = map_dir_path(map_id)
 
         fn_path = self._save_func(map_dir)
         hashes = self._save_inputs(map_dir, args_and_kwargs)

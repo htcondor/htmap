@@ -88,7 +88,7 @@ class MapResult:
         result
             The result with the given ``map_id``.
         """
-        map_dir = utils.map_dir_path(map_id)
+        map_dir = mapper.map_dir_path(map_id)
         try:
             with (map_dir / 'cluster_ids').open() as file:
                 cluster_ids = [int(cid.strip()) for cid in file]
@@ -115,7 +115,7 @@ class MapResult:
     @property
     def _map_dir(self) -> Path:
         """The path to the map directory."""
-        return utils.map_dir_path(self.map_id)
+        return mapper.map_dir_path(self.map_id)
 
     @property
     def _inputs_dir(self) -> Path:

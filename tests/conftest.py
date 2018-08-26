@@ -2,9 +2,10 @@ import functools
 import sys
 import time
 
-from . import mock_htcondor
+from . import mock_htcondor, mock_classad
 
 sys.modules['htcondor'] = mock_htcondor
+sys.modules['classad'] = mock_classad
 
 from pathlib import Path
 import multiprocessing

@@ -1,10 +1,14 @@
-from typing import Optional, Union, Iterable, Any, Mapping
+from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping
 
 import time
 import datetime
 from pathlib import Path
 
-from . import settings, exceptions
+from . import exceptions
+
+from classad import ClassAd
+
+MutableMapping.register(ClassAd)
 
 
 def wait_for_path_to_exist(
@@ -126,13 +130,3 @@ def num_bytes_to_str(num_bytes: int) -> str:
 def get_dir_size_as_str(path: Path) -> str:
     """Return the size of a directory (including all contents recursively) as a human-readable string."""
     return num_bytes_to_str(get_dir_size(path))
-
-
-def map_dir_path(map_id: str) -> Path:
-    return settings.HTMAP_DIR / settings.MAPS_DIR_NAME / map_id
-
-
-def check_map_id(map_id: str):
-    """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
-    if map_dir_path(map_id).exists():
-        raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
