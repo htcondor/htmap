@@ -1,6 +1,7 @@
 import pytest
 
 import htmap
+import htmap.utils
 
 
 @pytest.mark.usefixtures('mock_submit')
@@ -16,4 +17,4 @@ def test_exception_inside_submit_removes_map_dir(mocker, mapped_doubler):
     with pytest.raises(Marker):
         mapped_doubler.map('map', range(10))
 
-    assert not htmap.mapper.map_dir_path('map').exists()
+    assert not htmap.utils.map_dir_path('map').exists()

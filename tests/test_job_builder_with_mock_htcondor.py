@@ -1,7 +1,7 @@
 import pytest
 
 import htmap
-from htmap.mapper import MapResult
+from htmap import MapResult
 
 
 @pytest.mark.usefixtures('mock_submit')

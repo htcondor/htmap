@@ -9,7 +9,7 @@ API Reference
 HTMapper
 --------
 
-The most powerful and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an `HTMapper`.
+The most powerful and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an :class:`HTMapper`.
 The mapper can distribute (i.e., map) function calls out over an HTCondor cluster.
 
 .. autofunction:: htmap.htmap
@@ -31,6 +31,8 @@ MapResult
 Management
 ----------
 
+These functions help you manage your maps.
+
 .. autofunction:: htmap.clean
 
 .. autofunction:: htmap.map_ids
@@ -39,7 +41,9 @@ Management
 
 
 Shortcut Functions
--------------------------------
+------------------
+
+These are module-level shortcut functions which let you produce and recover :class:`MapResult`\s.
 
 .. autofunction:: htmap.map
 

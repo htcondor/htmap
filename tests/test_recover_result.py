@@ -10,13 +10,13 @@ def test_recover_shortcut(mapped_doubler):
     recovered = htmap.recover('map')
 
     assert result.map_id == recovered.map_id
-    assert result.cluster_id == recovered.cluster_id
+    assert result.cluster_ids == recovered.cluster_ids
     assert result.hashes == recovered.hashes
 
 
 @pytest.mark.usefixtures('mock_submit')
 def test_recover_shortcut_calls_recover_method(mapped_doubler, mocker):
-    mocked = mocker.patch.object(htmap.MapResult, 'recover')
+    mocked = mocker.patch.object(htmap.result.MapResult, 'recover')
 
     htmap.recover('map')
 
@@ -30,5 +30,5 @@ def test_recover_classmethod(mapped_doubler):
     recovered = htmap.MapResult.recover('map')
 
     assert result.map_id == recovered.map_id
-    assert result.cluster_id == recovered.cluster_id
+    assert result.cluster_ids == recovered.cluster_ids
     assert result.hashes == recovered.hashes

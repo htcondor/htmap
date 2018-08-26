@@ -1,8 +1,5 @@
-from typing import Mapping, Any
-
-import collections
-import itertools
 import datetime
+import itertools
 from pathlib import Path
 from copy import copy
 

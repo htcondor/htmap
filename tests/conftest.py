@@ -93,8 +93,11 @@ def submit(map_id, map_dir, submit_object, input_hashes, pool = None):
         submit_result = mock_htcondor.SubmitResult()
         cluster_id = submit_result.cluster()
 
-        with (map_dir / 'cluster_id').open(mode = 'w') as file:
+        with (map_dir / 'cluster_ids').open(mode = 'a') as file:
             file.write(str(cluster_id))
+
+        with (map_dir / 'cluster_ids').open() as file:
+            cluster_ids = [int(cid.strip()) for cid in file]
 
         pool.starmap_async(
             htc_run,
@@ -104,9 +107,10 @@ def submit(map_id, map_dir, submit_object, input_hashes, pool = None):
             ),
         )
 
-        return htmap.MapResult(
+        return htmap.result.MapResult(
             map_id = map_id,
-            cluster_id = cluster_id,
+            cluster_ids = cluster_ids,
+            submit = submit_object,
             hashes = input_hashes,
         )
 
