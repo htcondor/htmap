@@ -9,7 +9,7 @@ API Reference
 HTMapper
 --------
 
-The most powerful and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an `HTMapper`.
+The most powerful and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an :class:`HTMapper`.
 The mapper can distribute (i.e., map) function calls out over an HTCondor cluster.
 
 .. autofunction:: htmap.htmap

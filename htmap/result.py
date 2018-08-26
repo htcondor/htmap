@@ -244,6 +244,11 @@ class MapResult:
         return [h for h in self.hashes if h not in done]
 
     @property
+    def _completed_hashes(self) -> List[str]:
+        done = set(f.stem for f in self._outputs_dir.iterdir())
+        return [h for h in self.hashes if h in done]
+
+    @property
     def is_done(self) -> bool:
         """``True`` if all of the output is available for this map."""
         return len(self._missing_hashes) == 0
@@ -378,7 +383,7 @@ class MapResult:
         if callback is None:
             callback = lambda i, o: (i, o)
 
-        paths = set((i, o) for i, o in zip(self._input_file_paths, self._output_file_paths))
+        paths = set(zip(self._input_file_paths, self._output_file_paths))
         while len(paths) > 0:
             for input_output_paths in copy(paths):
                 input_path, output_path = input_output_paths
@@ -398,7 +403,7 @@ class MapResult:
 
     @property
     def _requirements(self):
-        return '(' + ' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids) + ')'
+        return f"({' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)})"
 
     def query(
         self,
@@ -436,8 +441,8 @@ class MapResult:
         counter = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
 
         # if the job has fully completed, we'll get zero for everything
-        # so make sure the total makes sense
-        counter[JobStatus.COMPLETED] = len(self.hashes) - len(self._missing_hashes)
+        # so make sure the completed count makes sense
+        counter[JobStatus.COMPLETED] = len(self._completed_hashes)
 
         return counter
 
