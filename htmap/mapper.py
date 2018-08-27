@@ -8,7 +8,7 @@ from copy import deepcopy
 
 import htcondor
 
-from . import htio, exceptions, result, utils, shortcuts
+from . import htio, exceptions, result, utils
 
 
 class MapBuilder:
@@ -139,9 +139,13 @@ class HTMapper:
 
     def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple], force_overwrite: bool = False) -> result.MapResult:
         if force_overwrite:
-            shortcuts.remove(map_id)
-
-        utils.check_map_id(map_id)
+            try:
+                existing_result = result.MapResult.recover(map_id)
+                existing_result.remove()
+            except exceptions.MapIDNotFound:
+                pass
+        else:
+            utils.check_map_id(map_id)
 
         self._mkdirs(map_id)
         map_dir = utils.map_dir_path(map_id)

@@ -1,6 +1,6 @@
 from typing import Callable
 
-from . import mapper, result
+from . import mapper, result, exceptions
 
 
 def map(map_id: str, func: Callable, args, force_overwrite: bool = False, **kwargs) -> result.MapResult:
@@ -24,5 +24,8 @@ def recover(map_id: str) -> result.MapResult:
 
 
 def remove(map_id: str):
-    r = recover(map_id)
-    r.remove()
+    try:
+        r = recover(map_id)
+        r.remove()
+    except exceptions.MapIDNotFound:
+        pass
