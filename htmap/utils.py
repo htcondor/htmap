@@ -4,7 +4,7 @@ import time
 import datetime
 from pathlib import Path
 
-from htmap import settings, exceptions
+from . import settings, exceptions
 
 
 def clean_dir(target_dir: Path) -> (int, int):
