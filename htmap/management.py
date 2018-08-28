@@ -16,17 +16,18 @@ def map_ids() -> Tuple[str]:
 
 
 def map_results() -> Tuple[result.MapResult]:
+    """Return a tuple of all existing maps."""
     return tuple(shortcuts.recover(map_id) for map_id in map_ids())
 
 
 def clean():
-    """Remove all input and output files for all existing maps."""
+    """Remove all existing maps."""
     for map_result in map_results():
         map_result.remove()
 
 
 def status() -> str:
-    """Return a string containing a table showing the status of all existing maps."""
+    """Return a string containing a table showing the status of all existing maps, as well as their disk usage."""
     ids = map_ids()
     results = map_results()
     counts = [r._status_counts() for r in results]

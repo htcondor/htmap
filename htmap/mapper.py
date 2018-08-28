@@ -30,9 +30,10 @@ def get_schedd():
 
 
 class MapBuilder:
-    def __init__(self, mapper: 'HTMapper', map_id: str):
+    def __init__(self, mapper: 'HTMapper', map_id: str, force_overwrite: bool = False):
         self.mapper = mapper
         self.map_id = map_id
+        self.force_overwrite = force_overwrite
 
         self.args = []
         self.kwargs = []
@@ -54,6 +55,7 @@ class MapBuilder:
             self.map_id,
             self.args,
             self.kwargs,
+            force_overwrite = self.force_overwrite
         )
 
     def __call__(self, *args, **kwargs):
@@ -97,12 +99,24 @@ class HTMapper:
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
 
-    def map(self, map_id: str, args, **kwargs) -> result.MapResult:
+    def map(
+        self,
+        map_id: str,
+        args,
+        force_overwrite: bool = False,
+        **kwargs,
+    ) -> result.MapResult:
         args = ((arg,) for arg in args)
         args_and_kwargs = zip(args, itertools.repeat(kwargs))
-        return self._map(map_id, args_and_kwargs)
+        return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite)
 
-    def productmap(self, map_id: str, *args, **kwargs) -> result.MapResult:
+    def productmap(
+        self,
+        map_id: str,
+        *args,
+        force_overwrite: bool = False,
+        **kwargs,
+    ) -> result.MapResult:
         dicts = [{}]
         for key, values in kwargs.items():
             values = tuple(values)
@@ -113,30 +127,43 @@ class HTMapper:
         args = itertools.repeat(args)
         args_and_kwargs = zip(args, dicts)
 
-        return self._map(map_id, args_and_kwargs)
+        return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite)
 
-    def starmap(self, map_id: str, args: Optional[Iterable[Tuple]] = None, kwargs: Optional[Iterable[Dict]] = None) -> result.MapResult:
+    def starmap(
+        self,
+        map_id: str,
+        args: Optional[Iterable[Tuple]] = None,
+        kwargs: Optional[Iterable[Dict]] = None,
+        force_overwrite: bool = False
+    ) -> result.MapResult:
         if args is None:
             args = ()
         if kwargs is None:
             kwargs = ()
 
         args_and_kwargs = zip_args_and_kwargs(args, kwargs)
-        return self._map(map_id, args_and_kwargs)
+        return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite)
 
-    def build_map(self, map_id: str):
+    def build_map(self, map_id: str, force_overwrite: bool = False):
         """
         Return a :class:`htmap.MapBuilder` for the wrapped function.
 
         Parameters
         ----------
         map_id
-
+        force_overwrite
         """
-        return MapBuilder(mapper = self, map_id = map_id)
+        return MapBuilder(mapper = self, map_id = map_id, force_overwrite = force_overwrite)
 
-    def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple]) -> result.MapResult:
-        check_map_id(map_id)
+    def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple], force_overwrite: bool = False) -> result.MapResult:
+        if force_overwrite:
+            try:
+                existing_result = result.MapResult.recover(map_id)
+                existing_result.remove()
+            except exceptions.MapIDNotFound:
+                pass
+        else:
+            check_map_id(map_id)
 
         self._mkdirs(map_id)
         map_dir = map_dir_path(map_id)

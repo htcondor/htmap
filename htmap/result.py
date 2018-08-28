@@ -474,9 +474,8 @@ class MapResult:
 
     def remove(self):
         """Permanently remove the map and delete all associated input and output files."""
-        act_result = self._remove_from_queue()
+        self._remove_from_queue()
         self._rm_map_dir()
-        return act_result
 
     def _remove_from_queue(self):
         return self.act(htcondor.JobAction.Remove)
