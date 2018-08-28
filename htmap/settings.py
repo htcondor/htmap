@@ -1,6 +1,7 @@
-from typing import Union
+from typing import Union, MutableMapping
 
 import itertools
+import functools
 from pathlib import Path
 from copy import copy
 
@@ -9,14 +10,13 @@ import toml
 from . import exceptions, utils
 
 
-def nested_merge(map_1: dict, map_2: dict):
+def nested_merge(map_1: MutableMapping, map_2: MutableMapping) -> MutableMapping:
+    """Return a new dictionary containing the result of recursively merging the second map into the first, overwriting values and merging maps."""
     new = copy(map_1)
     for key, value in map_2.items():
-        if not isinstance(value, dict):
-            new[key] = value
-        elif key in map_1 and isinstance(value, dict):
+        if key in map_1 and isinstance(value, MutableMapping):
             new[key] = nested_merge(map_1[key], value)
-        elif key not in map_1 and isinstance(value, dict):
+        else:
             new[key] = value
 
     return new
@@ -41,6 +41,9 @@ class Settings:
 
         raise exceptions.MissingSetting()
 
+    def __eq__(self, other: 'Settings'):
+        return self.to_dict() == other.to_dict()
+
     def get(self, key, default = None):
         try:
             return self[key]
@@ -61,11 +64,7 @@ class Settings:
 
     def to_dict(self) -> dict:
         """Return a single dictionary with all of the settings in this :class:`Settings`."""
-        d = {}
-        for map in reversed(self.maps):
-            d = nested_merge(d, map)
-
-        return d
+        return functools.reduce(nested_merge, reversed(self.maps), {})
 
     def replace(self, other: 'Settings'):
         """Change the settings of this :class:`Settings` to be the settings from another :class:`Settings`."""
