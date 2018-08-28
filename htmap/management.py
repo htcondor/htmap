@@ -7,7 +7,7 @@ from . import result, settings, shortcuts, utils
 
 def _map_paths() -> Iterator[Path]:
     """Yield the paths to all existing map directories."""
-    yield from (settings.HTMAP_DIR / settings.MAPS_DIR_NAME).iterdir()
+    yield from (settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME']).iterdir()
 
 
 def map_ids() -> Tuple[str]:

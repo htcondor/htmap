@@ -2,9 +2,10 @@ import functools
 import sys
 import time
 
-from . import mock_htcondor
+from . import mock_htcondor, mock_classad
 
 sys.modules['htcondor'] = mock_htcondor
+sys.modules['classad'] = mock_classad
 
 from pathlib import Path
 import multiprocessing
@@ -19,8 +20,8 @@ import htmap
 @pytest.fixture(scope = 'function', autouse = True)
 def set_htmap_dir(tmpdir_factory):
     """Use a fresh HTMAP_DIR for every test."""
-    path = Path(tmpdir_factory.mktemp('.htmap'))
-    htmap.settings.HTMAP_DIR = path
+    path = Path(tmpdir_factory.mktemp('htmap_dir'))
+    htmap.settings['HTMAP_DIR'] = path
 
 
 @pytest.fixture(scope = 'session')
