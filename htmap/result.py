@@ -401,10 +401,8 @@ class MapResult:
 
             time.sleep(1)
 
-    @property
-    def _requirements(self):
-        """The HTCondor requirements expression that captures all of the cluster ids associated with this map."""
-        return f"({' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)})"
+    def _requirements(self, requirements: Optional[str] = None) -> str:
+        return f"({' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)})" + (f' && {requirements}' if requirements is not None else '')
 
     def query(
         self,
@@ -431,11 +429,9 @@ class MapResult:
         if projection is None:
             projection = []
 
-        requirements = self._requirements + (f' && {requirements}' if requirements is not None else '')
-
         schedd = mapper.get_schedd()
         yield from schedd.xquery(
-            requirements = requirements,
+            requirements = self._requirements(requirements),
             projection = projection,
         )
 
@@ -460,7 +456,7 @@ class MapResult:
     def hold_reasons(self) -> str:
         """Return a string containing a table showing any held jobs, along with their hold reasons."""
         query = self.query(
-            requirements = f'JobStatus=={JobStatus.HELD}',
+            requirements = self._requirements(f'JobStatus=={JobStatus.HELD}'),
             projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
         )
 
@@ -507,8 +503,9 @@ class MapResult:
         """Force the map to give up any claimed resources."""
         return self.act(htcondor.JobAction.Vacate)
 
-    def edit(self, attr: str, value: str):
-        return htcondor.Schedd().act(self._requirements, attr, value)
+    def edit(self, attr: str, value: str, requirements: Optional[str] = None):
+        schedd = mapper.get_schedd()
+        return schedd.act(self._requirements(requirements), attr, value)
 
     def _iter_output(self, item: int) -> Iterator[str]:
         h = self._item_to_hash(item)
