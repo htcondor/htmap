@@ -1,10 +1,9 @@
-from typing import Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator
+from typing import Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator, Any
 
 import collections
 import shutil
 from pathlib import Path
 import itertools
-from copy import deepcopy
 
 import htcondor
 
@@ -102,31 +101,32 @@ class HTMapper:
     def map(
         self,
         map_id: str,
-        args,
+        args: Iterable[Any],
         force_overwrite: bool = False,
         **kwargs,
     ) -> result.MapResult:
+        """
+        Map a function call over a one-dimensional iterable of arguments.
+        The function must take a single positional argument and any number of keyword arguments.
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this map.
+        args
+            An iterable of arguments to pass to the mapped function.
+        kwargs
+            Any additional keyword arguments are passed as keyword arguments to the mapped function.
+        force_overwrite
+            If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+
+        Returns
+        -------
+        result :
+            A :class:`htmap.MapResult` representing the map.
+        """
         args = ((arg,) for arg in args)
         args_and_kwargs = zip(args, itertools.repeat(kwargs))
-        return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite)
-
-    def productmap(
-        self,
-        map_id: str,
-        *args,
-        force_overwrite: bool = False,
-        **kwargs,
-    ) -> result.MapResult:
-        dicts = [{}]
-        for key, values in kwargs.items():
-            values = tuple(values)
-            dicts = [deepcopy(d) for d in dicts for _ in range(len(values))]
-            for d, v in zip(dicts, itertools.cycle(values)):
-                d[key] = v
-
-        args = itertools.repeat(args)
-        args_and_kwargs = zip(args, dicts)
-
         return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite)
 
     def starmap(
@@ -136,6 +136,26 @@ class HTMapper:
         kwargs: Optional[Iterable[Dict]] = None,
         force_overwrite: bool = False
     ) -> result.MapResult:
+        """
+        Map a function call over aligned iterables of arguments and keyword arguments.
+        Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this map.
+        args
+            An iterable of tuples of positional arguments to unpack into the mapped function.
+        kwargs
+            An iterable of dictionaries of keyword arguments to unpack into the mapped function.
+        force_overwrite
+            If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+
+        Returns
+        -------
+        result :
+            A :class:`htmap.MapResult` representing the map.
+        """
         if args is None:
             args = ()
         if kwargs is None:
@@ -151,7 +171,14 @@ class HTMapper:
         Parameters
         ----------
         map_id
+            The ``map_id`` to assign to this map.
         force_overwrite
+            If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+
+        Returns
+        -------
+        map_builder :
+            A :class:`htmap.MapBuilder` for the wrapped function.
         """
         return MapBuilder(mapper = self, map_id = map_id, force_overwrite = force_overwrite)
 

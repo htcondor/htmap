@@ -403,6 +403,7 @@ class MapResult:
 
     @property
     def _requirements(self):
+        """The HTCondor requirements expression that captures all of the cluster ids associated with this map."""
         return f"({' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)})"
 
     def query(
@@ -431,7 +432,9 @@ class MapResult:
             projection = []
 
         requirements = self._requirements + (f' && {requirements}' if requirements is not None else '')
-        yield from htcondor.Schedd().xquery(
+
+        schedd = mapper.get_schedd()
+        yield from schedd.xquery(
             requirements = requirements,
             projection = projection,
         )
@@ -532,7 +535,10 @@ class MapResult:
         return utils.rstr(''.join(self._iter_error(item)))
 
     def tail(self):
-        """Stream any new text added to the map's most recent log file."""
+        """
+        Stream any new text added to the map's most recent log file to stdout.
+        This function runs forever, so it should only be used in interactive contexts (i.e., the REPL or a Jupyter notebook or similar) where it can be cancelled.
+        """
         with (self._map_dir / 'cluster_logs' / f'{self.cluster_ids[-1]}.log').open() as file:
             file.seek(0, 2)
             while True:

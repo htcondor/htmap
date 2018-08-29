@@ -18,14 +18,6 @@ def test_map_creates_correct_number_of_input_files(mapped_doubler):
 
 
 @pytest.mark.usefixtures('mock_submit')
-def test_productmap_creates_correct_number_of_input_files(mapped_power):
-    num_inputs = 4
-    result = mapped_power.productmap('map', x = range(num_inputs), p = range(num_inputs))
-
-    assert get_number_of_files_in_dir(result._inputs_dir) == num_inputs ** 2
-
-
-@pytest.mark.usefixtures('mock_submit')
 def test_starmap_creates_correct_number_of_input_files(mapped_power):
     num_inputs = 4
     result = mapped_power.starmap(
@@ -48,16 +40,6 @@ def test_map_creates_correct_number_of_outputs_files(mapped_doubler):
 
 
 @pytest.mark.usefixtures('mock_submit')
-def test_productmap_creates_correct_number_of_output_files(mapped_power):
-    num_inputs = 4
-    result = mapped_power.productmap('map', x = range(num_inputs), p = range(num_inputs))
-
-    result.wait(timeout = 10)
-
-    assert get_number_of_files_in_dir(result._outputs_dir) == num_inputs ** 2
-
-
-@pytest.mark.usefixtures('mock_submit')
 def test_starmap_creates_correct_number_of_output_files(mapped_power):
     num_inputs = 4
     result = mapped_power.starmap(
@@ -77,14 +59,6 @@ def test_map_produces_correct_output(mapped_doubler):
     result = mapped_doubler.map('map', range(n))
 
     assert list(result) == [2 * x for x in range(n)]
-
-
-@pytest.mark.usefixtures('mock_submit')
-def test_productmap_produces_correct_output(mapped_power):
-    n = 4
-    result = mapped_power.productmap('map', x = range(n), p = range(n))
-
-    assert list(result) == [x ** p for x in range(n) for p in range(n)]
 
 
 @pytest.mark.usefixtures('mock_submit')

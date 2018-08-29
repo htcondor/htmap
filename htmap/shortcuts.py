@@ -7,10 +7,6 @@ def map(map_id: str, func: Callable, args, force_overwrite: bool = False, **kwar
     return mapper.htmap(func).map(map_id, args, force_overwrite = force_overwrite, **kwargs)
 
 
-def productmap(map_id: str, func: Callable, *args, force_overwrite: bool = False, **kwargs) -> result.MapResult:
-    return mapper.htmap(func).productmap(map_id, args, force_overwrite = force_overwrite, **kwargs)
-
-
 def starmap(map_id: str, func: Callable, args, kwargs, force_overwrite: bool = False) -> result.MapResult:
     return mapper.htmap(func).starmap(map_id, args, kwargs, force_overwrite = force_overwrite)
 

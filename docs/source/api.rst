@@ -6,6 +6,14 @@ API Reference
 .. highlight:: python
 
 
+Map IDs
+-------
+
+The `map_id` is the central, organizing feature of HTMap.
+Every map that you run produces a :class:`MapResult` which is connected to a unique ``map_id``, a string that you must provide when you run the map.
+A ``map_id`` cannot be re-used until the associated map has been deleted.
+
+
 HTMapper
 --------
 
@@ -23,6 +31,12 @@ The mapper can distribute (i.e., map) function calls out over an HTCondor cluste
 
 MapResult
 ---------
+
+The :class:`MapResult` is your window into the status and output of your map.
+Once you get a map result back from a map call, you can use its methods to get the status of jobs (both for display and further programmatic interaction),
+change the properties of the map while its running,
+pause, restart, or cancel the map,
+and finally retrieve the output once the map is done.
 
 .. autoclass:: htmap.MapResult
    :members:
@@ -49,8 +63,6 @@ These are module-level shortcut functions which let you produce and recover :cla
 
 .. autofunction:: htmap.starmap
 
-.. autofunction:: htmap.productmap
-
 .. autofunction:: htmap.build_map
 
 .. autofunction:: htmap.recover
@@ -59,10 +71,10 @@ These are module-level shortcut functions which let you produce and recover :cla
 Settings
 --------
 
-HTMap exposes configurable settings through `htmap.settings`, which is an instance of the class :class:`htmap.settings.Settings`.
+HTMap exposes configurable settings through ``htmap.settings``, which is an instance of the class :class:`htmap.settings.Settings`.
 This settings object manages a lookup chain of dictionaries.
 The settings object created during startup contains two dictionaries.
-The lowest level contains HTMap's default settings, and the second is constructed from a settings file at `~/.htmap.toml`.
+The lowest level contains HTMap's default settings, and the next level up is constructed from a settings file at ``~/.htmap.toml``.
 If that file does not exist, an empty dictionary is used instead.
 As you can guess from the extension, the file is be formatted in `TOML <https://github.com/toml-lang/toml>`_.
 
