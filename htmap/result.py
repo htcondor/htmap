@@ -472,8 +472,8 @@ class MapResult:
             ]
         )
 
-    def act(self, action: htcondor.JobAction):
-        return htcondor.Schedd().act(action, self._requirements)
+    def act(self, action: htcondor.JobAction, requirements: Optional[str] = None):
+        return htcondor.Schedd().act(action, self._requirements(requirements))
 
     def remove(self):
         """Permanently remove the map and delete all associated input and output files."""
