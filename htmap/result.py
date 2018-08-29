@@ -352,7 +352,7 @@ class MapResult:
                 callback(obj)
                 yield obj
 
-            if time.time() > start_time + timeout:
+            if timeout is not None and time.time() > start_time + timeout:
                 break
 
             time.sleep(1)
@@ -396,7 +396,7 @@ class MapResult:
                 callback(inp, out)
                 yield inp, out
 
-            if time.time() > start_time + timeout:
+            if timeout is not None and time.time() > start_time + timeout:
                 break
 
             time.sleep(1)
