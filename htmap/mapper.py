@@ -23,9 +23,9 @@ def check_map_id(map_id: str):
 def get_schedd():
     s = settings.get('HTCONDOR.SCHEDD', default = None)
     if s is not None:
-        return htcondor.schedd(s)
+        return htcondor.Schedd(s)
 
-    return htcondor.schedd()
+    return htcondor.Schedd()
 
 
 class MapBuilder:
