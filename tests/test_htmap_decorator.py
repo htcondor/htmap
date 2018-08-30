@@ -1,18 +1,20 @@
 import htmap
 
 
-def test_decorator_without_parens(doubler):
-    mapper = htmap.htmap(doubler)
+def test_decorator_without_parens():
+    @htmap.htmap
+    def foo(x):
+        return x
 
-    assert isinstance(mapper, htmap.HTMapper)
-    assert mapper.func is doubler
+    assert isinstance(foo, htmap.HTMapper)
 
 
 def test_decorator_with_parens(doubler):
-    mapper = htmap.htmap()(doubler)
+    @htmap.htmap()
+    def foo(x):
+        return x
 
-    assert isinstance(mapper, htmap.HTMapper)
-    assert mapper.func is doubler
+    assert isinstance(foo, htmap.HTMapper)
 
 
 def test_htmap_is_idempotent(mapped_doubler):

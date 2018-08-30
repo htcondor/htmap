@@ -194,39 +194,38 @@ class HTMapper:
 
         self._mkdirs(map_id)
         map_dir = map_dir_path(map_id)
-
-        fn_path = self._save_func(map_dir)
-        hashes = self._save_inputs(map_dir, args_and_kwargs)
-        self._save_hashes(map_dir, hashes)
-
-        input_files = [
-            fn_path.as_posix(),
-            (map_dir / 'inputs' / '$(Item).in').as_posix(),
-        ]
-        output_remaps = [
-            f'$(Item).out={(map_dir / "outputs" / "$(Item).out").as_posix()}',
-        ]
-
-        submit_dict = {
-            'JobBatchName': map_id,
-            'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
-            'arguments': '$(Item)',
-            'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-            'output': (map_dir / 'job_logs' / '$(Item).output').as_posix(),
-            'error': (map_dir / 'job_logs' / '$(Item).error').as_posix(),
-            'should_transfer_files': 'YES',
-            'when_to_transfer_output': 'ON_EXIT',
-            'request_cpus': '1',
-            'request_memory': '100MB',
-            'request_disk': '5GB',
-            'transfer_input_files': ','.join(input_files),
-            'transfer_output_remaps': f'"{";".join(output_remaps)}"'
-        }
-        sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
-
-        self._save_submit(map_dir, sub)
-
         try:
+            fn_path = self._save_func(map_dir)
+            hashes = self._save_inputs(map_dir, args_and_kwargs)
+            self._save_hashes(map_dir, hashes)
+
+            input_files = [
+                fn_path.as_posix(),
+                (map_dir / 'inputs' / '$(Item).in').as_posix(),
+            ]
+            output_remaps = [
+                f'$(Item).out={(map_dir / "outputs" / "$(Item).out").as_posix()}',
+            ]
+
+            submit_dict = {
+                'JobBatchName': map_id,
+                'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+                'arguments': '$(Item)',
+                'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
+                'output': (map_dir / 'job_logs' / '$(Item).output').as_posix(),
+                'error': (map_dir / 'job_logs' / '$(Item).error').as_posix(),
+                'should_transfer_files': 'YES',
+                'when_to_transfer_output': 'ON_EXIT',
+                'request_cpus': '1',
+                'request_memory': '100MB',
+                'request_disk': '5GB',
+                'transfer_input_files': ','.join(input_files),
+                'transfer_output_remaps': f'"{";".join(output_remaps)}"',
+            }
+            sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
+
+            self._save_submit(map_dir, sub)
+
             return self._submit(
                 map_id = map_id,
                 map_dir = map_dir,
@@ -353,5 +352,5 @@ def htmap(*args, **submit_options) -> Union[Callable, HTMapper]:
         return wrapper
     elif len(args) == 1 and len(submit_options) == 0:  # call without parens
         return wrapper(args[0])  # if no parens, args[0] is the function
-    else:
+    else:  # fairly confident this will never happen in real code
         raise exceptions.HTMapException('incorrect syntax for htmap decorator')

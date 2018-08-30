@@ -4,7 +4,6 @@ import htmap
 from htmap.mapper import map_dir_path
 
 
-@pytest.mark.usefixtures('mock_submit')
 def test_map_dir_does_not_exist_after_remove(mapped_doubler):
     map_id = 'foo'
     result = mapped_doubler.map(map_id, range(10))
@@ -12,6 +11,17 @@ def test_map_dir_does_not_exist_after_remove(mapped_doubler):
     assert map_dir_path(map_id).exists()
 
     result.remove()
+
+    assert not map_dir_path(map_id).exists()
+
+
+def test_map_dir_does_not_exist_after_remove_shortcut(mapped_doubler):
+    map_id = 'foo'
+    result = mapped_doubler.map(map_id, range(10))
+
+    assert map_dir_path(map_id).exists()
+
+    htmap.remove(map_id)
 
     assert not map_dir_path(map_id).exists()
 
