@@ -114,3 +114,28 @@ def test_get_waits_until_ready(mapped_doubler):
     result = mapped_doubler.map('map', range(n))
 
     assert result.get(3) == 6
+
+
+@pytest.mark.usefixtures('mock_submit')
+def test_cannot_use_same_mapid_again(mapped_doubler):
+    result = mapped_doubler.map('foo', range(5))
+
+    with pytest.raises(htmap.exceptions.MapIDAlreadyExists):
+        again = mapped_doubler.map('foo', range(5))
+
+
+@pytest.mark.usefixtures('mock_submit')
+def test_can_use_same_mapid_again_if_force_overwrite(mapped_doubler):
+    result = mapped_doubler.map('foo', range(5))
+
+    again = mapped_doubler.map('foo', range(5), force_overwrite = True)
+
+
+def test_empty_map_raises_empty_map(mapped_doubler):
+    with pytest.raises(htmap.exceptions.EmptyMap):
+        mapped_doubler.map('foo', [])
+
+
+def test_empty_starmap_raises_empty_map(mapped_doubler):
+    with pytest.raises(htmap.exceptions.EmptyMap):
+        mapped_doubler.starmap('foo', [], [])

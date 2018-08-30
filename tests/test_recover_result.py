@@ -32,3 +32,8 @@ def test_recover_classmethod(mapped_doubler):
     assert result.map_id == recovered.map_id
     assert result.cluster_ids == recovered.cluster_ids
     assert result.hashes == recovered.hashes
+
+
+def test_recover_on_bad_mapid_raises_map_id_not_found():
+    with pytest.raises(htmap.exceptions.MapIDNotFound):
+        htmap.recover('no_such_mapid')

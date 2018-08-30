@@ -249,6 +249,7 @@ class HTMapper:
     @staticmethod
     def _save_inputs(map_dir: Path, args_and_kwargs) -> List[str]:
         hashes = []
+        num_inputs = 0
         for a_and_k in args_and_kwargs:
             b = htio.to_bytes(a_and_k)
             h = htio.hash_bytes(b)
@@ -256,6 +257,11 @@ class HTMapper:
 
             input_path = map_dir / 'inputs' / f'{h}.in'
             htio.save_bytes(b, input_path)
+
+            num_inputs += 1
+
+        if num_inputs == 0:
+            raise exceptions.EmptyMap()
 
         return hashes
 

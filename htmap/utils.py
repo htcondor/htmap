@@ -39,7 +39,7 @@ def clean_dir(target_dir: Path) -> (int, int):
 
 def wait_for_path_to_exist(
     path: Path,
-    timeout: Optional[Union[int, datetime.timedelta]] = 1,
+    timeout: Optional[Union[int, datetime.timedelta]] = None,
     wait_time: Union[int, datetime.timedelta] = 1,
 ):
     """
@@ -61,8 +61,7 @@ def wait_for_path_to_exist(
 
     start_time = time.time()
     while not path.exists():
-        t = time.time()
-        if timeout is not None and (timeout == 0 or t > start_time + timeout):
+        if timeout is not None and (timeout == 0 or time.time() > start_time + timeout):
             raise exceptions.TimeoutError(f'timeout while waiting for {path} to exist')
         time.sleep(wait_time)
 

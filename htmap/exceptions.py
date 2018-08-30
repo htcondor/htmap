@@ -31,3 +31,8 @@ class MapIDAlreadyExists(HTMapException):
 class MapIDNotFound(HTMapException):
     """The requested ``map_id`` does not exist."""
     pass
+
+
+class EmptyMap(HTMapException):
+    """The map contains no inputs."""
+    pass

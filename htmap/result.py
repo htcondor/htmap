@@ -469,12 +469,15 @@ class MapResult:
         )
 
     def act(self, action: htcondor.JobAction, requirements: Optional[str] = None):
-        return htcondor.Schedd().act(action, self._requirements(requirements))
+        schedd = mapper.get_schedd()
+        return schedd.act(action, self._requirements(requirements))
 
     def remove(self):
         """Permanently remove the map and delete all associated input and output files."""
-        self._remove_from_queue()
+        act_result = self._remove_from_queue()
         self._rm_map_dir()
+
+        return act_result
 
     def _remove_from_queue(self):
         return self.act(htcondor.JobAction.Remove)

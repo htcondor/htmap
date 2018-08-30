@@ -24,6 +24,9 @@ class Schedd:
     def transaction(self):
         return Transaction()
 
+    def act(self, *args, **kwargs):
+        return {}
+
 
 class Transaction:
     def __enter__(self):
