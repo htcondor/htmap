@@ -1,2 +1,0 @@
-class ClassAd(dict):
-    pass

@@ -2,4 +2,5 @@
 
 pytest
 pytest-mock
+pytest-xdist
 coverage

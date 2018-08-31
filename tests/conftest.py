@@ -1,24 +1,14 @@
-import functools
-import sys
 import time
 
-from . import mock_htcondor, mock_classad
-
-sys.modules['htcondor'] = mock_htcondor
-sys.modules['classad'] = mock_classad
-
 from pathlib import Path
-import multiprocessing
 
 import pytest
-
-import cloudpickle
 
 import htmap
 
 
 @pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir(tmpdir_factory):
+def set_htmap_dir_and_clean_afterwards(tmpdir_factory):
     """Use a fresh HTMAP_DIR for every test."""
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
     htmap.settings['HTMAP_DIR'] = path
@@ -55,7 +45,7 @@ def mapped_power(power):
 @pytest.fixture(scope = 'session')
 def sleepy_double():
     def sleepy_double(x):
-        time.sleep(x)
+        time.sleep(5)
         return 2 * x
 
     return sleepy_double
@@ -65,61 +55,3 @@ def sleepy_double():
 def mapped_sleepy_double(sleepy_double):
     mapper = htmap.htmap(sleepy_double)
     return mapper
-
-
-@pytest.fixture(scope = 'session')
-def mock_pool():
-    with multiprocessing.Pool() as pool:
-        yield pool
-
-
-def htc_run(map_dir, input_hash):
-    inputs_dir = map_dir / 'inputs'
-    outputs_dir = map_dir / 'outputs'
-    with (map_dir / 'fn.pkl').open(mode = 'rb') as file:
-        fn = cloudpickle.load(file)
-
-    with (inputs_dir / f'{input_hash}.in').open(mode = 'rb') as file:
-        args, kwargs = cloudpickle.load(file)
-
-    output = fn(*args, **kwargs)
-
-    with (outputs_dir / f'{input_hash}.out').open(mode = 'wb') as file:
-        cloudpickle.dump(output, file)
-
-
-def submit(map_id, map_dir, submit_object, input_hashes, pool = None):
-    schedd = mock_htcondor.Schedd()
-    with schedd.transaction() as txn:
-        submit_result = mock_htcondor.SubmitResult()
-        cluster_id = submit_result.cluster()
-
-        with (map_dir / 'cluster_ids').open(mode = 'a') as file:
-            file.write(str(cluster_id))
-
-        with (map_dir / 'cluster_ids').open() as file:
-            cluster_ids = [int(cid.strip()) for cid in file]
-
-        pool.starmap_async(
-            htc_run,
-            (
-                (map_dir, input_hash)
-                for input_hash in input_hashes
-            ),
-        )
-
-        return htmap.result.MapResult(
-            map_id = map_id,
-            cluster_ids = cluster_ids,
-            submit = submit_object,
-            hashes = input_hashes,
-        )
-
-
-@pytest.fixture(scope = 'function')
-def mock_submit(mock_pool, mocker):
-    return mocker.patch.object(
-        htmap.HTMapper,
-        '_submit',
-        functools.partial(submit, pool = mock_pool),
-    )

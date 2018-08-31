@@ -4,7 +4,6 @@ import htmap
 import htmap.mapper
 
 
-@pytest.mark.usefixtures('mock_submit')
 def test_exception_inside_submit_removes_map_dir(mocker, mapped_doubler):
     class Marker(Exception):
         pass
