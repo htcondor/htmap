@@ -36,3 +36,7 @@ class MapIDNotFound(HTMapException):
 class EmptyMap(HTMapException):
     """The map contains no inputs."""
     pass
+
+
+class ReservedOptionKeyword(HTMapException):
+    pass

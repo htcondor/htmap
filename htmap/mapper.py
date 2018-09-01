@@ -1,13 +1,13 @@
 from typing import Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator, Any
 
-import collections
 import shutil
 from pathlib import Path
 import itertools
+import json
 
 import htcondor
 
-from . import htio, exceptions, result, settings
+from . import htio, exceptions, result, options, settings
 
 
 def map_dir_path(map_id: str) -> Path:
@@ -103,6 +103,7 @@ class HTMapper:
         map_id: str,
         args: Iterable[Any],
         force_overwrite: bool = False,
+        map_options = None,
         **kwargs,
     ) -> result.MapResult:
         """
@@ -127,14 +128,15 @@ class HTMapper:
         """
         args = ((arg,) for arg in args)
         args_and_kwargs = zip(args, itertools.repeat(kwargs))
-        return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite)
+        return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite, map_options = map_options)
 
     def starmap(
         self,
         map_id: str,
         args: Optional[Iterable[Tuple]] = None,
         kwargs: Optional[Iterable[Dict]] = None,
-        force_overwrite: bool = False
+        force_overwrite: bool = False,
+        map_options = None,
     ) -> result.MapResult:
         """
         Map a function call over aligned iterables of arguments and keyword arguments.
@@ -162,7 +164,7 @@ class HTMapper:
             kwargs = ()
 
         args_and_kwargs = zip_args_and_kwargs(args, kwargs)
-        return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite)
+        return self._map(map_id, args_and_kwargs, force_overwrite = force_overwrite, map_options = map_options)
 
     def build_map(self, map_id: str, force_overwrite: bool = False):
         """
@@ -182,7 +184,13 @@ class HTMapper:
         """
         return MapBuilder(mapper = self, map_id = map_id, force_overwrite = force_overwrite)
 
-    def _map(self, map_id: str, args_and_kwargs: Iterable[Tuple], force_overwrite: bool = False) -> result.MapResult:
+    def _map(
+        self,
+        map_id: str,
+        args_and_kwargs: Iterable[Tuple],
+        force_overwrite: bool = False,
+        map_options = None,
+    ) -> result.MapResult:
         if force_overwrite:
             try:
                 existing_result = result.MapResult.recover(map_id)
@@ -201,36 +209,23 @@ class HTMapper:
 
             input_files = [
                 fn_path.as_posix(),
-                (map_dir / 'inputs' / '$(Item).in').as_posix(),
+                (map_dir / 'inputs' / '$(hash).in').as_posix(),
             ]
             output_remaps = [
-                f'$(Item).out={(map_dir / "outputs" / "$(Item).out").as_posix()}',
+                f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
             ]
 
-            submit_dict = {
-                'JobBatchName': map_id,
-                'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
-                'arguments': '$(Item)',
-                'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-                'output': (map_dir / 'job_logs' / '$(Item).output').as_posix(),
-                'error': (map_dir / 'job_logs' / '$(Item).error').as_posix(),
-                'should_transfer_files': 'YES',
-                'when_to_transfer_output': 'ON_EXIT',
-                'request_cpus': '1',
-                'request_memory': '100MB',
-                'request_disk': '5GB',
-                'transfer_input_files': ','.join(input_files),
-                'transfer_output_remaps': f'"{";".join(output_remaps)}"',
-            }
-            sub = htcondor.Submit(dict(collections.ChainMap(self.submit_options, submit_dict)))
+            sub, extra_itemdata = options.create_submit_object(map_id, map_dir, input_files, output_remaps, map_options)
 
             self._save_submit(map_dir, sub)
+            self._save_extra_itemdata(map_dir, extra_itemdata)
 
             return self._submit(
                 map_id = map_id,
                 map_dir = map_dir,
                 submit_object = sub,
                 input_hashes = hashes,
+                extra_itemdata = extra_itemdata,
             )
         except Exception as e:
             # something went wrong during submission, and the job is malformed
@@ -274,10 +269,22 @@ class HTMapper:
         htio.save_object(dict(submit), map_dir / 'submit')
 
     @staticmethod
-    def _submit(map_id, map_dir, submit_object, input_hashes) -> result.MapResult:
+    def _save_extra_itemdata(map_dir: Path, extra_itemdata: List[dict]):
+        with (map_dir / 'extra_itemdata').open(mode = 'w') as f:
+            json.dump(extra_itemdata, f, indent = None, separators = (',', ':'))
+
+    @staticmethod
+    def _submit(map_id, map_dir, submit_object, input_hashes, extra_itemdata) -> result.MapResult:
         schedd = get_schedd()
         with schedd.transaction() as txn:
-            submit_result = submit_object.queue_with_itemdata(txn, 1, iter(input_hashes))
+            submit_result = submit_object.queue_with_itemdata(
+                txn,
+                1,
+                (
+                    {'hash': h, **{k: v for k, v in extra.items()}}
+                    for h, extra in zip(input_hashes, extra_itemdata)
+                ),
+            )
 
             cluster_id = submit_result.cluster()
 

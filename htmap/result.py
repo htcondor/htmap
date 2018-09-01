@@ -5,6 +5,7 @@ import enum
 import shutil
 import time
 import collections
+import json
 from copy import copy
 from pathlib import Path
 
@@ -554,14 +555,30 @@ class MapResult:
         """Reruns the entire map from scratch."""
         self._clean_outputs_dir()
 
-        return self.rerun_incomplete()
+        return self._rerun(input_hashes = self.hashes)
 
     def rerun_incomplete(self):
         """Rerun any incomplete parts of the map from scratch."""
+
+        return self._rerun(input_hashes = self._missing_hashes)
+
+    def _rerun(self, input_hashes):
         self._remove_from_queue()
 
-        missing_hashes = self._missing_hashes
+        with (self._map_dir / 'extra_itemdata').open(mode = 'r') as f:
+            extra_itemdata = json.load(f)
+        extra_itemdata = [
+            d
+            for index, d in enumerate(extra_itemdata)
+            if self.hashes[index] in input_hashes
+        ]
 
-        dummy = mapper.HTMapper._submit(self.map_id, self._map_dir, self.submit, missing_hashes)
+        dummy = mapper.HTMapper._submit(
+            self.map_id,
+            self._map_dir,
+            self.submit,
+            input_hashes,
+            extra_itemdata,
+        )
 
         self.cluster_ids.append(dummy.cluster_ids[-1])
