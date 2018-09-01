@@ -1,12 +1,12 @@
 import itertools
-from typing import Union, List, Iterable, Tuple
+from typing import Union, Iterable
 
 import collections
 from pathlib import Path
 
 import htcondor
 
-from . import exceptions, settings
+from . import exceptions
 
 
 class MapOptions(collections.UserDict):

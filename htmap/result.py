@@ -53,7 +53,7 @@ class MapResult:
     """
     Represents the results from a map call.
     The constructor is documented here, but you should never need to build a :class:`MapResult` manually.
-    Instead, you'll get your :class:`MapResult` by calling a :class:`HTMapper` method or by using :func:`htmap.recover`.
+    Instead, you'll get your :class:`MapResult` by calling a :class:`MappedFunction` method or by using :func:`htmap.recover`.
     """
 
     def __init__(self, map_id: str, cluster_ids: List[int], submit, hashes: Iterable[str]):
@@ -551,34 +551,28 @@ class MapResult:
                 else:
                     print(line, end = '')
 
-    # def rerun(self):
-    #     """Reruns the entire map from scratch."""
-    #     self._clean_outputs_dir()
-    #
-    #     return self._rerun(input_hashes = self.hashes)
-    #
-    # def rerun_incomplete(self):
-    #     """Rerun any incomplete parts of the map from scratch."""
-    #
-    #     return self._rerun(input_hashes = self._missing_hashes)
-    #
-    # def _rerun(self, input_hashes):
-    #     self._remove_from_queue()
-    #
-    #     with (self._map_dir / 'extra_itemdata').open(mode = 'r') as f:
-    #         extra_itemdata = json.load(f)
-    #     extra_itemdata = [
-    #         d
-    #         for index, d in enumerate(extra_itemdata)
-    #         if self.hashes[index] in input_hashes
-    #     ]
-    #
-    #     dummy = mapping.submit_map(
-    #         self.map_id,
-    #         self._map_dir,
-    #         self.submit,
-    #         input_hashes,
-    #         extra_itemdata,
-    #     )
-    #
-    #     self.cluster_ids.append(dummy.cluster_ids[-1])
+    def rerun(self):
+        """Reruns the entire map from scratch."""
+        self._clean_outputs_dir()
+        return self.rerun_incomplete()
+
+    def rerun_incomplete(self):
+        """Rerun any incomplete parts of the map from scratch."""
+        return self._rerun(hashes = self._missing_hashes)
+
+    def _rerun(self, hashes):
+        self._remove_from_queue()
+
+        with (self._map_dir / 'itemdata').open(mode = 'r') as f:
+            itemdata = json.load(f)
+        itemdata_by_hash = {d['hash']: d for d in itemdata}
+        new_itemdata = [itemdata_by_hash[h] for h in hashes]
+
+        submit_obj = htcondor.Submit(htio.load_object(self._map_dir / 'submit'))
+
+        submit_result = mapping.execute_submit(
+            submit_obj,
+            new_itemdata,
+        )
+
+        self.cluster_ids.append(submit_result.cluster())

@@ -1,8 +1,6 @@
-from typing import Callable
-
 import shutil
 
-from . import mapper, result, exceptions
+from . import mapping, result, exceptions
 
 
 def recover(map_id: str) -> result.MapResult:
@@ -19,4 +17,4 @@ def remove(map_id: str, not_exist_ok = True):
 
 
 def force_remove(map_id: str):
-    shutil.rmtree(mapper.map_dir_path(map_id))
+    shutil.rmtree(mapping.map_dir_path(map_id))

@@ -1,4 +1,4 @@
-from typing import Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator, Any
+from typing import Tuple, Iterable, Dict, Optional, List, Callable, Iterator, Any
 
 import shutil
 from pathlib import Path
@@ -26,19 +26,6 @@ def get_schedd():
         return htcondor.Schedd(s)
 
     return htcondor.Schedd()
-
-
-MAP_SUBDIR_NAMES = (
-    'inputs',
-    'outputs',
-    'job_logs',
-    'cluster_logs',
-)
-
-
-def mk_map_subdirs(map_dir):
-    for path in (map_dir / d for d in MAP_SUBDIR_NAMES):
-        path.mkdir(parents = True, exist_ok = True)
 
 
 def map(
@@ -143,7 +130,7 @@ def submit_map(
 
     map_dir = map_dir_path(map_id)
     try:
-        mk_map_subdirs(map_dir)
+        make_map_subdirs(map_dir)
         save_func(map_dir, func)
         hashes = save_args_and_kwargs(map_dir, args_and_kwargs)
         save_hashes(map_dir, hashes)
@@ -183,6 +170,19 @@ def submit_map(
         raise e
 
 
+MAP_SUBDIR_NAMES = (
+    'inputs',
+    'outputs',
+    'job_logs',
+    'cluster_logs',
+)
+
+
+def make_map_subdirs(map_dir):
+    for path in (map_dir / d for d in MAP_SUBDIR_NAMES):
+        path.mkdir(parents = True, exist_ok = True)
+
+
 def save_func(map_dir, func):
     fn_path = map_dir / 'fn.pkl'
     htio.save_object(func, fn_path)
@@ -216,9 +216,9 @@ def save_submit_object(map_dir: Path, submit):
     htio.save_object(dict(submit), map_dir / 'submit')
 
 
-def save_itemdata(map_dir: Path, extra_itemdata: List[dict]):
-    with (map_dir / 'extra_itemdata').open(mode = 'w') as f:
-        json.dump(extra_itemdata, f, indent = None, separators = (',', ':'))
+def save_itemdata(map_dir: Path, itemdata: List[dict]):
+    with (map_dir / 'itemdata').open(mode = 'w') as f:
+        json.dump(itemdata, f, indent = None, separators = (',', ':'))
 
 
 def execute_submit(submit_object, itemdata):

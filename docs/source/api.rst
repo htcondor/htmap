@@ -14,15 +14,15 @@ Every map that you run produces a :class:`MapResult` which is connected to a uni
 A ``map_id`` cannot be re-used until the associated map has been deleted.
 
 
-HTMapper
---------
+MappedFunction
+--------------
 
-The most powerful and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an :class:`HTMapper`.
-The mapper can distribute (i.e., map) function calls out over an HTCondor cluster.
+The most powerful and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an :class:`MappedFunction`.
+The mappped function can be used to distribute (i.e., map) function calls out over an HTCondor cluster.
 
 .. autofunction:: htmap.htmap
 
-.. autoclass:: htmap.HTMapper
+.. autoclass:: htmap.MappedFunction
    :members:
 
 .. autoclass:: htmap.MapBuilder

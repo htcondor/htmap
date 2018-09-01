@@ -1,15 +1,10 @@
-from typing import Tuple, Iterable, Dict, Union, Optional, List, Callable, Iterator, Any
-
-import shutil
-from pathlib import Path
-import itertools
-import json
+from typing import Tuple, Iterable, Dict, Union, Optional, Callable, Any
 
 from . import mapping, options, result, exceptions
 
 
 class MapBuilder:
-    def __init__(self, mapper: 'HTMapper', map_id: str, force_overwrite: bool = False):
+    def __init__(self, mapper: 'MappedFunction', map_id: str, force_overwrite: bool = False):
         self.mapper = mapper
         self.map_id = map_id
         self.force_overwrite = force_overwrite
@@ -55,7 +50,7 @@ class MapBuilder:
         return len(self.args)
 
 
-class HTMapper:
+class MappedFunction:
     def __init__(
         self,
         func: Callable,
@@ -126,9 +121,9 @@ class HTMapper:
         return MapBuilder(mapper = self, map_id = map_id, force_overwrite = force_overwrite)
 
 
-def htmap(map_options: Optional[options.MapOptions] = None) -> Union[Callable, HTMapper]:
+def htmap(map_options: Optional[options.MapOptions] = None) -> Union[Callable, MappedFunction]:
     """
-    A decorator that wraps a function in an :class:`HTMapper`,
+    A decorator that wraps a function in an :class:`MappedFunction`,
     which provides an interface for mapping functions calls out to an HTCondor cluster.
 
     Parameters
@@ -137,15 +132,15 @@ def htmap(map_options: Optional[options.MapOptions] = None) -> Union[Callable, H
     Returns
     -------
     mapper
-        An :class:`HTMapper` that wraps the function (or a wrapper function that does the wrapping).
+        An :class:`MappedFunction` that wraps the function (or a wrapper function that does the wrapping).
     """
 
-    def wrapper(func: Callable) -> HTMapper:
+    def wrapper(func: Callable) -> MappedFunction:
         # prevent nesting HTMappers inside each other by accident
-        if isinstance(func, HTMapper):
+        if isinstance(func, MappedFunction):
             func = func.func
 
-        return HTMapper(func, map_options)
+        return MappedFunction(func, map_options)
 
     # if called without parens, map_options is actually func!
     if callable(map_options):
