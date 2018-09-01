@@ -1,7 +1,7 @@
 import pytest
 
 import htmap
-from htmap.mapper import map_dir_path
+from htmap.mapping import map_dir_path
 
 
 def test_map_dir_does_not_exist_after_remove(mapped_doubler):
@@ -17,7 +17,7 @@ def test_map_dir_does_not_exist_after_remove(mapped_doubler):
 
 def test_map_dir_does_not_exist_after_remove_shortcut(mapped_doubler):
     map_id = 'foo'
-    result = mapped_doubler.map(map_id, range(10))
+    mapped_doubler.map(map_id, range(10))
 
     assert map_dir_path(map_id).exists()
 

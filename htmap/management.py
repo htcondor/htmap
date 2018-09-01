@@ -1,6 +1,7 @@
 from typing import Tuple, Iterator
 
 from pathlib import Path
+import shutil
 
 from . import mapper, result, settings, shortcuts, utils
 
@@ -24,6 +25,12 @@ def clean():
     """Remove all existing maps."""
     for map_result in map_results():
         map_result.remove()
+
+
+def force_clean():
+    """Remove all existing maps."""
+    for map_dir in _map_paths():
+        shutil.rmtree(map_dir)
 
 
 def status() -> str:

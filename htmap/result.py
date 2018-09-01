@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 import htcondor
 
-from . import htio, exceptions, utils, mapper
+from . import htio, exceptions, utils, mapping
 
 
 class JobStatus(enum.IntEnum):
@@ -89,7 +89,7 @@ class MapResult:
         result
             The result with the given ``map_id``.
         """
-        map_dir = mapper.map_dir_path(map_id)
+        map_dir = mapping.map_dir_path(map_id)
         try:
             with (map_dir / 'cluster_ids').open() as file:
                 cluster_ids = [int(cid.strip()) for cid in file]
@@ -116,7 +116,7 @@ class MapResult:
     @property
     def _map_dir(self) -> Path:
         """The path to the map directory."""
-        return mapper.map_dir_path(self.map_id)
+        return mapping.map_dir_path(self.map_id)
 
     @property
     def _inputs_dir(self) -> Path:
@@ -430,7 +430,7 @@ class MapResult:
         if projection is None:
             projection = []
 
-        schedd = mapper.get_schedd()
+        schedd = mapping.get_schedd()
         yield from schedd.xquery(
             requirements = self._requirements(requirements),
             projection = projection,
@@ -470,7 +470,7 @@ class MapResult:
         )
 
     def act(self, action: htcondor.JobAction, requirements: Optional[str] = None):
-        schedd = mapper.get_schedd()
+        schedd = mapping.get_schedd()
         return schedd.act(action, self._requirements(requirements))
 
     def remove(self):
@@ -508,7 +508,7 @@ class MapResult:
         return self.act(htcondor.JobAction.Vacate)
 
     def edit(self, attr: str, value: str, requirements: Optional[str] = None):
-        schedd = mapper.get_schedd()
+        schedd = mapping.get_schedd()
         return schedd.act(self._requirements(requirements), attr, value)
 
     def _iter_output(self, item: int) -> Iterator[str]:
@@ -551,34 +551,34 @@ class MapResult:
                 else:
                     print(line, end = '')
 
-    def rerun(self):
-        """Reruns the entire map from scratch."""
-        self._clean_outputs_dir()
-
-        return self._rerun(input_hashes = self.hashes)
-
-    def rerun_incomplete(self):
-        """Rerun any incomplete parts of the map from scratch."""
-
-        return self._rerun(input_hashes = self._missing_hashes)
-
-    def _rerun(self, input_hashes):
-        self._remove_from_queue()
-
-        with (self._map_dir / 'extra_itemdata').open(mode = 'r') as f:
-            extra_itemdata = json.load(f)
-        extra_itemdata = [
-            d
-            for index, d in enumerate(extra_itemdata)
-            if self.hashes[index] in input_hashes
-        ]
-
-        dummy = mapper.HTMapper._submit(
-            self.map_id,
-            self._map_dir,
-            self.submit,
-            input_hashes,
-            extra_itemdata,
-        )
-
-        self.cluster_ids.append(dummy.cluster_ids[-1])
+    # def rerun(self):
+    #     """Reruns the entire map from scratch."""
+    #     self._clean_outputs_dir()
+    #
+    #     return self._rerun(input_hashes = self.hashes)
+    #
+    # def rerun_incomplete(self):
+    #     """Rerun any incomplete parts of the map from scratch."""
+    #
+    #     return self._rerun(input_hashes = self._missing_hashes)
+    #
+    # def _rerun(self, input_hashes):
+    #     self._remove_from_queue()
+    #
+    #     with (self._map_dir / 'extra_itemdata').open(mode = 'r') as f:
+    #         extra_itemdata = json.load(f)
+    #     extra_itemdata = [
+    #         d
+    #         for index, d in enumerate(extra_itemdata)
+    #         if self.hashes[index] in input_hashes
+    #     ]
+    #
+    #     dummy = mapping.submit_map(
+    #         self.map_id,
+    #         self._map_dir,
+    #         self.submit,
+    #         input_hashes,
+    #         extra_itemdata,
+    #     )
+    #
+    #     self.cluster_ids.append(dummy.cluster_ids[-1])

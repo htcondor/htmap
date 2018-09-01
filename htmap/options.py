@@ -52,17 +52,32 @@ class MapOptions(collections.UserDict):
             raise exceptions.ReservedOptionKeyword(f'{",".join(reserved_keys_in_kwargs)} {s} and cannot be used')
 
 
-def create_submit_object(map_id, map_dir, input_files, output_remaps, map_options):
+def create_submit_object(map_id, map_dir, input_hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
 
     extra_input_files = [','.join(Path(f).absolute().as_posix() for f in files) for files in map_options.input_files]
 
-    extra_itemdata = [
+    itemdata = [
         {
+            'hash': h,
             'extra_input_files': files,
         }
-        for files in extra_input_files
+        for h, files
+        in itertools.zip_longest(  # todo: this is really "zip first", not "zip longest"
+            input_hashes,
+            extra_input_files,
+            fillvalue = '',
+        )
+    ]
+
+    input_files = [
+        (map_dir / 'fn.pkl').as_posix(),
+        (map_dir / 'inputs' / '$(hash).in').as_posix(),
+    ]
+
+    output_remaps = [
+        f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
     ]
 
     base_options = {
@@ -82,8 +97,4 @@ def create_submit_object(map_id, map_dir, input_files, output_remaps, map_option
     }
     sub = htcondor.Submit(dict(collections.ChainMap(map_options, base_options)))
 
-    print(sub)
-    print()
-    print(extra_itemdata)
-
-    return sub, extra_itemdata
+    return sub, itemdata
