@@ -33,7 +33,7 @@ def map(
     func: Callable,
     args: Iterable[Any],
     force_overwrite: bool = False,
-    map_options = None,
+    map_options: options.MapOptions = None,
     **kwargs,
 ) -> result.MapResult:
     """
@@ -75,7 +75,7 @@ def starmap(
     args: Optional[Iterable[Tuple]] = None,
     kwargs: Optional[Iterable[Dict]] = None,
     force_overwrite: bool = False,
-    map_options = None,
+    map_options: options.MapOptions = None,
 ) -> result.MapResult:
     """
     Map a function call over aligned iterables of arguments and keyword arguments.
@@ -110,6 +110,71 @@ def starmap(
         force_overwrite = force_overwrite,
         map_options = map_options,
     )
+
+
+class MapBuilder:
+    def __init__(
+        self,
+        map_id: str,
+        func: Callable,
+        force_overwrite: bool = False,
+        map_options: options.MapOptions = None,
+    ):
+        self.func = func
+        self.map_id = map_id
+        self.force_overwrite = force_overwrite
+        self.map_options = map_options
+
+        self.args = []
+        self.kwargs = []
+
+        self._result = None
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # if an exception is raised in the with, re-raise without submitting jobs
+        if exc_type is not None:
+            return False
+
+        self._result = starmap(
+            map_id = self.map_id,
+            func = self.func,
+            args = self.args,
+            kwargs = self.kwargs,
+            force_overwrite = self.force_overwrite,
+            map_options = self.map_options
+        )
+
+    def __call__(self, *args, **kwargs):
+        self.args.append(args)
+        self.kwargs.append(kwargs)
+
+    @property
+    def result(self) -> result.MapResult:
+        """
+        The :class:`MapResult` associated with this :class:`MapBuilder`.
+        Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
+        """
+        if self._result is None:
+            raise exceptions.NoResultYet('result does not exist until after with block')
+        return self._result
+
+    def __len__(self):
+        return len(self.args)
+
+
+def build_map(
+    map_id: str,
+    func: Callable,
+    force_overwrite: bool = False,
+    map_options: options.MapOptions = None,
+) -> MapBuilder:
+    return MapBuilder(map_id = map_id, func = func, force_overwrite = force_overwrite, map_options = map_options)
 
 
 def submit_map(

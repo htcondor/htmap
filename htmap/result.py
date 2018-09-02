@@ -175,7 +175,7 @@ class MapResult:
             utils.wait_for_path_to_exist(path, timeout)
         except exceptions.TimeoutError as e:
             if timeout <= 0:
-                raise exceptions.OutputNotFound(f'output for hash {h} not found')
+                raise exceptions.OutputNotFound(f'output for index {item} not found') from e
             else:
                 raise e
 

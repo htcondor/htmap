@@ -3,58 +3,11 @@ from typing import Tuple, Iterable, Dict, Union, Optional, Callable, Any
 from . import mapping, options, result, exceptions
 
 
-class MapBuilder:
-    def __init__(self, mapper: 'MappedFunction', map_id: str, force_overwrite: bool = False):
-        self.mapper = mapper
-        self.map_id = map_id
-        self.force_overwrite = force_overwrite
-
-        self.args = []
-        self.kwargs = []
-
-        self._result = None
-
-    def __repr__(self):
-        return f'<{self.__class__.__name__}(mapper = {self.mapper})>'
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # if an exception is raised in the with, re-raise without submitting jobs
-        if exc_type is not None:
-            return False
-
-        self._result = self.mapper.starmap(
-            self.map_id,
-            self.args,
-            self.kwargs,
-            force_overwrite = self.force_overwrite
-        )
-
-    def __call__(self, *args, **kwargs):
-        self.args.append(args)
-        self.kwargs.append(kwargs)
-
-    @property
-    def result(self) -> result.MapResult:
-        """
-        The :class:`MapResult` associated with this :class:`MapBuilder`.
-        Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
-        """
-        if self._result is None:
-            raise exceptions.NoResultYet('result does not exist until after with block')
-        return self._result
-
-    def __len__(self):
-        return len(self.args)
-
-
 class MappedFunction:
     def __init__(
         self,
         func: Callable,
-        map_options: Optional[options.MapOptions] = None,
+        map_options: Optional[options.MapOptions] = None
     ):
         self.func = func
 
@@ -73,15 +26,18 @@ class MappedFunction:
         map_id: str,
         args: Iterable[Any],
         force_overwrite: bool = False,
-        map_options = None,
+        map_options: Optional[options.MapOptions] = None,
         **kwargs,
     ) -> result.MapResult:
+        if map_options is None:
+            map_options = options.MapOptions()
+
         return mapping.map(
-            map_id,
-            self.func,
-            args,
-            map_options = map_options,
+            map_id = map_id,
+            func = self.func,
+            args = args,
             force_overwrite = force_overwrite,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
             **kwargs,
         )
 
@@ -91,18 +47,26 @@ class MappedFunction:
         args: Optional[Iterable[Tuple]] = None,
         kwargs: Optional[Iterable[Dict]] = None,
         force_overwrite: bool = False,
-        map_options = None,
+        map_options: Optional[options.MapOptions] = None,
     ) -> result.MapResult:
+        if map_options is None:
+            map_options = options.MapOptions()
+
         return mapping.starmap(
-            map_id,
-            self.func,
-            args,
-            kwargs,
+            map_id = map_id,
+            func = self.func,
+            args = args,
+            kwargs = kwargs,
             force_overwrite = force_overwrite,
-            map_options = map_options,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
         )
 
-    def build_map(self, map_id: str, force_overwrite: bool = False):
+    def build_map(
+        self,
+        map_id: str,
+        force_overwrite: bool = False,
+        map_options: Optional[options.MapOptions] = None,
+    ) -> mapping.MapBuilder:
         """
         Return a :class:`htmap.MapBuilder` for the wrapped function.
 
@@ -118,7 +82,15 @@ class MappedFunction:
         map_builder :
             A :class:`htmap.MapBuilder` for the wrapped function.
         """
-        return MapBuilder(mapper = self, map_id = map_id, force_overwrite = force_overwrite)
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.build_map(
+            map_id = map_id,
+            func = self.func,
+            force_overwrite = force_overwrite,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
+        )
 
 
 def htmap(map_options: Optional[options.MapOptions] = None) -> Union[Callable, MappedFunction]:
@@ -134,15 +106,17 @@ def htmap(map_options: Optional[options.MapOptions] = None) -> Union[Callable, M
     mapper
         An :class:`MappedFunction` that wraps the function (or a wrapper function that does the wrapping).
     """
+    if map_options is None:  # call with parens but no args
+        def wrapper(func: Callable) -> MappedFunction:
+            return MappedFunction(func)
 
-    def wrapper(func: Callable) -> MappedFunction:
-        # prevent nesting HTMappers inside each other by accident
-        if isinstance(func, MappedFunction):
-            func = func.func
+        return wrapper
 
-        return MappedFunction(func, map_options)
+    elif callable(map_options):  # call with no parens on function
+        return MappedFunction(map_options)
 
-    # if called without parens, map_options is actually func!
-    if callable(map_options):
-        return wrapper(map_options)
-    return wrapper
+    elif isinstance(map_options, options.MapOptions):  # call with map options
+        def wrapper(func: Callable) -> MappedFunction:
+            return MappedFunction(func, map_options = map_options)
+
+        return wrapper

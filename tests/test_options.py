@@ -307,3 +307,43 @@ def test_generic_itemdata_too_few():
         )
 
     assert 'stooge' in exception_msg(exc_info)
+
+
+def test_merging_options_override():
+    a = htmap.MapOptions(
+        foo = 'override',
+    )
+    b = htmap.MapOptions(
+        foo = 'hidden'
+    )
+
+    merged = htmap.MapOptions.merge(a, b)
+
+    assert merged['foo'] == 'override'
+
+
+def test_merging_options_side_by_side():
+    a = htmap.MapOptions(
+        foo = 'me',
+    )
+    b = htmap.MapOptions(
+        bar = 'too'
+    )
+
+    merged = htmap.MapOptions.merge(a, b)
+
+    assert merged['foo'] == 'me'
+    assert merged['bar'] == 'too'
+
+
+def test_merging_options_merges_fixed_input():
+    a = htmap.MapOptions(
+        fixed_input_files = 'foo.txt',
+    )
+    b = htmap.MapOptions(
+        fixed_input_files = 'bar.txt',
+    )
+
+    merged = htmap.MapOptions.merge(a, b)
+
+    assert set(merged.fixed_input_files) == {'foo.txt', 'bar.txt'}

@@ -9,6 +9,7 @@ def test_map_dir_does_not_exist_after_remove(mapped_doubler):
     result = mapped_doubler.map(map_id, range(10))
 
     assert map_dir_path(map_id).exists()
+    result.wait(timeout = 60)
 
     result.remove()
 
@@ -17,9 +18,10 @@ def test_map_dir_does_not_exist_after_remove(mapped_doubler):
 
 def test_map_dir_does_not_exist_after_remove_shortcut(mapped_doubler):
     map_id = 'foo'
-    mapped_doubler.map(map_id, range(10))
+    result = mapped_doubler.map(map_id, range(10))
 
     assert map_dir_path(map_id).exists()
+    result.wait(timeout = 60)
 
     htmap.remove(map_id)
 

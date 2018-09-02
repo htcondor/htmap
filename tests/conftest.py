@@ -1,17 +1,41 @@
+import functools
 import time
-
+import itertools
+import subprocess
 from pathlib import Path
 
 import pytest
 
 import htmap
+from htmap.options import get_default_options
+
+
+def test_get_default_options(map_id, map_dir, test_id = None):
+    opts = get_default_options(map_id, map_dir)
+    opts['+htmap_test_id'] = str(test_id)
+
+    return opts
+
+
+ids = itertools.count()
 
 
 @pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir_and_clean_afterwards(tmpdir_factory):
+def set_htmap_dir_and_clean_afterwards(tmpdir_factory, mock):
     """Use a fresh HTMAP_DIR for every test."""
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
     htmap.settings['HTMAP_DIR'] = path
+
+    test_id = next(ids)
+    mock.patch('htmap.options.get_default_options', functools.partial(test_get_default_options, test_id = test_id))
+
+    yield
+
+    subprocess.run(
+        f'condor_rm --constraint htmap_test_id=={test_id}',
+        stdout = subprocess.DEVNULL,
+        stderr = subprocess.DEVNULL,
+    )
 
 
 @pytest.fixture(scope = 'session')

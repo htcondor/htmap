@@ -31,6 +31,24 @@ The mappped function can be used to distribute (i.e., map) function calls out ov
 MapOptions
 ----------
 
+**Fixed options** are the most basic option.
+The entire map will used the fixed option.
+
+**Variadic options** are options that are given individually to each component of a map.
+For example, each component of a map might need a different amount of memory.
+In that case you could pass a list to ``request_memory``, with the same number of elements as the number of inputs to the map.
+
+**Inherited options** are given to a :class:`htmap.MappedFunction` when it is created.
+Any maps made using that function can inherit these options.
+Options that are passed in the actual map call override inherited options (excepting ``fixed_input_files``, see the note).
+For example, if you know that a certain function always takes a large amount of memory, you could give it a large ``request_memory`` at the :class:`htmap.MappedFunction` level so that you don't have to do it for every individual map.
+
+.. warning::
+   Only certain options make sense as inherited options.
+   For example, they shouldn't be variadic options.
+
+   ``fixed_input_files`` has special behavior as an inherited option: they are *merged together* instead of overridden.
+
 .. autoclass:: htmap.MapOptions
    :members:
 

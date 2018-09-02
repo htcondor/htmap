@@ -25,9 +25,10 @@ def test_map_results(mapped_doubler):
 
 
 def test_clean_removes_all_maps(mapped_doubler):
-    mapped_doubler.map('a', range(1))
-    mapped_doubler.map('b', range(1))
-    mapped_doubler.map('c', range(1))
+    results = [mapped_doubler.map('a', range(1)), mapped_doubler.map('b', range(1)), mapped_doubler.map('c', range(1))]
+
+    for r in results:
+        r.wait(timeout = 60)
 
     htmap.clean()
 

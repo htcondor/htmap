@@ -20,6 +20,8 @@ class MapOptions(collections.UserDict):
         'transfer_input_files',
         'should_transfer_files',
         'when_to_transfer_output',
+        'htmap',
+        '+htmap',
     }
 
     def __init__(
@@ -34,22 +36,22 @@ class MapOptions(collections.UserDict):
 
         super().__init__(**kwargs)
 
-        if isinstance(request_memory, str):  # is iterable
+        if isinstance(request_memory, str):
             self['request_memory'] = request_memory
         elif isinstance(request_memory, (int, float)):
             self['request_memory'] = f'{request_memory}MB'
-        else:
+        else:  # implies it is iterable
             self['request_memory'] = [
                 rm if isinstance(rm, str)
                 else f'{int(rm)}MB'
                 for rm in request_memory
             ]
 
-        if isinstance(request_disk, str):  # is iterable
+        if isinstance(request_disk, str):
             self['request_disk'] = request_disk
         elif isinstance(request_disk, (int, float)):
             self['request_disk'] = f'{request_disk}GB'
-        else:
+        else:  # implies it is iterable
             self['request_disk'] = [
                 rd if isinstance(rd, str)
                 else f'{int(rd)}GB'
@@ -74,10 +76,21 @@ class MapOptions(collections.UserDict):
                 s = 'are reserved keywords'
             raise exceptions.ReservedOptionKeyword(f'{",".join(reserved_keys_in_kwargs)} {s} and cannot be used')
 
+    @classmethod
+    def merge(cls, *others: 'MapOptions'):
+        new = cls()
+        for other in reversed(others):
+            new.data.update(other.data)
+            new.fixed_input_files.extend(other.fixed_input_files)
+
+        return new
+
 
 def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
+
+    options_dict = get_default_options(map_id, map_dir)
 
     itemdata = [{'hash': h} for h in hashes]
 
@@ -98,25 +111,16 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
             d['extra_input_files'] = f
         input_files.append('$(extra_input_files)')
 
+    options_dict['transfer_input_files'] = ', '.join(input_files)
+
     output_remaps = [
         f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
     ]
 
-    options_dict = {
-        'JobBatchName': map_id,
-        'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
-        'arguments': '$(hash)',
-        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-        'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
-        'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
-        'should_transfer_files': 'YES',
-        'when_to_transfer_output': 'ON_EXIT',
-        'transfer_input_files': ', '.join(input_files),
-        'transfer_output_remaps': f'"{";".join(output_remaps)}"',
-    }
+    options_dict['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
 
     for opt_key, opt_value in map_options.items():
-        if not isinstance(opt_value, str):  # should be iterable
+        if not isinstance(opt_value, str):  # implies it is iterable
             itemdata_key = f'itemdata_for_{opt_key}'
             opt_value = tuple(opt_value)
             if len(opt_value) != len(hashes):
@@ -130,3 +134,17 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     sub = htcondor.Submit(options_dict)
 
     return sub, itemdata
+
+
+def get_default_options(map_id, map_dir):
+    return {
+        'JobBatchName': map_id,
+        'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'arguments': '$(hash)',
+        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
+        'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
+        'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
+        'should_transfer_files': 'YES',
+        'when_to_transfer_output': 'ON_EXIT',
+        '+htmap': 'True',
+    }
