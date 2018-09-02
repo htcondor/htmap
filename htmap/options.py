@@ -5,7 +5,7 @@ from pathlib import Path
 
 import htcondor
 
-from . import exceptions
+from . import exceptions, settings
 
 
 class MapOptions(collections.UserDict):
@@ -90,7 +90,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
 
-    options_dict = get_default_options(map_id, map_dir)
+    options_dict = get_base_options(map_id, map_dir)
 
     itemdata = [{'hash': h} for h in hashes]
 
@@ -136,8 +136,8 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     return sub, itemdata
 
 
-def get_default_options(map_id, map_dir):
-    return {
+def get_base_options(map_id, map_dir):
+    base = {
         'JobBatchName': map_id,
         'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
         'arguments': '$(hash)',
@@ -148,3 +148,5 @@ def get_default_options(map_id, map_dir):
         'when_to_transfer_output': 'ON_EXIT',
         '+htmap': 'True',
     }
+
+    return {**base, **settings.get('MAP_OPTIONS', default = {})}

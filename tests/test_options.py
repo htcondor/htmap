@@ -4,7 +4,7 @@ import pytest
 from .conftest import exception_msg
 
 import htmap
-from htmap.options import create_submit_object_and_itemdata
+from htmap.options import create_submit_object_and_itemdata, get_base_options
 
 
 def test_one_reserved_kwarg_raises():
@@ -347,3 +347,11 @@ def test_merging_options_merges_fixed_input():
     merged = htmap.MapOptions.merge(a, b)
 
     assert set(merged.fixed_input_files) == {'foo.txt', 'bar.txt'}
+
+
+def test_option_from_settings_is_visible_in_base_options():
+    htmap.settings['MAP_OPTIONS.zing'] = 'hit'
+
+    opts = get_base_options('foo', Path('bar'))
+
+    assert opts['zing'] == 'hit'

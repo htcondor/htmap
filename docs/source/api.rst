@@ -42,6 +42,7 @@ In that case you could pass a list to ``request_memory``, with the same number o
 Any maps made using that function can inherit these options.
 Options that are passed in the actual map call override inherited options (excepting ``fixed_input_files``, see the note).
 For example, if you know that a certain function always takes a large amount of memory, you could give it a large ``request_memory`` at the :class:`htmap.MappedFunction` level so that you don't have to do it for every individual map.
+Additionally, default keyword arguments can be set globally via ``settings['MAP_OPTIONS.<option_name>'] = <option_value>``.
 
 .. warning::
    Only certain options make sense as inherited options.

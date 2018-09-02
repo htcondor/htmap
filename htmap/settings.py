@@ -114,6 +114,8 @@ BASE_SETTINGS = Settings(dict(
     HTCONDOR = dict(
         SCHEDD = None,
     ),
+    MAP_OPTIONS = dict(
+    ),
 ))
 
 USER_SETTINGS_PATH = Path.home() / '.htmap.toml'
