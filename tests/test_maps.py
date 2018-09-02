@@ -56,6 +56,14 @@ def test_map_produces_correct_output(mapped_doubler):
     assert list(result) == [2 * x for x in range(n)]
 
 
+def test_map_with_kwargs_produces_correct_output(mapped_power):
+    n = 3
+    p = 2
+    result = mapped_power.map('map', range(n), p = p)
+
+    assert list(result) == [x ** p for x in range(n)]
+
+
 def test_starmap_produces_correct_output(mapped_power):
     n = 3
     result = mapped_power.starmap(

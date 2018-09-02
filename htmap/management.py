@@ -8,7 +8,10 @@ from . import mapper, result, settings, shortcuts, utils
 
 def _map_paths() -> Iterator[Path]:
     """Yield the paths to all existing map directories."""
-    yield from (settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME']).iterdir()
+    try:
+        yield from (settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME']).iterdir()
+    except FileNotFoundError:  # maps dir doesn't exist for some reason, which means we have no maps
+        yield from ()
 
 
 def map_ids() -> Tuple[str]:

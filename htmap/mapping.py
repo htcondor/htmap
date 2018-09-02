@@ -135,7 +135,7 @@ def submit_map(
         hashes = save_args_and_kwargs(map_dir, args_and_kwargs)
         save_hashes(map_dir, hashes)
 
-        submit_obj, itemdata = options.create_submit_object(
+        submit_obj, itemdata = options.create_submit_object_and_itemdata(
             map_id,
             map_dir,
             hashes,

@@ -40,3 +40,7 @@ class EmptyMap(HTMapException):
 
 class ReservedOptionKeyword(HTMapException):
     pass
+
+
+class MisalignedInputData(HTMapException):
+    pass

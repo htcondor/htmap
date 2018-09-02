@@ -11,13 +11,22 @@ from . import exceptions
 
 class MapOptions(collections.UserDict):
     reserved_keys = {
+        'jobbatchname',
+        'arguments',
+        'executable',
+        'log',
+        'output',
+        'error',
+        'transfer_output_remaps',
         'transfer_input_files',
+        'should_transfer_files',
+        'when_to_transfer_output',
     }
 
     def __init__(
         self,
         request_memory: Union[int, str] = '100MB',
-        request_disk = '1GB',
+        request_disk: Union[int, str] = '1GB',
         fixed_input_files: Iterable[str] = None,
         input_files: Iterable[Iterable[str]] = None,
         **kwargs,
@@ -43,7 +52,8 @@ class MapOptions(collections.UserDict):
         self.input_files = input_files
 
     def _check_keyword_arguments(self, kwargs):
-        reserved_keys_in_kwargs = set(kwargs.keys()).intersection(self.reserved_keys)
+        normalized_keys = set(k.lower() for k in kwargs.keys())
+        reserved_keys_in_kwargs = normalized_keys.intersection(self.reserved_keys)
         if len(reserved_keys_in_kwargs) != 0:
             if len(reserved_keys_in_kwargs) == 1:
                 s = 'is a reserved keyword'
@@ -52,11 +62,14 @@ class MapOptions(collections.UserDict):
             raise exceptions.ReservedOptionKeyword(f'{",".join(reserved_keys_in_kwargs)} {s} and cannot be used')
 
 
-def create_submit_object(map_id, map_dir, input_hashes, map_options):
+def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
 
-    extra_input_files = [','.join(Path(f).absolute().as_posix() for f in files) for files in map_options.input_files]
+    extra_input_files = [
+        ','.join(Path(f).absolute().as_posix() for f in files)
+        for files in map_options.input_files
+    ]
 
     itemdata = [
         {
@@ -64,10 +77,10 @@ def create_submit_object(map_id, map_dir, input_hashes, map_options):
             'extra_input_files': files,
         }
         for h, files
-        in itertools.zip_longest(  # todo: this is really "zip first", not "zip longest"
-            input_hashes,
+        in zip_first(  # todo: this is really "zip first", not "zip longest"
+            hashes,
             extra_input_files,
-            fillvalue = '',
+            fill_value = '',
         )
     ]
 
@@ -98,3 +111,23 @@ def create_submit_object(map_id, map_dir, input_hashes, map_options):
     sub = htcondor.Submit(dict(collections.ChainMap(map_options, base_options)))
 
     return sub, itemdata
+
+
+def zip_first(*args, fill_value = None):
+    # zip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
+    iterators = [iter(it) for it in args]
+    num_active = len(iterators)
+    if not num_active:
+        return
+    while True:
+        values = []
+        for i, it in enumerate(iterators):
+            try:
+                value = next(it)
+            except StopIteration:
+                if i == 0:
+                    return
+                iterators[i] = itertools.repeat(fill_value)
+                value = fill_value
+            values.append(value)
+        yield tuple(values)
