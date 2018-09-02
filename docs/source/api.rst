@@ -28,6 +28,11 @@ The mappped function can be used to distribute (i.e., map) function calls out ov
 .. autoclass:: htmap.MapBuilder
    :members:
 
+MapOptions
+----------
+
+.. autoclass:: htmap.MapOptions
+   :members:
 
 MapResult
 ---------
@@ -62,8 +67,6 @@ These are module-level shortcut functions which let you produce and recover :cla
 .. autofunction:: htmap.map
 
 .. autofunction:: htmap.starmap
-
-.. autofunction:: htmap.build_map
 
 .. autofunction:: htmap.recover
 

@@ -55,3 +55,7 @@ def sleepy_double():
 def mapped_sleepy_double(sleepy_double):
     mapper = htmap.htmap(sleepy_double)
     return mapper
+
+
+def exception_msg(exc_info) -> str:
+    return str(exc_info.value)

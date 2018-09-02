@@ -1,5 +1,4 @@
-import itertools
-from typing import Union, Iterable
+from typing import Union, Iterable, Optional
 
 import collections
 from pathlib import Path
@@ -25,30 +24,44 @@ class MapOptions(collections.UserDict):
 
     def __init__(
         self,
-        request_memory: Union[int, str] = '100MB',
-        request_disk: Union[int, str] = '1GB',
-        fixed_input_files: Iterable[str] = None,
-        input_files: Iterable[Iterable[str]] = None,
+        request_memory: Union[int, str, float, Iterable[Union[int, str, float]]] = '100MB',
+        request_disk: Union[int, str, float, Iterable[Union[int, str, float]]] = '1GB',
+        fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
+        input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
         **kwargs,
     ):
         self._check_keyword_arguments(kwargs)
 
         super().__init__(**kwargs)
 
-        if not isinstance(request_memory, str):
-            request_memory = f'{request_memory}MB'
-        self['request_memory'] = request_memory
+        if isinstance(request_memory, str):  # is iterable
+            self['request_memory'] = request_memory
+        elif isinstance(request_memory, (int, float)):
+            self['request_memory'] = f'{request_memory}MB'
+        else:
+            self['request_memory'] = [
+                rm if isinstance(rm, str)
+                else f'{int(rm)}MB'
+                for rm in request_memory
+            ]
 
-        if not isinstance(request_disk, str):
-            request_disk = f'{request_disk}GB'
-        self['request_disk'] = request_disk
+        if isinstance(request_disk, str):  # is iterable
+            self['request_disk'] = request_disk
+        elif isinstance(request_disk, (int, float)):
+            self['request_disk'] = f'{request_disk}GB'
+        else:
+            self['request_disk'] = [
+                rd if isinstance(rd, str)
+                else f'{int(rd)}GB'
+                for rd in request_disk
+            ]
 
         if fixed_input_files is None:
             fixed_input_files = []
+        if isinstance(fixed_input_files, str):
+            fixed_input_files = [fixed_input_files]
         self.fixed_input_files = fixed_input_files
 
-        if input_files is None:
-            input_files = []
         self.input_files = input_files
 
     def _check_keyword_arguments(self, kwargs):
@@ -66,34 +79,30 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
 
-    extra_input_files = [
-        ','.join(Path(f).absolute().as_posix() for f in files)
-        for files in map_options.input_files
-    ]
-
-    itemdata = [
-        {
-            'hash': h,
-            'extra_input_files': files,
-        }
-        for h, files
-        in zip_first(  # todo: this is really "zip first", not "zip longest"
-            hashes,
-            extra_input_files,
-            fill_value = '',
-        )
-    ]
+    itemdata = [{'hash': h} for h in hashes]
 
     input_files = [
         (map_dir / 'fn.pkl').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
+    input_files.extend(Path(f).absolute().as_posix() for f in map_options.fixed_input_files)
+    if map_options.input_files is not None:
+        joined = [
+            Path(files).absolute().as_posix() if isinstance(files, str)
+            else ', '.join(Path(f).absolute().as_posix() for f in files)
+            for files in map_options.input_files
+        ]
+        if len(hashes) != len(joined):
+            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {len(hashes)})')
+        for d, f in zip(itemdata, joined):
+            d['extra_input_files'] = f
+        input_files.append('$(extra_input_files)')
 
     output_remaps = [
         f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
     ]
 
-    base_options = {
+    options_dict = {
         'JobBatchName': map_id,
         'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
         'arguments': '$(hash)',
@@ -102,32 +111,22 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT',
-        'request_cpus': '1',
-        'request_memory': '100MB',
-        'request_disk': '5GB',
-        'transfer_input_files': ','.join(input_files + map_options.fixed_input_files + ['$(extra_input_files)']),
+        'transfer_input_files': ', '.join(input_files),
         'transfer_output_remaps': f'"{";".join(output_remaps)}"',
     }
-    sub = htcondor.Submit(dict(collections.ChainMap(map_options, base_options)))
+
+    for opt_key, opt_value in map_options.items():
+        if not isinstance(opt_value, str):  # should be iterable
+            itemdata_key = f'itemdata_for_{opt_key}'
+            opt_value = tuple(opt_value)
+            if len(opt_value) != len(hashes):
+                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {len(hashes)})')
+            for dct, v in zip(itemdata, opt_value):
+                dct[itemdata_key] = v
+            options_dict[opt_key] = f'$({itemdata_key})'
+        else:
+            options_dict[opt_key] = opt_value
+
+    sub = htcondor.Submit(options_dict)
 
     return sub, itemdata
-
-
-def zip_first(*args, fill_value = None):
-    # zip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
-    iterators = [iter(it) for it in args]
-    num_active = len(iterators)
-    if not num_active:
-        return
-    while True:
-        values = []
-        for i, it in enumerate(iterators):
-            try:
-                value = next(it)
-            except StopIteration:
-                if i == 0:
-                    return
-                iterators[i] = itertools.repeat(fill_value)
-                value = fill_value
-            values.append(value)
-        yield tuple(values)
