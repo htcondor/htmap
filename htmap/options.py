@@ -89,7 +89,6 @@ class MapOptions(collections.UserDict):
 
 
 def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
-    print('top of create', map_options)
     if map_options is None:
         map_options = MapOptions()
 
@@ -103,7 +102,6 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     ]
     input_files.extend(Path(f).absolute().as_posix() for f in map_options.fixed_input_files)
 
-    print(map_options.input_files)
     if map_options.input_files is not None:
         input_files.append('$(extra_input_files)')
 
@@ -124,8 +122,6 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     ]
 
     options_dict['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
-
-    print(input_files)
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
