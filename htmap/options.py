@@ -64,6 +64,7 @@ class MapOptions(collections.UserDict):
             fixed_input_files = [fixed_input_files]
         self.fixed_input_files = fixed_input_files
 
+        print('__init__', input_files)
         self.input_files = input_files
 
     def _check_keyword_arguments(self, kwargs):
@@ -82,11 +83,13 @@ class MapOptions(collections.UserDict):
         for other in reversed(others):
             new.data.update(other.data)
             new.fixed_input_files.extend(other.fixed_input_files)
+            new.input_files = other.input_files
 
         return new
 
 
 def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
+    print('top of create', map_options)
     if map_options is None:
         map_options = MapOptions()
 
@@ -99,7 +102,11 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
     input_files.extend(Path(f).absolute().as_posix() for f in map_options.fixed_input_files)
+
+    print(map_options.input_files)
     if map_options.input_files is not None:
+        input_files.append('$(extra_input_files)')
+
         joined = [
             Path(files).absolute().as_posix() if isinstance(files, str)
             else ', '.join(Path(f).absolute().as_posix() for f in files)
@@ -109,7 +116,6 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
             raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {len(hashes)})')
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
-        input_files.append('$(extra_input_files)')
 
     options_dict['transfer_input_files'] = ', '.join(input_files)
 
@@ -118,6 +124,8 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     ]
 
     options_dict['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
+
+    print(input_files)
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
