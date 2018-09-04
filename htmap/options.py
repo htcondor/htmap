@@ -64,7 +64,6 @@ class MapOptions(collections.UserDict):
             fixed_input_files = [fixed_input_files]
         self.fixed_input_files = fixed_input_files
 
-        print('__init__', input_files)
         self.input_files = input_files
 
     def _check_keyword_arguments(self, kwargs):
