@@ -599,6 +599,9 @@ class MapResult:
         )
 
         submit = htcondor.Submit(dict(self.submit))
+        submit['JobBatchName'] = map_id
+
+        # fix paths
         target = mapping.map_dir_path(self.map_id).as_posix()
         replace_with = mapping.map_dir_path(map_id).as_posix()
         for k, v in submit.items():
