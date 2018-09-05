@@ -49,3 +49,7 @@ class ReservedOptionKeyword(HTMapException):
 
 class MisalignedInputData(HTMapException):
     pass
+
+
+class CannotRenameMap(HTMapException):
+    pass

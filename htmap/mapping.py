@@ -10,8 +10,12 @@ import htcondor
 from . import htio, exceptions, result, options, settings
 
 
+def maps_dir_path() -> Path:
+    return settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME']
+
+
 def map_dir_path(map_id: str) -> Path:
-    return settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME'] / map_id
+    return maps_dir_path() / map_id
 
 
 def get_schedd():

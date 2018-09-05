@@ -3,7 +3,7 @@ from typing import Tuple, Iterator
 from pathlib import Path
 import shutil
 
-from . import mapper, result, settings, shortcuts, utils
+from . import mapping, result, settings, shortcuts, utils
 
 
 def _map_paths() -> Iterator[Path]:
@@ -45,7 +45,7 @@ def status() -> str:
     return utils.table(
         headers = ['Map ID'] + [str(d) for d in result.JobStatus.display_statuses()] + ['Data'],
         rows = [
-            [map_id] + [count[d] for d in result.JobStatus.display_statuses()] + [utils.get_dir_size_as_str(mapper.map_dir_path(map_id))]
+            [map_id] + [count[d] for d in result.JobStatus.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
             for map_id, count in sorted(
                 zip(ids, counts),
                 key = lambda map_id_and_count: map_id_and_count[1][result.JobStatus.RUNNING],

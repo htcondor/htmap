@@ -576,3 +576,41 @@ class MapResult:
         )
 
         self.cluster_ids.append(submit_result.cluster())
+
+    def rename(self, map_id: str, force_overwrite = False):
+        if len(self._missing_hashes) != 0:
+            raise exceptions.CannotRenameMap('Cannot rename a map that is not complete')
+
+        mapping.raise_if_map_id_is_invalid(map_id)
+
+        if force_overwrite:
+            try:
+                existing_result = MapResult.recover(map_id)
+                existing_result.remove()
+            except exceptions.MapIDNotFound:
+                pass
+        else:
+            mapping.raise_if_map_id_already_exists(map_id)
+
+        new_map_dir = mapping.map_dir_path(map_id)
+        shutil.copytree(
+            src = self._map_dir,
+            dst = new_map_dir,
+        )
+
+        submit = htcondor.Submit(dict(self.submit))
+        target = mapping.map_dir_path(self.map_id).as_posix()
+        replace_with = mapping.map_dir_path(map_id).as_posix()
+        for k, v in submit.items():
+            submit[k] = v.replace(target, replace_with)
+
+        mapping.save_submit_object(new_map_dir, submit)
+
+        self.remove()
+
+        return MapResult(
+            map_id = map_id,
+            submit = submit,
+            cluster_ids = self.cluster_ids,
+            hashes = self.hashes,
+        )
