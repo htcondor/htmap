@@ -14,12 +14,6 @@ def map_dir_path(map_id: str) -> Path:
     return settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME'] / map_id
 
 
-def check_map_id(map_id: str):
-    """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
-    if map_dir_path(map_id).exists():
-        raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
-
-
 def get_schedd():
     s = settings.get('HTCONDOR.SCHEDD', default = None)
     if s is not None:
@@ -184,6 +178,8 @@ def submit_map(
     force_overwrite: bool = False,
     map_options: Optional[options.MapOptions] = None,
 ) -> result.MapResult:
+    raise_if_map_id_is_invalid(map_id)
+
     if force_overwrite:
         try:
             existing_result = result.MapResult.recover(map_id)
@@ -191,7 +187,7 @@ def submit_map(
         except exceptions.MapIDNotFound:
             pass
     else:
-        check_map_id(map_id)
+        raise_if_map_id_already_exists(map_id)
 
     map_dir = map_dir_path(map_id)
     try:
@@ -233,6 +229,33 @@ def submit_map(
         # the condor bindings should prevent any jobs from being submitted
         shutil.rmtree(map_dir)
         raise e
+
+
+def raise_if_map_id_already_exists(map_id: str):
+    """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
+    if map_dir_path(map_id).exists():
+        raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
+
+
+INVALID_FILENAME_CHARACTERS = {
+    '/',
+    '\\',  # backslash
+    '<',
+    '>',
+    ':',
+    '"',
+    '|',
+    '?',
+    '*',
+    '.',
+    ' ',
+}
+
+
+def raise_if_map_id_is_invalid(map_id: str):
+    invalid_chars = set(map_id).intersection(INVALID_FILENAME_CHARACTERS)
+    if len(invalid_chars) != 0:
+        raise exceptions.InvalidMapId(f'These characters in map_id {map_id} are not valid: {invalid_chars}')
 
 
 MAP_SUBDIR_NAMES = (

@@ -28,6 +28,11 @@ class MapIDAlreadyExists(HTMapException):
     pass
 
 
+class InvalidMapId(HTMapException):
+    """The ``map_id`` has an invalid character in it."""
+    pass
+
+
 class MapIDNotFound(HTMapException):
     """The requested ``map_id`` does not exist."""
     pass
