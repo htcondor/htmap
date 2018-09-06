@@ -9,7 +9,7 @@ API Reference
 Map IDs
 -------
 
-The `map_id` is the central, organizing feature of HTMap.
+The ``map_id`` is the central organizing piece of data in HTMap.
 Every map that you run produces a :class:`MapResult` which is connected to a unique ``map_id``, a string that you must provide when you run the map.
 A ``map_id`` cannot be re-used until the associated map has been deleted.
 

@@ -1,6 +1,6 @@
 from typing import Tuple, Iterable, Dict, Union, Optional, Callable, Any
 
-from . import mapping, options, result, exceptions
+from . import mapping, options, result
 
 
 class MappedFunction:
@@ -9,6 +9,15 @@ class MappedFunction:
         func: Callable,
         map_options: Optional[options.MapOptions] = None
     ):
+        """
+        Parameters
+        ----------
+        func
+            A function to wrap in a :class:`MappedFunction`.
+        map_options
+            An instance of :class:`htmap.MapOptions`.
+            Any map calls from the :class:`MappedFunction` produced by this decorator will inherit from this.
+        """
         self.func = func
 
         if map_options is None:
@@ -19,6 +28,7 @@ class MappedFunction:
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
 
     def __call__(self, *args, **kwargs):
+        """Call the function as normal, locally."""
         return self.func(*args, **kwargs)
 
     def map(
@@ -29,6 +39,30 @@ class MappedFunction:
         map_options: Optional[options.MapOptions] = None,
         **kwargs,
     ) -> result.MapResult:
+        """
+        Map a function call over a one-dimensional iterable of arguments.
+        The function must take a single positional argument and any number of keyword arguments.
+
+        The same keyword arguments are passed to *each call*, not mapped over.
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this map.
+        args
+            An iterable of arguments to pass to the mapped function.
+        kwargs
+            Any additional keyword arguments are passed as keyword arguments to the mapped function.
+        force_overwrite
+            If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+        map_options
+            An instance of :class:`htmap.MapOptions`.
+
+        Returns
+        -------
+        result :
+            A :class:`htmap.MapResult` representing the map.
+        """
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -49,6 +83,28 @@ class MappedFunction:
         force_overwrite: bool = False,
         map_options: Optional[options.MapOptions] = None,
     ) -> result.MapResult:
+        """
+        Map a function call over aligned iterables of arguments and keyword arguments.
+        Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this map.
+        args
+            An iterable of tuples of positional arguments to unpack into the mapped function.
+        kwargs
+            An iterable of dictionaries of keyword arguments to unpack into the mapped function.
+        force_overwrite
+            If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+        map_options
+            An instance of :class:`htmap.MapOptions`.
+
+        Returns
+        -------
+        result :
+            A :class:`htmap.MapResult` representing the map.
+        """
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -76,6 +132,8 @@ class MappedFunction:
             The ``map_id`` to assign to this map.
         force_overwrite
             If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+        map_options
+            An instance of :class:`htmap.MapOptions`.
 
         Returns
         -------
@@ -100,10 +158,13 @@ def htmap(map_options: Optional[options.MapOptions] = None) -> Union[Callable, M
 
     Parameters
     ----------
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+        Any map calls from the :class:`MappedFunction` produced by this decorator will inherit from this.
 
     Returns
     -------
-    mapper
+    mapped_function
         An :class:`MappedFunction` that wraps the function (or a wrapper function that does the wrapping).
     """
     if map_options is None:  # call with parens but no args

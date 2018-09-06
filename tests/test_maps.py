@@ -116,7 +116,7 @@ def test_cannot_use_same_mapid_again(mapped_doubler):
     result = mapped_doubler.map('foo', range(1))
     result.wait(timeout = 60)
 
-    with pytest.raises(htmap.exceptions.MapIDAlreadyExists):
+    with pytest.raises(htmap.exceptions.MapIdAlreadyExists):
         again = mapped_doubler.map('foo', range(1))
 
 

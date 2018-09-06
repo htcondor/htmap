@@ -41,7 +41,7 @@ def test_rename_raises_if_new_map_id_already_exists(mapped_doubler):
     existing = mapped_doubler.map('target', range(2))
     existing.hold()  # doesn't matter, just speeds things up
 
-    with pytest.raises(htmap.exceptions.MapIDAlreadyExists):
+    with pytest.raises(htmap.exceptions.MapIdAlreadyExists):
         result.rename('target')
 
 

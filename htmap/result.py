@@ -100,7 +100,7 @@ class MapResult:
             submit = htcondor.Submit(htio.load_object(map_dir / 'submit'))
 
         except FileNotFoundError:
-            raise exceptions.MapIDNotFound(f'the map_id {map_id} could not be found')
+            raise exceptions.MapIdNotFound(f'the map_id {map_id} could not be found')
 
         return cls(
             map_id = map_id,
@@ -587,7 +587,7 @@ class MapResult:
             try:
                 existing_result = MapResult.recover(map_id)
                 existing_result.remove()
-            except exceptions.MapIDNotFound:
+            except exceptions.MapIdNotFound:
                 pass
         else:
             mapping.raise_if_map_id_already_exists(map_id)

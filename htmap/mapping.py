@@ -11,14 +11,17 @@ from . import htio, exceptions, result, options, settings
 
 
 def maps_dir_path() -> Path:
+    """The path to the directory where map directories are stored."""
     return settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME']
 
 
 def map_dir_path(map_id: str) -> Path:
+    """The path to the directory for the given ``map_id``."""
     return maps_dir_path() / map_id
 
 
 def get_schedd():
+    """Get the :class:`htcondor.Schedd` that represents the HTCondor scheduler."""
     s = settings.get('HTCONDOR.SCHEDD', default = None)
     if s is not None:
         return htcondor.Schedd(s)
@@ -38,18 +41,22 @@ def map(
     Map a function call over a one-dimensional iterable of arguments.
     The function must take a single positional argument and any number of keyword arguments.
 
+    The same keyword arguments are passed to *each call*, not mapped over.
+
     Parameters
     ----------
-    func
-        The function to call.
     map_id
         The ``map_id`` to assign to this map.
+    func
+        The function to map the arguments over.
     args
         An iterable of arguments to pass to the mapped function.
     kwargs
         Any additional keyword arguments are passed as keyword arguments to the mapped function.
     force_overwrite
         If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
 
     Returns
     -------
@@ -83,12 +90,16 @@ def starmap(
     ----------
     map_id
         The ``map_id`` to assign to this map.
+    func
+        The function to map the arguments over.
     args
         An iterable of tuples of positional arguments to unpack into the mapped function.
     kwargs
         An iterable of dictionaries of keyword arguments to unpack into the mapped function.
     force_overwrite
         If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
 
     Returns
     -------
@@ -149,6 +160,7 @@ class MapBuilder:
         )
 
     def __call__(self, *args, **kwargs):
+        """Adds the given inputs to the map."""
         self.args.append(args)
         self.kwargs.append(kwargs)
 
@@ -163,6 +175,7 @@ class MapBuilder:
         return self._result
 
     def __len__(self):
+        """The length of a :class:`MapBuilder` is the number of inputs it has been sent."""
         return len(self.args)
 
 
@@ -172,7 +185,31 @@ def build_map(
     force_overwrite: bool = False,
     map_options: options.MapOptions = None,
 ) -> MapBuilder:
-    return MapBuilder(map_id = map_id, func = func, force_overwrite = force_overwrite, map_options = map_options)
+    """
+    Return a :class:`MapBuilder` for the given function.
+
+    Parameters
+    ----------
+    map_id
+        The ``map_id`` to assign to this map.
+    func
+        The function to map over.
+    force_overwrite
+        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    map_builder :
+        A :class:`MapBuilder` for the given function.
+    """
+    return MapBuilder(
+        map_id = map_id,
+        func = func,
+        force_overwrite = force_overwrite,
+        map_options = map_options,
+    )
 
 
 def submit_map(
@@ -182,13 +219,39 @@ def submit_map(
     force_overwrite: bool = False,
     map_options: Optional[options.MapOptions] = None,
 ) -> result.MapResult:
+    """
+    All map calls lead here.
+    This function performs various checks on the ``map_id``,
+    constructs a submit object that represents the map for HTCondor,
+    saves all of the map's definitional data to the map directory,
+    and submits the map job,
+    returning the map's :class:`MapResult`.
+
+    Parameters
+    ----------
+    map_id
+        The ``map_id`` to assign to this map.
+    func
+        The function to map the arguments over.
+    args_and_kwargs
+        The arguments and keyword arguments to map over - the output of :func:`zip_args_and_kwargs`.
+    force_overwrite
+        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    result :
+        A :class:`htmap.MapResult` representing the map.
+    """
     raise_if_map_id_is_invalid(map_id)
 
     if force_overwrite:
         try:
             existing_result = result.MapResult.recover(map_id)
             existing_result.remove()
-        except exceptions.MapIDNotFound:
+        except exceptions.MapIdNotFound:
             pass
     else:
         raise_if_map_id_already_exists(map_id)
@@ -236,9 +299,9 @@ def submit_map(
 
 
 def raise_if_map_id_already_exists(map_id: str):
-    """Raise a :class:`htmap.exceptions.MapIDAlreadyExists` if the ``map_id`` already exists."""
+    """Raise a :class:`htmap.exceptions.MapIdAlreadyExists` if the ``map_id`` already exists."""
     if map_dir_path(map_id).exists():
-        raise exceptions.MapIDAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
+        raise exceptions.MapIdAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
 
 
 INVALID_FILENAME_CHARACTERS = {
@@ -257,6 +320,7 @@ INVALID_FILENAME_CHARACTERS = {
 
 
 def raise_if_map_id_is_invalid(map_id: str):
+    """Raise a :class:`htmap.exceptions.InvalidMapId` if the ``map_id`` contains any invalid characters."""
     invalid_chars = set(map_id).intersection(INVALID_FILENAME_CHARACTERS)
     if len(invalid_chars) != 0:
         raise exceptions.InvalidMapId(f'These characters in map_id {map_id} are not valid: {invalid_chars}')
@@ -271,16 +335,19 @@ MAP_SUBDIR_NAMES = (
 
 
 def make_map_subdirs(map_dir):
+    """Create the input, output, and log subdirectories inside the map directory."""
     for path in (map_dir / d for d in MAP_SUBDIR_NAMES):
         path.mkdir(parents = True, exist_ok = True)
 
 
 def save_func(map_dir, func):
+    """Save the mapped function to the map directory."""
     fn_path = map_dir / 'fn.pkl'
     htio.save_object(func, fn_path)
 
 
 def save_args_and_kwargs(map_dir: Path, args_and_kwargs) -> List[str]:
+    """Save the arguments to the mapped function to the map's input directory."""
     hashes = []
     num_inputs = 0
     for a_and_k in args_and_kwargs:
@@ -300,20 +367,24 @@ def save_args_and_kwargs(map_dir: Path, args_and_kwargs) -> List[str]:
 
 
 def save_hashes(map_dir: Path, hashes: Iterable[str]):
+    """Save a file containing the hashes of the arguments to the map directory."""
     with (map_dir / 'hashes').open(mode = 'w') as file:
         file.write('\n'.join(hashes))
 
 
 def save_submit_object(map_dir: Path, submit):
+    """Save a dictionary that represents the map's :class:`htcondor.Submit` object."""
     htio.save_object(dict(submit), map_dir / 'submit')
 
 
 def save_itemdata(map_dir: Path, itemdata: List[dict]):
+    """Save the map's itemdata as a list of JSON dictionaries."""
     with (map_dir / 'itemdata').open(mode = 'w') as f:
         json.dump(itemdata, f, indent = None, separators = (',', ':'))
 
 
 def execute_submit(submit_object, itemdata):
+    """Execute a map via the scheduler defined by the settings."""
     schedd = get_schedd()
     with schedd.transaction() as txn:
         submit_result = submit_object.queue_with_itemdata(
@@ -327,17 +398,17 @@ def execute_submit(submit_object, itemdata):
 
 def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]) -> Iterator[Tuple[Tuple, Dict]]:
     """
-    Combine iterables of arguments and keyword arguments into
-    an iterable zipped, filled iterator of arguments and keyword arguments.
+    Combine iterables of arguments and keyword arguments into a zipped, filled iterator of arguments and keyword arguments (i.e., tuples and dictionaries).
 
     Parameters
     ----------
     args
+        A list of tuples.
     kwargs
+        A list of dictionaries.
 
     Returns
     -------
-
     """
     iterators = [iter(args), iter(kwargs)]
     fills = {0: (), 1: {}}

@@ -32,5 +32,5 @@ def test_recover_classmethod(mapped_doubler):
 
 
 def test_recover_on_bad_mapid_raises_map_id_not_found():
-    with pytest.raises(htmap.exceptions.MapIDNotFound):
+    with pytest.raises(htmap.exceptions.MapIdNotFound):
         htmap.recover('no_such_mapid')

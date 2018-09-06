@@ -11,7 +11,7 @@ def remove(map_id: str, not_exist_ok = True):
     try:
         r = recover(map_id)
         r.remove()
-    except exceptions.MapIDNotFound as e:
+    except exceptions.MapIdNotFound as e:
         if not not_exist_ok:
             raise e
 

@@ -37,5 +37,5 @@ def test_remove_shortcut_on_nonexistent_map_dir_fails_silently_if_not_exist_ok_s
 
 
 def test_remove_shortcut_on_nonexistent_map_dir_raises():
-    with pytest.raises(htmap.exceptions.MapIDNotFound):
+    with pytest.raises(htmap.exceptions.MapIdNotFound):
         htmap.remove('no_such_mapid', not_exist_ok = False)

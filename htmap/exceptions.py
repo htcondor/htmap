@@ -23,7 +23,7 @@ class TimeoutError(TimeoutError, HTMapException):
     pass
 
 
-class MapIDAlreadyExists(HTMapException):
+class MapIdAlreadyExists(HTMapException):
     """The requested ``map_id`` already exists (recover the :class:`MapResult`, then either use or delete it)."""
     pass
 
@@ -33,7 +33,7 @@ class InvalidMapId(HTMapException):
     pass
 
 
-class MapIDNotFound(HTMapException):
+class MapIdNotFound(HTMapException):
     """The requested ``map_id`` does not exist."""
     pass
 
