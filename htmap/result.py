@@ -1,4 +1,4 @@
-from typing import Tuple, List, Iterable, Any, Optional, Union, Callable, Iterator
+from typing import Tuple, List, Iterable, Any, Optional, Union, Callable, Iterator, Dict
 
 import datetime
 import enum
@@ -12,6 +12,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 import htcondor
+import classad
 
 from . import htio, exceptions, utils, mapping
 
@@ -53,7 +54,7 @@ class MapResult:
     """
     Represents the results from a map call.
     The constructor is documented here, but you should never need to build a :class:`MapResult` manually.
-    Instead, you'll get your :class:`MapResult` by calling a :class:`MappedFunction` method or by using :func:`htmap.recover`.
+    Instead, you'll get your :class:`MapResult` by calling a :class:`MappedFunction` classmethod or by using :func:`htmap.recover`.
     """
 
     def __init__(self, map_id: str, cluster_ids: List[int], submit, hashes: Iterable[str]):
@@ -80,9 +81,12 @@ class MapResult:
         """
         Reconstruct a :class:`MapResult` from its ``map_id``.
 
+        Raises :class:`htmap.exceptions.MapIdNotFound` if the ``map_id`` does not exist.
+
         Parameters
         ----------
         map_id
+            The ``map_id`` to search for.
 
         Returns
         -------
@@ -108,6 +112,9 @@ class MapResult:
             submit = submit,
             hashes = hashes,
         )
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
 
     def __len__(self):
         """The length of a :class:`MapResult` is the number of inputs it contains."""
@@ -138,8 +145,14 @@ class MapResult:
         """The paths to the output files."""
         yield from (self._outputs_dir / f'{h}.out' for h in self.hashes)
 
-    def __repr__(self):
-        return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
+    def _remove_from_queue(self):
+        return self._act(htcondor.JobAction.Remove)
+
+    def _rm_map_dir(self):
+        shutil.rmtree(self._map_dir)
+
+    def _clean_outputs_dir(self):
+        utils.clean_dir(self._outputs_dir)
 
     def _item_to_hash(self, item: int) -> str:
         """Return the hash associated with an input index."""
@@ -149,37 +162,31 @@ class MapResult:
         """Return the output associated with the input index. Does not block."""
         return self.get(item, timeout = 0)
 
-    def get(
-        self,
-        item: int,
-        timeout: Optional[Union[int, datetime.timedelta]] = None,
-    ) -> Any:
+    @property
+    def _missing_hashes(self) -> List[str]:
+        """Return a list of input hashes that don't have output, ordered by input index."""
+        done = set(f.stem for f in self._outputs_dir.iterdir())
+        return [h for h in self.hashes if h not in done]
+
+    @property
+    def _completed_hashes(self) -> List[str]:
+        """Return a list of input hashes that do have output, ordered by input index."""
+        done = set(f.stem for f in self._outputs_dir.iterdir())
+        return [h for h in self.hashes if h in done]
+
+    @property
+    def is_done(self) -> bool:
+        """``True`` if all of the output is available for this map."""
+        return len(self._missing_hashes) == 0
+
+    @property
+    def is_running(self) -> bool:
         """
-        Return the output associated with the input index.
-
-        Parameters
-        ----------
-        item
-            The index of the input to get the output for.
-        timeout
-            How long to wait for the output to exist before raising a :class:`htmap.exceptions.TimeoutError`.
-            If ``None``, wait forever.
+        ``True`` if any of the map's components are in a non-completed status.
+        That means that this doesn't literally mean "running" - instead, it means that components could be running, idle, held, completed according to HTCondor but ran into an error internally and didn't produce output, etc.
         """
-        if isinstance(timeout, datetime.timedelta):
-            timeout = timeout.total_seconds()
-
-        h = self._item_to_hash(item)
-        path = self._outputs_dir / f'{h}.out'
-
-        try:
-            utils.wait_for_path_to_exist(path, timeout)
-        except exceptions.TimeoutError as e:
-            if timeout <= 0:
-                raise exceptions.OutputNotFound(f'output for index {item} not found') from e
-            else:
-                raise e
-
-        return htio.load_object(path)
+        sc = self._status_counts()
+        return any(v != 0 for k, v in sc if k != JobStatus.COMPLETED)
 
     def wait(
         self,
@@ -239,20 +246,37 @@ class MapResult:
 
         return datetime.datetime.now() - t
 
-    @property
-    def _missing_hashes(self) -> List[str]:
-        done = set(f.stem for f in self._outputs_dir.iterdir())
-        return [h for h in self.hashes if h not in done]
+    def get(
+        self,
+        item: int,
+        timeout: Optional[Union[int, datetime.timedelta]] = None,
+    ) -> Any:
+        """
+        Return the output associated with the input index.
 
-    @property
-    def _completed_hashes(self) -> List[str]:
-        done = set(f.stem for f in self._outputs_dir.iterdir())
-        return [h for h in self.hashes if h in done]
+        Parameters
+        ----------
+        item
+            The index of the input to get the output for.
+        timeout
+            How long to wait for the output to exist before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+        """
+        if isinstance(timeout, datetime.timedelta):
+            timeout = timeout.total_seconds()
 
-    @property
-    def is_done(self) -> bool:
-        """``True`` if all of the output is available for this map."""
-        return len(self._missing_hashes) == 0
+        h = self._item_to_hash(item)
+        path = self._outputs_dir / f'{h}.out'
+
+        try:
+            utils.wait_for_path_to_exist(path, timeout)
+        except exceptions.TimeoutError as e:
+            if timeout <= 0:
+                raise exceptions.OutputNotFound(f'output for index {item} not found') from e
+            else:
+                raise e
+
+        return htio.load_object(path)
 
     def __iter__(self) -> Iterable[Any]:
         """
@@ -292,7 +316,7 @@ class MapResult:
         self,
         callback: Optional[Callable] = None,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
-    ) -> Iterator[Tuple[Any, Any]]:
+    ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
         Returns an iterator over the inputs and output of the :class:`htmap.MapResult` in the same order as the inputs,
         waiting on each individual output to become available.
@@ -362,7 +386,7 @@ class MapResult:
         self,
         callback: Optional[Callable] = None,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
-    ) -> Iterator[Tuple[Any, Any]]:
+    ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
         Returns an iterator over the inputs and output of the :class:`htmap.MapResult`,
         yielding individual ``(input, output)`` pairs as they become available.
@@ -403,27 +427,32 @@ class MapResult:
             time.sleep(1)
 
     def _requirements(self, requirements: Optional[str] = None) -> str:
-        return f"({' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)})" + (f' && {requirements}' if requirements is not None else '')
+        """Build an HTCondor requirements expression that captures all of the ``cluster_id`` for this map."""
+        base = f"({' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)})"
+        extra = f' && {requirements}' if requirements is not None else ''
 
-    def query(
+        return base + extra
+
+    def _query(
         self,
         requirements: Optional[str] = None,
         projection: Optional[List[str]] = None,
-    ):
+    ) -> Iterator[classad.ClassAd]:
         """
-        Perform a query against the HTCondor cluster to get information about the map jobs.
+        Perform a _query against the HTCondor cluster to get information about the map jobs.
 
         Parameters
         ----------
         requirements
-            A ClassAd expression to use as the requirements for the query.
-            In addition to whatever restrictions given in this expression, the query will only target the jobs for this map.
+            A ClassAd expression to use as the requirements for the _query.
+            In addition to whatever restrictions given in this expression, the _query will only target the jobs for this map.
         projection
-            The ClassAd attributes to return from the query.
+            The ClassAd attributes to return from the _query.
 
         Returns
         -------
-
+        classads :
+            An iterator of matching :class:`classad.ClassAd`, with only the projected fields.
         """
         if self.cluster_ids is None:
             yield from ()
@@ -437,7 +466,7 @@ class MapResult:
         )
 
     def _status_counts(self) -> collections.Counter:
-        query = self.query(projection = ['JobStatus'])
+        query = self._query(projection = ['JobStatus'])
         counter = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
 
         # if the job has fully completed, we'll get zero for everything
@@ -456,7 +485,7 @@ class MapResult:
 
     def hold_reasons(self) -> str:
         """Return a string containing a table showing any held jobs, along with their hold reasons."""
-        query = self.query(
+        query = self._query(
             requirements = self._requirements(f'JobStatus=={JobStatus.HELD}'),
             projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
         )
@@ -469,9 +498,9 @@ class MapResult:
             ]
         )
 
-    def act(self, action: htcondor.JobAction, requirements: Optional[str] = None):
+    def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None):
         schedd = mapping.get_schedd()
-        return schedd.act(action, self._requirements(requirements))
+        return schedd._act(action, self._requirements(requirements))
 
     def remove(self):
         """Permanently remove the map and delete all associated input and output files."""
@@ -480,36 +509,27 @@ class MapResult:
 
         return act_result
 
-    def _remove_from_queue(self):
-        return self.act(htcondor.JobAction.Remove)
-
-    def _rm_map_dir(self):
-        shutil.rmtree(self._map_dir)
-
-    def _clean_outputs_dir(self):
-        utils.clean_dir(self._outputs_dir)
-
     def hold(self):
         """Temporarily remove the map from the queue, until it is released."""
-        return self.act(htcondor.JobAction.Hold)
+        return self._act(htcondor.JobAction.Hold)
 
     def release(self):
         """Releases a held map back into the queue."""
-        return self.act(htcondor.JobAction.Release)
+        return self._act(htcondor.JobAction.Release)
 
     def pause(self):
-        return self.act(htcondor.JobAction.Suspend)
+        return self._act(htcondor.JobAction.Suspend)
 
     def resume(self):
-        return self.act(htcondor.JobAction.Continue)
+        return self._act(htcondor.JobAction.Continue)
 
     def vacate(self):
         """Force the map to give up any claimed resources."""
-        return self.act(htcondor.JobAction.Vacate)
+        return self._act(htcondor.JobAction.Vacate)
 
-    def edit(self, attr: str, value: str, requirements: Optional[str] = None):
+    def _edit(self, attr: str, value: str, requirements: Optional[str] = None):
         schedd = mapping.get_schedd()
-        return schedd.act(self._requirements(requirements), attr, value)
+        return schedd._act(self._requirements(requirements), attr, value)
 
     def _iter_output(self, item: int) -> Iterator[str]:
         h = self._item_to_hash(item)
@@ -577,9 +597,33 @@ class MapResult:
 
         self.cluster_ids.append(submit_result.cluster())
 
-    def rename(self, map_id: str, force_overwrite = False):
-        if len(self._missing_hashes) != 0:
-            raise exceptions.CannotRenameMap('Cannot rename a map that is not complete')
+    def rename(self, map_id: str, force_overwrite: bool = False) -> 'MapResult':
+        """
+        Give this map a new ``map_id``.
+        This function returns a **new** :class:`MapResult` for the renamed map.
+        The :class:`MapResult` you call this on will not be connected to the new ``map_id``.
+        The old ``map_id`` will be available for re-use.
+
+        .. note::
+
+            Only completed maps can be renamed (i.e., ``result.is_done == True``).
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this map.
+        force_overwrite
+            If ``True``, and there is already a map with the given ``map_id``, it will be removed before renaming this one.
+
+        Returns
+        -------
+        map_result :
+            A new :class:`MapResult` for the renamed map.
+        """
+        if map_id == self.map_id:
+            raise exceptions.CannotRenameMap('cannot rename a map to the same ``map_id`` it already has')
+        if not self.is_done:
+            raise exceptions.CannotRenameMap('cannot rename a map that is not complete')
 
         mapping.raise_if_map_id_is_invalid(map_id)
 

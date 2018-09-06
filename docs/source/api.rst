@@ -14,19 +14,42 @@ Every map that you run produces a :class:`MapResult` which is connected to a uni
 A ``map_id`` cannot be re-used until the associated map has been deleted.
 
 
+Mapping Functions
+-----------------
+
+.. autofunction:: htmap.map
+
+.. autofunction:: htmap.starmap
+
+.. autofunction:: htmap.build_map
+
+.. autoclass:: htmap.MapBuilder
+   :members:
+
+
 MappedFunction
 --------------
 
-The most powerful and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an :class:`MappedFunction`.
-The mappped function can be used to distribute (i.e., map) function calls out over an HTCondor cluster.
+A more convenient and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an :class:`MappedFunction`.
 
 .. autofunction:: htmap.htmap
 
 .. autoclass:: htmap.MappedFunction
    :members:
 
-.. autoclass:: htmap.MapBuilder
+
+MapResult
+---------
+
+The :class:`MapResult` is your window into the status and output of your map.
+Once you get a map result back from a map call, you can use its methods to get the status of jobs (both for display and further programmatic interaction),
+change the properties of the map while its running,
+pause, restart, or cancel the map,
+and finally retrieve the output once the map is done.
+
+.. autoclass:: htmap.MapResult
    :members:
+
 
 MapOptions
 ----------
@@ -53,41 +76,27 @@ Additionally, default keyword arguments can be set globally via ``settings['MAP_
 .. autoclass:: htmap.MapOptions
    :members:
 
-MapResult
----------
-
-The :class:`MapResult` is your window into the status and output of your map.
-Once you get a map result back from a map call, you can use its methods to get the status of jobs (both for display and further programmatic interaction),
-change the properties of the map while its running,
-pause, restart, or cancel the map,
-and finally retrieve the output once the map is done.
-
-.. autoclass:: htmap.MapResult
-   :members:
-
 
 Management
 ----------
 
 These functions help you manage your maps.
 
-.. autofunction:: htmap.clean
+.. autofunction:: htmap.status
+
+.. autofunction:: htmap.recover
 
 .. autofunction:: htmap.map_ids
 
-.. autofunction:: htmap.status
+.. autofunction:: htmap.map_results
 
+.. autofunction:: htmap.remove
 
-Shortcut Functions
-------------------
+.. autofunction:: htmap.clean
 
-These are module-level shortcut functions which let you produce and recover :class:`MapResult`\s.
+.. autofunction:: htmap.force_remove
 
-.. autofunction:: htmap.map
-
-.. autofunction:: htmap.starmap
-
-.. autofunction:: htmap.recover
+.. autofunction:: htmap.force_clean
 
 
 Settings
@@ -108,6 +117,11 @@ Each map is search in order, so earlier settings can flexibly override later set
    To entirely replace your settings, do **not** do ``htmap.settings = <new settings object>``.
    Instead, use the :meth:`htmap.settings.Settings.replace` method.
    Replacing the settings by assignment breaks the internal linking between the settings objects and its dependencies.
+
+.. hint::
+   HTMap's base settings are available as ``htmap.BASE_SETTINGS``.
+   The settings loaded from ``~/.htmap.toml`` are available as ``htmap.USER_SETTINGS``.
+   These may be helpful when constructing fresh settings.
 
 .. autoclass:: htmap.settings.Settings
    :members:

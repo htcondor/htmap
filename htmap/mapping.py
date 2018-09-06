@@ -77,8 +77,8 @@ def map(
 def starmap(
     map_id: str,
     func: Callable,
-    args: Optional[Iterable[Tuple]] = None,
-    kwargs: Optional[Iterable[Dict]] = None,
+    args: Optional[Iterable[tuple]] = None,
+    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
     force_overwrite: bool = False,
     map_options: options.MapOptions = None,
 ) -> result.MapResult:

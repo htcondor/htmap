@@ -32,6 +32,27 @@ class MapOptions(collections.UserDict):
         input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
         **kwargs,
     ):
+        """
+        Parameters
+        ----------
+        request_memory
+            The amount of memory (RAM) to request.
+            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **MB**.
+        request_disk
+            The amount of disk space to use.
+            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **GB**.
+        fixed_input_files
+            A single file, or an iterable of files, to send to all components of the map.
+            Files can be specified as string paths or as actual :class:`pathlib.Path` objects.
+        input_files
+            An iterable of single files or iterables of files to map over.
+            Files can be specified as string paths or as actual :class:`pathlib.Path` objects.
+        kwargs
+            Additional keyword arguments are interpreted as HTCondor submit file descriptors.
+            Values that are single strings are used for all components of the map.
+            Providing an iterable for the value will map that option.
+            Certain keywords are reserved for internal use.
+        """
         self._check_keyword_arguments(kwargs)
 
         super().__init__(**kwargs)

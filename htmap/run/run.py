@@ -11,9 +11,9 @@ import cloudpickle
 def print_node_info():
     print(f'Landed on execute node {socket.getfqdn()} ({socket.gethostbyname(socket.gethostname())}) at {datetime.datetime.utcnow()}')
 
-    dir_contents = ", ".join(str(x) for x in Path.cwd().iterdir())
-    print(f'Local directory contents: {dir_contents}')
-    print()
+    print('Local directory contents:')
+    for path in Path.cwd().iterdir():
+        print(f'    {path}')
 
 
 def run_func(arg_hash):
@@ -24,7 +24,6 @@ def run_func(arg_hash):
         args, kwargs = cloudpickle.load(file)
 
     print(f'Running\n    {fn}\nwith args\n    {args}\nand kwargs\n    {kwargs}')
-    print()
 
     output = fn(*args, **kwargs)
 
@@ -34,6 +33,7 @@ def run_func(arg_hash):
 
 def main(arg_hash):
     print_node_info()
+    print()
     run_func(arg_hash = arg_hash)
 
 

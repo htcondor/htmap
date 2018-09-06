@@ -78,8 +78,8 @@ class MappedFunction:
     def starmap(
         self,
         map_id: str,
-        args: Optional[Iterable[Tuple]] = None,
-        kwargs: Optional[Iterable[Dict]] = None,
+        args: Optional[Iterable[tuple]] = None,
+        kwargs: Optional[Iterable[Dict[str, Any]]] = None,
         force_overwrite: bool = False,
         map_options: Optional[options.MapOptions] = None,
     ) -> result.MapResult:
@@ -165,7 +165,7 @@ def htmap(map_options: Optional[options.MapOptions] = None) -> Union[Callable, M
     Returns
     -------
     mapped_function
-        An :class:`MappedFunction` that wraps the function (or a wrapper function that does the wrapping).
+        A :class:`MappedFunction` that wraps the function (or a wrapper function that does the wrapping).
     """
     if map_options is None:  # call with parens but no args
         def wrapper(func: Callable) -> MappedFunction:
