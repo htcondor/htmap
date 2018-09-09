@@ -2,16 +2,16 @@ HTMap
 ======
 
 :doc:`tutorial`
-   A brief tutorial in using ``htmap``.
+   A brief tutorial.
 
 :doc:`api`
-   API documentation for ``htmap``.
+   Public API documentation.
 
 :doc:`recipes`
-   Brief, useful snippets built around ``htmap``.
+   Useful code snippets, tips, and tricks.
 
 :doc:`innards`
-   The inner workings of ``htmap``.
+   The inner workings.
 
 :doc:`faq`
    These questions are asked, sometimes frequently.

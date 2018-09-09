@@ -1,9 +1,13 @@
-from typing import Any
+from typing import Any, List, Iterable, Tuple, Iterator, Dict
 
 import hashlib
+import json
 from pathlib import Path
 
 import cloudpickle
+import htcondor
+
+from htmap import exceptions
 
 
 def to_bytes(obj: Any) -> bytes:
@@ -31,3 +35,80 @@ def load_object(path: Path) -> Any:
     """Deserialize an object from the file at the given ``path``."""
     with path.open(mode = 'rb') as file:
         return cloudpickle.load(file)
+
+
+def save_func(map_dir, func):
+    """Save the mapped function to the map directory."""
+    save_object(func, map_dir / 'func')
+
+
+def save_args_and_kwargs(
+    map_dir: Path,
+    args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
+) -> List[str]:
+    """
+    Save the arguments to the mapped function to the map's input directory.
+    Returns the hashes (via :func:`hash_bytes`) of each argument.
+    """
+    hashes = []
+    num_inputs = 0
+    for a_and_k in args_and_kwargs:
+        b = to_bytes(a_and_k)
+        h = hash_bytes(b)
+        hashes.append(h)
+
+        input_path = map_dir / 'inputs' / f'{h}.in'
+        save_bytes(b, input_path)
+
+        num_inputs += 1
+
+    if num_inputs == 0:
+        raise exceptions.EmptyMap()
+
+    return hashes
+
+
+def save_hashes(map_dir: Path, hashes: Iterable[str]):
+    """Save a file containing the hashes of the arguments to the map directory."""
+    with (map_dir / 'hashes').open(mode = 'w') as file:
+        file.write('\n'.join(hashes))
+
+
+def load_hashes(map_dir: Path) -> Tuple[str, ...]:
+    """Load hashes that were saved using :func:`save_hashes`."""
+    with (map_dir / 'hashes').open() as file:
+        return tuple(h.strip() for h in file)
+
+
+def save_submit(map_dir: Path, submit: htcondor.Submit):
+    """Save a dictionary that represents the map's :class:`htcondor.Submit` object."""
+    with (map_dir / 'submit').open(mode = 'w') as f:
+        json.dump(
+            dict(submit),
+            f,
+            indent = 4,
+            separators = (', ', ': '),
+        )
+
+
+def load_submit(map_dir: Path) -> htcondor.Submit:
+    """Load an :class:`htcondor.Submit` object that was saved using :func:`save_submit`."""
+    with (map_dir / 'submit').open(mode = 'r') as f:
+        return htcondor.Submit(json.load(f))
+
+
+def save_itemdata(map_dir: Path, itemdata: List[dict]):
+    """Save the map's itemdata as a list of JSON dictionaries."""
+    with (map_dir / 'itemdata').open(mode = 'w') as f:
+        json.dump(
+            itemdata,
+            f,
+            indent = None,
+            separators = (',', ':'),
+        )  # most compact representation
+
+
+def load_itemdata(map_dir: Path) -> List[dict]:
+    """Load itemdata that was saved using :func:`save_itemdata`."""
+    with (map_dir / 'itemdata').open(mode = 'r') as f:
+        return json.load(f)

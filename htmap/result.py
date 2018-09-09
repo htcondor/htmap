@@ -5,7 +5,6 @@ import enum
 import shutil
 import time
 import collections
-import json
 from copy import copy
 from pathlib import Path
 
@@ -17,7 +16,7 @@ import classad
 from . import htio, exceptions, utils, mapping
 
 
-class JobStatus(enum.IntEnum):
+class Status(enum.IntEnum):
     IDLE = 1
     RUNNING = 2
     REMOVED = 3
@@ -30,7 +29,7 @@ class JobStatus(enum.IntEnum):
         return JOB_STATUS_STRINGS[self]
 
     @classmethod
-    def display_statuses(cls) -> Tuple['JobStatus', ...]:
+    def display_statuses(cls) -> Tuple['Status', ...]:
         return (
             cls.HELD,
             cls.IDLE,
@@ -40,13 +39,13 @@ class JobStatus(enum.IntEnum):
 
 
 JOB_STATUS_STRINGS = {
-    JobStatus.IDLE: 'Idle',
-    JobStatus.RUNNING: 'Run',
-    JobStatus.REMOVED: 'Removed',
-    JobStatus.COMPLETED: 'Done',
-    JobStatus.HELD: 'Held',
-    JobStatus.TRANSFERRING_OUTPUT: 'Transferring Output',
-    JobStatus.SUSPENDED: 'Suspended',
+    Status.IDLE: 'Idle',
+    Status.RUNNING: 'Run',
+    Status.REMOVED: 'Removed',
+    Status.COMPLETED: 'Done',
+    Status.HELD: 'Held',
+    Status.TRANSFERRING_OUTPUT: 'Transferring Output',
+    Status.SUSPENDED: 'Suspended',
 }
 
 
@@ -98,10 +97,8 @@ class MapResult:
             with (map_dir / 'cluster_ids').open() as file:
                 cluster_ids = [int(cid.strip()) for cid in file]
 
-            with (map_dir / 'hashes').open() as file:
-                hashes = tuple(h.strip() for h in file)
-
-            submit = htcondor.Submit(htio.load_object(map_dir / 'submit'))
+            hashes = htio.load_hashes(map_dir)
+            submit = htio.load_submit(map_dir)
 
         except FileNotFoundError:
             raise exceptions.MapIdNotFound(f'the map_id {map_id} could not be found')
@@ -185,8 +182,8 @@ class MapResult:
         ``True`` if any of the map's components are in a non-completed status.
         That means that this doesn't literally mean "running" - instead, it means that components could be running, idle, held, completed according to HTCondor but ran into an error internally and didn't produce output, etc.
         """
-        sc = self._status_counts()
-        return any(v != 0 for k, v in sc if k != JobStatus.COMPLETED)
+        sc = self.status_counts()
+        return any(v != 0 for k, v in sc if k != Status.COMPLETED)
 
     def wait(
         self,
@@ -465,20 +462,21 @@ class MapResult:
             projection = projection,
         )
 
-    def _status_counts(self) -> collections.Counter:
+    def status_counts(self) -> collections.Counter:
+        """Return a dictionary that describes how many map components are in each status."""
         query = self._query(projection = ['JobStatus'])
-        counter = collections.Counter(JobStatus(classad['JobStatus']) for classad in query)
+        counter = collections.Counter(Status(classad['JobStatus']) for classad in query)
 
         # if the job has fully completed, we'll get zero for everything
         # so make sure the completed count makes sense
-        counter[JobStatus.COMPLETED] = len(self._completed_hashes)
+        counter[Status.COMPLETED] = len(self._completed_hashes)
 
         return counter
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
-        counts = self._status_counts()
-        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in JobStatus.display_statuses())
+        counts = self.status_counts()
+        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in Status.display_statuses())
         msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
 
         return utils.rstr(msg)
@@ -486,7 +484,7 @@ class MapResult:
     def hold_reasons(self) -> str:
         """Return a string containing a table showing any held jobs, along with their hold reasons."""
         query = self._query(
-            requirements = self._requirements(f'JobStatus=={JobStatus.HELD}'),
+            requirements = self._requirements(f'Status=={Status.HELD}'),
             projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
         )
 
@@ -498,38 +496,74 @@ class MapResult:
             ]
         )
 
-    def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None):
+    def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None) -> classad.ClassAd:
         schedd = mapping.get_schedd()
-        return schedd._act(action, self._requirements(requirements))
+        return schedd.act(action, self._requirements(requirements))
 
     def remove(self):
         """Permanently remove the map and delete all associated input and output files."""
-        act_result = self._remove_from_queue()
+        self._remove_from_queue()
         self._rm_map_dir()
-
-        return act_result
 
     def hold(self):
         """Temporarily remove the map from the queue, until it is released."""
-        return self._act(htcondor.JobAction.Hold)
+        self._act(htcondor.JobAction.Hold)
 
     def release(self):
         """Releases a held map back into the queue."""
-        return self._act(htcondor.JobAction.Release)
+        self._act(htcondor.JobAction.Release)
 
     def pause(self):
-        return self._act(htcondor.JobAction.Suspend)
+        self._act(htcondor.JobAction.Suspend)
 
     def resume(self):
-        return self._act(htcondor.JobAction.Continue)
+        self._act(htcondor.JobAction.Continue)
 
     def vacate(self):
         """Force the map to give up any claimed resources."""
-        return self._act(htcondor.JobAction.Vacate)
+        self._act(htcondor.JobAction.Vacate)
 
     def _edit(self, attr: str, value: str, requirements: Optional[str] = None):
         schedd = mapping.get_schedd()
-        return schedd._act(self._requirements(requirements), attr, value)
+        schedd.edit(self._requirements(requirements), attr, value)
+
+    def edit_request_memory(self, memory: Union[str, int, float]):
+        """
+        Change the amount of memory (RAM) each map component needs.
+
+        .. warning::
+
+            This doesn't change anything for map components that have already started running,
+            so you may need to hold and release your map to propagate this change.
+
+        Parameters
+        ----------
+        memory
+            The amount of memory (RAM) to request.
+            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **MB**.
+        """
+        if isinstance(memory, (int, float)):
+            memory = f'{memory}MB'
+        self._edit('RequestMemory', memory)
+
+    def edit_request_disk(self, disk: Union[str, int, float]):
+        """
+        Change the amount of disk space each map component needs.
+
+        .. warning::
+
+            This doesn't change anything for map components that have already started running,
+            so you may need to hold and release your map to propagate this change.
+
+        Parameters
+        ----------
+        disk
+            The amount of disk space to use.
+            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **GB**.
+        """
+        if isinstance(disk, (int, float)):
+            disk = f'{disk}MB'
+        self._edit('RequestDisk', disk)
 
     def _iter_output(self, item: int) -> Iterator[str]:
         h = self._item_to_hash(item)
@@ -583,12 +617,11 @@ class MapResult:
     def _rerun(self, hashes):
         self._remove_from_queue()
 
-        with (self._map_dir / 'itemdata').open(mode = 'r') as f:
-            itemdata = json.load(f)
+        itemdata = htio.load_itemdata(self._map_dir)
         itemdata_by_hash = {d['hash']: d for d in itemdata}
         new_itemdata = [itemdata_by_hash[h] for h in hashes]
 
-        submit_obj = htcondor.Submit(htio.load_object(self._map_dir / 'submit'))
+        submit_obj = htio.load_submit(self._map_dir)
 
         submit_result = mapping.execute_submit(
             submit_obj,
@@ -651,7 +684,7 @@ class MapResult:
         for k, v in submit.items():
             submit[k] = v.replace(target, replace_with)
 
-        mapping.save_submit_object(new_map_dir, submit)
+        htio.save_submit(new_map_dir, submit)
 
         self.remove()
 

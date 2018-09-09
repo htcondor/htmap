@@ -84,5 +84,13 @@ def mapped_sleepy_double(sleepy_double):
     return mapper
 
 
+@pytest.fixture(scope = 'session')
+def mapped_exception():
+    @htmap.htmap
+    def fail(x):
+        raise Exception(str(x))
+
+    return fail
+
 def exception_msg(exc_info) -> str:
     return str(exc_info.value)

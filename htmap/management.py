@@ -67,6 +67,7 @@ def force_remove(map_id: str):
     .. warning::
 
         This operation is **not safe**, but might be necessary if your map directory has somehow become corrupted.
+        See :ref:`cleanup-after-force-removal`.
 
     Parameters
     ----------
@@ -89,6 +90,7 @@ def force_clean():
     .. warning::
 
         This operation is **not safe**, but might be necessary if your map directory has somehow become corrupted.
+        See :ref:`cleanup-after-force-removal`.
     """
     for map_dir in _map_paths():
         shutil.rmtree(map_dir)
@@ -98,15 +100,15 @@ def status() -> str:
     """Return a string containing a table showing the status of all existing maps, as well as their disk usage."""
     ids = map_ids()
     results = map_results()
-    counts = [r._status_counts() for r in results]
+    counts = [r.status_counts() for r in results]
 
     return utils.table(
-        headers = ['Map ID'] + [str(d) for d in result.JobStatus.display_statuses()] + ['Data'],
+        headers = ['Map ID'] + [str(d) for d in result.Status.display_statuses()] + ['Data'],
         rows = [
-            [map_id] + [count[d] for d in result.JobStatus.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
+            [map_id] + [count[d] for d in result.Status.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
             for map_id, count in sorted(
                 zip(ids, counts),
-                key = lambda map_id_and_count: map_id_and_count[1][result.JobStatus.RUNNING],
+                key = lambda map_id_and_count: map_id_and_count[1][result.Status.RUNNING],
             )
         ],
     )

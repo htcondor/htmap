@@ -1,5 +1,5 @@
-API Reference
-=============
+API
+===
 
 .. py:currentmodule:: htmap
 
@@ -42,7 +42,8 @@ MapResult
 ---------
 
 The :class:`MapResult` is your window into the status and output of your map.
-Once you get a map result back from a map call, you can use its methods to get the status of jobs (both for display and further programmatic interaction),
+Once you get a map result back from a map call,
+you can use its methods to get the status of jobs,
 change the properties of the map while its running,
 pause, restart, or cancel the map,
 and finally retrieve the output once the map is done.

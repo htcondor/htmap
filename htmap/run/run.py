@@ -17,7 +17,7 @@ def print_node_info():
 
 
 def run_func(arg_hash):
-    with Path('fn.pkl').open(mode = 'rb') as file:
+    with Path('func').open(mode = 'rb') as file:
         fn = cloudpickle.load(file)
 
     with Path(f'{arg_hash}.in').open(mode = 'rb') as file:

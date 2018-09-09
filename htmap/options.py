@@ -117,7 +117,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     itemdata = [{'hash': h} for h in hashes]
 
     input_files = [
-        (map_dir / 'fn.pkl').as_posix(),
+        (map_dir / 'func').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
     input_files.extend(Path(f).absolute().as_posix() for f in map_options.fixed_input_files)

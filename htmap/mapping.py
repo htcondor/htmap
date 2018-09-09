@@ -1,9 +1,8 @@
-from typing import Tuple, Iterable, Dict, Optional, List, Callable, Iterator, Any
+from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any
 
 import shutil
 from pathlib import Path
 import itertools
-import json
 
 import htcondor
 
@@ -215,7 +214,7 @@ def build_map(
 def submit_map(
     map_id: str,
     func: Callable,
-    args_and_kwargs: Iterable[Tuple],
+    args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
     force_overwrite: bool = False,
     map_options: Optional[options.MapOptions] = None,
 ) -> result.MapResult:
@@ -259,9 +258,9 @@ def submit_map(
     map_dir = map_dir_path(map_id)
     try:
         make_map_subdirs(map_dir)
-        save_func(map_dir, func)
-        hashes = save_args_and_kwargs(map_dir, args_and_kwargs)
-        save_hashes(map_dir, hashes)
+        htio.save_func(map_dir, func)
+        hashes = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
+        htio.save_hashes(map_dir, hashes)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
             map_id,
@@ -269,8 +268,8 @@ def submit_map(
             hashes,
             map_options,
         )
-        save_submit_object(map_dir, submit_obj)
-        save_itemdata(map_dir, itemdata)
+        htio.save_submit(map_dir, submit_obj)
+        htio.save_itemdata(map_dir, itemdata)
 
         submit_result = execute_submit(
             submit_object = submit_obj,
@@ -340,50 +339,7 @@ def make_map_subdirs(map_dir):
         path.mkdir(parents = True, exist_ok = True)
 
 
-def save_func(map_dir, func):
-    """Save the mapped function to the map directory."""
-    fn_path = map_dir / 'fn.pkl'
-    htio.save_object(func, fn_path)
-
-
-def save_args_and_kwargs(map_dir: Path, args_and_kwargs) -> List[str]:
-    """Save the arguments to the mapped function to the map's input directory."""
-    hashes = []
-    num_inputs = 0
-    for a_and_k in args_and_kwargs:
-        b = htio.to_bytes(a_and_k)
-        h = htio.hash_bytes(b)
-        hashes.append(h)
-
-        input_path = map_dir / 'inputs' / f'{h}.in'
-        htio.save_bytes(b, input_path)
-
-        num_inputs += 1
-
-    if num_inputs == 0:
-        raise exceptions.EmptyMap()
-
-    return hashes
-
-
-def save_hashes(map_dir: Path, hashes: Iterable[str]):
-    """Save a file containing the hashes of the arguments to the map directory."""
-    with (map_dir / 'hashes').open(mode = 'w') as file:
-        file.write('\n'.join(hashes))
-
-
-def save_submit_object(map_dir: Path, submit):
-    """Save a dictionary that represents the map's :class:`htcondor.Submit` object."""
-    htio.save_object(dict(submit), map_dir / 'submit')
-
-
-def save_itemdata(map_dir: Path, itemdata: List[dict]):
-    """Save the map's itemdata as a list of JSON dictionaries."""
-    with (map_dir / 'itemdata').open(mode = 'w') as f:
-        json.dump(itemdata, f, indent = None, separators = (',', ':'))
-
-
-def execute_submit(submit_object, itemdata):
+def execute_submit(submit_object, itemdata) -> htcondor.SubmitResult:
     """Execute a map via the scheduler defined by the settings."""
     schedd = get_schedd()
     with schedd.transaction() as txn:
@@ -396,7 +352,10 @@ def execute_submit(submit_object, itemdata):
         return submit_result
 
 
-def zip_args_and_kwargs(args: Iterable[Tuple], kwargs: Iterable[Dict]) -> Iterator[Tuple[Tuple, Dict]]:
+def zip_args_and_kwargs(
+    args: Iterable[Tuple],
+    kwargs: Iterable[Dict],
+) -> Iterator[Tuple[Tuple, Dict]]:
     """
     Combine iterables of arguments and keyword arguments into a zipped, filled iterator of arguments and keyword arguments (i.e., tuples and dictionaries).
 
