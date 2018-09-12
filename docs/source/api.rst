@@ -26,6 +26,10 @@ Mapping Functions
 .. autoclass:: htmap.MapBuilder
    :members:
 
+.. note::
+
+    The environment variable HTMAP_ON_EXECUTE is set to ``'1'`` while map components are executing out on the cluster.
+    This can be useful if you need to switch certain behavior on whether you're running your function locally or not.
 
 MappedFunction
 --------------

@@ -3,6 +3,7 @@
 import sys
 import socket
 import datetime
+import os
 from pathlib import Path
 
 import cloudpickle
@@ -32,6 +33,7 @@ def run_func(arg_hash):
 
 
 def main(arg_hash):
+    os.environ['HTMAP_ON_EXECUTE'] = "1"
     print_node_info()
     print()
     run_func(arg_hash = arg_hash)
