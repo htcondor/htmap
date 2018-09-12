@@ -355,3 +355,62 @@ def test_option_from_settings_is_visible_in_base_options():
     opts = get_base_options('foo', Path('bar'))
 
     assert opts['zing'] == 'hit'
+
+
+def test_url_in_fixed_input_files():
+    map_id = 'foo'
+    map_dir = Path().cwd()
+    hashes = ['a']
+    url = 'http://www.baz.test'
+    map_options = htmap.MapOptions(
+        fixed_input_files = [url],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        hashes,
+        map_options,
+    )
+
+    assert url in sub['transfer_input_files']
+
+
+def test_url_in_input_files():
+    map_id = 'foo'
+    map_dir = Path().cwd()
+    hashes = ['a']
+    url = 'http://www.baz.test'
+    map_options = htmap.MapOptions(
+        input_files = [url],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        hashes,
+        map_options,
+    )
+
+    assert url in itemdata[0]['extra_input_files']
+
+
+def test_two_urls_in_input_files():
+    map_id = 'foo'
+    map_dir = Path().cwd()
+    hashes = ['a']
+    url_1 = 'http://www.baz.test'
+    url_2 = 'http://www.bong.test'
+    map_options = htmap.MapOptions(
+        input_files = [(url_1, url_2)],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        hashes,
+        map_options,
+    )
+
+    assert url_1 in itemdata[0]['extra_input_files']
+    assert url_2 in itemdata[0]['extra_input_files']

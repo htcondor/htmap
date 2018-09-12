@@ -1,6 +1,7 @@
-import pytest
-
 import shutil
+import time
+
+import pytest
 
 import htmap
 
@@ -29,6 +30,8 @@ def test_clean_removes_all_maps(mapped_doubler):
 
     for r in results:
         r.wait(timeout = 60)
+
+    time.sleep(.1)
 
     htmap.clean()
 

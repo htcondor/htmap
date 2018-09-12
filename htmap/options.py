@@ -109,6 +109,16 @@ class MapOptions(collections.UserDict):
         return new
 
 
+def normalize_input_file_path(path: Union[str, Path]) -> str:
+    if isinstance(path, Path):
+        return path.absolute().as_posix()
+
+    if '://' in path:  # i.e., this is an url-like input file path
+        return path
+
+    return normalize_input_file_path(Path(path))  # local file path, but as a string
+
+
 def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
@@ -122,14 +132,14 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         (map_dir / 'func').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
-    input_files.extend(Path(f).absolute().as_posix() for f in map_options.fixed_input_files)
+    input_files.extend(normalize_input_file_path(f) for f in map_options.fixed_input_files)
 
     if map_options.input_files is not None:
         input_files.append('$(extra_input_files)')
 
         joined = [
-            Path(files).absolute().as_posix() if isinstance(files, str)
-            else ', '.join(Path(f).absolute().as_posix() for f in files)
+            normalize_input_file_path(files) if isinstance(files, str)
+            else ', '.join(normalize_input_file_path(f) for f in files)
             for files in map_options.input_files
         ]
         if len(hashes) != len(joined):
