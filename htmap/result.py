@@ -182,8 +182,11 @@ class MapResult:
         ``True`` if any of the map's components are in a non-completed status.
         That means that this doesn't literally mean "running" - instead, it means that components could be running, idle, held, completed according to HTCondor but ran into an error internally and didn't produce output, etc.
         """
-        sc = self.status_counts()
-        return any(v != 0 for k, v in sc if k != Status.COMPLETED)
+        return any(
+            v != 0
+            for k, v in self.status_counts().items()
+            if k != Status.COMPLETED
+        )
 
     def wait(
         self,
@@ -634,12 +637,17 @@ class MapResult:
         """
         Give this map a new ``map_id``.
         This function returns a **new** :class:`MapResult` for the renamed map.
-        The :class:`MapResult` you call this on will not be connected to the new ``map_id``.
+        The :class:`MapResult` you call this on will not be connected to the new ``map_id``!
         The old ``map_id`` will be available for re-use.
 
         .. note::
 
             Only completed maps can be renamed (i.e., ``result.is_done == True``).
+
+        .. warning::
+
+            The old :class:`MapResult` will not be connected to the new ``map_id``!
+            This function returns a **new** result for the renamed map.
 
         Parameters
         ----------
@@ -655,7 +663,7 @@ class MapResult:
         """
         if map_id == self.map_id:
             raise exceptions.CannotRenameMap('cannot rename a map to the same ``map_id`` it already has')
-        if not self.is_done:
+        if self.is_running:
             raise exceptions.CannotRenameMap('cannot rename a map that is not complete')
 
         mapping.raise_if_map_id_is_invalid(map_id)
