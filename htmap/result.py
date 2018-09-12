@@ -530,7 +530,7 @@ class MapResult:
         schedd = mapping.get_schedd()
         schedd.edit(self._requirements(requirements), attr, value)
 
-    def edit_request_memory(self, memory: Union[str, int, float]):
+    def edit_memory(self, memory: Union[str, int, float]):
         """
         Change the amount of memory (RAM) each map component needs.
 
@@ -549,7 +549,7 @@ class MapResult:
             memory = f'{memory}MB'
         self._edit('RequestMemory', memory)
 
-    def edit_request_disk(self, disk: Union[str, int, float]):
+    def edit_disk(self, disk: Union[str, int, float]):
         """
         Change the amount of disk space each map component needs.
 

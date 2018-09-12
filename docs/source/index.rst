@@ -1,6 +1,11 @@
 HTMap
 ======
 
+.. py:currentmodule:: htmap
+
+.. highlight:: python
+
+
 :doc:`tutorial`
    A brief tutorial.
 
@@ -10,11 +15,12 @@ HTMap
 :doc:`recipes`
    Useful code snippets, tips, and tricks.
 
+:doc:`faq`
+   These questions are asked, sometimes frequently.
+
 :doc:`innards`
    The inner workings.
 
-:doc:`faq`
-   These questions are asked, sometimes frequently.
 
 .. toctree::
    :maxdepth: 2
@@ -24,6 +30,6 @@ HTMap
    tutorial
    api
    recipes
-   innards
    faq
+   innards
 

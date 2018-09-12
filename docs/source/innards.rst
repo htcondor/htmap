@@ -5,6 +5,7 @@ Innards
 
 .. highlight:: python
 
+
 Guiding Principles
 ------------------
 

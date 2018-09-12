@@ -9,7 +9,7 @@ from . import exceptions, settings
 
 
 class MapOptions(collections.UserDict):
-    reserved_keys = {
+    RESERVED_KEYS = {
         'jobbatchname',
         'arguments',
         'executable',
@@ -44,15 +44,17 @@ class MapOptions(collections.UserDict):
             Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **GB**.
         fixed_input_files
             A single file, or an iterable of files, to send to all components of the map.
-            Files can be specified as string paths or as actual :class:`pathlib.Path` objects.
+            Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
+            You can also specify a file to fetch from an URL like ``http://www.full.url/path/to/filename``.
         input_files
             An iterable of single files or iterables of files to map over.
-            Files can be specified as string paths or as actual :class:`pathlib.Path` objects.
+            Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
+            You can also specify a file to fetch from an URL like ``http://www.full.url/path/to/filename``.
         kwargs
             Additional keyword arguments are interpreted as HTCondor submit file descriptors.
             Values that are single strings are used for all components of the map.
             Providing an iterable for the value will map that option.
-            Certain keywords are reserved for internal use.
+            Certain keywords are reserved for internal use (see the RESERVED_KEYS class attribute).
         """
         self._check_keyword_arguments(kwargs)
 
@@ -90,7 +92,7 @@ class MapOptions(collections.UserDict):
 
     def _check_keyword_arguments(self, kwargs):
         normalized_keys = set(k.lower() for k in kwargs.keys())
-        reserved_keys_in_kwargs = normalized_keys.intersection(self.reserved_keys)
+        reserved_keys_in_kwargs = normalized_keys.intersection(self.RESERVED_KEYS)
         if len(reserved_keys_in_kwargs) != 0:
             if len(reserved_keys_in_kwargs) == 1:
                 s = 'is a reserved keyword'
@@ -99,7 +101,15 @@ class MapOptions(collections.UserDict):
             raise exceptions.ReservedOptionKeyword(f'{",".join(reserved_keys_in_kwargs)} {s} and cannot be used')
 
     @classmethod
-    def merge(cls, *others: 'MapOptions'):
+    def merge(cls, *others: 'MapOptions') -> 'MapOptions':
+        """
+        Merge any number of :class:`MapOptions` together, like a :class:`collections.ChainMap`.
+        Options closer to the left take priority.
+
+        .. note::
+
+            ``fixed_input_files`` is a special case, and is merged up the chain instead of being overwritten.
+        """
         new = cls()
         for other in reversed(others):
             new.data.update(other.data)
@@ -109,14 +119,18 @@ class MapOptions(collections.UserDict):
         return new
 
 
-def normalize_input_file_path(path: Union[str, Path]) -> str:
+def normalize_path(path: Union[str, Path]) -> str:
+    """
+    Turn input file paths into a format that HTCondor can understand.
+    In particular, all local file paths must be turned into posix-style paths (even on Windows!)
+    """
     if isinstance(path, Path):
         return path.absolute().as_posix()
 
     if '://' in path:  # i.e., this is an url-like input file path
         return path
 
-    return normalize_input_file_path(Path(path))  # local file path, but as a string
+    return normalize_path(Path(path))  # local file path, but as a string
 
 
 def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
@@ -132,14 +146,14 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         (map_dir / 'func').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
-    input_files.extend(normalize_input_file_path(f) for f in map_options.fixed_input_files)
+    input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
     if map_options.input_files is not None:
         input_files.append('$(extra_input_files)')
 
         joined = [
-            normalize_input_file_path(files) if isinstance(files, str)
-            else ', '.join(normalize_input_file_path(f) for f in files)
+            normalize_path(files) if isinstance(files, str)
+            else ', '.join(normalize_path(f) for f in files)
             for files in map_options.input_files
         ]
         if len(hashes) != len(joined):

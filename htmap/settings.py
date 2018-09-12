@@ -63,7 +63,7 @@ class Settings:
         m[final] = value
 
     def to_dict(self) -> dict:
-        """Return a single dictionary with all of the settings in this :class:`Settings`."""
+        """Return a single dictionary with all of the settings in this :class:`Settings`, merged according to the lookup rules."""
         return functools.reduce(nested_merge, reversed(self.maps), {})
 
     def replace(self, other: 'Settings'):
