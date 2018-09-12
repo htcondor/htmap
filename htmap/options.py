@@ -16,6 +16,7 @@ class MapOptions(collections.UserDict):
         'log',
         'output',
         'error',
+        'transfer_output_files',
         'transfer_output_remaps',
         'transfer_input_files',
         'should_transfer_files',
@@ -115,6 +116,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     options_dict = get_base_options(map_id, map_dir)
 
     itemdata = [{'hash': h} for h in hashes]
+    options_dict['transfer_output_files'] = '$(hash).out'
 
     input_files = [
         (map_dir / 'func').as_posix(),
