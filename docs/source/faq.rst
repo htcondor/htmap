@@ -1,2 +1,6 @@
-Frequently Asked Questions
-==========================
+FAQ
+===
+
+.. py:currentmodule:: htmap
+
+.. highlight:: python

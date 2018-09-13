@@ -1,4 +1,4 @@
-from htmap.mapper import zip_args_and_kwargs
+from htmap.mapping import zip_args_and_kwargs
 
 
 def test_only_args():

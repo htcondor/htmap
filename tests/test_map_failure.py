@@ -1,19 +1,18 @@
 import pytest
 
-import htmap
-import htmap.mapper
+from htmap import mapping
 
 
-def test_exception_inside_submit_removes_map_dir(mocker, mapped_doubler):
+def test_exception_inside_submit_removes_map_dir(mocker, doubler):
     class Marker(Exception):
         pass
 
-    def bad_submit(*args, **kwargs):
+    def bad_execute_submit(*args, **kwargs):
         raise Marker()
 
-    mocker.patch.object(htmap.HTMapper, '_submit', bad_submit)
+    mocker.patch('htmap.mapping.execute_submit', bad_execute_submit)
 
     with pytest.raises(Marker):
-        mapped_doubler.map('map', range(10))
+        mapping.map('map', doubler, range(10))
 
-    assert not htmap.mapper.map_dir_path('map').exists()
+    assert not mapping.map_dir_path('map').exists()

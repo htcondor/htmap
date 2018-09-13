@@ -1,4 +1,5 @@
 import datetime
+import time
 
 import pytest
 
@@ -56,6 +57,14 @@ def test_map_produces_correct_output(mapped_doubler):
     assert list(result) == [2 * x for x in range(n)]
 
 
+def test_map_with_kwargs_produces_correct_output(mapped_power):
+    n = 3
+    p = 2
+    result = mapped_power.map('map', range(n), p = p)
+
+    assert list(result) == [x ** p for x in range(n)]
+
+
 def test_starmap_produces_correct_output(mapped_power):
     n = 3
     result = mapped_power.starmap(
@@ -106,13 +115,17 @@ def test_get_waits_until_ready(mapped_doubler):
 
 def test_cannot_use_same_mapid_again(mapped_doubler):
     result = mapped_doubler.map('foo', range(1))
+    result.wait(timeout = 60)
 
-    with pytest.raises(htmap.exceptions.MapIDAlreadyExists):
+    with pytest.raises(htmap.exceptions.MapIdAlreadyExists):
         again = mapped_doubler.map('foo', range(1))
 
 
 def test_can_use_same_mapid_again_if_force_overwrite(mapped_doubler):
     result = mapped_doubler.map('foo', range(1))
+    result.wait(timeout = 60)
+
+    time.sleep(.1)
 
     again = mapped_doubler.map('foo', range(1), force_overwrite = True)
 

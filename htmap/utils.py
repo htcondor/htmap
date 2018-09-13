@@ -11,7 +11,7 @@ from classad import ClassAd
 MutableMapping.register(ClassAd)
 
 
-def clean_dir(target_dir: Path) -> (int, int):
+def clean_dir(target_dir: Path):
     """
     Remove all files in the given directory `target_dir`.
 
@@ -19,22 +19,9 @@ def clean_dir(target_dir: Path) -> (int, int):
     ----------
     target_dir
         The directory to clean up.
-
-    Returns
-    -------
-    (num_files, num_bytes)
-        The number of files and bytes that were deleted.
     """
-    num_files = 0
-    num_bytes = 0
     for path in (p for p in target_dir.iterdir() if p.is_file()):
-        stat = path.stat()
-        num_files += 1
-        num_bytes += stat.st_size
-
         path.unlink()
-
-    return num_files, num_bytes
 
 
 def wait_for_path_to_exist(

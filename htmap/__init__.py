@@ -1,6 +1,7 @@
-from .settings import settings
-from .mapper import htmap, HTMapper, MapBuilder
-from .result import MapResult, JobStatus
-from .shortcuts import map, starmap, build_map, recover, remove
-from .management import clean, map_ids, map_results, status
+from .settings import settings, USER_SETTINGS, BASE_SETTINGS
+from .mapping import map, starmap, build_map, MapBuilder
+from .mapper import htmap, MappedFunction
+from .result import MapResult, Status
+from .options import MapOptions
+from .management import clean, map_ids, map_results, status, force_clean, recover, remove, force_remove
 from . import exceptions

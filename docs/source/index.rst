@@ -1,20 +1,26 @@
 HTMap
 ======
 
+.. py:currentmodule:: htmap
+
+.. highlight:: python
+
+
 :doc:`tutorial`
-   A brief tutorial in using ``htmap``.
+   A brief tutorial.
 
 :doc:`api`
-   API documentation for ``htmap``.
+   Public API documentation.
 
 :doc:`recipes`
-   Brief, useful snippets built around ``htmap``.
-
-:doc:`innards`
-   The inner workings of ``htmap``.
+   Useful code snippets, tips, and tricks.
 
 :doc:`faq`
    These questions are asked, sometimes frequently.
+
+:doc:`innards`
+   The inner workings.
+
 
 .. toctree::
    :maxdepth: 2
@@ -24,6 +30,6 @@ HTMap
    tutorial
    api
    recipes
-   innards
    faq
+   innards
 

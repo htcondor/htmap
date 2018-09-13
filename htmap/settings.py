@@ -63,7 +63,7 @@ class Settings:
         m[final] = value
 
     def to_dict(self) -> dict:
-        """Return a single dictionary with all of the settings in this :class:`Settings`."""
+        """Return a single dictionary with all of the settings in this :class:`Settings`, merged according to the lookup rules."""
         return functools.reduce(nested_merge, reversed(self.maps), {})
 
     def replace(self, other: 'Settings'):
@@ -71,14 +71,28 @@ class Settings:
         self.maps = other.maps
 
     def append(self, other: Union['Settings', dict]):
-        """Add a map to the end of the search (i.e., it will be searched last, and be overridden by anything before it)."""
+        """
+        Add a map to the end of the search (i.e., it will be searched last, and be overridden by anything before it).
+
+        Parameters
+        ----------
+        other
+            Another settings-like object to insert into the :class:`Settings`.
+        """
         if isinstance(other, Settings):
             self.maps.extend(other.maps)
         else:
             self.maps.append(other)
 
     def prepend(self, other: Union['Settings', dict]):
-        """Add a map to the beginning of the search (i.e., it will be searched first, and override anything after it)."""
+        """
+        Add a map to the beginning of the search (i.e., it will be searched first, and override anything after it).
+
+        Parameters
+        ----------
+        other
+            Another settings-like object to insert into the :class:`Settings`.
+        """
         if isinstance(other, Settings):
             self.maps = other.maps + self.maps
         else:
@@ -86,7 +100,7 @@ class Settings:
 
     @classmethod
     def from_settings(cls, *settings):
-        """Construct a new :class:`Settings` which is merged from other :class:`Settings`."""
+        """Construct a new :class:`Settings` from other :class:`Settings`."""
         return cls(*itertools.chain.from_iterable(s.maps for s in settings))
 
     @classmethod
@@ -114,12 +128,14 @@ BASE_SETTINGS = Settings(dict(
     HTCONDOR = dict(
         SCHEDD = None,
     ),
+    MAP_OPTIONS = dict(
+    ),
 ))
 
 USER_SETTINGS_PATH = Path.home() / '.htmap.toml'
 try:
-    user_settings = Settings.load(USER_SETTINGS_PATH)
+    USER_SETTINGS = Settings.load(USER_SETTINGS_PATH)
 except FileNotFoundError:
-    user_settings = Settings()
+    USER_SETTINGS = Settings()
 
-settings = Settings.from_settings(user_settings, BASE_SETTINGS)
+settings = Settings.from_settings(USER_SETTINGS, BASE_SETTINGS)
