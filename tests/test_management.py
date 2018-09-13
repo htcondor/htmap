@@ -31,7 +31,7 @@ def test_clean_removes_all_maps(mapped_doubler):
     for r in results:
         r.wait(timeout = 60)
 
-    time.sleep(.1)
+    time.sleep(.3)
 
     htmap.clean()
 

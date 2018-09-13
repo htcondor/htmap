@@ -664,7 +664,7 @@ class MapResult:
         if map_id == self.map_id:
             raise exceptions.CannotRenameMap('cannot rename a map to the same ``map_id`` it already has')
         if self.is_running:
-            raise exceptions.CannotRenameMap('cannot rename a map that is not complete')
+            raise exceptions.CannotRenameMap(f'cannot rename a map that is not complete (job status: {self.status_counts()})')
 
         mapping.raise_if_map_id_is_invalid(map_id)
 
