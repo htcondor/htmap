@@ -141,12 +141,16 @@ class Settings:
 BASE_SETTINGS = Settings(dict(
     HTMAP_DIR = Path.home() / '.htmap',
     MAPS_DIR_NAME = 'maps',
+    PYTHON_DELIVERY = 'assume',
     TEMPORARY_CACHE_TIMEOUT = 1,
     HTCONDOR = dict(
         SCHEDD = None,
     ),
     MAP_OPTIONS = dict(
     ),
+    DOCKER = dict(
+        IMAGE = 'python:3.6',
+    )
 ))
 
 USER_SETTINGS_PATH = Path.home() / '.htmap.toml'

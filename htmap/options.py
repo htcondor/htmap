@@ -28,6 +28,7 @@ from . import exceptions, settings
 class MapOptions(collections.UserDict):
     RESERVED_KEYS = {
         'jobbatchname',
+        'universe',
         'arguments',
         'executable',
         'log',
@@ -161,6 +162,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
 
     input_files = [
         (map_dir / 'func').as_posix(),
+        (Path(__file__).parent / 'run' / 'run.py').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
@@ -204,8 +206,15 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
 
 
 def get_base_options(map_id, map_dir):
-    base = {
+    base = OPTIONS_BY_DELIVERY[settings['PYTHON_DELIVERY']](map_id, map_dir)
+
+    return {**base, **settings.get('MAP_OPTIONS', default = {})}
+
+
+def _get_base_options_for_assume(map_id, map_dir):
+    return {
         'JobBatchName': map_id,
+        'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
         'arguments': '$(hash)',
         'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
@@ -216,4 +225,24 @@ def get_base_options(map_id, map_dir):
         '+htmap': 'True',
     }
 
-    return {**base, **settings.get('MAP_OPTIONS', default = {})}
+
+def _get_base_options_for_docker(map_id, map_dir):
+    return {
+        'JobBatchName': map_id,
+        'universe': 'docker',
+        'docker_image': settings['DOCKER.IMAGE'],
+        'executable': (Path(__file__).parent / 'run' / 'run.sh').as_posix(),
+        'arguments': '$(hash)',
+        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
+        'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
+        'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
+        'should_transfer_files': 'YES',
+        'when_to_transfer_output': 'ON_EXIT',
+        '+htmap': 'True',
+    }
+
+
+OPTIONS_BY_DELIVERY = {
+    'assume': _get_base_options_for_assume,
+    'docker': _get_base_options_for_docker,
+}
