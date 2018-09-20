@@ -31,6 +31,7 @@ class MapOptions(collections.UserDict):
         'universe',
         'arguments',
         'executable',
+        'transfer_executable',
         'log',
         'output',
         'error',
@@ -162,7 +163,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
 
     input_files = [
         (map_dir / 'func').as_posix(),
-        (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        # (Path(__file__).parent / 'run' / 'run.py').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
@@ -226,21 +227,13 @@ def _get_base_options_for_assume(map_id, map_dir):
     }
 
 
-import shutil
-
-
 def _get_base_options_for_docker(map_id, map_dir):
-    shutil.copy2(
-        Path(__file__).parent / 'run' / 'run.sh',
-        Path.cwd() / 'run.sh',
-    )
-
     return {
         'JobBatchName': map_id,
         'universe': 'docker',
         'docker_image': settings['DOCKER.IMAGE'],
-        'executable': 'run.sh',
-        # 'executable': (Path(__file__).parent / 'run' / 'run.sh').as_posix(),
+        'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'transfer_executable': 'True',
         'arguments': '$(hash)',
         'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
         'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
