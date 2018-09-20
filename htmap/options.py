@@ -226,12 +226,21 @@ def _get_base_options_for_assume(map_id, map_dir):
     }
 
 
+import shutil
+
+
 def _get_base_options_for_docker(map_id, map_dir):
+    shutil.copy2(
+        Path(__file__).parent / 'run' / 'run.sh',
+        Path.cwd() / 'run.sh',
+    )
+
     return {
         'JobBatchName': map_id,
         'universe': 'docker',
         'docker_image': settings['DOCKER.IMAGE'],
-        'executable': (Path(__file__).parent / 'run' / 'run.sh').as_posix(),
+        'executable': 'run.sh',
+        # 'executable': (Path(__file__).parent / 'run' / 'run.sh').as_posix(),
         'arguments': '$(hash)',
         'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
         'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
