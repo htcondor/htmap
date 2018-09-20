@@ -21,9 +21,8 @@ import sys
 import socket
 import datetime
 import os
+import pickle
 from pathlib import Path
-
-import cloudpickle
 
 
 def print_node_info():
@@ -36,17 +35,17 @@ def print_node_info():
 
 def run_func(arg_hash):
     with Path('func').open(mode = 'rb') as file:
-        fn = cloudpickle.load(file)
+        fn = pickle.load(file)
 
     with Path(f'{arg_hash}.in').open(mode = 'rb') as file:
-        args, kwargs = cloudpickle.load(file)
+        args, kwargs = pickle.load(file)
 
     print(f'Running\n    {fn}\nwith args\n    {args}\nand kwargs\n    {kwargs}')
 
     output = fn(*args, **kwargs)
 
     with Path(f'{arg_hash}.out').open(mode = 'wb') as file:
-        cloudpickle.dump(output, file)
+        pickle.dump(output, file)
 
 
 def main(arg_hash):
