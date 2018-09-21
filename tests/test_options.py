@@ -21,7 +21,7 @@ import pytest
 from .conftest import exception_msg
 
 import htmap
-from htmap.options import create_submit_object_and_itemdata, get_base_options
+from htmap.options import create_submit_object_and_itemdata, get_base_options_dict
 
 
 def test_one_reserved_kwarg_raises():
@@ -369,7 +369,7 @@ def test_merging_options_merges_fixed_input():
 def test_option_from_settings_is_visible_in_base_options():
     htmap.settings['MAP_OPTIONS.zing'] = 'hit'
 
-    opts = get_base_options('foo', Path('bar'))
+    opts = get_base_options_dict('foo', Path('bar'))
 
     assert opts['zing'] == 'hit'
 
@@ -431,3 +431,8 @@ def test_two_urls_in_input_files():
 
     assert url_1 in itemdata[0]['extra_input_files']
     assert url_2 in itemdata[0]['extra_input_files']
+
+
+def test_unknown_delivery_mechanism():
+    with pytest.raises(htmap.exceptions.UnknownPythonDeliveryMechanism):
+        get_base_options_dict('foo', Path.cwd(), delivery = 'unknown')

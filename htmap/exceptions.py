@@ -74,3 +74,7 @@ class MisalignedInputData(HTMapException):
 class CannotRenameMap(HTMapException):
     """The map cannot be renamed right now."""
     pass
+
+
+class UnknownPythonDeliveryMechanism(HTMapException):
+    pass

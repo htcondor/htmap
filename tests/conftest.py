@@ -24,11 +24,11 @@ from pathlib import Path
 import pytest
 
 import htmap
-from htmap.options import get_base_options
+from htmap.options import get_base_options_dict
 
 
 def test_get_base_options(map_id, map_dir, test_id = None):
-    opts = get_base_options(map_id, map_dir)
+    opts = get_base_options_dict(map_id, map_dir)
     opts['+htmap_test_id'] = str(test_id)
 
     return opts
@@ -45,7 +45,7 @@ def set_htmap_dir_and_clean_afterwards(tmpdir_factory, mock):
 
     test_id = next(ids)
     mock.patch(
-        'htmap.options.get_base_options',
+        'htmap.options.get_base_options_dict',
         functools.partial(test_get_base_options, test_id = test_id),
     )
 

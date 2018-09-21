@@ -156,14 +156,17 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
 
-    options_dict = get_base_options(map_id, map_dir)
+    options_dict = get_base_options_dict(
+        map_id,
+        map_dir,
+        settings['PYTHON_DELIVERY'],
+    )
 
     itemdata = [{'hash': h} for h in hashes]
     options_dict['transfer_output_files'] = '$(hash).out'
 
     input_files = [
         (map_dir / 'func').as_posix(),
-        # (Path(__file__).parent / 'run' / 'run.py').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
@@ -206,13 +209,23 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     return sub, itemdata
 
 
-def get_base_options(map_id, map_dir):
-    base = OPTIONS_BY_DELIVERY[settings['PYTHON_DELIVERY']](map_id, map_dir)
+def get_base_options_dict(
+    map_id: str,
+    map_dir: Path,
+    delivery: str,
+) -> dict:
+    try:
+        base = OPTIONS_BY_DELIVERY[delivery](map_id, map_dir)
+    except KeyError:
+        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
 
     return {**base, **settings.get('MAP_OPTIONS', default = {})}
 
 
-def _get_base_options_for_assume(map_id, map_dir):
+def _get_base_options_dict_for_assume(
+    map_id: str,
+    map_dir: Path,
+) -> dict:
     return {
         'JobBatchName': map_id,
         'universe': 'vanilla',
@@ -227,7 +240,10 @@ def _get_base_options_for_assume(map_id, map_dir):
     }
 
 
-def _get_base_options_for_docker(map_id, map_dir):
+def _get_base_options_dict_for_docker(
+    map_id: str,
+    map_dir: Path,
+) -> dict:
     return {
         'JobBatchName': map_id,
         'universe': 'docker',
@@ -245,6 +261,6 @@ def _get_base_options_for_docker(map_id, map_dir):
 
 
 OPTIONS_BY_DELIVERY = {
-    'assume': _get_base_options_for_assume,
-    'docker': _get_base_options_for_docker,
+    'assume': _get_base_options_dict_for_assume,
+    'docker': _get_base_options_dict_for_docker,
 }
