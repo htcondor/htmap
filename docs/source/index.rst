@@ -9,6 +9,9 @@ HTMap
 :doc:`tutorial`
    A brief tutorial.
 
+:doc:`dependencies`
+   Information about how to manage your dependencies.
+
 :doc:`api`
    Public API documentation.
 
@@ -28,6 +31,7 @@ HTMap
 
    self
    tutorial
+   dependencies
    api
    recipes
    faq

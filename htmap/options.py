@@ -28,8 +28,10 @@ from . import exceptions, settings
 class MapOptions(collections.UserDict):
     RESERVED_KEYS = {
         'jobbatchname',
+        'universe',
         'arguments',
         'executable',
+        'transfer_executable',
         'log',
         'output',
         'error',
@@ -154,7 +156,11 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
 
-    options_dict = get_base_options(map_id, map_dir)
+    options_dict = get_base_options_dict(
+        map_id,
+        map_dir,
+        settings['PYTHON_DELIVERY'],
+    )
 
     itemdata = [{'hash': h} for h in hashes]
     options_dict['transfer_output_files'] = '$(hash).out'
@@ -203,9 +209,26 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     return sub, itemdata
 
 
-def get_base_options(map_id, map_dir):
-    base = {
+def get_base_options_dict(
+    map_id: str,
+    map_dir: Path,
+    delivery: str,
+) -> dict:
+    try:
+        base = OPTIONS_BY_DELIVERY[delivery](map_id, map_dir)
+    except KeyError:
+        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
+
+    return {**base, **settings.get('MAP_OPTIONS', default = {})}
+
+
+def _get_base_options_dict_for_assume(
+    map_id: str,
+    map_dir: Path,
+) -> dict:
+    return {
         'JobBatchName': map_id,
+        'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
         'arguments': '$(hash)',
         'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
@@ -216,4 +239,28 @@ def get_base_options(map_id, map_dir):
         '+htmap': 'True',
     }
 
-    return {**base, **settings.get('MAP_OPTIONS', default = {})}
+
+def _get_base_options_dict_for_docker(
+    map_id: str,
+    map_dir: Path,
+) -> dict:
+    return {
+        'JobBatchName': map_id,
+        'universe': 'docker',
+        'docker_image': settings['DOCKER.IMAGE'],
+        'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'transfer_executable': 'True',
+        'arguments': '$(hash)',
+        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
+        'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
+        'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
+        'should_transfer_files': 'YES',
+        'when_to_transfer_output': 'ON_EXIT',
+        '+htmap': 'True',
+    }
+
+
+OPTIONS_BY_DELIVERY = {
+    'assume': _get_base_options_dict_for_assume,
+    'docker': _get_base_options_dict_for_docker,
+}

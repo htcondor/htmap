@@ -504,7 +504,7 @@ class MapResult:
     def hold_reasons(self) -> str:
         """Return a string containing a table showing any held jobs, along with their hold reasons."""
         query = self._query(
-            requirements = self._requirements(f'Status=={Status.HELD}'),
+            requirements = self._requirements(f'JobStatus=={Status.HELD}'),
             projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
         )
 
