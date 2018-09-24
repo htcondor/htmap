@@ -23,7 +23,7 @@ from pathlib import Path
 
 import htcondor
 
-from . import exceptions, settings
+from . import utils, exceptions, settings
 
 OPTIONS_BY_DELIVERY = {}
 SETUP_BY_DELIVERY = {}
@@ -175,10 +175,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     itemdata = [{'hash': h} for h in hashes]
     options_dict['transfer_output_files'] = '$(hash).out'
 
-    try:
-        input_files = list(options_dict['transfer_input_files'].split(', '))
-    except KeyError:
-        input_files = []
+    input_files = options_dict.get('transfer_input_files', [])
     input_files += [
         (map_dir / 'func').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
@@ -315,7 +312,10 @@ def _get_base_options_dict_for_transplant(
     return {
         'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
-        'transfer_input_files': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'transfer_input_files': [
+            (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+            (settings['HTMAP_DIR'] / 'htmap_python.tar.gz').as_posix(),
+        ],
     }
 
 
@@ -323,13 +323,34 @@ def _run_delivery_setup_for_transplant(
     map_id: str,
     map_dir: Path,
 ):
-    py_dir = Path(sys.executable).parent.parent
+    if not _is_cached_py_current():
+        py_dir = Path(sys.executable).parent.parent
+        target = settings['HTMAP_DIR'] / 'htmap_python'
 
-    shutil.make_archive(
-        base_name = settings['HTMAP_DIR'] / 'htmap_python',
-        format = 'gztar',
-        root_dir = py_dir,
-    )
+        try:
+            shutil.make_archive(
+                base_name = target,
+                format = 'gztar',
+                root_dir = py_dir,
+            )
+        except BaseException as e:
+            target.with_name('htmap_python.tar.gz').unlink()
+            raise e
+
+        cached_req_path = settings['HTMAP_DIR'] / 'freeze'
+        cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
+
+
+def _is_cached_py_current():
+    cached_req_path = settings['HTMAP_DIR'] / 'freeze'
+    py_install_path = settings['HTMAP_DIR'] / 'htmap_python.tar.gz'
+    if not cached_req_path.exists() or not py_install_path.exists():
+        return False
+
+    cached_reqs = cached_req_path.read_text(encoding = 'utf-8')
+    current_reqs = utils.pip_freeze()
+
+    return current_reqs == cached_reqs
 
 
 register_delivery_mechanism(

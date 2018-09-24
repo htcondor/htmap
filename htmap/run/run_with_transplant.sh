@@ -3,4 +3,4 @@
 mkdir htmap_python
 tar -xzf htmap_python.tar.gz -C htmap_python/
 
-htmap_python/python run.py $1
+htmap_python/bin/python run.py $1
