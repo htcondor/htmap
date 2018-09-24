@@ -334,7 +334,7 @@ def _run_delivery_setup_for_transplant(
                 root_dir = py_dir,
             )
         except BaseException as e:
-            target.unlink()
+            target.with_suffix('tar.gz').unlink()
             raise e
 
         cached_req_path = settings['HTMAP_DIR'] / 'freeze'
