@@ -20,6 +20,7 @@ from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping
 import time
 import datetime
 import subprocess
+import sys
 from pathlib import Path
 
 from . import exceptions
@@ -163,7 +164,8 @@ def get_dir_size_as_str(path: Path) -> str:
 
 
 def pip_freeze() -> str:
+    pip_path = Path(sys.executable).parent / 'pip'
     return subprocess.run(
-        ['pip', 'freeze', '--disable-pip-version-check'],
+        [str(pip_path), 'freeze', '--disable-pip-version-check'],
         stdout = subprocess.PIPE,
     ).stdout.decode('utf-8')
