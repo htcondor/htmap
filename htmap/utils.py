@@ -19,6 +19,7 @@ from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping
 
 import time
 import datetime
+import subprocess
 from pathlib import Path
 
 from . import exceptions
@@ -159,3 +160,10 @@ def num_bytes_to_str(num_bytes: int) -> str:
 def get_dir_size_as_str(path: Path) -> str:
     """Return the size of a directory (including all contents recursively) as a human-readable string."""
     return num_bytes_to_str(get_dir_size(path))
+
+
+def pip_freeze() -> str:
+    return subprocess.run(
+        ['pip', 'freeze', '--disable-pip-version-check'],
+        stdout = subprocess.PIPE,
+    ).stdout.decode('utf-8')

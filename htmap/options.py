@@ -23,7 +23,7 @@ from pathlib import Path
 
 import htcondor
 
-from . import exceptions, settings
+from . import utils, exceptions, settings
 
 OPTIONS_BY_DELIVERY = {}
 SETUP_BY_DELIVERY = {}
@@ -323,13 +323,25 @@ def _run_delivery_setup_for_transplant(
     map_id: str,
     map_dir: Path,
 ):
-    py_dir = Path(sys.executable).parent.parent
+    if not _is_cached_py_current():
+        py_dir = Path(sys.executable).parent.parent
 
-    shutil.make_archive(
-        base_name = settings['HTMAP_DIR'] / 'htmap_python',
-        format = 'gztar',
-        root_dir = py_dir,
-    )
+        shutil.make_archive(
+            base_name = settings['HTMAP_DIR'] / 'htmap_python',
+            format = 'gztar',
+            root_dir = py_dir,
+        )
+
+
+def _is_cached_py_current():
+    cached_req_path = settings['HTMAP_DIR'] / 'freeze'
+    if not cached_req_path.exists():
+        return False
+
+    cached_reqs = cached_req_path.read_text(encoding = 'utf-8')
+    current_reqs = utils.pip_freeze()
+
+    return current_reqs == cached_reqs
 
 
 register_delivery_mechanism(
