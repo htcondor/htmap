@@ -332,6 +332,9 @@ def _run_delivery_setup_for_transplant(
             root_dir = py_dir,
         )
 
+        cached_req_path = settings['HTMAP_DIR'] / 'freeze'
+        cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
+
 
 def _is_cached_py_current():
     cached_req_path = settings['HTMAP_DIR'] / 'freeze'
