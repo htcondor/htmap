@@ -325,12 +325,17 @@ def _run_delivery_setup_for_transplant(
 ):
     if not _is_cached_py_current():
         py_dir = Path(sys.executable).parent.parent
+        target = settings['HTMAP_DIR'] / 'htmap_python'
 
-        shutil.make_archive(
-            base_name = settings['HTMAP_DIR'] / 'htmap_python',
-            format = 'gztar',
-            root_dir = py_dir,
-        )
+        try:
+            shutil.make_archive(
+                base_name = target,
+                format = 'gztar',
+                root_dir = py_dir,
+            )
+        except BaseException as e:
+            target.unlink()
+            raise e
 
         cached_req_path = settings['HTMAP_DIR'] / 'freeze'
         cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')

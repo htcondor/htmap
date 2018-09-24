@@ -306,7 +306,7 @@ def submit_map(
             submit = submit_obj,
             hashes = hashes,
         )
-    except Exception as e:
+    except BaseException as e:
         # something went wrong during submission, and the job is malformed
         # so delete the entire map directory
         # the condor bindings should prevent any jobs from being submitted
