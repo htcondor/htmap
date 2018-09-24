@@ -16,6 +16,7 @@ HTMap requires that the execute location can execute a Python script as an execu
 
 and that the Python that the shebang finds has the module ``cloudpickle`` installed.
 
+
 Assume Dependencies are Present
 -------------------------------
 
@@ -31,8 +32,9 @@ At runtime:
 
     htmap.settings['PYTHON_DELIVERY'] = 'assume'
 
-In this mode, HTMap assumes that any dependencies, including the Python install, are already present.
+In this mode, HTMap assumes that a Python installation with all Python dependencies is already present.
 Additional dependencies can still be delivered via :class:`MapOptions`.
+
 
 Run Inside a Docker Container
 -----------------------------
@@ -68,3 +70,31 @@ For example, a very simple Dockerfile that can be used with HTMap is
 This would create a Docker image with the latest version of Python and ``cloudpickle`` installed.
 From here you could install more Python dependencies, or add more layers to account for other dependencies.
 Of course, you could also add the ``pip install`` line to your own image.
+
+
+Transplant Existing Python Install
+----------------------------------
+
+In your ``~/.htmaprc`` file:
+
+.. code-block:: bash
+
+    PYTHON_DELIVERY = "transplant"
+
+At runtime:
+
+.. code-block:: python
+
+    htmap.settings['PYTHON_DELIVERY'] = 'transplant'
+
+If you are running HTMap from a standalone Python install (like an Anaconda installation), you can use this delivery mechanism to transfer a copy of your entire Python install.
+All locally-installed packages (including `pip -e` installs) will be available.
+
+.. note::
+
+    The first time you run a map after installing/removing packages, you will need to wait while HTMap re-zips your installation.
+    Subsequent maps will use the cached version.
+
+.. warning::
+
+    This mechanism does not work with system Python installations (which you shouldn't be using anyway!).

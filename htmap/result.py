@@ -521,7 +521,14 @@ class MapResult:
         return schedd.act(action, self._requirements(requirements))
 
     def remove(self):
-        """Permanently remove the map and delete all associated input and output files."""
+        """
+        Permanently remove the map and delete all associated input and output files.
+
+        .. warning::
+
+            Interacting with a :class:`MapResult` after calling this method on it may produce unexpected and undefined behavior!
+            Don't do it!
+        """
         self._remove_from_queue()
         self._rm_map_dir()
 
