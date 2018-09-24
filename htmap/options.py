@@ -175,10 +175,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     itemdata = [{'hash': h} for h in hashes]
     options_dict['transfer_output_files'] = '$(hash).out'
 
-    try:
-        input_files = list(options_dict['transfer_input_files'].split(', '))
-    except KeyError:
-        input_files = []
+    input_files = options_dict.get('transfer_input_files', [])
     input_files += [
         (map_dir / 'func').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
@@ -315,7 +312,10 @@ def _get_base_options_dict_for_transplant(
     return {
         'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
-        'transfer_input_files': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'transfer_input_files': [
+            (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+            (settings['HTMAP_DIR'] / 'htmap_python.tar.gz').as_posix(),
+        ],
     }
 
 
