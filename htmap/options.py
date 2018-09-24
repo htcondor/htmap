@@ -14,15 +14,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from typing import Union, Iterable, Optional, Callable
 
-from typing import Union, Iterable, Optional
-
+import sys
+import shutil
 import collections
 from pathlib import Path
 
 import htcondor
 
 from . import exceptions, settings
+
+OPTIONS_BY_DELIVERY = {}
+SETUP_BY_DELIVERY = {}
 
 
 class MapOptions(collections.UserDict):
@@ -156,6 +160,12 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     if map_options is None:
         map_options = MapOptions()
 
+    run_delivery_setup(
+        map_id,
+        map_dir,
+        settings['PYTHON_DELIVERY']
+    )
+
     options_dict = get_base_options_dict(
         map_id,
         map_dir,
@@ -165,7 +175,11 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     itemdata = [{'hash': h} for h in hashes]
     options_dict['transfer_output_files'] = '$(hash).out'
 
-    input_files = [
+    try:
+        input_files = list(options_dict['transfer_input_files'].split(', '))
+    except KeyError:
+        input_files = []
+    input_files += [
         (map_dir / 'func').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
     ]
@@ -184,7 +198,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
 
-    options_dict['transfer_input_files'] = ', '.join(input_files)
+    options_dict['transfer_input_files'] = ','.join(input_files)
 
     output_remaps = [
         f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
@@ -209,17 +223,55 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     return sub, itemdata
 
 
+def register_delivery_mechanism(
+    name: str,
+    options_func: Callable[[str, Path], dict],
+    setup_func: Optional[Callable[[str, Path], None]] = None,
+):
+    if setup_func is None:
+        setup_func = lambda *args: None
+
+    OPTIONS_BY_DELIVERY[name] = options_func
+    SETUP_BY_DELIVERY[name] = setup_func
+
+
 def get_base_options_dict(
     map_id: str,
     map_dir: Path,
     delivery: str,
 ) -> dict:
+    core = {
+        'JobBatchName': map_id,
+        'arguments': '$(hash)',
+        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
+        'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
+        'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
+        'should_transfer_files': 'YES',
+        'when_to_transfer_output': 'ON_EXIT',
+        '+htmap': 'True',
+    }
+
     try:
         base = OPTIONS_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
 
-    return {**base, **settings.get('MAP_OPTIONS', default = {})}
+    return {
+        **core,
+        **base,
+        **settings.get('MAP_OPTIONS', default = {})
+    }
+
+
+def run_delivery_setup(
+    map_id: str,
+    map_dir: Path,
+    delivery: str,
+):
+    try:
+        SETUP_BY_DELIVERY[delivery](map_id, map_dir)
+    except KeyError:
+        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
 
 
 def _get_base_options_dict_for_assume(
@@ -227,17 +279,15 @@ def _get_base_options_dict_for_assume(
     map_dir: Path,
 ) -> dict:
     return {
-        'JobBatchName': map_id,
         'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
-        'arguments': '$(hash)',
-        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-        'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
-        'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
-        'should_transfer_files': 'YES',
-        'when_to_transfer_output': 'ON_EXIT',
-        '+htmap': 'True',
     }
+
+
+register_delivery_mechanism(
+    'assume',
+    options_func = _get_base_options_dict_for_assume,
+)
 
 
 def _get_base_options_dict_for_docker(
@@ -245,22 +295,45 @@ def _get_base_options_dict_for_docker(
     map_dir: Path,
 ) -> dict:
     return {
-        'JobBatchName': map_id,
         'universe': 'docker',
         'docker_image': settings['DOCKER.IMAGE'],
         'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
         'transfer_executable': 'True',
-        'arguments': '$(hash)',
-        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-        'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
-        'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
-        'should_transfer_files': 'YES',
-        'when_to_transfer_output': 'ON_EXIT',
-        '+htmap': 'True',
     }
 
 
-OPTIONS_BY_DELIVERY = {
-    'assume': _get_base_options_dict_for_assume,
-    'docker': _get_base_options_dict_for_docker,
-}
+register_delivery_mechanism(
+    'docker',
+    options_func = _get_base_options_dict_for_docker,
+)
+
+
+def _get_base_options_dict_for_transplant(
+    map_id: str,
+    map_dir: Path,
+) -> dict:
+    return {
+        'universe': 'vanilla',
+        'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
+        'transfer_input_files': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+    }
+
+
+def _run_delivery_setup_for_transplant(
+    map_id: str,
+    map_dir: Path,
+):
+    py_dir = Path(sys.executable).parent.parent
+
+    shutil.make_archive(
+        base_name = settings['HTMAP_DIR'] / 'htmap_python',
+        format = 'gztar',
+        root_dir = py_dir,
+    )
+
+
+register_delivery_mechanism(
+    'transplant',
+    options_func = _get_base_options_dict_for_transplant,
+    setup_func = _run_delivery_setup_for_transplant
+)

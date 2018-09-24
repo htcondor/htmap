@@ -369,7 +369,7 @@ def test_merging_options_merges_fixed_input():
 def test_option_from_settings_is_visible_in_base_options():
     htmap.settings['MAP_OPTIONS.zing'] = 'hit'
 
-    opts = get_base_options_dict('foo', Path('bar'))
+    opts = get_base_options_dict('foo', Path('bar'), delivery = 'assume')
 
     assert opts['zing'] == 'hit'
 

@@ -27,8 +27,8 @@ import htmap
 from htmap.options import get_base_options_dict
 
 
-def test_get_base_options(map_id, map_dir, test_id = None):
-    opts = get_base_options_dict(map_id, map_dir)
+def test_get_base_options(map_id, map_dir, delivery, test_id = None):
+    opts = get_base_options_dict(map_id, map_dir, delivery)
     opts['+htmap_test_id'] = str(test_id)
 
     return opts
@@ -108,6 +108,7 @@ def mapped_exception():
         raise Exception(str(x))
 
     return fail
+
 
 def exception_msg(exc_info) -> str:
     return str(exc_info.value)
