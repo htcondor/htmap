@@ -343,7 +343,8 @@ def _run_delivery_setup_for_transplant(
 
 def _is_cached_py_current():
     cached_req_path = settings['HTMAP_DIR'] / 'freeze'
-    if not cached_req_path.exists():
+    py_install_path = settings['HTMAP_DIR'] / 'htmap_python.tar.gz'
+    if not cached_req_path.exists() or not py_install_path.exists():
         return False
 
     cached_reqs = cached_req_path.read_text(encoding = 'utf-8')
