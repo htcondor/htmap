@@ -153,7 +153,7 @@ BASE_SETTINGS = Settings(dict(
     )
 ))
 
-USER_SETTINGS_PATH = Path.home() / '.htmap.toml'
+USER_SETTINGS_PATH = Path.home() / '.htmaprc'
 try:
     USER_SETTINGS = Settings.load(USER_SETTINGS_PATH)
 except FileNotFoundError:

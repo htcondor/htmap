@@ -52,7 +52,10 @@ def set_htmap_dir_and_clean_afterwards(tmpdir_factory, mock):
     yield
 
     subprocess.run(
-        f'condor_rm --constraint htmap_test_id=={test_id}',
+        [
+            'condor_rm',
+            f'--constraint htmap_test_id=={test_id}',
+        ],
         stdout = subprocess.DEVNULL,
         stderr = subprocess.DEVNULL,
     )
