@@ -167,6 +167,7 @@ class MapBuilder:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # if an exception is raised in the with, re-raise without submitting jobs
         if exc_type is not None:
+            logger.exception(f'map builder for map {self.map_id} aborted due to')
             return False
 
         self._result = starmap(
@@ -277,6 +278,8 @@ def submit_map(
     else:
         raise_if_map_id_already_exists(map_id)
 
+    logger.debug(f'creating map {map_id}...')
+
     map_dir = map_dir_path(map_id)
     try:
         make_map_dir_and_subdirs(map_dir)
@@ -293,11 +296,14 @@ def submit_map(
         htio.save_submit(map_dir, submit_obj)
         htio.save_itemdata(map_dir, itemdata)
 
+        logger.debug(f'submitting map {map_id}...')
         submit_result = execute_submit(
             submit_object = submit_obj,
             itemdata = itemdata,
         )
         cluster_id = submit_result.cluster()
+
+        logger.debug(f'map {map_id} was assigned clusterid {cluster_id}')
 
         with (map_dir / 'cluster_ids').open(mode = 'a') as file:
             file.write(str(cluster_id) + '\n')
@@ -312,14 +318,16 @@ def submit_map(
             hashes = hashes,
         )
 
-        logger.debug(f'submitted map {map_id}')
+        logger.info(f'submitted map {map_id}')
 
         return r
     except BaseException as e:
         # something went wrong during submission, and the job is malformed
         # so delete the entire map directory
         # the condor bindings should prevent any jobs from being submitted
+        logger.exception(f'map submission for map {map_id} aborted due to')
         shutil.rmtree(map_dir)
+        logger.debug(f'removed malformed map directory {map_dir}')
         raise e
 
 

@@ -121,7 +121,7 @@ class MapResult:
         except FileNotFoundError:
             raise exceptions.MapIdNotFound(f'the map_id {map_id} could not be found')
 
-        logger.debug(f'recovered map result for map {map_id}')
+        logger.debug(f'recovered map result for map {map_id} from {map_dir}')
 
         return cls(
             map_id = map_id,
@@ -546,7 +546,7 @@ class MapResult:
         """
         self._remove_from_queue()
         self._rm_map_dir()
-        logger.debug(f'removed map {self.map_id}')
+        logger.info(f'removed map {self.map_id}')
 
     def hold(self):
         """Temporarily remove the map from the queue, until it is released."""

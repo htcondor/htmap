@@ -40,8 +40,10 @@ def clean_dir(target_dir: Path):
     target_dir
         The directory to clean up.
     """
+    logger.debug(f'removing all files in {target_dir}...')
     for path in (p for p in target_dir.iterdir() if p.is_file()):
         path.unlink()
+        logger.debug(f'removed file {path}')
 
 
 def wait_for_path_to_exist(

@@ -69,16 +69,20 @@ class Settings:
             return default
 
     def __setitem__(self, key, value):
+        old = self.get(key)  # for log message below
+
         *path, final = key.split('.')
         m = self.maps[0]
         for component in path:
             try:
                 m = m[component]
             except KeyError:
-                m[component] = {}
+                m[component] = {}  # create new nested dictionaries if necessary
                 m = m[component]
 
         m[final] = value
+
+        logger.debug(f'setting {key} changed from {old if old is not None else "<missing>"} to {value}')
 
     def to_dict(self) -> dict:
         """Return a single dictionary with all of the settings in this :class:`Settings`, merged according to the lookup rules."""
@@ -87,6 +91,7 @@ class Settings:
     def replace(self, other: 'Settings'):
         """Change the settings of this :class:`Settings` to be the settings from another :class:`Settings`."""
         self.maps = other.maps
+        logger.debug('settings were replaced')
 
     def append(self, other: Union['Settings', dict]):
         """
@@ -132,6 +137,8 @@ class Settings:
         with path.open(mode = 'w') as file:
             toml.dump(self.maps[0], file)
 
+        logger.debug(f'saved settings to {path}')
+
     def __str__(self) -> str:
         return utils.rstr(toml.dumps(self.to_dict()))
 
@@ -154,12 +161,16 @@ BASE_SETTINGS = Settings(dict(
     ),
 ))
 
-BASE_SETTINGS['TRANSPLANT.PATH'] = BASE_SETTINGS['HTMAP_DIR']
-
 USER_SETTINGS_PATH = Path.home() / '.htmaprc'
 try:
     USER_SETTINGS = Settings.load(USER_SETTINGS_PATH)
+    logger.debug(f'loaded user settings from {USER_SETTINGS_PATH}')
 except FileNotFoundError:
     USER_SETTINGS = Settings()
+    logger.debug(f'no user settings at {USER_SETTINGS_PATH}')
 
 settings = Settings.from_settings(USER_SETTINGS, BASE_SETTINGS)
+BASE_SETTINGS['TRANSPLANT.PATH'] = BASE_SETTINGS['HTMAP_DIR']
+
+logger.debug(f'htmap directory is {settings["HTMAP_DIR"]}')
+logger.debug(f'maps directory name is {settings["MAPS_DIR_NAME"]}')
