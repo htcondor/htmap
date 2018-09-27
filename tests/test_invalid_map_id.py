@@ -21,10 +21,10 @@ from htmap.mapping import raise_if_map_id_is_invalid, INVALID_FILENAME_CHARACTER
 
 @pytest.mark.parametrize(
     'map_id',
-    list(INVALID_FILENAME_CHARACTERS) + [
+    sorted(list(INVALID_FILENAME_CHARACTERS)) + [
         '/abc',
         '/def.',
-        '\\\\',
+        'def/',
         '\\\\',
     ]
 )

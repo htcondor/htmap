@@ -37,16 +37,14 @@ def test_map_results(mapped_doubler):
     results = htmap.map_results()
 
     assert len(results) == 3
-    assert all(isinstance(x, htmap.MapResult) for x in results)
 
 
 def test_clean_removes_all_maps(mapped_doubler):
-    results = [mapped_doubler.map('a', range(1)), mapped_doubler.map('b', range(1)), mapped_doubler.map('c', range(1))]
-
-    for r in results:
-        r.wait(timeout = 60)
-
-    time.sleep(.3)
+    results = [
+        mapped_doubler.map('a', range(1)),
+        mapped_doubler.map('b', range(1)),
+        mapped_doubler.map('c', range(1)),
+    ]
 
     htmap.clean()
 

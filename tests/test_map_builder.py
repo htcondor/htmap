@@ -23,18 +23,16 @@ def test_len_of_map_builder(mapped_doubler):
     with mapped_doubler.build_map('map') as jb:
         jb(5)
         jb(3)
-        jb(7)
 
-    assert len(jb) == 3
+    assert len(jb) == 2
 
 
 def test_map_builder_produces_correct_results(mapped_doubler):
     with mapped_doubler.build_map('map') as jb:
         jb(5)
         jb(3)
-        jb(7)
 
-    assert list(jb.result) == [10, 6, 14]
+    assert list(jb.result) == [10, 6]
 
 
 def test_getting_result_before_ending_with_raises_no_result_yet(mapped_doubler):

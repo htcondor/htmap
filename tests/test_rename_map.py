@@ -24,8 +24,6 @@ def test_rename_new_name_in_map_ids(mapped_doubler):
     result = mapped_doubler.map('old', range(2))
     result.wait()
 
-    time.sleep(.1)
-
     result.rename('new')
 
     assert 'new' in htmap.map_ids()
@@ -33,9 +31,7 @@ def test_rename_new_name_in_map_ids(mapped_doubler):
 
 def test_rename_removes_old_map(mapped_doubler):
     result = mapped_doubler.map('old', range(2))
-
     result.wait()
-    time.sleep(.1)
 
     result.rename('new')
 
@@ -70,10 +66,8 @@ def test_rename_raises_if_new_map_id_already_exists(mapped_doubler):
 def test_complete_then_rename_then_rerun(mapped_doubler):
     result = mapped_doubler.map('old', range(1))
     result.wait()
-    time.sleep(.1)
 
     new_result = result.rename('new')
-
     new_result.rerun()
 
     assert list(new_result) == [0]
@@ -82,12 +76,11 @@ def test_complete_then_rename_then_rerun(mapped_doubler):
 def test_can_be_recovered_after_rename(mapped_doubler):
     result = mapped_doubler.map('old', range(1))
     result.wait()
-    time.sleep(.1)
 
     result.rename('new')
-    time.sleep(.1)
 
     htmap.recover('new')
+
 
 @pytest.mark.xfail
 def test_can_be_renamed_if_nothing_running(mapped_doubler):
@@ -95,6 +88,7 @@ def test_can_be_renamed_if_nothing_running(mapped_doubler):
     result._remove_from_queue()
 
     result.rename('new')
+
 
 @pytest.mark.xfail
 def test_can_be_renamed_and_rerun_if_nothing_running(mapped_doubler):

@@ -20,7 +20,7 @@ import htmap
 
 
 def test_recover_shortcut(mapped_doubler):
-    result = mapped_doubler.map('map', range(10))
+    result = mapped_doubler.map('map', range(3))
 
     recovered = htmap.recover('map')
 
@@ -38,7 +38,7 @@ def test_recover_shortcut_calls_recover_method(mapped_doubler, mocker):
 
 
 def test_recover_classmethod(mapped_doubler):
-    result = mapped_doubler.map('map', range(10))
+    result = mapped_doubler.map('map', range(3))
 
     recovered = htmap.MapResult.recover('map')
 

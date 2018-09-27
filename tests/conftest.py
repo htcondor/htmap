@@ -60,7 +60,7 @@ ids = itertools.count()
 
 
 @pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir_and_clean_afterwards(tmpdir_factory, mocker):
+def set_htmap_dir_and_clean_after(tmpdir_factory, mocker):
     """Use a fresh HTMAP_DIR for every test."""
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
     htmap.settings['HTMAP_DIR'] = path
