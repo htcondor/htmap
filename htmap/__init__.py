@@ -15,6 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import logging
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())
+
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 from .mapping import map, starmap, build_map, MapBuilder
 from .mapper import htmap, MappedFunction

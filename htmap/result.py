@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from typing import Tuple, List, Iterable, Any, Optional, Union, Callable, Iterator, Dict
+import logging
 
 import datetime
 import enum
@@ -29,6 +30,8 @@ import htcondor
 import classad
 
 from . import htio, exceptions, utils, mapping
+
+logger = logging.getLogger(__name__)
 
 
 class Status(enum.IntEnum):
@@ -118,6 +121,8 @@ class MapResult:
         except FileNotFoundError:
             raise exceptions.MapIdNotFound(f'the map_id {map_id} could not be found')
 
+        logger.debug(f'recovered map result for map {map_id}')
+
         return cls(
             map_id = map_id,
             cluster_ids = cluster_ids,
@@ -162,6 +167,7 @@ class MapResult:
 
     def _rm_map_dir(self):
         shutil.rmtree(self._map_dir)
+        logger.debug(f'removed map directory for map {self.map_id}')
 
     def _clean_outputs_dir(self):
         utils.clean_dir(self._outputs_dir)
@@ -474,11 +480,17 @@ class MapResult:
         if projection is None:
             projection = []
 
+        req = self._requirements(requirements)
+
         schedd = mapping.get_schedd()
-        yield from schedd.xquery(
-            requirements = self._requirements(requirements),
+        q = schedd.xquery(
+            requirements = req,
             projection = projection,
         )
+
+        logger.debug(f'queried for map {self.map_id} (requirements = "{req}") with projection {projection}')
+
+        yield from q
 
     def status_counts(self) -> collections.Counter:
         """Return a dictionary that describes how many map components are in each status."""
@@ -516,7 +528,12 @@ class MapResult:
 
     def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None) -> classad.ClassAd:
         schedd = mapping.get_schedd()
-        return schedd.act(action, self._requirements(requirements))
+        req = self._requirements(requirements)
+        a = schedd.act(action, req)
+
+        logger.debug(f'acted on map {self.map_id} (requirements = "{req}") with action {action}')
+
+        return a
 
     def remove(self):
         """
@@ -529,24 +546,30 @@ class MapResult:
         """
         self._remove_from_queue()
         self._rm_map_dir()
+        logger.debug(f'removed map {self.map_id}')
 
     def hold(self):
         """Temporarily remove the map from the queue, until it is released."""
         self._act(htcondor.JobAction.Hold)
+        logger.debug(f'held map {self.map_id}')
 
     def release(self):
         """Releases a held map back into the queue."""
         self._act(htcondor.JobAction.Release)
+        logger.debug(f'released map {self.map_id}')
 
     def pause(self):
         self._act(htcondor.JobAction.Suspend)
+        logger.debug(f'paused map {self.map_id}')
 
     def resume(self):
         self._act(htcondor.JobAction.Continue)
+        logger.debug(f'resumed map {self.map_id}')
 
     def vacate(self):
         """Force the map to give up any claimed resources."""
         self._act(htcondor.JobAction.Vacate)
+        logger.debug(f'vacated map {self.map_id}')
 
     def _edit(self, attr: str, value: str, requirements: Optional[str] = None):
         schedd = mapping.get_schedd()
@@ -694,6 +717,7 @@ class MapResult:
             try:
                 existing_result = MapResult.recover(map_id)
                 existing_result.remove()
+                logger.debug(f'force overwrote map {map_id}')
             except exceptions.MapIdNotFound:
                 pass
         else:

@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from typing import Union, Iterable, Optional, Callable
+import logging
 
 import sys
 import shutil
@@ -23,6 +24,8 @@ from pathlib import Path
 import htcondor
 
 from . import utils, exceptions, settings
+
+logger = logging.getLogger(__name__)
 
 OPTIONS_BY_DELIVERY = {}
 SETUP_BY_DELIVERY = {}
@@ -339,11 +342,14 @@ def _run_delivery_setup_for_transplant(
         cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
         cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
 
+        logger.debug('created zipped Python install for transplant')
+
 
 def _is_cached_py_current():
     cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
     py_install_path = settings['TRANSPLANT.PATH'] / 'htmap_python.tar.gz'
     if not cached_req_path.exists() or not py_install_path.exists():
+        logger.debug('did not find cached Python install')
         return False
 
     cached_reqs = cached_req_path.read_text(encoding = 'utf-8')

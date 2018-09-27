@@ -23,13 +23,14 @@ import pytest
 
 import htmap
 from htmap.options import get_base_options_dict
-from htmap.settings import Settings, BASE_SETTINGS
+from htmap.settings import BASE_SETTINGS
 
-# start with base settings
+# start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
 htmap.settings['DOCKER.IMAGE'] = 'maventree/htmap:latest'  # todo: this is bad
 
 
+# todo: isolate tests that don't need this from those that do
 @pytest.fixture(scope = 'session', autouse = True)
 def set_transplant_dir(tmpdir_factory):
     path = Path(tmpdir_factory.mktemp('htmap_transplant_dir'))
@@ -59,6 +60,7 @@ def test_get_base_options(map_id, map_dir, delivery, test_id = None):
 ids = itertools.count()
 
 
+# todo: break this into two fixtures, one for setting htmap_dir, one for test_id and cleanup
 @pytest.fixture(scope = 'function', autouse = True)
 def set_htmap_dir_and_clean_after(tmpdir_factory, mocker):
     """Use a fresh HTMAP_DIR for every test."""

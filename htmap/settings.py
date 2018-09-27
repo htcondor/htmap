@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from typing import Union, MutableMapping
+import logging
 
 import itertools
 import functools
@@ -23,6 +24,8 @@ from copy import copy
 import toml
 
 from . import exceptions, utils
+
+logger = logging.getLogger(__name__)
 
 
 def nested_merge(map_1: MutableMapping, map_2: MutableMapping) -> MutableMapping:

@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping
+import logging
 
 import time
 import datetime
@@ -26,6 +27,8 @@ from . import exceptions
 from classad import ClassAd
 
 MutableMapping.register(ClassAd)
+
+logger = logging.getLogger(__name__)
 
 
 def clean_dir(target_dir: Path):

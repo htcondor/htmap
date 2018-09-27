@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any
+import logging
 
 import shutil
 from pathlib import Path
@@ -22,6 +23,8 @@ import itertools
 import htcondor
 
 from . import htio, exceptions, result, options, settings
+
+logger = logging.getLogger(__name__)
 
 
 def maps_dir_path() -> Path:
@@ -153,6 +156,8 @@ class MapBuilder:
 
         self._result = None
 
+        logger.debug(f'initialized map builder for map {map_id} for {self.func}')
+
     def __repr__(self):
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
 
@@ -172,6 +177,8 @@ class MapBuilder:
             force_overwrite = self.force_overwrite,
             map_options = self.map_options
         )
+
+        logger.debug(f'finished executing map builder for map {self.map_id}')
 
     def __call__(self, *args, **kwargs):
         """Adds the given inputs to the map."""
@@ -272,7 +279,7 @@ def submit_map(
 
     map_dir = map_dir_path(map_id)
     try:
-        make_map_subdirs(map_dir)
+        make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
         hashes = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
         htio.save_hashes(map_dir, hashes)
@@ -298,12 +305,16 @@ def submit_map(
         with (map_dir / 'cluster_ids').open() as file:
             cluster_ids = [int(cid.strip()) for cid in file]
 
-        return result.MapResult(
+        r = result.MapResult(
             map_id = map_id,
             cluster_ids = cluster_ids,
             submit = submit_obj,
             hashes = hashes,
         )
+
+        logger.debug(f'submitted map {map_id}')
+
+        return r
     except BaseException as e:
         # something went wrong during submission, and the job is malformed
         # so delete the entire map directory
@@ -348,10 +359,12 @@ MAP_SUBDIR_NAMES = (
 )
 
 
-def make_map_subdirs(map_dir):
+def make_map_dir_and_subdirs(map_dir):
     """Create the input, output, and log subdirectories inside the map directory."""
     for path in (map_dir / d for d in MAP_SUBDIR_NAMES):
         path.mkdir(parents = True, exist_ok = True)
+
+    logger.debug(f'created map directory {map_dir} and subdirectories')
 
 
 def execute_submit(submit_object, itemdata) -> htcondor.SubmitResult:
