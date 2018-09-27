@@ -15,14 +15,17 @@ HTMap
 :doc:`api`
    Public API documentation.
 
+:doc:`settings`
+    Documentation for the various settings.
+
 :doc:`recipes`
    Useful code snippets, tips, and tricks.
 
 :doc:`faq`
    These questions are asked, sometimes frequently.
 
-:doc:`innards`
-   The inner workings.
+:doc:`devs`
+   Information for developers: how HTMap works under the hood, and how to set up a development environment.
 
 
 .. toctree::
@@ -33,7 +36,8 @@ HTMap
    tutorial
    dependencies
    api
+   settings
    recipes
    faq
-   innards
+   devs
 

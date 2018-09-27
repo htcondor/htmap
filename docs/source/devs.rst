@@ -1,5 +1,5 @@
-Innards
-=======
+For Developers
+==============
 
 .. py:currentmodule:: htmap
 
@@ -48,6 +48,3 @@ The functions that handle storing and loading these various formats this are in 
 Test Suite
 ----------
 
-The HTMap test suite makes several assumptions about your system:
-* That the Python bindings can discover a working HTCondor pool from your computer (for example, you could run a personal HTCondor).
-* That a Python executable with ``cloudpickle`` installed is visible to the user that HTCondor uses to execute jobs.
