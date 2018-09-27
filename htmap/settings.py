@@ -150,8 +150,10 @@ BASE_SETTINGS = Settings(dict(
     ),
     DOCKER = dict(
         IMAGE = 'python:3.6',
-    )
+    ),
 ))
+
+BASE_SETTINGS['TRANSPLANT.PATH'] = BASE_SETTINGS['HTMAP_DIR']
 
 USER_SETTINGS_PATH = Path.home() / '.htmaprc'
 try:

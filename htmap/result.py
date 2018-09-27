@@ -687,7 +687,7 @@ class MapResult:
         """
         if map_id == self.map_id:
             raise exceptions.CannotRenameMap('cannot rename a map to the same ``map_id`` it already has')
-        if self.is_running:
+        if not self.is_done:
             raise exceptions.CannotRenameMap(f'cannot rename a map that is not complete (job status: {self.status_counts()})')
 
         mapping.raise_if_map_id_is_invalid(map_id)
@@ -699,7 +699,10 @@ class MapResult:
             except exceptions.MapIdNotFound:
                 pass
         else:
-            mapping.raise_if_map_id_already_exists(map_id)
+            try:
+                mapping.raise_if_map_id_already_exists(map_id)
+            except exceptions.MapIdAlreadyExists as e:
+                raise exceptions.CannotRenameMap(f'cannot rename map to {map_id} because it already exists') from e
 
         new_map_dir = mapping.map_dir_path(map_id)
         shutil.copytree(

@@ -314,7 +314,7 @@ def _get_base_options_dict_for_transplant(
         'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
         'transfer_input_files': [
             (Path(__file__).parent / 'run' / 'run.py').as_posix(),
-            (settings['HTMAP_DIR'] / 'htmap_python.tar.gz').as_posix(),
+            (settings['TRANSPLANT.PATH'] / 'htmap_python.tar.gz').as_posix(),
         ],
     }
 
@@ -325,7 +325,7 @@ def _run_delivery_setup_for_transplant(
 ):
     if not _is_cached_py_current():
         py_dir = Path(sys.executable).parent.parent
-        target = settings['HTMAP_DIR'] / 'htmap_python'
+        target = settings['TRANSPLANT.PATH'] / 'htmap_python'
 
         try:
             shutil.make_archive(
@@ -337,13 +337,13 @@ def _run_delivery_setup_for_transplant(
             target.with_name('htmap_python.tar.gz').unlink()
             raise e
 
-        cached_req_path = settings['HTMAP_DIR'] / 'freeze'
+        cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
         cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
 
 
 def _is_cached_py_current():
-    cached_req_path = settings['HTMAP_DIR'] / 'freeze'
-    py_install_path = settings['HTMAP_DIR'] / 'htmap_python.tar.gz'
+    cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
+    py_install_path = settings['TRANSPLANT.PATH'] / 'htmap_python.tar.gz'
     if not cached_req_path.exists() or not py_install_path.exists():
         return False
 

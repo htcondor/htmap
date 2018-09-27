@@ -52,7 +52,7 @@ def test_rename_raises_if_jobs_running(mapped_sleepy_double):
 
 
 def test_rename_raises_if_jobs_held(mapped_doubler):
-    result = mapped_doubler.map('old', range(2))
+    result = mapped_doubler.map('old', range(1))
     result.hold()
 
     with pytest.raises(htmap.exceptions.CannotRenameMap):
@@ -60,18 +60,17 @@ def test_rename_raises_if_jobs_held(mapped_doubler):
 
 
 def test_rename_raises_if_new_map_id_already_exists(mapped_doubler):
-    result = mapped_doubler.map('old', range(2))
+    result = mapped_doubler.map('old', range(1))
     result.wait()
 
-    existing = mapped_doubler.map('target', range(2))
-    existing.hold()  # doesn't matter, just speeds things up
+    mapped_doubler.map('target', range(1))
 
-    with pytest.raises(htmap.exceptions.MapIdAlreadyExists):
+    with pytest.raises(htmap.exceptions.CannotRenameMap):
         result.rename('target')
 
 
 def test_complete_then_rename_then_rerun(mapped_doubler):
-    result = mapped_doubler.map('old', range(2))
+    result = mapped_doubler.map('old', range(1))
     result.wait()
     time.sleep(.1)
 
@@ -79,11 +78,11 @@ def test_complete_then_rename_then_rerun(mapped_doubler):
 
     new_result.rerun()
 
-    assert list(new_result) == [0, 2]
+    assert list(new_result) == [0]
 
 
 def test_can_be_recovered_after_rename(mapped_doubler):
-    result = mapped_doubler.map('old', range(2))
+    result = mapped_doubler.map('old', range(1))
     result.wait()
     time.sleep(.1)
 
@@ -92,19 +91,19 @@ def test_can_be_recovered_after_rename(mapped_doubler):
 
     htmap.recover('new')
 
-
+@pytest.mark.xfail
 def test_can_be_renamed_if_nothing_running(mapped_doubler):
-    result = mapped_doubler.map('old', range(2))
+    result = mapped_doubler.map('old', range(1))
     result._remove_from_queue()
 
     result.rename('new')
 
-
+@pytest.mark.xfail
 def test_can_be_renamed_and_rerun_if_nothing_running(mapped_doubler):
-    result = mapped_doubler.map('old', range(2))
+    result = mapped_doubler.map('old', range(1))
     result._remove_from_queue()
 
     new_result = result.rename('new')
     new_result.rerun()
 
-    assert list(new_result) == [0, 2]
+    assert list(new_result) == [0]
