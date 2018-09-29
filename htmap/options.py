@@ -24,8 +24,8 @@ import htcondor
 
 from . import utils, exceptions, settings
 
-OPTIONS_BY_DELIVERY = {}
-SETUP_BY_DELIVERY = {}
+BASE_OPTIONS_FUNCTION_BY_DELIVERY = {}
+SETUP_FUNCTION_BY_DELIVERY = {}
 
 
 class MapOptions(collections.UserDict):
@@ -162,7 +162,7 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     run_delivery_setup(
         map_id,
         map_dir,
-        settings['PYTHON_DELIVERY']
+        settings['PYTHON_DELIVERY'],
     )
 
     options_dict = get_base_options_dict(
@@ -227,8 +227,8 @@ def register_delivery_mechanism(
     if setup_func is None:
         setup_func = lambda *args: None
 
-    OPTIONS_BY_DELIVERY[name] = options_func
-    SETUP_BY_DELIVERY[name] = setup_func
+    BASE_OPTIONS_FUNCTION_BY_DELIVERY[name] = options_func
+    SETUP_FUNCTION_BY_DELIVERY[name] = setup_func
 
 
 def get_base_options_dict(
@@ -248,7 +248,7 @@ def get_base_options_dict(
     }
 
     try:
-        base = OPTIONS_BY_DELIVERY[delivery](map_id, map_dir)
+        base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
 
@@ -265,7 +265,7 @@ def run_delivery_setup(
     delivery: str,
 ):
     try:
-        SETUP_BY_DELIVERY[delivery](map_id, map_dir)
+        SETUP_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
 
@@ -355,5 +355,5 @@ def _is_cached_py_current():
 register_delivery_mechanism(
     'transplant',
     options_func = _get_base_options_dict_for_transplant,
-    setup_func = _run_delivery_setup_for_transplant
+    setup_func = _run_delivery_setup_for_transplant,
 )

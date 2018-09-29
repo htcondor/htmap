@@ -32,26 +32,51 @@ def print_node_info():
         print(f'    {path}')
 
 
-def run_func(arg_hash):
+def load_func():
     with Path('func').open(mode = 'rb') as file:
-        fn = cloudpickle.load(file)
+        return cloudpickle.load(file)
 
+
+def load_args_and_kwargs(arg_hash):
     with Path(f'{arg_hash}.in').open(mode = 'rb') as file:
-        args, kwargs = cloudpickle.load(file)
+        return cloudpickle.load(file)
 
-    print(f'Running\n    {fn}\nwith args\n    {args}\nand kwargs\n    {kwargs}')
 
-    output = fn(*args, **kwargs)
-
+def save_output(arg_hash, output):
     with Path(f'{arg_hash}.out').open(mode = 'wb') as file:
         cloudpickle.dump(output, file)
 
 
+def print_run_info(arg_hash, func, args, kwargs):
+    s = '\n'.join((
+        'Running',
+        f'    {func}',
+        'with args',
+        f'    {args}',
+        'and kwargs',
+        f'    {kwargs}',
+        'from input hash',
+        f'    {arg_hash}',
+    ))
+
+    print(s)
+
+
 def main(arg_hash):
-    os.environ['HTMAP_ON_EXECUTE'] = "1"
     print_node_info()
     print()
-    run_func(arg_hash = arg_hash)
+
+    os.environ['HTMAP_ON_EXECUTE'] = "1"
+
+    func = load_func()
+    args, kwargs = load_args_and_kwargs(arg_hash)
+
+    print_run_info(arg_hash, func, args, kwargs)
+    print()
+
+    output = func(*args, **kwargs)
+
+    save_output(arg_hash, output)
 
 
 if __name__ == '__main__':

@@ -80,22 +80,3 @@ def test_can_be_recovered_after_rename(mapped_doubler):
     result.rename('new')
 
     htmap.recover('new')
-
-
-@pytest.mark.xfail
-def test_can_be_renamed_if_nothing_running(mapped_doubler):
-    result = mapped_doubler.map('old', range(1))
-    result._remove_from_queue()
-
-    result.rename('new')
-
-
-@pytest.mark.xfail
-def test_can_be_renamed_and_rerun_if_nothing_running(mapped_doubler):
-    result = mapped_doubler.map('old', range(1))
-    result._remove_from_queue()
-
-    new_result = result.rename('new')
-    new_result.rerun()
-
-    assert list(new_result) == [0]
