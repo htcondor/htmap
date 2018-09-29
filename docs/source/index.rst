@@ -25,7 +25,7 @@ HTMap
    These questions are asked, sometimes frequently.
 
 :doc:`devs`
-   Information for developers: how HTMap works under the hood, and how to set up a development environment.
+   How HTMap works under the hood; how to set up a development environment.
 
 
 .. toctree::

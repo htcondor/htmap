@@ -165,6 +165,7 @@ texinfo_documents = [
 
 intersphinx_mapping = {
     'https://docs.python.org/3/': None,
+    'https://htcondor-python.readthedocs.io/en/latest/': None,
 }
 
 autodoc_member_order = 'bysource'

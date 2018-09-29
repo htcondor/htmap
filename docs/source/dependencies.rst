@@ -16,8 +16,8 @@ HTMap requires that the execute location can execute a Python script using a Pyt
     For example, if you run Python 3.6 submit-side you can use f-strings in your code.
     But if you use Python 3.5 execute-side, your code will hit syntax errors because f-strings we're added until Python 3.6.
 
-    Try to always use a latest version of Python everywhere.
-    Failing that, use a later version of Python execute-side than submit-side.
+    Try to always use the latest version of Python everywhere.
+    Failing that, it's probably better to use a later version of Python execute-side than submit-side.
 
 
 Assume Dependencies are Present
@@ -40,7 +40,7 @@ Additional dependencies can still be delivered via :class:`MapOptions`.
 
 .. note::
 
-    When using this delivery method, HTMap will discover Python using this shebang:
+    When using this delivery method, HTMap will discover Python using this shebang as whatever user HTCondor runs your job as:
 
     .. code-block:: bash
 
