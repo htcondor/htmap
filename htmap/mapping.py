@@ -273,8 +273,9 @@ def submit_map(
         try:
             existing_result = result.MapResult.recover(map_id)
             existing_result.remove()
+            logger.debug(f'force-overwrote map {map_id}')
         except exceptions.MapIdNotFound:
-            pass
+            logger.debug(f'force-overwrite not needed for map_id {map_id}')
     else:
         raise_if_map_id_already_exists(map_id)
 

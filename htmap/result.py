@@ -575,7 +575,9 @@ class MapResult:
         schedd = mapping.get_schedd()
         schedd.edit(self._requirements(requirements), attr, value)
 
-    def edit_memory(self, memory: Union[str, int, float]):
+        logger.debug(f'set attribute {attr} for map {self.map_id} to {value}')
+
+    def set_memory(self, memory: Union[str, int, float]):
         """
         Change the amount of memory (RAM) each map component needs.
 
@@ -594,7 +596,7 @@ class MapResult:
             memory = f'{memory}MB'
         self._edit('RequestMemory', memory)
 
-    def edit_disk(self, disk: Union[str, int, float]):
+    def set_disk(self, disk: Union[str, int, float]):
         """
         Change the amount of disk space each map component needs.
 
@@ -656,11 +658,11 @@ class MapResult:
     def rerun(self):
         """Reruns the entire map from scratch."""
         self._clean_outputs_dir()
-        return self.rerun_incomplete()
+        self.rerun_incomplete()
 
     def rerun_incomplete(self):
         """Rerun any incomplete parts of the map from scratch."""
-        return self._rerun(hashes = self._missing_hashes)
+        self._rerun(hashes = self._missing_hashes)
 
     def _rerun(self, hashes):
         self._remove_from_queue()
@@ -677,6 +679,8 @@ class MapResult:
         )
 
         self.cluster_ids.append(submit_result.cluster())
+
+        logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.map_id}')
 
     def rename(self, map_id: str, force_overwrite: bool = False) -> 'MapResult':
         """
@@ -717,9 +721,9 @@ class MapResult:
             try:
                 existing_result = MapResult.recover(map_id)
                 existing_result.remove()
-                logger.debug(f'force overwrote map {map_id}')
+                logger.debug(f'force-overwrote map {map_id}')
             except exceptions.MapIdNotFound:
-                pass
+                logger.debug(f'force-overwrite not needed to rename {self.map_id} to {map_id}')
         else:
             try:
                 mapping.raise_if_map_id_already_exists(map_id)
