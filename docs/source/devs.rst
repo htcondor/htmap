@@ -1,10 +1,6 @@
 For Developers
 ==============
 
-.. py:currentmodule:: htmap
-
-.. highlight:: python
-
 :doc:`devs/innards`
    How HTMap does what it does.
 

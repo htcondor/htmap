@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 
 project = 'HTMap'
-copyright = '2018, Josh Karpel'
-author = 'Josh Karpel'
+copyright = '2018, HTCondor Team, Computer Sciences Department, University of Wisconsin-Madison, WI'
+author = 'HTCondor Team'
 
 # The short X.Y version
 version = ''
