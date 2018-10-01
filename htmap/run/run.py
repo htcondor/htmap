@@ -25,11 +25,15 @@ import cloudpickle
 
 
 def print_node_info():
-    print(f'Landed on execute node {socket.getfqdn()} ({socket.gethostbyname(socket.gethostname())}) at {datetime.datetime.utcnow()}')
+    print('Landed on execute node {} ({}) at {}'.format(
+        socket.getfqdn(),
+        socket.gethostbyname(socket.gethostname()),
+        datetime.datetime.utcnow(),
+    ))
 
     print('Local directory contents:')
     for path in Path.cwd().iterdir():
-        print(f'    {path}')
+        print('    {}'.format(path))
 
 
 def load_func():
@@ -38,25 +42,25 @@ def load_func():
 
 
 def load_args_and_kwargs(arg_hash):
-    with Path(f'{arg_hash}.in').open(mode = 'rb') as file:
+    with Path('{}.in'.format(arg_hash)).open(mode = 'rb') as file:
         return cloudpickle.load(file)
 
 
 def save_output(arg_hash, output):
-    with Path(f'{arg_hash}.out').open(mode = 'wb') as file:
+    with Path('{}.out'.format(arg_hash)).open(mode = 'wb') as file:
         cloudpickle.dump(output, file)
 
 
 def print_run_info(arg_hash, func, args, kwargs):
     s = '\n'.join((
         'Running',
-        f'    {func}',
+        '    {}'.format(func),
         'with args',
-        f'    {args}',
+        '    {}'.format(args),
         'and kwargs',
-        f'    {kwargs}',
+        '    {}'.format(kwargs),
         'from input hash',
-        f'    {arg_hash}',
+        '    {}'.format(arg_hash),
     ))
 
     print(s)
