@@ -3,7 +3,7 @@ Development Environment
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
+
 
 HTMap's test suite relies on a properly set-up environment.
 This page describes how to set up such an environment.

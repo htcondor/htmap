@@ -3,7 +3,7 @@ HTMap Innards
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
+
 
 
 Guiding Principles

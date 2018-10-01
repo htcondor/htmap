@@ -5,7 +5,6 @@ Wrapping External Programs
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
 
 HTMap can only map Python functions, but you might need to call an external program on the execute node.
 For example, you may need to use a particular Bash utility script, or run a piece of pre-compiled analysis software.

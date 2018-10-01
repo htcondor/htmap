@@ -3,6 +3,7 @@ Tutorials
 
 :doc:`tutorials/first-steps`
    An introduction to the basics of HTMap.
+   If this is your first time using HTMap, start here!
 
 :doc:`tutorials/working-with-files`
    Sending additional files with your maps.

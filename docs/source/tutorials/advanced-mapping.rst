@@ -5,8 +5,6 @@ Advanced Mapping
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
-
 
 Starmap
 -------

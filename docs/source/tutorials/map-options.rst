@@ -5,7 +5,6 @@ Map Options
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
 
 HTMap makes fairly conservative choices about the resources required by your map components.
 If your function needs a lot of resources, such as memory or disk space, you will need to communicate this to HTMap.

@@ -3,7 +3,16 @@ First Steps
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
+.. attention::
+
+    This tutorial assumes that you're writing code in the Python REPL.
+    It will work just as well from a Jupyter Notebook, or from a script (provided that you run ``htmap.clean()`` just after importing ``htmap``).
+    Either way, you'll need to be on a computer that can see an HTCondor pool!
+
+.. attention::
+
+    This tutorial assumes that you have already set up your dependency management, as described in :ref:`dependency-management`.
+    If your HTCondor pool supports Docker, the quickest way to get started is to set ``htmap.settings['PYTHON_DELIVERY'] = 'docker'`` just after importing ``htmap``.
 
 Suppose you've been given the task of writing a function that doubles numbers.
 This is hardly a challenge:

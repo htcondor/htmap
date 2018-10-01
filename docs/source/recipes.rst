@@ -3,9 +3,6 @@ Recipes
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
-
-
 .. _cleanup-after-force-removal:
 
 Cleanup After Force Removal
