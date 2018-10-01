@@ -8,10 +8,10 @@ HTMap
 HTMap is a library that wraps the process of mapping Python function calls out to an HTCondor pool.
 It provides tools for submitting, managing, and processing the output of arbitrary functions.
 
-Our goal is to provide as transparent an interface as possible so that you can spend more time thinking about your own code and less about how to get running on a cluster.
+Our goal is to provide as transparent an interface as possible to high-throughput computing resources so that you can spend more time thinking about your own code, and less about how to get it running on a cluster.
 
 :doc:`tutorials`
-   Brief tutorials in using HTMap.
+   Tutorials on using HTMap.
 
 :doc:`dependencies`
    Information about how to manage your dependencies.
@@ -20,7 +20,7 @@ Our goal is to provide as transparent an interface as possible so that you can s
    Public API documentation.
 
 :doc:`settings`
-    Documentation for the various settings.
+   Documentation for the various settings.
 
 :doc:`recipes`
    Useful code snippets, tips, and tricks.

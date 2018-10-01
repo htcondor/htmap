@@ -25,27 +25,13 @@ It's the perfect solution.
 
 The problem is: *how do you get your code running in the pool?*
 
-Well, with HTMap, it's like this:
+With HTMap, it's like this:
 
 .. code-block:: python
 
     import htmap
 
     result = htmap.map('dbl', double, range(10))
-
-    print(list(result))  # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
-
-Or, if you prefer,
-
-.. code-block:: python
-
-    import htmap
-
-    @htmap.htmap
-    def double(x):
-        return 2 * x
-
-    result = double.map('dbl', range(10))
 
     print(list(result))  # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
 
