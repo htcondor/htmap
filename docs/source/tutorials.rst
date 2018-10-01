@@ -1,24 +1,28 @@
 Tutorials
 =========
 
-:doc:`tutorials/firststeps`
+:doc:`tutorials/first-steps`
    An introduction to the basics of HTMap.
 
-:doc:`tutorials/files`
+:doc:`tutorials/working-with-files`
    Sending additional files with your maps.
 
-:doc:`tutorials/mapoptions`
+:doc:`tutorials/map-options`
    How to tell the pool what to do with your map.
 
-:doc:`tutorials/advancedmapping`
+:doc:`tutorials/advanced-mapping`
    More (and better) ways to create maps.
+
+:doc:`tutorials/external-programs`
+   Calling external (i.e., non-Python) programs from HTMap.
 
 
 .. toctree::
    :maxdepth: 2
    :hidden:
 
-   tutorials/firststeps
-   tutorials/files
-   tutorials/mapoptions
-   tutorials/advancedmapping
+   tutorials/first-steps
+   tutorials/working-with-files
+   tutorials/map-options
+   tutorials/advanced-mapping
+   tutorials/external-programs

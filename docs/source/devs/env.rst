@@ -70,7 +70,7 @@ Docker
 
 For ``docker`` delivery, you need to make sure that your pool can host Docker jobs.
 If you're starting from scratch, this will probably involve `installing Docker <https://docs.docker.com/install/#supported-platforms>`_.
-Then set up HTCondor for Docker integration as described in the `HTCondor manual's administrators section <http://research.cs.wisc.edu/htcondor/manual/>`_.
+Then set up HTCondor for Docker integration as described `in the HTCondor manual <http://research.cs.wisc.edu/htcondor/manual/current/3_16Setting_Up.html#SECTION004162000000000000000>`_.
 
 Running the Tests
 -----------------
