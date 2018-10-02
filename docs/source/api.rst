@@ -129,6 +129,34 @@ Each map is search in order, so earlier settings can flexibly override later set
 .. autoclass:: htmap.settings.Settings
    :members:
 
+Logging
+-------
+
+HTMap exposes a `standard Python logging hierarchy <https://docs.python.org/3/library/logging.html>`_ under the logger named ``'htmap'``.
+Logging configuration can be done by any of the methods described `in the documentation <https://docs.python.org/3/howto/logging.html#configuring-logging>`_.
+
+Here's an example of how to set up basic console logging:
+
+.. code-block:: python
+
+    import logging
+    import sys
+
+    logger = logging.getLogger('htmap')
+    logger.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(stream = sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+    logger.addHandler(handler)
+
+After executing this code, you should be able to see HTMap log messages as you tell it to do things.
+
+.. warning::
+
+    The HTMap logger is not available in the context of the executing map function.
+    Trying to use it will probably raise exceptions.
 
 Exceptions
 ----------

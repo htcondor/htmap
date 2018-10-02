@@ -14,8 +14,11 @@
 # limitations under the License.
 
 from typing import Iterable, Dict, Union, Optional, Callable, Any
+import logging
 
 from . import mapping, options, result
+
+logger = logging.getLogger(__name__)
 
 
 class MappedFunction:
@@ -38,6 +41,8 @@ class MappedFunction:
         if map_options is None:
             map_options = options.MapOptions()
         self.map_options = map_options
+
+        logger.debug(f'initialized mapped function for {self.func} with options {self.map_options}')
 
     def __repr__(self):
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'

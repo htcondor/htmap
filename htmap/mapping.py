@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any
+import logging
 
 import shutil
 from pathlib import Path
@@ -22,6 +23,8 @@ import itertools
 import htcondor
 
 from . import htio, exceptions, result, options, settings
+
+logger = logging.getLogger(__name__)
 
 
 def maps_dir_path() -> Path:
@@ -153,6 +156,8 @@ class MapBuilder:
 
         self._result = None
 
+        logger.debug(f'initialized map builder for map {map_id} for {self.func}')
+
     def __repr__(self):
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
 
@@ -162,6 +167,7 @@ class MapBuilder:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # if an exception is raised in the with, re-raise without submitting jobs
         if exc_type is not None:
+            logger.exception(f'map builder for map {self.map_id} aborted due to')
             return False
 
         self._result = starmap(
@@ -172,6 +178,8 @@ class MapBuilder:
             force_overwrite = self.force_overwrite,
             map_options = self.map_options
         )
+
+        logger.debug(f'finished executing map builder for map {self.map_id}')
 
     def __call__(self, *args, **kwargs):
         """Adds the given inputs to the map."""
@@ -265,14 +273,17 @@ def submit_map(
         try:
             existing_result = result.MapResult.recover(map_id)
             existing_result.remove()
+            logger.debug(f'force-overwrote map {map_id}')
         except exceptions.MapIdNotFound:
-            pass
+            logger.debug(f'force-overwrite not needed for map_id {map_id}')
     else:
         raise_if_map_id_already_exists(map_id)
 
+    logger.debug(f'creating map {map_id}...')
+
     map_dir = map_dir_path(map_id)
     try:
-        make_map_subdirs(map_dir)
+        make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
         hashes = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
         htio.save_hashes(map_dir, hashes)
@@ -286,11 +297,14 @@ def submit_map(
         htio.save_submit(map_dir, submit_obj)
         htio.save_itemdata(map_dir, itemdata)
 
+        logger.debug(f'submitting map {map_id}...')
         submit_result = execute_submit(
             submit_object = submit_obj,
             itemdata = itemdata,
         )
         cluster_id = submit_result.cluster()
+
+        logger.debug(f'map {map_id} was assigned clusterid {cluster_id}')
 
         with (map_dir / 'cluster_ids').open(mode = 'a') as file:
             file.write(str(cluster_id) + '\n')
@@ -298,17 +312,23 @@ def submit_map(
         with (map_dir / 'cluster_ids').open() as file:
             cluster_ids = [int(cid.strip()) for cid in file]
 
-        return result.MapResult(
+        r = result.MapResult(
             map_id = map_id,
             cluster_ids = cluster_ids,
             submit = submit_obj,
             hashes = hashes,
         )
+
+        logger.info(f'submitted map {map_id}')
+
+        return r
     except BaseException as e:
         # something went wrong during submission, and the job is malformed
         # so delete the entire map directory
         # the condor bindings should prevent any jobs from being submitted
+        logger.exception(f'map submission for map {map_id} aborted due to')
         shutil.rmtree(map_dir)
+        logger.debug(f'removed malformed map directory {map_dir}')
         raise e
 
 
@@ -348,10 +368,12 @@ MAP_SUBDIR_NAMES = (
 )
 
 
-def make_map_subdirs(map_dir):
+def make_map_dir_and_subdirs(map_dir):
     """Create the input, output, and log subdirectories inside the map directory."""
     for path in (map_dir / d for d in MAP_SUBDIR_NAMES):
         path.mkdir(parents = True, exist_ok = True)
+
+    logger.debug(f'created map directory {map_dir} and subdirectories')
 
 
 def execute_submit(submit_object, itemdata) -> htcondor.SubmitResult:

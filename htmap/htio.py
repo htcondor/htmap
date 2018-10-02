@@ -15,6 +15,7 @@
 
 
 from typing import Any, List, Iterable, Tuple, Iterator, Dict
+import logging
 
 import hashlib
 import json
@@ -24,6 +25,8 @@ import cloudpickle
 import htcondor
 
 from htmap import exceptions
+
+logger = logging.getLogger(__name__)
 
 
 def to_bytes(obj: Any) -> bytes:
@@ -55,7 +58,10 @@ def load_object(path: Path) -> Any:
 
 def save_func(map_dir, func):
     """Save the mapped function to the map directory."""
-    save_object(func, map_dir / 'func')
+    path = map_dir / 'func'
+    save_object(func, path)
+
+    logger.debug(f'saved function to {path}')
 
 
 def save_args_and_kwargs(
@@ -66,6 +72,7 @@ def save_args_and_kwargs(
     Save the arguments to the mapped function to the map's input directory.
     Returns the hashes (via :func:`hash_bytes`) of each argument.
     """
+    base_path = map_dir / 'inputs'
     hashes = []
     num_inputs = 0
     for a_and_k in args_and_kwargs:
@@ -73,7 +80,7 @@ def save_args_and_kwargs(
         h = hash_bytes(b)
         hashes.append(h)
 
-        input_path = map_dir / 'inputs' / f'{h}.in'
+        input_path = base_path / f'{h}.in'
         save_bytes(b, input_path)
 
         num_inputs += 1
@@ -81,24 +88,34 @@ def save_args_and_kwargs(
     if num_inputs == 0:
         raise exceptions.EmptyMap()
 
+    logger.debug(f'saved args and kwargs in {base_path}')
+
     return hashes
 
 
 def save_hashes(map_dir: Path, hashes: Iterable[str]):
     """Save a file containing the hashes of the arguments to the map directory."""
-    with (map_dir / 'hashes').open(mode = 'w') as file:
+    path = _hashes_path(map_dir)
+    with path.open(mode = 'w') as file:
         file.write('\n'.join(hashes))
+
+    logger.debug(f'saved hashes to {path}')
 
 
 def load_hashes(map_dir: Path) -> Tuple[str, ...]:
     """Load hashes that were saved using :func:`save_hashes`."""
-    with (map_dir / 'hashes').open() as file:
+    with _hashes_path(map_dir).open() as file:
         return tuple(h.strip() for h in file)
+
+
+def _hashes_path(map_dir: Path) -> Path:
+    return map_dir / 'hashes'
 
 
 def save_submit(map_dir: Path, submit: htcondor.Submit):
     """Save a dictionary that represents the map's :class:`htcondor.Submit` object."""
-    with (map_dir / 'submit').open(mode = 'w') as f:
+    path = _submit_path(map_dir)
+    with path.open(mode = 'w') as f:
         json.dump(
             dict(submit),
             f,
@@ -106,16 +123,23 @@ def save_submit(map_dir: Path, submit: htcondor.Submit):
             separators = (', ', ': '),
         )
 
+    logger.debug(f'saved submit object to {path}')
+
 
 def load_submit(map_dir: Path) -> htcondor.Submit:
     """Load an :class:`htcondor.Submit` object that was saved using :func:`save_submit`."""
-    with (map_dir / 'submit').open(mode = 'r') as f:
+    with _submit_path(map_dir).open(mode = 'r') as f:
         return htcondor.Submit(json.load(f))
+
+
+def _submit_path(map_dir: Path) -> Path:
+    return map_dir / 'submit'
 
 
 def save_itemdata(map_dir: Path, itemdata: List[dict]):
     """Save the map's itemdata as a list of JSON dictionaries."""
-    with (map_dir / 'itemdata').open(mode = 'w') as f:
+    path = _itemdata_path(map_dir)
+    with path.open(mode = 'w') as f:
         json.dump(
             itemdata,
             f,
@@ -123,8 +147,14 @@ def save_itemdata(map_dir: Path, itemdata: List[dict]):
             separators = (',', ':'),
         )  # most compact representation
 
+    logger.debug(f'saved itemdata to {path}')
+
 
 def load_itemdata(map_dir: Path) -> List[dict]:
     """Load itemdata that was saved using :func:`save_itemdata`."""
-    with (map_dir / 'itemdata').open(mode = 'r') as f:
+    with _itemdata_path(map_dir).open(mode = 'r') as f:
         return json.load(f)
+
+
+def _itemdata_path(map_dir: Path) -> Path:
+    return map_dir / 'itemdata'

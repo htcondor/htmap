@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from typing import Union, Iterable, Optional, Callable
+import logging
 
 import sys
 import shutil
@@ -23,6 +24,8 @@ from pathlib import Path
 import htcondor
 
 from . import utils, exceptions, settings
+
+logger = logging.getLogger(__name__)
 
 BASE_OPTIONS_FUNCTION_BY_DELIVERY = {}
 SETUP_FUNCTION_BY_DELIVERY = {}
@@ -323,9 +326,11 @@ def _run_delivery_setup_for_transplant(
     map_id: str,
     map_dir: Path,
 ):
-    if not _is_cached_py_current():
+    if not _cached_py_is_current():
         py_dir = Path(sys.executable).parent.parent
         target = settings['TRANSPLANT.PATH'] / 'htmap_python'
+
+        logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent}...')
 
         try:
             shutil.make_archive(
@@ -337,20 +342,30 @@ def _run_delivery_setup_for_transplant(
             target.with_name('htmap_python.tar.gz').unlink()
             raise e
 
+        logger.debug('created zipped Python install for transplant')
+
         cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
         cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
 
+        logger.debug(f'saved transplant cache file to {cached_req_path}')
 
-def _is_cached_py_current():
+
+def _cached_py_is_current() -> bool:
+    logger.debug('checking if cached zipped Python install is current...')
     cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
     py_install_path = settings['TRANSPLANT.PATH'] / 'htmap_python.tar.gz'
     if not cached_req_path.exists() or not py_install_path.exists():
+        logger.debug('did not find cached zipped Python install')
         return False
 
     cached_reqs = cached_req_path.read_text(encoding = 'utf-8')
     current_reqs = utils.pip_freeze()
 
-    return current_reqs == cached_reqs
+    reqs_match = (current_reqs == cached_reqs)
+
+    logger.debug(f'cached zipped Python install {"is" if reqs_match else "is not"} current')
+
+    return reqs_match
 
 
 register_delivery_mechanism(

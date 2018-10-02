@@ -14,11 +14,14 @@
 # limitations under the License.
 
 from typing import Tuple, Iterator
+import logging
 
 from pathlib import Path
 import shutil
 
-from . import mapping, result, settings, utils, exceptions
+from . import mapping, result, utils, exceptions
+
+logger = logging.getLogger(__name__)
 
 
 def recover(map_id: str) -> result.MapResult:
@@ -41,7 +44,7 @@ def recover(map_id: str) -> result.MapResult:
 def _map_paths() -> Iterator[Path]:
     """Yield the paths to all existing map directories."""
     try:
-        yield from (settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME']).iterdir()
+        yield from mapping.maps_dir_path().iterdir()
     except FileNotFoundError:  # maps dir doesn't exist for some reason, which means we have no maps
         yield from ()
 
@@ -90,12 +93,15 @@ def force_remove(map_id: str):
         The ``map_id`` to force-remove.
     """
     shutil.rmtree(mapping.map_dir_path(map_id), ignore_errors = True)
+    logger.debug(f'force-removed map {map_id}')
 
 
 def clean():
     """Remove all existing maps."""
+    logger.debug('cleaning maps directory...')
     for map_result in map_results():
         map_result.remove()
+    logger.debug('cleaned maps directory')
 
 
 def force_clean():
@@ -109,6 +115,8 @@ def force_clean():
     """
     for map_dir in _map_paths():
         shutil.rmtree(map_dir)
+
+    logger.debug('force-cleaned maps directory')
 
 
 def status() -> str:
