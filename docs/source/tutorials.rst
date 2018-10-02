@@ -5,6 +5,9 @@ Tutorials
    An introduction to the basics of HTMap.
    If this is your first time using HTMap, start here!
 
+:doc:`tutorials/error-handling`
+   What do when something goes wrong.
+
 :doc:`tutorials/working-with-files`
    Sending additional files with your maps.
 
@@ -23,6 +26,7 @@ Tutorials
    :hidden:
 
    tutorials/first-steps
+   tutorials/error-handling
    tutorials/working-with-files
    tutorials/map-options
    tutorials/advanced-mapping

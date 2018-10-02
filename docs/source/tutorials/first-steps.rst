@@ -118,6 +118,7 @@ Where to Next?
 
 Now that you've seen the core of HTMap, you may want to start thinking about
 
-1. I want to learn about how to use files as input data: :ref:`tutorial-working-with-files`.
-2. I want to learn about how to tell the pool what resources my maps need: :ref:`tutorial-map-options`.
-3. I want to learn about how to use more powerful mappers: :ref:`tutorial-advanced-mapping`.
+1. I want to learn about how to handle errors: :ref:`tutorial-error-handling`.
+2. I want to learn about how to use files as input data: :ref:`tutorial-working-with-files`.
+3. I want to learn about how to tell the pool what resources my maps need: :ref:`tutorial-map-options`.
+4. I want to learn about how to use more powerful mappers: :ref:`tutorial-advanced-mapping`.
