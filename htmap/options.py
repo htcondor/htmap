@@ -49,6 +49,7 @@ class MapOptions(collections.UserDict):
 
     def __init__(
         self,
+        *,
         request_memory: Union[int, str, float, Iterable[Union[int, str, float]]] = '100MB',
         request_disk: Union[int, str, float, Iterable[Union[int, str, float]]] = '1GB',
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
