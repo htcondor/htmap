@@ -8,14 +8,14 @@ Tutorials
 :doc:`tutorials/error-handling`
    What do when something goes wrong.
 
+:doc:`tutorials/advanced-mapping`
+   More (and better) ways to create maps.
+
 :doc:`tutorials/working-with-files`
    Sending additional files with your maps.
 
 :doc:`tutorials/map-options`
    How to tell the pool what to do with your map.
-
-:doc:`tutorials/advanced-mapping`
-   More (and better) ways to create maps.
 
 :doc:`tutorials/external-programs`
    Calling external (i.e., non-Python) programs from HTMap.
@@ -27,7 +27,7 @@ Tutorials
 
    tutorials/first-steps
    tutorials/error-handling
+   tutorials/advanced-mapping
    tutorials/working-with-files
    tutorials/map-options
-   tutorials/advanced-mapping
    tutorials/external-programs
