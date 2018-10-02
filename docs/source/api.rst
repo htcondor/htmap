@@ -3,8 +3,6 @@ API Reference
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
-
 
 Map IDs
 -------
