@@ -27,13 +27,13 @@ In your ``~/.htmaprc`` file:
 
 .. code-block:: bash
 
-    PYTHON_DELIVERY = "assume"
+    DELIVERY_METHOD = "assume"
 
 At runtime:
 
 .. code-block:: python
 
-    htmap.settings['PYTHON_DELIVERY'] = 'assume'
+    htmap.settings['DELIVERY_METHOD'] = 'assume'
 
 In this mode, HTMap assumes that a Python installation with all Python dependencies is already present.
 This will almost surely require some additional setup by your HTCondor pool's administrators.
@@ -56,7 +56,7 @@ In your ``~/.htmaprc`` file:
 
 .. code-block:: bash
 
-    PYTHON_DELIVERY = "docker"
+    DELIVERY_METHOD = "docker"
 
     [DOCKER]
     IMAGE = "<repository>/<image>:<tag>"
@@ -65,7 +65,7 @@ At runtime:
 
 .. code-block:: python
 
-    htmap.settings['PYTHON_DELIVERY'] = 'docker'
+    htmap.settings['DELIVERY_METHOD'] = 'docker'
     htmap.settings['DOCKER.IMAGE'] = "<repository>/<image>:<tag>"
 
 In this mode, HTMap will run inside a Docker image that you provide.
@@ -107,13 +107,13 @@ In your ``~/.htmaprc`` file:
 
 .. code-block:: bash
 
-    PYTHON_DELIVERY = "transplant"
+    DELIVERY_METHOD = "transplant"
 
 At runtime:
 
 .. code-block:: python
 
-    htmap.settings['PYTHON_DELIVERY'] = 'transplant'
+    htmap.settings['DELIVERY_METHOD'] = 'transplant'
 
 If you are running HTMap from a standalone Python install (like an Anaconda installation), you can use this delivery mechanism to transfer a copy of your entire Python install.
 All locally-installed packages (including ``pip -e`` installs) will be available.

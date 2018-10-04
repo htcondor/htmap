@@ -149,7 +149,7 @@ class Settings:
 BASE_SETTINGS = Settings(dict(
     HTMAP_DIR = Path.home() / '.htmap',
     MAPS_DIR_NAME = 'maps',
-    PYTHON_DELIVERY = 'assume',
+    DELIVERY_METHOD = 'assume',
     TEMPORARY_CACHE_TIMEOUT = 1,
     HTCONDOR = dict(
         SCHEDD = None,

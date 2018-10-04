@@ -166,13 +166,13 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     run_delivery_setup(
         map_id,
         map_dir,
-        settings['PYTHON_DELIVERY'],
+        settings['DELIVERY_METHOD'],
     )
 
     options_dict = get_base_options_dict(
         map_id,
         map_dir,
-        settings['PYTHON_DELIVERY'],
+        settings['DELIVERY_METHOD'],
     )
 
     itemdata = [{'hash': h} for h in hashes]

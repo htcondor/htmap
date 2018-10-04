@@ -12,7 +12,7 @@ First Steps
 .. attention::
 
     This tutorial assumes that you have already set up your dependency management, as described in :ref:`dependency-management`.
-    If your HTCondor pool supports Docker, the quickest way to get started is to set ``htmap.settings['PYTHON_DELIVERY'] = 'docker'`` just after importing ``htmap``.
+    If your HTCondor pool supports Docker, the quickest way to get started is to set ``htmap.settings['DELIVERY_METHOD'] = 'docker'`` just after importing ``htmap``.
 
 Suppose you've been given the task of writing a function that doubles numbers.
 This is hardly a challenge:
