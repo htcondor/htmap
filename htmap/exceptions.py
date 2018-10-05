@@ -77,3 +77,6 @@ class CannotRenameMap(HTMapException):
 class UnknownPythonDeliveryMechanism(HTMapException):
     """The specified Python delivery mechanism has not been registered."""
     pass
+
+class MapWasRemoved(HTMapException):
+    pass

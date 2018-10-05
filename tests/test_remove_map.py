@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
+
 import pytest
 
 import htmap
@@ -48,3 +50,22 @@ def test_remove_shortcut_on_nonexistent_map_dir_raises():
 
 def test_remove_shortcut_on_nonexistent_map_dir_fails_silently_if_not_exist_ok_set():
     htmap.remove('no_such_mapid', not_exist_ok = True)
+
+
+@pytest.mark.parametrize(
+    'method',
+    [
+        key
+        for key, val in inspect.getmembers(htmap.MapResult, predicate = inspect.isfunction)
+        if not key.startswith('_')
+    ],
+)
+def test_calling_public_methods_after_remove_raises(method, mapped_doubler):
+    result = mapped_doubler.map('method_after_remove', range(1))
+
+    result.remove()
+
+    with pytest.raises(htmap.exceptions.MapWasRemoved):
+        # some of the methods take arguments
+        # but this will actually fail before that check happens
+        getattr(result, method)()

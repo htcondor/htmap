@@ -27,7 +27,6 @@ from htmap.settings import BASE_SETTINGS
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
-htmap.settings['DOCKER.IMAGE'] = 'maventree/htmap:latest'  # todo: this is bad
 
 
 @pytest.fixture(scope = 'session', autouse = True)
@@ -47,7 +46,7 @@ def delivery_methods(request):
     htmap.settings['DELIVERY_METHOD'] = request.param
 
 
-def test_get_base_options(map_id, map_dir, delivery, test_id = None):
+def get_base_options_for_tests(map_id, map_dir, delivery, test_id = None):
     opts = get_base_options_dict(map_id, map_dir, delivery)
     opts['+htmap_test_id'] = str(test_id)
 
@@ -67,7 +66,7 @@ def set_htmap_dir_and_clean_after(tmpdir_factory, mocker):
     test_id = next(ids)
     mocker.patch(
         'htmap.options.get_base_options_dict',
-        functools.partial(test_get_base_options, test_id = test_id),
+        functools.partial(get_base_options_for_tests, test_id = test_id),
     )
 
     yield
