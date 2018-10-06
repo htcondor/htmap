@@ -52,6 +52,7 @@ If not given, defaults to ``~/.htmap``.
 ``DELIVERY_METHOD`` - the name of the delivery method to use.
 The different delivery methods are discussed in :ref:`dependency-management`.
 
+
 MAP_OPTIONS
 +++++++++++
 
@@ -73,7 +74,18 @@ These settings control how the ``docker`` delivery method works.
 ``IMAGE`` - the path to the Docker image to run components with.
 Defaults to ``'continuumio/anaconda3:latest'``.
 
+
 TRANSPLANT
 ++++++++++
 
 These settings control how the ``transplant`` delivery method works.
+
+``PATH`` - the path to the directory where the zipped Python install will be cached.
+
+``ALTERNATE_INPUT_PATH`` - a string that will be used in the HTCondor ``transfer_input_files`` option **instead of** the local file path.
+If set to ``None``, the local path will be used (the default).
+This can be used to override the default file transfer mechanism.
+
+``ASSUME_EXISTS`` - if set to ``True``, assume that the zipped Python install already exists.
+Most likely, you will need to set ``ALTERNATE_INPUT_PATH`` to an existing zipped install.
+Defaults to ``False``.
