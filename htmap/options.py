@@ -312,12 +312,16 @@ def _get_base_options_dict_for_transplant(
     map_id: str,
     map_dir: Path,
 ) -> dict:
+    tif_path = settings['TRANSPLANT.ALTERNATE_INPUT_PATH']
+    if tif_path is None:
+        tif_path = (Path(settings['TRANSPLANT.PATH']) / 'htmap_python.tar.gz').as_posix()
+
     return {
         'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
         'transfer_input_files': [
             (Path(__file__).parent / 'run' / 'run.py').as_posix(),
-            (settings['TRANSPLANT.PATH'] / 'htmap_python.tar.gz').as_posix(),
+            tif_path,
         ],
     }
 
@@ -326,7 +330,7 @@ def _run_delivery_setup_for_transplant(
     map_id: str,
     map_dir: Path,
 ):
-    if not _cached_py_is_current():
+    if not _cached_py_is_current() or settings['TRANSPLANT.ASSUME_EXISTS']:
         transplant_path = Path(settings['TRANSPLANT.PATH'])
         py_dir = Path(sys.executable).parent.parent
         target = transplant_path / 'htmap_python'
