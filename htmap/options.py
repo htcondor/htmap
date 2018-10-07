@@ -327,8 +327,9 @@ def _run_delivery_setup_for_transplant(
     map_dir: Path,
 ):
     if not _cached_py_is_current():
+        transplant_path = Path(settings['TRANSPLANT.PATH'])
         py_dir = Path(sys.executable).parent.parent
-        target = settings['TRANSPLANT.PATH'] / 'htmap_python'
+        target = transplant_path / 'htmap_python'
 
         logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent}...')
 
@@ -344,7 +345,7 @@ def _run_delivery_setup_for_transplant(
 
         logger.debug('created zipped Python install for transplant')
 
-        cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
+        cached_req_path = transplant_path / 'freeze'
         cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
 
         logger.debug(f'saved transplant cache file to {cached_req_path}')
@@ -352,8 +353,9 @@ def _run_delivery_setup_for_transplant(
 
 def _cached_py_is_current() -> bool:
     logger.debug('checking if cached zipped Python install is current...')
-    cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
-    py_install_path = settings['TRANSPLANT.PATH'] / 'htmap_python.tar.gz'
+    transplant_path = Path(settings['TRANSPLANT.PATH'])
+    cached_req_path = transplant_path / 'freeze'
+    py_install_path = transplant_path / 'htmap_python.tar.gz'
     if not cached_req_path.exists() or not py_install_path.exists():
         logger.debug('did not find cached zipped Python install')
         return False
