@@ -23,6 +23,22 @@ setup(
     version = '0.1.0',
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
+    description = 'High-Throughput Computing in Python, powered by HTCondor',
+    long_description = open('README.md').read(),
+    long_description_content_type = "text/markdown",
+    url = 'https://github.com/htcondor/htmap',
+    classifiers = [
+        "Development Status :: 3 - Alpha",
+        "Programming Language :: Python :: 3",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Topic :: System :: Distributed Computing",
+    ],
     packages = find_packages(
         exclude = ['tests'],
     ),
@@ -30,9 +46,9 @@ setup(
         '': ['*.sh'],
     },
     install_requires = [
-        # 'htcondor>=8.7.9',
+        'htcondor >= 8.7.9',
         'cloudpickle',
         'toml',
         'tqdm',
-    ]
+    ],
 )

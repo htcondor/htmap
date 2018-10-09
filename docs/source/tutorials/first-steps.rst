@@ -3,6 +3,12 @@ First Steps
 
 .. py:currentmodule:: htmap
 
+
+.. attention::
+
+    This tutorial assume that you've already installed HTMap.
+    See :ref:`install` for details!
+
 .. attention::
 
     This tutorial assumes that you're writing code in the Python REPL.

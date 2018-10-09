@@ -8,6 +8,9 @@ It provides tools for submitting, managing, and processing the output of arbitra
 
 Our goal is to provide as transparent an interface as possible to high-throughput computing resources so that you can spend more time thinking about your own code, and less about how to get it running on a cluster.
 
+If you're just getting started, first check :ref:`install` to learn how to install HTMap,
+then jump into the first tutorial: :doc:`tutorials/first-steps`.
+
 :doc:`tutorials`
    Tutorials on using HTMap.
 

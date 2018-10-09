@@ -8,6 +8,4 @@ It provides tools for submitting, managing, and processing the output of arbitra
 
 Our goal is to provide as transparent an interface as possible to high-throughput computing resources so that you can spend more time thinking about your own code, and less about how to get it running on a cluster.
 
-For tutorials and more details, go to the [documentation](https://htmap.readthedocs.io/en/latest/?badge=latest).
-
-To install the latest development version of HTMap, run `pip install git+https://github.com/htcondor/htmap.git`.
+For tutorials, installation instructions, and more details, see the [documentation](https://htmap.readthedocs.io/en/latest/).
