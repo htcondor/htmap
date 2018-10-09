@@ -20,6 +20,8 @@ import datetime
 import enum
 import shutil
 import time
+import functools
+import inspect
 import collections
 from copy import copy
 from pathlib import Path
@@ -67,6 +69,26 @@ JOB_STATUS_STRINGS = {
 }
 
 
+def _protector(method):
+    @functools.wraps(method)
+    def _protect(self, *args, **kwargs):
+        if self._is_removed:
+            raise exceptions.MapWasRemoved(f'cannot call {method} for map {self.map_id} because it has been removed')
+        return method(self, *args, **kwargs)
+
+    return _protect
+
+
+def _protect_result_after_remove(result_class):
+    # decorate all public instance methods
+    for key, member in inspect.getmembers(result_class, predicate = inspect.isfunction):
+        if not key.startswith('_'):
+            setattr(result_class, key, _protector(member))
+
+    return result_class
+
+
+@_protect_result_after_remove
 class MapResult:
     """
     Represents the results from a map call.
@@ -92,6 +114,8 @@ class MapResult:
         self.submit = submit
         self.hashes = tuple(hashes)
         self.hash_set = set(self.hashes)
+
+        self._is_removed = False
 
     @classmethod
     def recover(cls, map_id: str) -> 'MapResult':
@@ -546,6 +570,7 @@ class MapResult:
         """
         self._remove_from_queue()
         self._rm_map_dir()
+        self._is_removed = True
         logger.info(f'removed map {self.map_id}')
 
     def hold(self):

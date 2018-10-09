@@ -27,8 +27,8 @@ from . import utils, exceptions, settings
 
 logger = logging.getLogger(__name__)
 
-OPTIONS_BY_DELIVERY = {}
-SETUP_BY_DELIVERY = {}
+BASE_OPTIONS_FUNCTION_BY_DELIVERY = {}
+SETUP_FUNCTION_BY_DELIVERY = {}
 
 
 class MapOptions(collections.UserDict):
@@ -52,6 +52,7 @@ class MapOptions(collections.UserDict):
 
     def __init__(
         self,
+        *,
         request_memory: Union[int, str, float, Iterable[Union[int, str, float]]] = '100MB',
         request_disk: Union[int, str, float, Iterable[Union[int, str, float]]] = '1GB',
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
@@ -165,13 +166,13 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
     run_delivery_setup(
         map_id,
         map_dir,
-        settings['PYTHON_DELIVERY']
+        settings['DELIVERY_METHOD'],
     )
 
     options_dict = get_base_options_dict(
         map_id,
         map_dir,
-        settings['PYTHON_DELIVERY'],
+        settings['DELIVERY_METHOD'],
     )
 
     itemdata = [{'hash': h} for h in hashes]
@@ -230,8 +231,8 @@ def register_delivery_mechanism(
     if setup_func is None:
         setup_func = lambda *args: None
 
-    OPTIONS_BY_DELIVERY[name] = options_func
-    SETUP_BY_DELIVERY[name] = setup_func
+    BASE_OPTIONS_FUNCTION_BY_DELIVERY[name] = options_func
+    SETUP_FUNCTION_BY_DELIVERY[name] = setup_func
 
 
 def get_base_options_dict(
@@ -251,7 +252,7 @@ def get_base_options_dict(
     }
 
     try:
-        base = OPTIONS_BY_DELIVERY[delivery](map_id, map_dir)
+        base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
 
@@ -268,7 +269,7 @@ def run_delivery_setup(
     delivery: str,
 ):
     try:
-        SETUP_BY_DELIVERY[delivery](map_id, map_dir)
+        SETUP_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
 
@@ -311,12 +312,16 @@ def _get_base_options_dict_for_transplant(
     map_id: str,
     map_dir: Path,
 ) -> dict:
+    tif_path = settings['TRANSPLANT.ALTERNATE_INPUT_PATH']
+    if tif_path is None:
+        tif_path = (Path(settings['TRANSPLANT.PATH']) / 'htmap_python.tar.gz').as_posix()
+
     return {
         'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
         'transfer_input_files': [
             (Path(__file__).parent / 'run' / 'run.py').as_posix(),
-            (settings['TRANSPLANT.PATH'] / 'htmap_python.tar.gz').as_posix(),
+            tif_path,
         ],
     }
 
@@ -325,9 +330,10 @@ def _run_delivery_setup_for_transplant(
     map_id: str,
     map_dir: Path,
 ):
-    if not _cached_py_is_current():
+    if not _cached_py_is_current() or settings['TRANSPLANT.ASSUME_EXISTS']:
+        transplant_path = Path(settings['TRANSPLANT.PATH'])
         py_dir = Path(sys.executable).parent.parent
-        target = settings['TRANSPLANT.PATH'] / 'htmap_python'
+        target = transplant_path / 'htmap_python'
 
         logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent}...')
 
@@ -343,7 +349,7 @@ def _run_delivery_setup_for_transplant(
 
         logger.debug('created zipped Python install for transplant')
 
-        cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
+        cached_req_path = transplant_path / 'freeze'
         cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
 
         logger.debug(f'saved transplant cache file to {cached_req_path}')
@@ -351,8 +357,9 @@ def _run_delivery_setup_for_transplant(
 
 def _cached_py_is_current() -> bool:
     logger.debug('checking if cached zipped Python install is current...')
-    cached_req_path = settings['TRANSPLANT.PATH'] / 'freeze'
-    py_install_path = settings['TRANSPLANT.PATH'] / 'htmap_python.tar.gz'
+    transplant_path = Path(settings['TRANSPLANT.PATH'])
+    cached_req_path = transplant_path / 'freeze'
+    py_install_path = transplant_path / 'htmap_python.tar.gz'
     if not cached_req_path.exists() or not py_install_path.exists():
         logger.debug('did not find cached zipped Python install')
         return False
@@ -370,5 +377,5 @@ def _cached_py_is_current() -> bool:
 register_delivery_mechanism(
     'transplant',
     options_func = _get_base_options_dict_for_transplant,
-    setup_func = _run_delivery_setup_for_transplant
+    setup_func = _run_delivery_setup_for_transplant,
 )

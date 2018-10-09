@@ -3,8 +3,6 @@ API Reference
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
-
 
 Map IDs
 -------
@@ -110,9 +108,9 @@ Settings
 HTMap exposes configurable settings through ``htmap.settings``, which is an instance of the class :class:`htmap.settings.Settings`.
 This settings object manages a lookup chain of dictionaries.
 The settings object created during startup contains two dictionaries.
-The lowest level contains HTMap's default settings, and the next level up is constructed from a settings file at ``~/.htmap.toml``.
+The lowest level contains HTMap's default settings, and the next level up is constructed from a settings file at ``~/.htmaprc``.
 If that file does not exist, an empty dictionary is used instead.
-As you can guess from the extension, the file is be formatted in `TOML <https://github.com/toml-lang/toml>`_.
+The file should be formatted in `TOML <https://github.com/toml-lang/toml>`_.
 
 Alternate settings could be stored in other files or constructed at runtime.
 HTMap provides tools for saving, loading, merging, prepending, and appending settings to each other.

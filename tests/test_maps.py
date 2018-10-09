@@ -65,6 +65,7 @@ def test_starmap_creates_correct_number_of_output_files(mapped_power):
     assert get_number_of_files_in_dir(result._outputs_dir) == num_inputs
 
 
+@pytest.mark.usefixtures('delivery_methods')
 def test_map_produces_correct_output(mapped_doubler):
     n = 3
     result = mapped_doubler.map('map', range(n))
@@ -72,6 +73,7 @@ def test_map_produces_correct_output(mapped_doubler):
     assert list(result) == [2 * x for x in range(n)]
 
 
+@pytest.mark.usefixtures('delivery_methods')
 def test_map_with_kwargs_produces_correct_output(mapped_power):
     n = 3
     p = 2
@@ -80,6 +82,7 @@ def test_map_with_kwargs_produces_correct_output(mapped_power):
     assert list(result) == [x ** p for x in range(n)]
 
 
+@pytest.mark.usefixtures('delivery_methods')
 def test_starmap_produces_correct_output(mapped_power):
     n = 3
     result = mapped_power.starmap(

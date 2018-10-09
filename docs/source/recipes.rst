@@ -3,67 +3,68 @@ Recipes
 
 .. py:currentmodule:: htmap
 
-.. highlight:: python
 
-.. _wrapping_external_programs:
+.. _filter:
 
-Wrapping External Programs
---------------------------
+Filter
+------
 
-HTMap can only map Python functions, but you might need to call an external program on the execute node.
-For example, you may need to use a particular Bash utility script, or run a piece of pre-compiled analysis software.
-In cases like this, the Python standard library's `subprocess module <https://docs.python.org/3/library/subprocess.html>`_ can be used to communicate with those programs.
+In the parlance of higher-order functions, HTMap only provides map.
+Another higher-order function, filter, is easy to implement once you have a map.
+To mimic it we create a map with a boolean output, and use :func:`htmap.MapResult.iter_with_inputs` inside a list comprehension to filter the inputs using the outputs.
 
-For example, suppose you need to call the Dubious Barology Lyricon (``dbl``) program, a pre-compiled C program that you have stored in your home directory at ``~/dbl``.
-It takes a single integer argument, and "returns" a single integer by printing it to standard output.
-So a call to ``dbl`` on the command line looks like
-
-.. code-block:: bash
-
-    $ dbl 4
-    8
-
-To use HTMap with ``dbl``, you could write a mapped function that looks something like
+Here's a brief example: checking whether integers are even.
 
 .. code-block:: python
 
-    import subprocess
     import htmap
 
-    @htmap.htmap(
-        map_options = htmap.MapOptions(
-            fixed_input_files = 'dbl',
-        )
-    )
-    def dbl(x):
-        process = subprocess.run(
-            ['dbl', str(x)],
-            stdout = subprocess.PIPE,  # use capture_output = True in Python 3.7+
-        )
+    @htmap.htmap
+    def is_even(x: int) -> bool:
+        return x % 2 == 0
 
-        if process.returncode != 0:
-            raise Exception('call to dbl failed!')
+    result = is_even.map('is_even', range(10))
 
-        return_value = int(process.stdout)
+    filtered = [input for input, output in result.iter_with_inputs() if output]
 
-        return return_value
+    print(filtered)  # [((0,), {}), ((2,), {}), ((4,), {}), ((6,), {}), ((8,), {})]
 
-You'll need to be careful with functions like this - check for failures in the programs you call, because HTMap will happily return nonsense if the call fails in some strange way.
-If we do a map, we'll end up with the expected result:
+
+.. _groupby:
+
+Groupby
+-------
+
+In the parlance of higher-order functions, HTMap only provides map.
+Another higher-order function, groupby, is easy to implement once you have a map.
+To mimic it we'll write a helper function that uses a :class:`collections.defaultdict` to construct a dictionary that collects inputs that have the same output, using the output as the key.
+
+Here's a brief example: grouping integer by whether they are even or not.
 
 .. code-block:: python
 
-    result = dbl.map('dbl', range(10))
+    import collections
+    import htmap
 
-    print(list(result))  # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+    @htmap.htmap
+    def is_even(x: int) -> bool:
+        return x % 2 == 0
 
-If you want to test this yourself, here's the Dubious Barology Lyricon (really a simple ``bash`` program):
+    def groupby(result):
+        groups = collections.defaultdict(list)
 
-.. code-block:: bash
+        for input, output in result.iter_with_inputs():
+            groups[output].append(input)
 
-    #!/usr/bin/env bash
+        return groups
 
-    echo $((2 * $1))
+    result = is_even.map('is_even', range(10))
+
+    for group, elements in groupby(result).items():
+        print(group, elements)
+
+    # True [((0,), {}), ((2,), {}), ((4,), {}), ((6,), {}), ((8,), {})]
+    # False [((1,), {}), ((3,), {}), ((5,), {}), ((7,), {}), ((9,), {})]
 
 
 .. _cleanup-after-force-removal:

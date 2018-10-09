@@ -27,6 +27,7 @@ def test_len_of_map_builder(mapped_doubler):
     assert len(jb) == 2
 
 
+@pytest.mark.usefixtures('delivery_methods')
 def test_map_builder_produces_correct_results(mapped_doubler):
     with mapped_doubler.build_map('map') as jb:
         jb(5)

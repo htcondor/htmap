@@ -146,11 +146,11 @@ class Settings:
         return utils.rstr(f'<{self.__class__.__name__}>')
 
 
+htmap_dir = Path.home() / '.htmap'
 BASE_SETTINGS = Settings(dict(
-    HTMAP_DIR = Path.home() / '.htmap',
+    HTMAP_DIR = htmap_dir,
     MAPS_DIR_NAME = 'maps',
-    PYTHON_DELIVERY = 'assume',
-    TEMPORARY_CACHE_TIMEOUT = 1,
+    DELIVERY_METHOD = 'assume',
     HTCONDOR = dict(
         SCHEDD = None,
     ),
@@ -158,6 +158,11 @@ BASE_SETTINGS = Settings(dict(
     ),
     DOCKER = dict(
         IMAGE = 'continuumio/anaconda3:latest',
+    ),
+    TRANSPLANT = dict(
+        PATH = htmap_dir,
+        ALTERNATE_INPUT_PATH = None,
+        ASSUME_EXISTS = False,
     ),
 ))
 
@@ -170,7 +175,6 @@ except FileNotFoundError:
     logger.debug(f'no user settings at {USER_SETTINGS_PATH}')
 
 settings = Settings.from_settings(USER_SETTINGS, BASE_SETTINGS)
-BASE_SETTINGS['TRANSPLANT.PATH'] = BASE_SETTINGS['HTMAP_DIR']
 
 logger.debug(f'htmap directory is {settings["HTMAP_DIR"]}')
 logger.debug(f'maps directory name is {settings["MAPS_DIR_NAME"]}')
