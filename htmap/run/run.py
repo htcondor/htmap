@@ -25,6 +25,7 @@ import cloudpickle
 
 
 def print_node_info():
+    print('Python executable: {}'.format(sys.executable))
     print('Landed on execute node {} ({}) at {}'.format(
         socket.getfqdn(),
         socket.gethostbyname(socket.gethostname()),
