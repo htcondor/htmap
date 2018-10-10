@@ -19,6 +19,7 @@ import sys
 import socket
 import datetime
 import os
+import subprocess
 from pathlib import Path
 
 import cloudpickle
@@ -31,7 +32,22 @@ def print_node_info():
         datetime.datetime.utcnow(),
     ))
 
-    print('Local directory contents:')
+
+def print_python_info():
+    print('Python executable is\n    {}'.format(sys.executable))
+    print('with installed packages')
+    print('\n'.join('    {}'.format(line) for line in pip_freeze().splitlines()))
+
+
+def pip_freeze() -> str:
+    return subprocess.run(
+        [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
+        stdout = subprocess.PIPE,
+    ).stdout.decode('utf-8')
+
+
+def print_working_dir_contents():
+    print('Working directory contents:')
     for path in Path.cwd().iterdir():
         print('    {}'.format(path))
 
@@ -69,6 +85,10 @@ def print_run_info(arg_hash, func, args, kwargs):
 def main(arg_hash):
     print_node_info()
     print()
+    print_working_dir_contents()
+    print()
+    print_python_info()
+    print()
 
     os.environ['HTMAP_ON_EXECUTE'] = "1"
 
@@ -76,11 +96,14 @@ def main(arg_hash):
     args, kwargs = load_args_and_kwargs(arg_hash)
 
     print_run_info(arg_hash, func, args, kwargs)
-    print()
 
+    print('\n----- MAP COMPONENT OUTPUT START -----\n')
     output = func(*args, **kwargs)
+    print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
     save_output(arg_hash, output)
+
+    print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 
 
 if __name__ == '__main__':
