@@ -33,17 +33,17 @@ def print_node_info():
     ))
 
 
-def print_python_info():
-    print('Python executable is\n    {}'.format(sys.executable))
-    print('with installed packages')
-    print('\n'.join('    {}'.format(line) for line in pip_freeze().splitlines()))
-
-
-def pip_freeze() -> str:
-    return subprocess.run(
-        [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
-        stdout = subprocess.PIPE,
-    ).stdout.decode('utf-8')
+# def print_python_info():
+#     print('Python executable is\n    {}'.format(sys.executable))
+#     print('with installed packages')
+#     print('\n'.join('    {}'.format(line) for line in pip_freeze().splitlines()))
+#
+#
+# def pip_freeze() -> str:
+#     return subprocess.run(
+#         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
+#         stdout = subprocess.PIPE,
+#     ).stdout.decode('utf-8')
 
 
 def print_working_dir_contents():
@@ -87,8 +87,8 @@ def main(arg_hash):
     print()
     print_working_dir_contents()
     print()
-    print_python_info()
-    print()
+    # print_python_info()
+    # print()
 
     os.environ['HTMAP_ON_EXECUTE'] = "1"
 
