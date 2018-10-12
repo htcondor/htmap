@@ -19,12 +19,14 @@ import logging
 
 import hashlib
 import json
+import pickle
+import time
 from pathlib import Path
 
 import cloudpickle
 import htcondor
 
-from htmap import exceptions
+from htmap import exceptions, utils
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +54,20 @@ def save_object(obj: Any, path: Path) -> None:
 
 def load_object(path: Path) -> Any:
     """Deserialize an object from the file at the given ``path``."""
-    with path.open(mode = 'rb') as file:
-        return cloudpickle.load(file)
+    old_size = None
+    while True:
+        try:
+            with path.open(mode = 'rb') as file:
+                return cloudpickle.load(file)
+
+        # this tries to figure out if the file is currently being transferred
+        # if so, retry until it succeeds or stops changing size (transfer is done and something else is wrong)
+        except (pickle.UnpicklingError, EOFError) as e:
+            curr_size = utils.get_file_size(path)
+            if curr_size == old_size:
+                raise e
+            old_size = curr_size
+            time.sleep(.01)
 
 
 def save_func(map_dir, func):

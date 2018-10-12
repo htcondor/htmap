@@ -141,6 +141,11 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]], fill: str = '',
     return rstr(output)
 
 
+def get_file_size(path: Path) -> int:
+    """Return the size of a file in bytes."""
+    return path.stat().st_size
+
+
 def get_dir_size(path: Path) -> int:
     """Return the size of a directory (including all contents recursively) in bytes."""
     size = 0
@@ -148,7 +153,7 @@ def get_dir_size(path: Path) -> int:
         if p.is_dir():
             size += get_dir_size(p)
         elif p.is_file():
-            size += p.stat().st_size
+            size += get_file_size(p)
     return size
 
 
@@ -159,6 +164,11 @@ def num_bytes_to_str(num_bytes: int) -> str:
             return f'{num_bytes:.1f} {unit}'
         num_bytes /= 1024
     return f'{num_bytes:.1f} TB'
+
+
+def get_file_size_as_str(path: Path) -> str:
+    """Return the size of a file as a human-readable string."""
+    return num_bytes_to_str(get_file_size(path))
 
 
 def get_dir_size_as_str(path: Path) -> str:
