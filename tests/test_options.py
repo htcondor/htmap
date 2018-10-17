@@ -434,3 +434,31 @@ def test_two_urls_in_input_files():
 def test_unknown_delivery_mechanism():
     with pytest.raises(htmap.exceptions.UnknownPythonDeliveryMechanism):
         get_base_options_dict('foo', Path.cwd(), delivery = 'unknown')
+
+
+@pytest.mark.parametrize(
+    'key',
+    [
+        'foo',
+        '+foo',
+        'my.foo',
+        'MY.foo',
+        'mY.foo',
+    ]
+)
+def test_custom_options(key):
+    map_id = 'test'
+    map_dir = Path().cwd()
+    hashes = ['a', 'b', 'c']
+    map_options = htmap.MapOptions(
+        custom_options = {key: 'bar'},
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        hashes,
+        map_options,
+    )
+
+    assert '+foo' in sub.keys()
