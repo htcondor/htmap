@@ -53,7 +53,7 @@ def test_clean_removes_all_maps(mapped_doubler):
 
 def test_clean_without_maps_dir_doesnt_raise_exception():
     shutil.rmtree(
-        htmap.settings['HTMAP_DIR'] / htmap.settings['MAPS_DIR_NAME'],
+        str((htmap.settings['HTMAP_DIR'] / htmap.settings['MAPS_DIR_NAME']).absolute()),
         ignore_errors = True,
     )
 

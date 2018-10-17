@@ -190,7 +190,7 @@ class MapResult:
         return self._act(htcondor.JobAction.Remove)
 
     def _rm_map_dir(self):
-        shutil.rmtree(self._map_dir)
+        shutil.rmtree(str(self._map_dir.absolute()))
         logger.debug(f'removed map directory for map {self.map_id}')
 
     def _clean_outputs_dir(self):
