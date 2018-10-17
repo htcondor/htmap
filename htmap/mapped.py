@@ -95,6 +95,44 @@ class MappedFunction:
             **kwargs,
         )
 
+    def map_or_recover(
+        self,
+        map_id: str,
+        args: Iterable[Any],
+        map_options: Optional[options.MapOptions] = None,
+        **kwargs,
+    ):
+        """
+        A wrapper over :method:`htmap.MappedFunction.map` that takes the same arguments and keyword arguments.
+        However, if the ``map_id`` already exists, that map is recovered instead of submitting a new map.
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this map.
+        args
+            An iterable of arguments to pass to the mapped function.
+        kwargs
+            Any additional keyword arguments are passed as keyword arguments to the mapped function.
+        map_options
+            An instance of :class:`htmap.MapOptions`.
+
+        Returns
+        -------
+        result :
+            A :class:`htmap.Map` representing the map.
+        """
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.map_or_recover(
+            map_id = map_id,
+            func = self.func,
+            args = args,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
+            **kwargs,
+        )
+
     def starmap(
         self,
         map_id: str,
@@ -134,6 +172,44 @@ class MappedFunction:
             args = args,
             kwargs = kwargs,
             force_overwrite = force_overwrite,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
+        )
+
+    def starmap_or_recover(
+        self,
+        map_id: str,
+        args: Optional[Iterable[tuple]] = None,
+        kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+        map_options: Optional[options.MapOptions] = None,
+    ) -> maps.Map:
+        """
+        A wrapper over :method:`htmap.MappedFunction.starmap` that takes the same arguments and keyword arguments.
+        However, if the ``map_id`` already exists, that map is recovered instead of submitting a new map.
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this map.
+        args
+            An iterable of tuples of positional arguments to unpack into the mapped function.
+        kwargs
+            An iterable of dictionaries of keyword arguments to unpack into the mapped function.
+        map_options
+            An instance of :class:`htmap.MapOptions`.
+
+        Returns
+        -------
+        result :
+            A :class:`htmap.Map` representing the map.
+        """
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.starmap_or_recover(
+            map_id = map_id,
+            func = self.func,
+            args = args,
+            kwargs = kwargs,
             map_options = options.MapOptions.merge(map_options, self.map_options),
         )
 
