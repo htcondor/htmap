@@ -11,7 +11,7 @@ Filter
 
 In the parlance of higher-order functions, HTMap only provides map.
 Another higher-order function, filter, is easy to implement once you have a map.
-To mimic it we create a map with a boolean output, and use :func:`htmap.MapResult.iter_with_inputs` inside a list comprehension to filter the inputs using the outputs.
+To mimic it we create a map with a boolean output, and use :func:`htmap.Map.iter_with_inputs` inside a list comprehension to filter the inputs using the outputs.
 
 Here's a brief example: checking whether integers are even.
 
@@ -19,7 +19,7 @@ Here's a brief example: checking whether integers are even.
 
     import htmap
 
-    @htmap.htmap
+    @htmap.mapped
     def is_even(x: int) -> bool:
         return x % 2 == 0
 
@@ -46,7 +46,7 @@ Here's a brief example: grouping integer by whether they are even or not.
     import collections
     import htmap
 
-    @htmap.htmap
+    @htmap.mapped
     def is_even(x: int) -> bool:
         return x % 2 == 0
 

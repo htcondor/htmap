@@ -35,12 +35,12 @@ class OutputNotFound(HTMapException):
 
 
 class NoResultYet(HTMapException):
-    """The :class:`htmap.MapBuilder` does not have an associated :class:`htmap.MapResult` yet because it is still inside the ``with`` block."""
+    """The :class:`htmap.MapBuilder` does not have an associated :class:`htmap.Map` yet because it is still inside the ``with`` block."""
     pass
 
 
 class MapIdAlreadyExists(HTMapException):
-    """The requested ``map_id`` already exists (recover the :class:`MapResult`, then either use or delete it)."""
+    """The requested ``map_id`` already exists (recover the :class:`Map`, then either use or delete it)."""
     pass
 
 

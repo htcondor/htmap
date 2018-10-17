@@ -8,7 +8,7 @@ Map IDs
 -------
 
 The ``map_id`` is the central organizing piece of data in HTMap.
-Every map that you run produces a :class:`MapResult` which is connected to a unique ``map_id``, a string that you must provide when you run the map.
+Every map that you run produces a :class:`Map` which is connected to a unique ``map_id``, a string that you must provide when you run the map.
 A ``map_id`` cannot be re-used until the associated map has been deleted.
 
 
@@ -40,17 +40,17 @@ A more convenient and flexible way to work with HTMap is to use the :func:`htmap
    :members:
 
 
-MapResult
+Map
 ---------
 
-The :class:`MapResult` is your window into the status and output of your map.
+The :class:`Map` is your window into the status and output of your map.
 Once you get a map result back from a map call,
 you can use its methods to get the status of jobs,
 change the properties of the map while its running,
 pause, restart, or cancel the map,
 and finally retrieve the output once the map is done.
 
-.. autoclass:: htmap.MapResult
+.. autoclass:: htmap.Map
    :members:
 
 

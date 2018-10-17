@@ -19,7 +19,7 @@ One possible implementation looks like this:
 
     import itertools
 
-    @htmap.htmap
+    @htmap.mapped
     def compare_files(test_file: str, master_file: str = None) -> list:
         line_comparisons = []
         with open(test_file, mode = 'r') as test, open(master_file, mode = 'r') as master:

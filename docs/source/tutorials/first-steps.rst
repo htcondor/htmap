@@ -55,14 +55,14 @@ During that time, the individual **components** of your **map** are being run ou
 Once they all finish, you'll get the list of numbers back.
 These function outputs are identical to what you would get from running the function locally.
 
-The ``result`` that was returned by :func:`htmap.map` is a :class:`htmap.MapResult`.
+The ``result`` that was returned by :func:`htmap.map` is a :class:`htmap.Map`.
 It gives us a window into the map as it is running, and lets us use the output once the map is finished.
 We'll explore what it can do for us later.
 For now, let's return to how we created the map in the first place.
 
 The first argument to :func:`htmap.map` is a **map ID**.
 These are unique strings that you must provide to HTMap to keep track of your maps.
-If you lose your :class:`htmap.MapResult`, you can **recover** it:
+If you lose your :class:`htmap.Map`, you can **recover** it:
 
 .. code-block:: python
 
@@ -99,7 +99,7 @@ Map IDs are *unique*: if we try to create another map with the same map ID we ju
 
     new_result = htmap.map('dbl', double, range(10))
 
-    # htmap.exceptions.MapIdAlreadyExists: the requested map_id dbl already exists (recover the MapResult, then either use or delete it).
+    # htmap.exceptions.MapIdAlreadyExists: the requested map_id dbl already exists (recover the Map, then either use or delete it).
 
 As the error message indicates, if we just wanted to get `'dbl'` back, we need to :func:`htmap.recover` it instead.
 If we wanted to make a totally new map with the same ID, we need to remove the old map first:
@@ -108,7 +108,7 @@ If we wanted to make a totally new map with the same ID, we need to remove the o
 
     result.remove()
 
-:meth:`htmap.MapResult.remove` deletes all traces of the map, and it can never be recovered.
+:meth:`htmap.Map.remove` deletes all traces of the map, and it can never be recovered.
 Be careful when using it!
 
 As a shortcut, we could have also done

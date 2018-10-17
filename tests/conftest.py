@@ -91,7 +91,7 @@ def doubler():
 
 @pytest.fixture(scope = 'session')
 def mapped_doubler(doubler):
-    mapper = htmap.htmap(doubler)
+    mapper = htmap.mapped(doubler)
     return mapper
 
 
@@ -105,7 +105,7 @@ def power():
 
 @pytest.fixture(scope = 'session')
 def mapped_power(power):
-    mapper = htmap.htmap(power)
+    mapper = htmap.mapped(power)
     return mapper
 
 
@@ -120,13 +120,13 @@ def sleepy_double():
 
 @pytest.fixture(scope = 'session')
 def mapped_sleepy_double(sleepy_double):
-    mapper = htmap.htmap(sleepy_double)
+    mapper = htmap.mapped(sleepy_double)
     return mapper
 
 
 @pytest.fixture(scope = 'session')
 def mapped_exception():
-    @htmap.htmap
+    @htmap.mapped
     def fail(x):
         raise Exception(str(x))
 

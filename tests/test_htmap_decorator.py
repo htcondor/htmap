@@ -17,7 +17,7 @@ import htmap
 
 
 def test_decorator_without_parens():
-    @htmap.htmap
+    @htmap.mapped
     def foo(x):
         return x
 
@@ -25,7 +25,7 @@ def test_decorator_without_parens():
 
 
 def test_decorator_with_parens():
-    @htmap.htmap()
+    @htmap.mapped()
     def foo(x):
         return x
 
@@ -33,7 +33,7 @@ def test_decorator_with_parens():
 
 
 def test_decorator_with_map_options():
-    @htmap.htmap(map_options = htmap.MapOptions())
+    @htmap.mapped(map_options = htmap.MapOptions())
     def foo(x):
         return x
 

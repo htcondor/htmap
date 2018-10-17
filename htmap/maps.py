@@ -79,7 +79,7 @@ def _protector(method):
     return _protect
 
 
-def _protect_result_after_remove(result_class):
+def _protect_map_after_remove(result_class):
     # decorate all public instance methods
     for key, member in inspect.getmembers(result_class, predicate = inspect.isfunction):
         if not key.startswith('_'):
@@ -88,12 +88,12 @@ def _protect_result_after_remove(result_class):
     return result_class
 
 
-@_protect_result_after_remove
-class MapResult:
+@_protect_map_after_remove
+class Map:
     """
     Represents the results from a map call.
-    The constructor is documented here, but you should never need to build a :class:`MapResult` manually.
-    Instead, you'll get your :class:`MapResult` by calling a :class:`MappedFunction` classmethod or by using :func:`htmap.recover`.
+    The constructor is documented here, but you should never need to build a :class:`Map` manually.
+    Instead, you'll get your :class:`Map` by calling a :class:`MappedFunction` class method or by using :func:`htmap.recover`.
     """
 
     def __init__(self, map_id: str, cluster_ids: List[int], submit, hashes: Iterable[str]):
@@ -101,12 +101,12 @@ class MapResult:
         Parameters
         ----------
         map_id
-            The ``map_id`` to assign to this :class:`MapResult`.
+            The ``map_id`` to assign to this :class:`Map`.
         cluster_ids
-            All of the ``cluster_id`` for the jobs associated with this :class:`MapResult`.
+            All of the ``cluster_id`` for the jobs associated with this :class:`Map`.
             This is an implementation detail and should not be relied on.
         hashes
-            The hashes of the inputs for this :class:`MapResult`.
+            The hashes of the inputs for this :class:`Map`.
             This is an implementation detail and should not be relied on.
         """
         self.map_id = map_id
@@ -118,9 +118,9 @@ class MapResult:
         self._is_removed = False
 
     @classmethod
-    def recover(cls, map_id: str) -> 'MapResult':
+    def recover(cls, map_id: str) -> 'Map':
         """
-        Reconstruct a :class:`MapResult` from its ``map_id``.
+        Reconstruct a :class:`Map` from its ``map_id``.
 
         Raises :class:`htmap.exceptions.MapIdNotFound` if the ``map_id`` does not exist.
 
@@ -158,7 +158,7 @@ class MapResult:
         return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
 
     def __len__(self):
-        """The length of a :class:`MapResult` is the number of inputs it contains."""
+        """The length of a :class:`Map` is the number of inputs it contains."""
         return len(self.hashes)
 
     @property
@@ -239,7 +239,7 @@ class MapResult:
         show_progress_bar: bool = False,
     ) -> datetime.timedelta:
         """
-        Wait until all output associated with this :class:`MapResult` is available.
+        Wait until all output associated with this :class:`Map` is available.
 
         Parameters
         ----------
@@ -325,7 +325,7 @@ class MapResult:
 
     def __iter__(self) -> Iterable[Any]:
         """
-        Iterating over the :class:`htmap.MapResult` yields the outputs in the same order as the inputs,
+        Iterating over the :class:`htmap.Map` yields the outputs in the same order as the inputs,
         waiting on each individual output to become available.
         """
         yield from self.iter()
@@ -336,7 +336,7 @@ class MapResult:
         timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Iterator[Any]:
         """
-        Returns an iterator over the output of the :class:`htmap.MapResult` in the same order as the inputs,
+        Returns an iterator over the output of the :class:`htmap.Map` in the same order as the inputs,
         waiting on each individual output to become available.
 
         Parameters
@@ -363,7 +363,7 @@ class MapResult:
         timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
-        Returns an iterator over the inputs and output of the :class:`htmap.MapResult` in the same order as the inputs,
+        Returns an iterator over the inputs and output of the :class:`htmap.Map` in the same order as the inputs,
         waiting on each individual output to become available.
 
         Parameters
@@ -391,7 +391,7 @@ class MapResult:
         timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Iterator[Any]:
         """
-        Returns an iterator over the output of the :class:`htmap.MapResult`,
+        Returns an iterator over the output of the :class:`htmap.Map`,
         yielding individual outputs as they become available.
 
         The iteration order is initially random, but is consistent within a single interpreter session once the map is completed.
@@ -433,7 +433,7 @@ class MapResult:
         timeout: Optional[Union[int, datetime.timedelta]] = None,
     ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
-        Returns an iterator over the inputs and output of the :class:`htmap.MapResult`,
+        Returns an iterator over the inputs and output of the :class:`htmap.Map`,
         yielding individual ``(input, output)`` pairs as they become available.
 
         The iteration order is initially random, but is consistent within a single interpreter session once the map is completed.
@@ -565,7 +565,7 @@ class MapResult:
 
         .. warning::
 
-            Interacting with a :class:`MapResult` after calling this method on it may produce unexpected and undefined behavior!
+            Interacting with a :class:`Map` after calling this method on it may produce unexpected and undefined behavior!
             Don't do it!
         """
         self._remove_from_queue()
@@ -707,11 +707,11 @@ class MapResult:
 
         logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.map_id}')
 
-    def rename(self, map_id: str, force_overwrite: bool = False) -> 'MapResult':
+    def rename(self, map_id: str, force_overwrite: bool = False) -> 'Map':
         """
         Give this map a new ``map_id``.
-        This function returns a **new** :class:`MapResult` for the renamed map.
-        The :class:`MapResult` you call this on will not be connected to the new ``map_id``!
+        This function returns a **new** :class:`Map` for the renamed map.
+        The :class:`Map` you call this on will not be connected to the new ``map_id``!
         The old ``map_id`` will be available for re-use.
 
         .. note::
@@ -720,7 +720,7 @@ class MapResult:
 
         .. warning::
 
-            The old :class:`MapResult` will not be connected to the new ``map_id``!
+            The old :class:`Map` will not be connected to the new ``map_id``!
             This function returns a **new** result for the renamed map.
 
         Parameters
@@ -733,7 +733,7 @@ class MapResult:
         Returns
         -------
         map_result :
-            A new :class:`MapResult` for the renamed map.
+            A new :class:`Map` for the renamed map.
         """
         if map_id == self.map_id:
             raise exceptions.CannotRenameMap('cannot rename a map to the same ``map_id`` it already has')
@@ -744,7 +744,7 @@ class MapResult:
 
         if force_overwrite:
             try:
-                existing_result = MapResult.recover(map_id)
+                existing_result = Map.recover(map_id)
                 existing_result.remove()
                 logger.debug(f'force-overwrote map {map_id}')
             except exceptions.MapIdNotFound:
@@ -774,7 +774,7 @@ class MapResult:
 
         self.remove()
 
-        return MapResult(
+        return Map(
             map_id = map_id,
             submit = submit,
             cluster_ids = self.cluster_ids,

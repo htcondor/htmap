@@ -22,7 +22,7 @@ import itertools
 
 import htcondor
 
-from . import htio, exceptions, result, options, settings
+from . import htio, exceptions, maps, options, settings
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def map(
     force_overwrite: bool = False,
     map_options: options.MapOptions = None,
     **kwargs,
-) -> result.MapResult:
+) -> maps.Map:
     """
     Map a function call over a one-dimensional iterable of arguments.
     The function must take a single positional argument and any number of keyword arguments.
@@ -78,7 +78,7 @@ def map(
     Returns
     -------
     result :
-        A :class:`htmap.MapResult` representing the map.
+        A :class:`htmap.Map` representing the map.
     """
     args = ((arg,) for arg in args)
     args_and_kwargs = zip(args, itertools.repeat(kwargs))
@@ -98,7 +98,7 @@ def starmap(
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
     force_overwrite: bool = False,
     map_options: options.MapOptions = None,
-) -> result.MapResult:
+) -> maps.Map:
     """
     Map a function call over aligned iterables of arguments and keyword arguments.
     Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
@@ -121,7 +121,7 @@ def starmap(
     Returns
     -------
     result :
-        A :class:`htmap.MapResult` representing the map.
+        A :class:`htmap.Map` representing the map.
     """
     if args is None:
         args = ()
@@ -187,9 +187,9 @@ class MapBuilder:
         self.kwargs.append(kwargs)
 
     @property
-    def result(self) -> result.MapResult:
+    def result(self) -> maps.Map:
         """
-        The :class:`MapResult` associated with this :class:`MapBuilder`.
+        The :class:`Map` associated with this :class:`MapBuilder`.
         Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
         """
         if self._result is None:
@@ -240,14 +240,14 @@ def submit_map(
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
     force_overwrite: bool = False,
     map_options: Optional[options.MapOptions] = None,
-) -> result.MapResult:
+) -> maps.Map:
     """
     All map calls lead here.
     This function performs various checks on the ``map_id``,
     constructs a submit object that represents the map for HTCondor,
     saves all of the map's definitional data to the map directory,
     and submits the map job,
-    returning the map's :class:`MapResult`.
+    returning the map's :class:`Map`.
 
     Parameters
     ----------
@@ -265,13 +265,13 @@ def submit_map(
     Returns
     -------
     result :
-        A :class:`htmap.MapResult` representing the map.
+        A :class:`htmap.Map` representing the map.
     """
     raise_if_map_id_is_invalid(map_id)
 
     if force_overwrite:
         try:
-            existing_result = result.MapResult.recover(map_id)
+            existing_result = maps.Map.recover(map_id)
             existing_result.remove()
             logger.debug(f'force-overwrote map {map_id}')
         except exceptions.MapIdNotFound:
@@ -312,7 +312,7 @@ def submit_map(
         with (map_dir / 'cluster_ids').open() as file:
             cluster_ids = [int(cid.strip()) for cid in file]
 
-        r = result.MapResult(
+        r = maps.Map(
             map_id = map_id,
             cluster_ids = cluster_ids,
             submit = submit_obj,
@@ -335,7 +335,7 @@ def submit_map(
 def raise_if_map_id_already_exists(map_id: str):
     """Raise a :class:`htmap.exceptions.MapIdAlreadyExists` if the ``map_id`` already exists."""
     if map_dir_path(map_id).exists():
-        raise exceptions.MapIdAlreadyExists(f'the requested map_id {map_id} already exists (recover the MapResult, then either use or delete it).')
+        raise exceptions.MapIdAlreadyExists(f'the requested map_id {map_id} already exists (recover the Map, then either use or delete it).')
 
 
 INVALID_FILENAME_CHARACTERS = {

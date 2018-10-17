@@ -21,7 +21,7 @@ import htmap
 
 
 def test_env_var_is_set_on_execute():
-    @htmap.htmap
+    @htmap.mapped
     def check(x):
         return 'HTMAP_ON_EXECUTE' in os.environ
 

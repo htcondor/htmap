@@ -16,7 +16,7 @@
 import pytest
 
 import htmap
-from htmap import MapResult
+from htmap import Map
 
 
 def test_len_of_map_builder(mapped_doubler):
@@ -47,7 +47,7 @@ def test_getting_result_after_ending_with_is_a_result(mapped_doubler):
     with mapped_doubler.build_map('map') as jb:
         jb(5)
 
-    assert isinstance(jb.result, MapResult)
+    assert isinstance(jb.result, Map)
 
 
 def test_raising_exception_inside_with_reraises(mapped_doubler):
