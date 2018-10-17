@@ -94,14 +94,6 @@ def test_starmap_produces_correct_output(mapped_power):
     assert list(result) == [x ** p for x, p in zip(range(n), range(n))]
 
 
-def test_getitem_with_index_with_timeout(mapped_doubler):
-    result = mapped_doubler.map('map', range(2))
-
-    result.wait()
-
-    assert result[1] == 2
-
-
 def test_getitem_too_soon_raises_output_not_found(mapped_sleepy_double):
     n = 3
     result = mapped_sleepy_double.map('map', range(n))

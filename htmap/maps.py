@@ -88,6 +88,9 @@ def _protect_map_after_remove(result_class):
     return result_class
 
 
+MAPS = {}
+
+
 @_protect_map_after_remove
 class Map:
     """
@@ -117,6 +120,8 @@ class Map:
 
         self._is_removed = False
 
+        MAPS[self.map_id] = self
+
     @classmethod
     def recover(cls, map_id: str) -> 'Map':
         """
@@ -134,6 +139,11 @@ class Map:
         result
             The result with the given ``map_id``.
         """
+        try:
+            return MAPS[map_id]
+        except KeyError:
+            pass
+
         map_dir = mapping.map_dir_path(map_id)
         try:
             with (map_dir / 'cluster_ids').open() as file:
@@ -571,6 +581,7 @@ class Map:
         self._remove_from_queue()
         self._rm_map_dir()
         self._is_removed = True
+        MAPS.pop(self.map_id)
         logger.info(f'removed map {self.map_id}')
 
     def hold(self):
