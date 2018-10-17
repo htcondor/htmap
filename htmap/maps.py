@@ -291,6 +291,15 @@ class Map:
 
         return datetime.datetime.now() - t
 
+    def _unpack_output(self, output_path: Path) -> Any:
+        status, output = htio.load_object(output_path)
+        if status == 'OK':
+            return output
+        elif status == 'ERR':
+            raise exceptions.MapComponentError(f'component of map {self.map_id} encountered error while executing:\n{output.traceback_text}')
+        else:
+            raise exceptions.InvalidOutputStatus(f'output status {status} is not valid')
+
     def get(
         self,
         item: int,
@@ -311,17 +320,17 @@ class Map:
             timeout = timeout.total_seconds()
 
         h = self._item_to_hash(item)
-        path = self._outputs_dir / f'{h}.out'
+        output_path = self._outputs_dir / f'{h}.out'
 
         try:
-            utils.wait_for_path_to_exist(path, timeout)
+            utils.wait_for_path_to_exist(output_path, timeout)
         except exceptions.TimeoutError as e:
             if timeout <= 0:
                 raise exceptions.OutputNotFound(f'output for index {item} not found') from e
             else:
                 raise e
 
-        return htio.load_object(path)
+        return self._unpack_output(output_path)
 
     def __iter__(self) -> Iterable[Any]:
         """
@@ -353,9 +362,9 @@ class Map:
         for output_path in self._output_file_paths:
             utils.wait_for_path_to_exist(output_path, timeout)
 
-            out = htio.load_object(output_path)
-            callback(out)
-            yield out
+            output = self._unpack_output(output_path)
+            callback(output)
+            yield output
 
     def iter_with_inputs(
         self,
@@ -380,10 +389,10 @@ class Map:
         for input_path, output_path in zip(self._input_file_paths, self._output_file_paths):
             utils.wait_for_path_to_exist(output_path, timeout)
 
-            inp = htio.load_object(input_path)
-            out = htio.load_object(output_path)
-            callback(inp, out)
-            yield inp, out
+            input = htio.load_object(input_path)
+            output = self._unpack_output(output_path)
+            callback(input, output)
+            yield input, output
 
     def iter_as_available(
         self,
@@ -411,16 +420,16 @@ class Map:
         if callback is None:
             callback = lambda o: o
 
-        paths = set(self._output_file_paths)
-        while len(paths) > 0:
-            for path in copy(paths):
-                if not path.exists():
+        output_paths = set(self._output_file_paths)
+        while len(output_paths) > 0:
+            for output_path in copy(output_paths):
+                if not output_path.exists():
                     continue
 
-                paths.remove(path)
-                obj = htio.load_object(path)
-                callback(obj)
-                yield obj
+                output_paths.remove(output_path)
+                output = self._unpack_output(output_path)
+                callback(output)
+                yield output
 
             if timeout is not None and time.time() > start_time + timeout:
                 break
@@ -461,10 +470,10 @@ class Map:
                     continue
 
                 paths.remove(input_output_paths)
-                inp = htio.load_object(input_path)
-                out = htio.load_object(output_path)
-                callback(inp, out)
-                yield inp, out
+                input = htio.load_object(input_path)
+                output = self._unpack_output(output_path)
+                callback(input, output)
+                yield input, output
 
             if timeout is not None and time.time() > start_time + timeout:
                 break

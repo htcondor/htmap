@@ -19,6 +19,7 @@ import sys
 import socket
 import datetime
 import os
+import traceback
 import subprocess
 from pathlib import Path
 
@@ -98,7 +99,13 @@ def main(arg_hash):
     print_run_info(arg_hash, func, args, kwargs)
 
     print('\n----- MAP COMPONENT OUTPUT START -----\n')
-    output = func(*args, **kwargs)
+
+    try:
+        output = ('OK', func(*args, **kwargs))
+    except Exception as error:
+        error.traceback_text = traceback.format_exc()
+        output = ('ERR', error)
+
     print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
     save_output(arg_hash, output)
