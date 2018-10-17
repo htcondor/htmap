@@ -26,12 +26,68 @@ from pathlib import Path
 import cloudpickle
 
 
-def print_node_info():
-    print('Landed on execute node {} ({}) at {}'.format(
+class ComponentResult:
+    def __init__(
+        self,
+        *,
+        input_hash,
+        status,
+    ):
+        self.input_hash = input_hash
+        self.status = status
+
+
+class ComponentOk(ComponentResult):
+    status = 'OK'
+
+    def __init__(
+        self,
+        *,
+        output,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self.output = output
+
+    def __repr__(self):
+        return '<OK for input hash {}>'.format(self.input_hash)
+
+
+class ComponentError(ComponentResult):
+    status = 'ERR'
+
+    def __init__(
+        self,
+        *,
+        exception,
+        traceback,
+        node_info,
+        working_dir_contents,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self.exception = exception
+        self.traceback = traceback
+
+        self.node_info = node_info
+        self.working_dir_contents = working_dir_contents
+
+    def __repr__(self):
+        return '<ERROR for input hash {}>'.format(self.input_hash)
+
+
+def get_node_info():
+    return (
         socket.getfqdn(),
         socket.gethostbyname(socket.gethostname()),
         datetime.datetime.utcnow(),
-    ))
+    )
+
+
+def print_node_info(node_info):
+    print('Landed on execute node {} ({}) at {}'.format(*node_info))
 
 
 # def print_python_info():
@@ -46,11 +102,14 @@ def print_node_info():
 #         stdout = subprocess.PIPE,
 #     ).stdout.decode('utf-8')
 
+def get_working_dir_contents():
+    return [str(p) for p in Path.cwd().iterdir()]
 
-def print_working_dir_contents():
+
+def print_working_dir_contents(contents):
     print('Working directory contents:')
-    for path in Path.cwd().iterdir():
-        print('    {}'.format(path))
+    for path in contents:
+        print('    ' + path)
 
 
 def load_func():
@@ -83,10 +142,12 @@ def print_run_info(arg_hash, func, args, kwargs):
     print(s)
 
 
-def main(arg_hash):
-    print_node_info()
+def main(input_hash):
+    node_info = get_node_info()
+    print_node_info(node_info)
     print()
-    print_working_dir_contents()
+    contents = get_working_dir_contents()
+    print_working_dir_contents(contents)
     print()
     # print_python_info()
     # print()
@@ -94,24 +155,38 @@ def main(arg_hash):
     os.environ['HTMAP_ON_EXECUTE'] = "1"
 
     func = load_func()
-    args, kwargs = load_args_and_kwargs(arg_hash)
+    args, kwargs = load_args_and_kwargs(input_hash)
 
-    print_run_info(arg_hash, func, args, kwargs)
+    print_run_info(input_hash, func, args, kwargs)
 
     print('\n----- MAP COMPONENT OUTPUT START -----\n')
 
     try:
-        output = ('OK', func(*args, **kwargs))
-    except Exception as error:
-        error.traceback_text = traceback.format_exc()
-        output = ('ERR', error)
+        output = func(*args, **kwargs)
+        result = ComponentOk(
+            input_hash = input_hash,
+            status = 'OK',
+            output = output,
+        )
+    except Exception as e:
+        print(traceback.print_exc())
+        print('--------')
+        print(traceback.format_exc())
+        result = ComponentError(
+            input_hash = input_hash,
+            status = 'ERR',
+            exception = e,
+            traceback = traceback.format_exc(),
+            node_info = node_info,
+            working_dir_contents = contents,
+        )
 
     print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
-    save_output(arg_hash, output)
+    save_output(input_hash, result)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 
 
 if __name__ == '__main__':
-    main(arg_hash = sys.argv[1])
+    main(input_hash = sys.argv[1])

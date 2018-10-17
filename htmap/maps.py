@@ -88,6 +88,59 @@ def _protect_map_after_remove(result_class):
     return result_class
 
 
+class ComponentError:
+    def __init__(
+        self,
+        *,
+        map,
+        input_hash,
+        exception,
+        traceback,
+        node_info,
+        working_dir_contents,
+    ):
+        self.map = map
+        self.input_hash = input_hash
+        self.exception = exception
+        self.traceback = traceback
+        self.node_info = node_info
+        self.working_dir_contents = working_dir_contents
+
+        self.component_index = map._hash_to_index(input_hash)
+
+    def __repr__(self):
+        return f'<ComponentError(map = {self.map}, component_index = {self.component_index})>'
+
+    @classmethod
+    def from_error(cls, map, error):
+        return cls(
+            map = map,
+            input_hash = error.input_hash,
+            exception = error.exception,
+            traceback = error.traceback,
+            node_info = error.node_info,
+            working_dir_contents = error.working_dir_contents,
+        )
+
+    def report(self):
+        lines = [f'Error report for component {self.component_index} of map {self.map.map_id}']
+        lines.append('-' * len(lines[0]))
+        lines.insert(0, '=' * len(lines[0]))
+
+        lines.append('Landed on execute node {} ({}) at {}'.format(*self.node_info))
+
+        lines.append('\nWorking directory contents:')
+        for path in self.working_dir_contents:
+            lines.append(f'    {path}')
+
+        lines.append('\nException traceback:\n')
+        lines.append('\n'.join(f'    {l}' for l in self.traceback.split('\n')))
+
+        lines.append('\n' + ('=' * len(lines[0])))
+
+        return '\n'.join(lines)
+
+
 @_protect_map_after_remove
 class Map:
     """
@@ -162,6 +215,10 @@ class Map:
         return len(self.hashes)
 
     @property
+    def _indices_by_hash(self):
+        return {h: i for i, h in enumerate(self.hashes)}
+
+    @property
     def _map_dir(self) -> Path:
         """The path to the map directory."""
         return mapping.map_dir_path(self.map_id)
@@ -196,9 +253,12 @@ class Map:
     def _clean_outputs_dir(self):
         utils.clean_dir(self._outputs_dir)
 
-    def _item_to_hash(self, item: int) -> str:
+    def _index_to_hash(self, index: int) -> str:
         """Return the hash associated with an input index."""
-        return self.hashes[item]
+        return self.hashes[index]
+
+    def _hash_to_index(self, hash: str) -> int:
+        return self._indices_by_hash[hash]
 
     def __getitem__(self, item: int) -> Any:
         """Return the output associated with the input index. Does not block."""
@@ -291,14 +351,26 @@ class Map:
 
         return datetime.datetime.now() - t
 
-    def _unpack_output(self, output_path: Path) -> Any:
-        status, output = htio.load_object(output_path)
-        if status == 'OK':
-            return output
-        elif status == 'ERR':
-            raise exceptions.MapComponentError(f'component of map {self.map_id} encountered error while executing:\n{output.traceback_text}')
+    def _load_output(self, output_path: Path) -> Any:
+        result = htio.load_object(output_path)
+
+        if result.status == 'OK':
+            return result.output
+        elif result.status == 'ERR':
+            index = self._hash_to_index(result.input_hash)
+            raise exceptions.MapComponentError(f'component {index} of map {self.map_id} encountered error while executing')
         else:
-            raise exceptions.InvalidOutputStatus(f'output status {status} is not valid')
+            raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
+
+    def _load_error(self, output_path: Path):
+        result = htio.load_object(output_path)
+
+        if result.status == 'OK':
+            raise exceptions.ExpectedError
+        elif result.status == 'ERR':
+            return ComponentError.from_error(map = self, error = result)
+        else:
+            raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
 
     def get(
         self,
@@ -319,7 +391,7 @@ class Map:
         if isinstance(timeout, datetime.timedelta):
             timeout = timeout.total_seconds()
 
-        h = self._item_to_hash(item)
+        h = self._index_to_hash(item)
         output_path = self._outputs_dir / f'{h}.out'
 
         try:
@@ -330,7 +402,28 @@ class Map:
             else:
                 raise e
 
-        return self._unpack_output(output_path)
+        return self._load_output(output_path)
+
+    def get_err(
+        self,
+        item: int,
+        timeout: Optional[Union[int, datetime.timedelta]] = None,
+    ):
+        if isinstance(timeout, datetime.timedelta):
+            timeout = timeout.total_seconds()
+
+        h = self._index_to_hash(item)
+        output_path = self._outputs_dir / f'{h}.out'
+
+        try:
+            utils.wait_for_path_to_exist(output_path, timeout)
+        except exceptions.TimeoutError as e:
+            if timeout <= 0:
+                raise exceptions.OutputNotFound(f'output for index {item} not found') from e
+            else:
+                raise e
+
+        return self._load_error(output_path)
 
     def __iter__(self) -> Iterable[Any]:
         """
@@ -362,7 +455,7 @@ class Map:
         for output_path in self._output_file_paths:
             utils.wait_for_path_to_exist(output_path, timeout)
 
-            output = self._unpack_output(output_path)
+            output = self._load_output(output_path)
             callback(output)
             yield output
 
@@ -390,7 +483,7 @@ class Map:
             utils.wait_for_path_to_exist(output_path, timeout)
 
             input = htio.load_object(input_path)
-            output = self._unpack_output(output_path)
+            output = self._load_output(output_path)
             callback(input, output)
             yield input, output
 
@@ -427,7 +520,7 @@ class Map:
                     continue
 
                 output_paths.remove(output_path)
-                output = self._unpack_output(output_path)
+                output = self._load_output(output_path)
                 callback(output)
                 yield output
 
@@ -471,7 +564,7 @@ class Map:
 
                 paths.remove(input_output_paths)
                 input = htio.load_object(input_path)
-                output = self._unpack_output(output_path)
+                output = self._load_output(output_path)
                 callback(input, output)
                 yield input, output
 
@@ -650,12 +743,12 @@ class Map:
         self._edit('RequestDisk', disk)
 
     def _iter_output(self, item: int) -> Iterator[str]:
-        h = self._item_to_hash(item)
+        h = self._index_to_hash(item)
         with (self._map_dir / 'job_logs' / f'{h}.output').open() as file:
             yield from file
 
     def _iter_error(self, item: int) -> Iterator[str]:
-        h = self._item_to_hash(item)
+        h = self._index_to_hash(item)
         with (self._map_dir / 'job_logs' / f'{h}.error').open() as file:
             yield from file
 

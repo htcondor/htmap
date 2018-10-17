@@ -89,3 +89,7 @@ class InvalidOutputStatus(HTMapException):
 
 class MapComponentError(HTMapException):
     pass
+
+
+class ExpectedError(HTMapException):
+    pass
