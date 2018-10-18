@@ -19,6 +19,7 @@ import sys
 import socket
 import datetime
 import os
+import textwrap
 import traceback
 import subprocess
 from pathlib import Path
@@ -63,6 +64,7 @@ class ComponentError(ComponentResult):
         exception,
         exception_msg,
         node_info,
+        python_info,
         working_dir_contents,
         stack_summary,
         **kwargs,
@@ -73,6 +75,7 @@ class ComponentError(ComponentResult):
         self.exception_msg = exception_msg
 
         self.node_info = node_info
+        self.python_info = python_info
         self.working_dir_contents = working_dir_contents
         self.stack_summary = stack_summary
 
@@ -92,17 +95,27 @@ def print_node_info(node_info):
     print('Landed on execute node {} ({}) at {}'.format(*node_info))
 
 
-# def print_python_info():
-#     print('Python executable is\n    {}'.format(sys.executable))
-#     print('with installed packages')
-#     print('\n'.join('    {}'.format(line) for line in pip_freeze().splitlines()))
-#
-#
-# def pip_freeze() -> str:
-#     return subprocess.run(
-#         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
-#         stdout = subprocess.PIPE,
-#     ).stdout.decode('utf-8')
+def get_python_info():
+    return (
+        sys.executable,
+        f"{'.'.join(str(x) for x in sys.version_info[:3])} {sys.version_info[3]}",
+        pip_freeze(),
+    )
+
+
+def print_python_info(python_info):
+    executable, version, packages = python_info
+    print('Python executable is\n    {} (version {})'.format(executable, version))
+    print('with installed packages')
+    print('\n'.join('    {}'.format(line) for line in packages))
+
+
+def pip_freeze() -> str:
+    return subprocess.run(
+        [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
+        stdout = subprocess.PIPE,
+    ).stdout.decode('utf-8').strip()
+
 
 def get_working_dir_contents():
     return [str(p) for p in Path.cwd().iterdir()]
@@ -169,8 +182,13 @@ def main(input_hash):
     contents = get_working_dir_contents()
     print_working_dir_contents(contents)
     print()
-    # print_python_info()
-    # print()
+    try:
+        python_info = get_python_info()
+        print_python_info(python_info)
+    except Exception as e:
+        python_info = None
+        print(e)
+    print()
 
     os.environ['HTMAP_ON_EXECUTE'] = "1"
 
@@ -197,33 +215,12 @@ def main(input_hash):
             input_hash = input_hash,
             status = 'ERR',
             exception = e,
-            exception_msg = '\n'.join(traceback.format_exception_only(type, value)),
+            exception_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip(),
             stack_summary = stack_summ,
             node_info = node_info,
+            python_info = python_info,
             working_dir_contents = contents,
         )
-
-        # print(stack_summ)
-        # print(stack_summ.format())
-        # for line in stack_summ.format():
-        #     print(line)
-
-        # frame = tb.tb_frame
-        # frames = []
-        # while frame is not None:
-        #     frames.append(frame)
-        #     frame = frame.f_back
-        #
-        # for frame in reversed(frames):
-        #     print(frame)
-        #     print(frame.f_code)
-        #     print(frame.f_code.co_name)
-        #     print(frame.f_code.co_code)
-        #     print(frame.f_code.co_names)
-        #     print(frame.f_code.co_varnames)
-        #     print(frame.f_code.co_filename)
-        #     print(frame.f_code.co_firstlineno)
-        #     print()
 
     save_output(input_hash, result)
 

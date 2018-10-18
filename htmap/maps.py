@@ -98,6 +98,7 @@ class ComponentError:
         exception,
         exception_msg,
         node_info,
+        python_info,
         working_dir_contents,
         stack_summary,
     ):
@@ -106,6 +107,7 @@ class ComponentError:
         self.exception = exception
         self.exception_msg = exception_msg
         self.node_info = node_info
+        self.python_info = python_info
         self.working_dir_contents = working_dir_contents
         self.stack_summary = stack_summary
 
@@ -122,30 +124,81 @@ class ComponentError:
             exception = error.exception,
             exception_msg = error.exception_msg,
             node_info = error.node_info,
+            python_info = error.python_info,
             working_dir_contents = error.working_dir_contents,
             stack_summary = error.stack_summary,
         )
 
-    def _indent(self, text):
-        return textwrap.indent(text, ' ' * 4)
+    def _indent(self, text, multiple = 1):
+        return textwrap.indent(text, ' ' * 2 * multiple)
+
+    def _format_stack_trace(self):
+        # modified from https://github.com/python/cpython/blob/3.7/Lib/traceback.py
+        _RECURSIVE_CUTOFF = 3
+        result = []
+        last_file = None
+        last_line = None
+        last_name = None
+        count = 0
+        for frame in self.stack_summary:
+            if (
+                last_file is None or last_file != frame.filename or
+                last_line is None or last_line != frame.lineno or
+                last_name is None or last_name != frame.name
+            ):
+                if count > _RECURSIVE_CUTOFF:
+                    count -= _RECURSIVE_CUTOFF
+                    result.append(
+                        self._indent(f'  [Previous line repeated {count} more time{"s" if count > 1 else ""}]\n')
+                    )
+                last_file = frame.filename
+                last_line = frame.lineno
+                last_name = frame.name
+                count = 0
+            count += 1
+            if count > _RECURSIVE_CUTOFF:
+                continue
+            row = []
+            row.append(self._indent(f'File "{frame.filename}", line {frame.lineno}, in {frame.name}\n'))
+            if frame.line:
+                row.append(self._indent(f'{frame.line.strip()}\n', multiple = 2))
+            row.append(self._indent('\nLocal variables:\n', multiple = 2))
+            if frame.locals:
+                for name, value in sorted(frame.locals.items()):
+                    row.append(self._indent(f'{name} = {value}\n', multiple = 3))
+            result.append(''.join(row))
+        if count > _RECURSIVE_CUTOFF:
+            count -= _RECURSIVE_CUTOFF
+            result.append(
+                self._indent(f'[Previous line repeated {count} more time{"s" if count > 1 else ""}]\n')
+            )
+        return result
 
     def report(self):
         lines = [f'Error report for component {self.component_index} of map {self.map.map_id}']
-        lines.append('-' * len(lines[0]))
-        lines.insert(0, '=' * len(lines[0]))
+        bar_length = len(lines[0])
+        lines.append('-' * bar_length)
+        lines.insert(0, '=' * bar_length)
 
         lines.append('Landed on execute node {} ({}) at {}'.format(*self.node_info))
 
-        lines.append('\nWorking directory contents:')
+        if self.python_info is not None:
+            executable, version, packages = self.python_info
+            lines.append(f'\nPython executable is {executable} (version {version})')
+            lines.append(f'with installed packages')
+            lines.append(self._indent(packages))
+        else:
+            lines.append('\nPython executable information not available')
+
+        lines.append('\nWorking directory contents are')
         for path in self.working_dir_contents:
             lines.append(self._indent(path))
 
         lines.append('\nException and traceback (most recent call last):')
-        for line in self.stack_summary.format():
-            lines.append(self._indent(line))
-        lines.append(self._indent(self.exception_msg))
+        lines.extend(self._format_stack_trace())
+        lines.append(self._indent(self.exception_msg, multiple = 1))
 
-        lines.append('\n' + ('=' * len(lines[0])))
+        lines.append('\n' + ('=' * bar_length))
 
         return '\n'.join(lines)
 
@@ -367,7 +420,7 @@ class Map:
             return result.output
         elif result.status == 'ERR':
             index = self._hash_to_index(result.input_hash)
-            raise exceptions.MapComponentError(f'component {index} of map {self.map_id} encountered error while executing')
+            raise exceptions.MapComponentError(f'component {index} of map {self.map_id} encountered error while executing. Error report:\n{self._load_error(output_path).report()}')
         else:
             raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
 
