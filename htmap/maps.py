@@ -20,6 +20,7 @@ import datetime
 import enum
 import shutil
 import time
+import textwrap
 import functools
 import inspect
 import collections
@@ -95,7 +96,7 @@ class ComponentError:
         map,
         input_hash,
         exception,
-        traceback,
+        exception_msg,
         node_info,
         working_dir_contents,
         stack_summary,
@@ -103,7 +104,7 @@ class ComponentError:
         self.map = map
         self.input_hash = input_hash
         self.exception = exception
-        self.traceback = traceback
+        self.exception_msg = exception_msg
         self.node_info = node_info
         self.working_dir_contents = working_dir_contents
         self.stack_summary = stack_summary
@@ -119,11 +120,14 @@ class ComponentError:
             map = map,
             input_hash = error.input_hash,
             exception = error.exception,
-            traceback = error.traceback,
+            exception_msg = error.exception_msg,
             node_info = error.node_info,
             working_dir_contents = error.working_dir_contents,
             stack_summary = error.stack_summary,
         )
+
+    def _indent(self, text):
+        return textwrap.indent(text, ' ' * 4)
 
     def report(self):
         lines = [f'Error report for component {self.component_index} of map {self.map.map_id}']
@@ -134,10 +138,12 @@ class ComponentError:
 
         lines.append('\nWorking directory contents:')
         for path in self.working_dir_contents:
-            lines.append(f'    {path}')
+            lines.append(self._indent(path))
 
-        lines.append('\nException traceback:\n')
-        lines.append('\n'.join(f'    {l}' for l in self.traceback.split('\n')))
+        lines.append('\nException and traceback (most recent call last):')
+        for line in self.stack_summary.format():
+            lines.append(self._indent(line))
+        lines.append(self._indent(self.exception_msg))
 
         lines.append('\n' + ('=' * len(lines[0])))
 

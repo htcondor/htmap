@@ -61,7 +61,7 @@ class ComponentError(ComponentResult):
         self,
         *,
         exception,
-        traceback,
+        exception_msg,
         node_info,
         working_dir_contents,
         stack_summary,
@@ -70,7 +70,7 @@ class ComponentError(ComponentResult):
         super().__init__(**kwargs)
 
         self.exception = exception
-        self.traceback = traceback
+        self.exception_msg = exception_msg
 
         self.node_info = node_info
         self.working_dir_contents = working_dir_contents
@@ -144,6 +144,24 @@ def print_run_info(arg_hash, func, args, kwargs):
     print(s)
 
 
+def build_frames(tb):
+    iterator = traceback.walk_tb(tb)
+    next(iterator)  # skip main's frame
+
+    for frame, lineno in iterator:
+        fname = frame.f_code.co_filename
+        print(fname, os.path.exists(fname))
+        summ = traceback.FrameSummary(
+            filename = fname,
+            lineno = lineno,
+            name = frame.f_code.co_name,
+            lookup_line = os.path.exists(fname),
+            locals = frame.f_locals,
+        )
+
+        yield summ
+
+
 def main(input_hash):
     node_info = get_node_info()
     print_node_info(node_info)
@@ -156,46 +174,30 @@ def main(input_hash):
 
     os.environ['HTMAP_ON_EXECUTE'] = "1"
 
-    print('\n----- MAP COMPONENT OUTPUT START -----\n')
-
     try:
         func = load_func()
         args, kwargs = load_args_and_kwargs(input_hash)
+
         print_run_info(input_hash, func, args, kwargs)
+
+        print('\n----- MAP COMPONENT OUTPUT START -----\n')
         output = func(*args, **kwargs)
+        print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
+
         result = ComponentOk(
             input_hash = input_hash,
             status = 'OK',
             output = output,
         )
     except Exception as e:
-        def skip_first(tb):
-            iterator = traceback.walk_tb(tb)
-            # next(iterator)
+        (type, value, trace) = sys.exc_info()
+        stack_summ = traceback.StackSummary.from_list(build_frames(trace))
 
-            for frame, lineno in iterator:
-                fname = frame.f_code.co_filename
-                print(fname, os.path.exists(fname))
-                summ = traceback.FrameSummary(
-                    filename = fname,
-                    lineno = lineno,
-                    name = frame.f_code.co_name,
-                    lookup_line = os.path.exists(fname),
-                    locals = frame.f_locals,
-                )
-
-                yield summ
-
-        stack_summ = traceback.StackSummary.from_list(
-            skip_first(e.__traceback__),
-        )
-
-        (type, value, tb) = sys.exc_info()
         result = ComponentError(
             input_hash = input_hash,
             status = 'ERR',
             exception = e,
-            traceback = traceback.format_exception_only(type, value),
+            exception_msg = '\n'.join(traceback.format_exception_only(type, value)),
             stack_summary = stack_summ,
             node_info = node_info,
             working_dir_contents = contents,
@@ -222,8 +224,6 @@ def main(input_hash):
         #     print(frame.f_code.co_filename)
         #     print(frame.f_code.co_firstlineno)
         #     print()
-
-    print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
     save_output(input_hash, result)
 
