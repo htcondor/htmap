@@ -55,7 +55,6 @@ class MappedFunction:
         self,
         map_id: str,
         args: Iterable[Any],
-        force_overwrite: bool = False,
         map_options: Optional[options.MapOptions] = None,
         **kwargs,
     ) -> maps.Map:
@@ -73,8 +72,6 @@ class MappedFunction:
             An iterable of arguments to pass to the mapped function.
         kwargs
             Any additional keyword arguments are passed as keyword arguments to the mapped function.
-        force_overwrite
-            If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
         map_options
             An instance of :class:`htmap.MapOptions`.
 
@@ -90,9 +87,46 @@ class MappedFunction:
             map_id = map_id,
             func = self.func,
             args = args,
-            force_overwrite = force_overwrite,
             map_options = options.MapOptions.merge(map_options, self.map_options),
             **kwargs,
+        )
+
+    def starmap(
+        self,
+        map_id: str,
+        args: Optional[Iterable[tuple]] = None,
+        kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+        map_options: Optional[options.MapOptions] = None,
+    ) -> maps.Map:
+        """
+        Map a function call over aligned iterables of arguments and keyword arguments.
+        Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
+
+        Parameters
+        ----------
+        map_id
+            The ``map_id`` to assign to this map.
+        args
+            An iterable of tuples of positional arguments to unpack into the mapped function.
+        kwargs
+            An iterable of dictionaries of keyword arguments to unpack into the mapped function.
+        map_options
+            An instance of :class:`htmap.MapOptions`.
+
+        Returns
+        -------
+        result :
+            A :class:`htmap.Map` representing the map.
+        """
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.starmap(
+            map_id = map_id,
+            func = self.func,
+            args = args,
+            kwargs = kwargs,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
         )
 
     def map_or_recover(
@@ -131,48 +165,6 @@ class MappedFunction:
             args = args,
             map_options = options.MapOptions.merge(map_options, self.map_options),
             **kwargs,
-        )
-
-    def starmap(
-        self,
-        map_id: str,
-        args: Optional[Iterable[tuple]] = None,
-        kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-        force_overwrite: bool = False,
-        map_options: Optional[options.MapOptions] = None,
-    ) -> maps.Map:
-        """
-        Map a function call over aligned iterables of arguments and keyword arguments.
-        Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
-
-        Parameters
-        ----------
-        map_id
-            The ``map_id`` to assign to this map.
-        args
-            An iterable of tuples of positional arguments to unpack into the mapped function.
-        kwargs
-            An iterable of dictionaries of keyword arguments to unpack into the mapped function.
-        force_overwrite
-            If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
-        map_options
-            An instance of :class:`htmap.MapOptions`.
-
-        Returns
-        -------
-        result :
-            A :class:`htmap.Map` representing the map.
-        """
-        if map_options is None:
-            map_options = options.MapOptions()
-
-        return mapping.starmap(
-            map_id = map_id,
-            func = self.func,
-            args = args,
-            kwargs = kwargs,
-            force_overwrite = force_overwrite,
-            map_options = options.MapOptions.merge(map_options, self.map_options),
         )
 
     def starmap_or_recover(

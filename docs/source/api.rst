@@ -12,14 +12,31 @@ Every map that you run produces a :class:`Map` which is connected to a unique ``
 A ``map_id`` cannot be re-used until the associated map has been deleted.
 
 
-Mapping Functions
------------------
+Basic Mapping Functions
+-----------------------
+
+.. autofunction:: htmap.htmap
+
+.. autofunction:: htmap.htstarmap
+
+Advanced Mapping Functions
+--------------------------
 
 .. autofunction:: htmap.map
 
 .. autofunction:: htmap.starmap
 
+.. autofunction:: htmap.map_or_recover
+
+.. autofunction:: htmap.starmap_or_recover
+
+.. autofunction:: htmap.force_map
+
+.. autofunction:: htmap.force_starmap
+
 .. autofunction:: htmap.build_map
+
+.. autofunction:: htmap.force_build_map
 
 .. autoclass:: htmap.MapBuilder
    :members:
@@ -28,6 +45,7 @@ Mapping Functions
 
     The environment variable HTMAP_ON_EXECUTE is set to ``'1'`` while map components are executing out on the cluster.
     This can be useful if you need to switch certain behavior on whether you're running your function locally or not.
+
 
 MappedFunction
 --------------

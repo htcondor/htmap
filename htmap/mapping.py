@@ -23,7 +23,7 @@ import itertools
 
 import htcondor
 
-from . import htio, exceptions, maps, options, settings
+from . import htio, management, exceptions, maps, options, settings
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,6 @@ def map(
     map_id: str,
     func: Callable,
     args: Iterable[Any],
-    force_overwrite: bool = False,
     map_options: options.MapOptions = None,
     **kwargs,
 ) -> maps.Map:
@@ -71,8 +70,6 @@ def map(
         An iterable of arguments to pass to the mapped function.
     kwargs
         Any additional keyword arguments are passed as keyword arguments to the mapped function.
-    force_overwrite
-        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
     map_options
         An instance of :class:`htmap.MapOptions`.
 
@@ -87,7 +84,6 @@ def map(
         map_id,
         func,
         args_and_kwargs,
-        force_overwrite = force_overwrite,
         map_options = map_options,
     )
 
@@ -97,7 +93,6 @@ def starmap(
     func: Callable,
     args: Optional[Iterable[tuple]] = None,
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-    force_overwrite: bool = False,
     map_options: options.MapOptions = None,
 ) -> maps.Map:
     """
@@ -114,8 +109,6 @@ def starmap(
         An iterable of tuples of positional arguments to unpack into the mapped function.
     kwargs
         An iterable of dictionaries of keyword arguments to unpack into the mapped function.
-    force_overwrite
-        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
     map_options
         An instance of :class:`htmap.MapOptions`.
 
@@ -134,7 +127,6 @@ def starmap(
         map_id,
         func,
         args_and_kwargs,
-        force_overwrite = force_overwrite,
         map_options = map_options,
     )
 
@@ -147,14 +139,7 @@ def map_or_recover(
     **kwargs,
 ):
     """
-    A wrapper over :func:`htmap.map` that takes the same arguments and keyword arguments.
-    However, if the ``map_id`` already exists, that map is recovered instead of submitting a new map.
-
-    .. caution::
-
-        The inputs are not checked when recovering an old map!
-        If you want to change the inputs of your map, remove the old map manually or use :func:`htmap.map` with ``force_overwrite = True``.
-
+    As :func:`htmap.starmap`, but if the given ``map_id`` already exists, the associated :class:`htmap.Map` will be recovered and returned instead of submitting a new map.
 
     Parameters
     ----------
@@ -181,7 +166,6 @@ def map_or_recover(
             map_id = map_id,
             func = func,
             args = args,
-            force_overwrite = False,
             map_options = map_options,
             **kwargs,
         )
@@ -195,14 +179,7 @@ def starmap_or_recover(
     map_options: options.MapOptions = None,
 ):
     """
-    A wrapper over :func:`htmap.starmap` that takes the same arguments and keyword arguments.
-    However, if the ``map_id`` already exists, that map is recovered instead of submitting a new map.
-
-    .. caution::
-
-        The inputs are not checked when recovering an old map!
-        If you want to change the inputs of your map, remove the old map manually or use :func:`htmap.starmap` with ``force_overwrite = True``.
-
+    As :func:`htmap.starmap`, but if the given ``map_id`` already exists, the associated :class:`htmap.Map` will be recovered and returned instead of submitting a new map.
 
     Parameters
     ----------
@@ -230,9 +207,86 @@ def starmap_or_recover(
             func = func,
             args = args,
             kwargs = kwargs,
-            force_overwrite = False,
             map_options = map_options,
         )
+
+
+def force_map(
+    map_id: str,
+    func: Callable,
+    args: Iterable[Any],
+    map_options: options.MapOptions = None,
+    **kwargs,
+) -> maps.Map:
+    """
+    As :func:`htmap.map`, but if the given ``map_id`` already exists the associated :class:`htmap.Map` is removed before creating the new map.
+
+    Parameters
+    ----------
+    map_id
+        The ``map_id`` to assign to this map.
+    func
+        The function to map the arguments over.
+    args
+        An iterable of arguments to pass to the mapped function.
+    kwargs
+        Any additional keyword arguments are passed as keyword arguments to the mapped function.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    result :
+        A :class:`htmap.Map` representing the map.
+    """
+    management.remove(map_id, not_exist_ok = True)
+
+    return map(
+        map_id = map_id,
+        func = func,
+        args = args,
+        map_options = map_options,
+        **kwargs,
+    )
+
+
+def force_starmap(
+    map_id: str,
+    func: Callable,
+    args: Optional[Iterable[tuple]] = None,
+    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+    map_options: options.MapOptions = None,
+) -> maps.Map:
+    """
+    As :func:`htmap.starmap`, but if the given ``map_id`` already exists the associated :class:`htmap.Map` is removed before creating the new map.
+
+    Parameters
+    ----------
+    map_id
+        The ``map_id`` to assign to this map.
+    func
+        The function to map the arguments over.
+    args
+        An iterable of tuples of positional arguments to unpack into the mapped function.
+    kwargs
+        An iterable of dictionaries of keyword arguments to unpack into the mapped function.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    result :
+        A :class:`htmap.Map` representing the map.
+    """
+    management.remove(map_id, not_exist_ok = True)
+
+    return starmap(
+        map_id = map_id,
+        func = func,
+        args = args,
+        kwargs = kwargs,
+        map_options = map_options,
+    )
 
 
 id_gen = itertools.count()
@@ -391,7 +445,6 @@ class MapBuilder:
 def build_map(
     map_id: str,
     func: Callable,
-    force_overwrite: bool = False,
     map_options: options.MapOptions = None,
 ) -> MapBuilder:
     """
@@ -403,8 +456,6 @@ def build_map(
         The ``map_id`` to assign to this map.
     func
         The function to map over.
-    force_overwrite
-        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
     map_options
         An instance of :class:`htmap.MapOptions`.
 
@@ -416,7 +467,37 @@ def build_map(
     return MapBuilder(
         map_id = map_id,
         func = func,
-        force_overwrite = force_overwrite,
+        map_options = map_options,
+    )
+
+
+def force_build_map(
+    map_id: str,
+    func: Callable,
+    map_options: options.MapOptions = None,
+) -> MapBuilder:
+    """
+    As :func:`htmap.build_map`, but if the given ``map_id`` already exists the associated :class:`htmap.Map` is removed before creating the new map.
+
+    Parameters
+    ----------
+    map_id
+        The ``map_id`` to assign to this map.
+    func
+        The function to map over.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    map_builder :
+        A :class:`MapBuilder` for the given function.
+    """
+    management.remove(map_id, not_exist_ok = True)
+
+    return build_map(
+        map_id = map_id,
+        func = func,
         map_options = map_options,
     )
 
@@ -425,7 +506,6 @@ def submit_map(
     map_id: str,
     func: Callable,
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
-    force_overwrite: bool = False,
     map_options: Optional[options.MapOptions] = None,
 ) -> maps.Map:
     """
@@ -444,8 +524,6 @@ def submit_map(
         The function to map the arguments over.
     args_and_kwargs
         The arguments and keyword arguments to map over - the output of :func:`zip_args_and_kwargs`.
-    force_overwrite
-        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
     map_options
         An instance of :class:`htmap.MapOptions`.
 
@@ -455,16 +533,7 @@ def submit_map(
         A :class:`htmap.Map` representing the map.
     """
     raise_if_map_id_is_invalid(map_id)
-
-    if force_overwrite:
-        try:
-            existing_result = maps.Map.recover(map_id)
-            existing_result.remove()
-            logger.debug(f'force-overwrote map {map_id}')
-        except exceptions.MapIdNotFound:
-            logger.debug(f'force-overwrite not needed for map_id {map_id}')
-    else:
-        raise_if_map_id_already_exists(map_id)
+    raise_if_map_id_already_exists(map_id)
 
     logger.debug(f'creating map {map_id}...')
 
