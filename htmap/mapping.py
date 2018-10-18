@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any
 import logging
 
@@ -136,6 +137,102 @@ def starmap(
         force_overwrite = force_overwrite,
         map_options = map_options,
     )
+
+
+def map_or_recover(
+    map_id: str,
+    func: Callable,
+    args: Iterable[Any],
+    map_options: options.MapOptions = None,
+    **kwargs,
+):
+    """
+    A wrapper over :func:`htmap.map` that takes the same arguments and keyword arguments.
+    However, if the ``map_id`` already exists, that map is recovered instead of submitting a new map.
+
+    .. caution::
+
+        The inputs are not checked when recovering an old map!
+        If you want to change the inputs of your map, remove the old map manually or use :func:`htmap.map` with ``force_overwrite = True``.
+
+
+    Parameters
+    ----------
+    map_id
+        The ``map_id`` to assign to this map.
+    func
+        The function to map the arguments over.
+    args
+        An iterable of arguments to pass to the mapped function.
+    kwargs
+        Any additional keyword arguments are passed as keyword arguments to the mapped function.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    result :
+        A :class:`htmap.Map` representing the map.
+    """
+    try:
+        return maps.Map.recover(map_id)
+    except exceptions.MapIdNotFound:
+        return map(
+            map_id = map_id,
+            func = func,
+            args = args,
+            force_overwrite = False,
+            map_options = map_options,
+            **kwargs,
+        )
+
+
+def starmap_or_recover(
+    map_id: str,
+    func: Callable,
+    args: Optional[Iterable[tuple]] = None,
+    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+    map_options: options.MapOptions = None,
+):
+    """
+    A wrapper over :func:`htmap.starmap` that takes the same arguments and keyword arguments.
+    However, if the ``map_id`` already exists, that map is recovered instead of submitting a new map.
+
+    .. caution::
+
+        The inputs are not checked when recovering an old map!
+        If you want to change the inputs of your map, remove the old map manually or use :func:`htmap.starmap` with ``force_overwrite = True``.
+
+
+    Parameters
+    ----------
+    map_id
+        The ``map_id`` to assign to this map.
+    func
+        The function to map the arguments over.
+    args
+        An iterable of tuples of positional arguments to unpack into the mapped function.
+    kwargs
+        An iterable of dictionaries of keyword arguments to unpack into the mapped function.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    result :
+        A :class:`htmap.Map` representing the map.
+    """
+    try:
+        return maps.Map.recover(map_id)
+    except exceptions.MapIdNotFound:
+        return starmap(
+            map_id = map_id,
+            func = func,
+            args = args,
+            kwargs = kwargs,
+            force_overwrite = False,
+            map_options = map_options,
+        )
 
 
 id_gen = itertools.count()
