@@ -12,10 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any
 import logging
 
+import time
 import shutil
 from pathlib import Path
 import itertools
@@ -136,6 +136,96 @@ def starmap(
         force_overwrite = force_overwrite,
         map_options = map_options,
     )
+
+
+id_gen = itertools.count()
+
+
+def htmap(
+    func: Callable,
+    args: Iterable[Any],
+    map_options: options.MapOptions = None,
+    **kwargs,
+) -> Iterator[Any]:
+    """
+    Map a function call over a one-dimensional iterable of arguments.
+    The function must take a single positional argument and any number of keyword arguments.
+
+    The same keyword arguments are passed to *each call*, not mapped over.
+
+    Parameters
+    ----------
+    func
+        The function to map the arguments over.
+    args
+        An iterable of arguments to pass to the mapped function.
+    kwargs
+        Any additional keyword arguments are passed as keyword arguments to the mapped function.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    iter :
+        An iterator over the results of the function calls (in input order).
+    """
+    yield from yield_from_and_cleanup_map(
+        map(
+            map_id = get_ephemeral_map_id(),
+            func = func,
+            args = args,
+            map_options = map_options,
+            **kwargs,
+        )
+    )
+
+
+def htstarmap(
+    func: Callable,
+    args: Optional[Iterable[tuple]] = None,
+    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+    map_options: options.MapOptions = None,
+) -> Iterator[Any]:
+    """
+    Map a function call over aligned iterables of arguments and keyword arguments.
+    Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
+
+    Parameters
+    ----------
+    func
+        The function to map the arguments over.
+    args
+        An iterable of tuples of positional arguments to unpack into the mapped function.
+    kwargs
+        An iterable of dictionaries of keyword arguments to unpack into the mapped function.
+    map_options
+        An instance of :class:`htmap.MapOptions`.
+
+    Returns
+    -------
+    iter :
+        An iterator over the results of the function calls (in input order).
+    """
+    yield from yield_from_and_cleanup_map(
+        starmap(
+            map_id = get_ephemeral_map_id(),
+            func = func,
+            args = args,
+            kwargs = kwargs,
+            map_options = map_options,
+        )
+    )
+
+
+def get_ephemeral_map_id() -> str:
+    return f'tmp-{int(time.time())}-{next(id_gen)}'
+
+
+def yield_from_and_cleanup_map(map):
+    try:
+        yield from map
+    finally:
+        map.remove()
 
 
 class MapBuilder:
