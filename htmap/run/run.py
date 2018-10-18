@@ -64,6 +64,7 @@ class ComponentError(ComponentResult):
         traceback,
         node_info,
         working_dir_contents,
+        stack_summary,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -73,6 +74,7 @@ class ComponentError(ComponentResult):
 
         self.node_info = node_info
         self.working_dir_contents = working_dir_contents
+        self.stack_summary = stack_summary
 
     def __repr__(self):
         return '<ERROR for input hash {}>'.format(self.input_hash)
@@ -154,14 +156,12 @@ def main(input_hash):
 
     os.environ['HTMAP_ON_EXECUTE'] = "1"
 
-    func = load_func()
-    args, kwargs = load_args_and_kwargs(input_hash)
-
-    print_run_info(input_hash, func, args, kwargs)
-
     print('\n----- MAP COMPONENT OUTPUT START -----\n')
 
     try:
+        func = load_func()
+        args, kwargs = load_args_and_kwargs(input_hash)
+        print_run_info(input_hash, func, args, kwargs)
         output = func(*args, **kwargs)
         result = ComponentOk(
             input_hash = input_hash,
@@ -169,17 +169,59 @@ def main(input_hash):
             output = output,
         )
     except Exception as e:
-        print(traceback.print_exc())
-        print('--------')
-        print(traceback.format_exc())
+        def skip_first(tb):
+            iterator = traceback.walk_tb(tb)
+            # next(iterator)
+
+            for frame, lineno in iterator:
+                fname = frame.f_code.co_filename
+                print(fname, os.path.exists(fname))
+                summ = traceback.FrameSummary(
+                    filename = fname,
+                    lineno = lineno,
+                    name = frame.f_code.co_name,
+                    lookup_line = os.path.exists(fname),
+                    locals = frame.f_locals,
+                )
+
+                yield summ
+
+        stack_summ = traceback.StackSummary.from_list(
+            skip_first(e.__traceback__),
+        )
+
+        (type, value, tb) = sys.exc_info()
         result = ComponentError(
             input_hash = input_hash,
             status = 'ERR',
             exception = e,
-            traceback = traceback.format_exc(),
+            traceback = traceback.format_exception_only(type, value),
+            stack_summary = stack_summ,
             node_info = node_info,
             working_dir_contents = contents,
         )
+
+        # print(stack_summ)
+        # print(stack_summ.format())
+        # for line in stack_summ.format():
+        #     print(line)
+
+        # frame = tb.tb_frame
+        # frames = []
+        # while frame is not None:
+        #     frames.append(frame)
+        #     frame = frame.f_back
+        #
+        # for frame in reversed(frames):
+        #     print(frame)
+        #     print(frame.f_code)
+        #     print(frame.f_code.co_name)
+        #     print(frame.f_code.co_code)
+        #     print(frame.f_code.co_names)
+        #     print(frame.f_code.co_varnames)
+        #     print(frame.f_code.co_filename)
+        #     print(frame.f_code.co_firstlineno)
+        #     print()
 
     print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 

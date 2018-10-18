@@ -98,6 +98,7 @@ class ComponentError:
         traceback,
         node_info,
         working_dir_contents,
+        stack_summary,
     ):
         self.map = map
         self.input_hash = input_hash
@@ -105,6 +106,7 @@ class ComponentError:
         self.traceback = traceback
         self.node_info = node_info
         self.working_dir_contents = working_dir_contents
+        self.stack_summary = stack_summary
 
         self.component_index = map._hash_to_index(input_hash)
 
@@ -120,6 +122,7 @@ class ComponentError:
             traceback = error.traceback,
             node_info = error.node_info,
             working_dir_contents = error.working_dir_contents,
+            stack_summary = error.stack_summary,
         )
 
     def report(self):
