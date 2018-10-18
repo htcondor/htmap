@@ -24,8 +24,9 @@ import traceback
 import subprocess
 from pathlib import Path
 
-import cloudpickle
 
+# import cloudpickle goes in the functions that need it directly
+# so that errors are raised later
 
 class ComponentResult:
     def __init__(
@@ -61,7 +62,6 @@ class ComponentError(ComponentResult):
     def __init__(
         self,
         *,
-        exception,
         exception_msg,
         node_info,
         python_info,
@@ -71,7 +71,6 @@ class ComponentError(ComponentResult):
     ):
         super().__init__(**kwargs)
 
-        self.exception = exception
         self.exception_msg = exception_msg
 
         self.node_info = node_info
@@ -105,9 +104,9 @@ def get_python_info():
 
 def print_python_info(python_info):
     executable, version, packages = python_info
-    print('Python executable is\n    {} (version {})'.format(executable, version))
+    print('Python executable is {} (version {})'.format(executable, version))
     print('with installed packages')
-    print('\n'.join('    {}'.format(line) for line in packages))
+    print('\n'.join('  {}'.format(line) for line in packages.splitlines()))
 
 
 def pip_freeze() -> str:
@@ -124,34 +123,37 @@ def get_working_dir_contents():
 def print_working_dir_contents(contents):
     print('Working directory contents:')
     for path in contents:
-        print('    ' + path)
+        print('  ' + path)
 
 
 def load_func():
+    import cloudpickle
     with Path('func').open(mode = 'rb') as file:
         return cloudpickle.load(file)
 
 
 def load_args_and_kwargs(arg_hash):
+    import cloudpickle
     with Path('{}.in'.format(arg_hash)).open(mode = 'rb') as file:
         return cloudpickle.load(file)
 
 
-def save_output(arg_hash, output):
+def save_result(arg_hash, result):
+    import cloudpickle
     with Path('{}.out'.format(arg_hash)).open(mode = 'wb') as file:
-        cloudpickle.dump(output, file)
+        cloudpickle.dump(result, file)
 
 
 def print_run_info(arg_hash, func, args, kwargs):
     s = '\n'.join((
         'Running',
-        '    {}'.format(func),
+        '  {}'.format(func),
         'with args',
-        '    {}'.format(args),
+        '  {}'.format(args),
         'and kwargs',
-        '    {}'.format(kwargs),
+        '  {}'.format(kwargs),
         'from input hash',
-        '    {}'.format(arg_hash),
+        '  {}'.format(arg_hash),
     ))
 
     print(s)
@@ -163,7 +165,6 @@ def build_frames(tb):
 
     for frame, lineno in iterator:
         fname = frame.f_code.co_filename
-        print(fname, os.path.exists(fname))
         summ = traceback.FrameSummary(
             filename = fname,
             lineno = lineno,
@@ -208,13 +209,13 @@ def main(input_hash):
             output = output,
         )
     except Exception as e:
+        print('\n-------  MAP COMPONENT ERROR  --------\n')
         (type, value, trace) = sys.exc_info()
         stack_summ = traceback.StackSummary.from_list(build_frames(trace))
 
         result = ComponentError(
             input_hash = input_hash,
             status = 'ERR',
-            exception = e,
             exception_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip(),
             stack_summary = stack_summ,
             node_info = node_info,
@@ -222,7 +223,7 @@ def main(input_hash):
             working_dir_contents = contents,
         )
 
-    save_output(input_hash, result)
+    save_result(input_hash, result)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 

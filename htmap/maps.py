@@ -95,7 +95,6 @@ class ComponentError:
         *,
         map,
         input_hash,
-        exception,
         exception_msg,
         node_info,
         python_info,
@@ -104,7 +103,6 @@ class ComponentError:
     ):
         self.map = map
         self.input_hash = input_hash
-        self.exception = exception
         self.exception_msg = exception_msg
         self.node_info = node_info
         self.python_info = python_info
@@ -121,7 +119,6 @@ class ComponentError:
         return cls(
             map = map,
             input_hash = error.input_hash,
-            exception = error.exception,
             exception_msg = error.exception_msg,
             node_info = error.node_info,
             python_info = error.python_info,
@@ -175,10 +172,7 @@ class ComponentError:
         return result
 
     def report(self):
-        lines = [f'Error report for component {self.component_index} of map {self.map.map_id}']
-        bar_length = len(lines[0])
-        lines.append('-' * bar_length)
-        lines.insert(0, '=' * bar_length)
+        lines = [f'  Start error report for component {self.component_index} of map {self.map.map_id}  '.center(80, '=')]
 
         lines.append('Landed on execute node {} ({}) at {}'.format(*self.node_info))
 
@@ -198,7 +192,8 @@ class ComponentError:
         lines.extend(self._format_stack_trace())
         lines.append(self._indent(self.exception_msg, multiple = 1))
 
-        lines.append('\n' + ('=' * bar_length))
+        lines.append('')
+        lines.append(f'  End error report for component {self.component_index} of map {self.map.map_id}  '.center(80, '='))
 
         return '\n'.join(lines)
 
@@ -634,6 +629,13 @@ class Map:
                 break
 
             time.sleep(1)
+
+    def error_reports(self):
+        for item in range(len(self.hashes)):
+            try:
+                yield self.get_err(item).report()
+            except (exceptions.OutputNotFound, exceptions.ExpectedError) as e:
+                pass
 
     def _requirements(self, requirements: Optional[str] = None) -> str:
         """Build an HTCondor requirements expression that captures all of the ``cluster_id`` for this map."""
