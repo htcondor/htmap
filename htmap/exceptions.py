@@ -78,5 +78,18 @@ class UnknownPythonDeliveryMechanism(HTMapException):
     """The specified Python delivery mechanism has not been registered."""
     pass
 
+
 class MapWasRemoved(HTMapException):
+    pass
+
+
+class InvalidOutputStatus(HTMapException):
+    pass
+
+
+class MapComponentError(HTMapException):
+    pass
+
+
+class ExpectedError(HTMapException):
     pass

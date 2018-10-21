@@ -19,92 +19,214 @@ import sys
 import socket
 import datetime
 import os
+import textwrap
+import traceback
 import subprocess
 from pathlib import Path
 
-import cloudpickle
+
+# import cloudpickle goes in the functions that need it directly
+# so that errors are raised later
+
+class ComponentResult:
+    def __init__(
+        self,
+        *,
+        input_hash,
+        status,
+    ):
+        self.input_hash = input_hash
+        self.status = status
 
 
-def print_node_info():
-    print('Landed on execute node {} ({}) at {}'.format(
+class ComponentOk(ComponentResult):
+    status = 'OK'
+
+    def __init__(
+        self,
+        *,
+        output,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self.output = output
+
+    def __repr__(self):
+        return '<OK for input hash {}>'.format(self.input_hash)
+
+
+class ComponentError(ComponentResult):
+    status = 'ERR'
+
+    def __init__(
+        self,
+        *,
+        exception_msg,
+        node_info,
+        python_info,
+        working_dir_contents,
+        stack_summary,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self.exception_msg = exception_msg
+
+        self.node_info = node_info
+        self.python_info = python_info
+        self.working_dir_contents = working_dir_contents
+        self.stack_summary = stack_summary
+
+    def __repr__(self):
+        return '<ERROR for input hash {}>'.format(self.input_hash)
+
+
+def get_node_info():
+    return (
         socket.getfqdn(),
         socket.gethostbyname(socket.gethostname()),
         datetime.datetime.utcnow(),
-    ))
+    )
 
 
-# def print_python_info():
-#     print('Python executable is\n    {}'.format(sys.executable))
-#     print('with installed packages')
-#     print('\n'.join('    {}'.format(line) for line in pip_freeze().splitlines()))
-#
-#
-# def pip_freeze() -> str:
-#     return subprocess.run(
-#         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
-#         stdout = subprocess.PIPE,
-#     ).stdout.decode('utf-8')
+def print_node_info(node_info):
+    print('Landed on execute node {} ({}) at {}'.format(*node_info))
 
 
-def print_working_dir_contents():
+def get_python_info():
+    return (
+        sys.executable,
+        f"{'.'.join(str(x) for x in sys.version_info[:3])} {sys.version_info[3]}",
+        pip_freeze(),
+    )
+
+
+def print_python_info(python_info):
+    executable, version, packages = python_info
+    print('Python executable is {} (version {})'.format(executable, version))
+    print('with installed packages')
+    print('\n'.join('  {}'.format(line) for line in packages.splitlines()))
+
+
+def pip_freeze() -> str:
+    return subprocess.run(
+        [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
+        stdout = subprocess.PIPE,
+    ).stdout.decode('utf-8').strip()
+
+
+def get_working_dir_contents():
+    return [str(p) for p in Path.cwd().iterdir()]
+
+
+def print_working_dir_contents(contents):
     print('Working directory contents:')
-    for path in Path.cwd().iterdir():
-        print('    {}'.format(path))
+    for path in contents:
+        print('  ' + path)
 
 
 def load_func():
+    import cloudpickle
     with Path('func').open(mode = 'rb') as file:
         return cloudpickle.load(file)
 
 
 def load_args_and_kwargs(arg_hash):
+    import cloudpickle
     with Path('{}.in'.format(arg_hash)).open(mode = 'rb') as file:
         return cloudpickle.load(file)
 
 
-def save_output(arg_hash, output):
+def save_result(arg_hash, result):
+    import cloudpickle
     with Path('{}.out'.format(arg_hash)).open(mode = 'wb') as file:
-        cloudpickle.dump(output, file)
+        cloudpickle.dump(result, file)
 
 
 def print_run_info(arg_hash, func, args, kwargs):
     s = '\n'.join((
         'Running',
-        '    {}'.format(func),
+        '  {}'.format(func),
         'with args',
-        '    {}'.format(args),
+        '  {}'.format(args),
         'and kwargs',
-        '    {}'.format(kwargs),
+        '  {}'.format(kwargs),
         'from input hash',
-        '    {}'.format(arg_hash),
+        '  {}'.format(arg_hash),
     ))
 
     print(s)
 
 
-def main(arg_hash):
-    print_node_info()
+def build_frames(tb):
+    iterator = traceback.walk_tb(tb)
+    next(iterator)  # skip main's frame
+
+    for frame, lineno in iterator:
+        fname = frame.f_code.co_filename
+        summ = traceback.FrameSummary(
+            filename = fname,
+            lineno = lineno,
+            name = frame.f_code.co_name,
+            lookup_line = os.path.exists(fname),
+            locals = frame.f_locals,
+        )
+
+        yield summ
+
+
+def main(input_hash):
+    node_info = get_node_info()
+    print_node_info(node_info)
     print()
-    print_working_dir_contents()
+    contents = get_working_dir_contents()
+    print_working_dir_contents(contents)
     print()
-    # print_python_info()
-    # print()
+    try:
+        python_info = get_python_info()
+        print_python_info(python_info)
+    except Exception as e:
+        python_info = None
+        print(e)
+    print()
 
     os.environ['HTMAP_ON_EXECUTE'] = "1"
 
-    func = load_func()
-    args, kwargs = load_args_and_kwargs(arg_hash)
+    try:
+        func = load_func()
+        args, kwargs = load_args_and_kwargs(input_hash)
 
-    print_run_info(arg_hash, func, args, kwargs)
+        print_run_info(input_hash, func, args, kwargs)
 
-    print('\n----- MAP COMPONENT OUTPUT START -----\n')
-    output = func(*args, **kwargs)
-    print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
+        print('\n----- MAP COMPONENT OUTPUT START -----\n')
+        output = func(*args, **kwargs)
+        print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
-    save_output(arg_hash, output)
+        result = ComponentOk(
+            input_hash = input_hash,
+            status = 'OK',
+            output = output,
+        )
+    except Exception as e:
+        print('\n-------  MAP COMPONENT ERROR  --------\n')
+        (type, value, trace) = sys.exc_info()
+        stack_summ = traceback.StackSummary.from_list(build_frames(trace))
+
+        result = ComponentError(
+            input_hash = input_hash,
+            status = 'ERR',
+            exception_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip(),
+            stack_summary = stack_summ,
+            node_info = node_info,
+            python_info = python_info,
+            working_dir_contents = contents,
+        )
+
+    save_result(input_hash, result)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 
 
 if __name__ == '__main__':
-    main(arg_hash = sys.argv[1])
+    main(input_hash = sys.argv[1])

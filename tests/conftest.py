@@ -39,7 +39,7 @@ def set_transplant_dir(tmpdir_factory):
     params = [
         'assume',
         'docker',
-        'transplant',
+        # 'transplant',
     ],
 )
 def delivery_methods(request):
