@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Iterable, Optional, Callable
+from typing import Union, Iterable, Optional, Callable, Dict
 import logging
 
 import sys
@@ -48,6 +48,7 @@ class MapOptions(collections.UserDict):
         'when_to_transfer_output',
         'htmap',
         '+htmap',
+        'MY.htmap',
     }
 
     def __init__(
@@ -57,6 +58,7 @@ class MapOptions(collections.UserDict):
         request_disk: Union[int, str, float, Iterable[Union[int, str, float]]] = '1GB',
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
         input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
+        custom_options: Dict[str, str] = None,
         **kwargs,
     ):
         """
@@ -76,13 +78,26 @@ class MapOptions(collections.UserDict):
             An iterable of single files or iterables of files to map over.
             Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
             You can also specify a file to fetch from an URL like ``http://www.full.url/path/to/filename``.
+        custom_options
+            A dictionary of submit descriptors that are *not* built-in HTCondor descriptors.
+            These are the descriptors that, if you were writing a submit file, would have a leading ``+`` or ``MY.``.
+            The leading characters are unnecessary here, but can be included if you'd like.
         kwargs
-            Additional keyword arguments are interpreted as HTCondor submit file descriptors.
+            Additional keyword arguments are interpreted as HTCondor submit descriptors.
             Values that are single strings are used for all components of the map.
             Providing an iterable for the value will map that option.
             Certain keywords are reserved for internal use (see the RESERVED_KEYS class attribute).
         """
         self._check_keyword_arguments(kwargs)
+
+        if custom_options is None:
+            custom_options = {}
+        cleaned_custom_options = {
+            key.lower().replace('+', '').replace('my.', ''): val
+            for key, val in custom_options.items()
+        }
+        self._check_keyword_arguments(cleaned_custom_options)
+        kwargs = {**kwargs, **{'+' + key: val for key, val in cleaned_custom_options.items()}}
 
         super().__init__(**kwargs)
 
@@ -219,6 +234,8 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
             options_dict[opt_key] = opt_value
 
     sub = htcondor.Submit(options_dict)
+
+    print(sub)
 
     return sub, itemdata
 
