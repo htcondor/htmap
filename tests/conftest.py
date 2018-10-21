@@ -38,7 +38,7 @@ def set_transplant_dir(tmpdir_factory):
 @pytest.fixture(
     params = [
         'assume',
-        'docker',
+        # 'docker',
         # 'transplant',
     ],
 )
@@ -97,7 +97,7 @@ def mapped_doubler(doubler):
 
 @pytest.fixture(scope = 'session')
 def power():
-    def power(x = 0, p = 0):
+    def power(x = 0, p = 2):
         return x ** p
 
     return power

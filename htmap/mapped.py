@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Dict, Union, Optional, Callable, Any
+from typing import Iterable, Dict, Union, Optional, Callable, Any, Iterator
 import logging
 
 from . import mapping, options, maps
@@ -58,28 +58,7 @@ class MappedFunction:
         map_options: Optional[options.MapOptions] = None,
         **kwargs,
     ) -> maps.Map:
-        """
-        Map a function call over a one-dimensional iterable of arguments.
-        The function must take a single positional argument and any number of keyword arguments.
-
-        The same keyword arguments are passed to *each call*, not mapped over.
-
-        Parameters
-        ----------
-        map_id
-            The ``map_id`` to assign to this map.
-        args
-            An iterable of arguments to pass to the mapped function.
-        kwargs
-            Any additional keyword arguments are passed as keyword arguments to the mapped function.
-        map_options
-            An instance of :class:`htmap.MapOptions`.
-
-        Returns
-        -------
-        result :
-            A :class:`htmap.Map` representing the map.
-        """
+        """As :function:`htmap.map`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -98,26 +77,7 @@ class MappedFunction:
         kwargs: Optional[Iterable[Dict[str, Any]]] = None,
         map_options: Optional[options.MapOptions] = None,
     ) -> maps.Map:
-        """
-        Map a function call over aligned iterables of arguments and keyword arguments.
-        Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
-
-        Parameters
-        ----------
-        map_id
-            The ``map_id`` to assign to this map.
-        args
-            An iterable of tuples of positional arguments to unpack into the mapped function.
-        kwargs
-            An iterable of dictionaries of keyword arguments to unpack into the mapped function.
-        map_options
-            An instance of :class:`htmap.MapOptions`.
-
-        Returns
-        -------
-        result :
-            A :class:`htmap.Map` representing the map.
-        """
+        """As :function:`htmap.starmap`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -136,26 +96,7 @@ class MappedFunction:
         map_options: Optional[options.MapOptions] = None,
         **kwargs,
     ):
-        """
-        A wrapper over :method:`htmap.MappedFunction.map` that takes the same arguments and keyword arguments.
-        However, if the ``map_id`` already exists, that map is recovered instead of submitting a new map.
-
-        Parameters
-        ----------
-        map_id
-            The ``map_id`` to assign to this map.
-        args
-            An iterable of arguments to pass to the mapped function.
-        kwargs
-            Any additional keyword arguments are passed as keyword arguments to the mapped function.
-        map_options
-            An instance of :class:`htmap.MapOptions`.
-
-        Returns
-        -------
-        result :
-            A :class:`htmap.Map` representing the map.
-        """
+        """As :function:`htmap.map_or_recover`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -174,26 +115,7 @@ class MappedFunction:
         kwargs: Optional[Iterable[Dict[str, Any]]] = None,
         map_options: Optional[options.MapOptions] = None,
     ) -> maps.Map:
-        """
-        A wrapper over :method:`htmap.MappedFunction.starmap` that takes the same arguments and keyword arguments.
-        However, if the ``map_id`` already exists, that map is recovered instead of submitting a new map.
-
-        Parameters
-        ----------
-        map_id
-            The ``map_id`` to assign to this map.
-        args
-            An iterable of tuples of positional arguments to unpack into the mapped function.
-        kwargs
-            An iterable of dictionaries of keyword arguments to unpack into the mapped function.
-        map_options
-            An instance of :class:`htmap.MapOptions`.
-
-        Returns
-        -------
-        result :
-            A :class:`htmap.Map` representing the map.
-        """
+        """"As :function:`htmap.starmap_or_recover`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -208,33 +130,102 @@ class MappedFunction:
     def build_map(
         self,
         map_id: str,
-        force_overwrite: bool = False,
         map_options: Optional[options.MapOptions] = None,
     ) -> mapping.MapBuilder:
-        """
-        Return a :class:`htmap.MapBuilder` for the wrapped function.
-
-        Parameters
-        ----------
-        map_id
-            The ``map_id`` to assign to this map.
-        force_overwrite
-            If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
-        map_options
-            An instance of :class:`htmap.MapOptions`.
-
-        Returns
-        -------
-        map_builder :
-            A :class:`htmap.MapBuilder` for the wrapped function.
-        """
+        """As :function:`htmap.build_map`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
         return mapping.build_map(
             map_id = map_id,
             func = self.func,
-            force_overwrite = force_overwrite,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
+        )
+
+    def force_map(
+        self,
+        map_id: str,
+        args: Iterable[Any],
+        map_options: Optional[options.MapOptions] = None,
+        **kwargs,
+    ) -> maps.Map:
+        """As :function:`htmap.force_map`, but the ``func`` argument is the mapped function."""
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.force_map(
+            map_id = map_id,
+            func = self.func,
+            args = args,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
+            **kwargs,
+        )
+
+    def force_starmap(
+        self,
+        map_id: str,
+        args: Optional[Iterable[tuple]] = None,
+        kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+        map_options: Optional[options.MapOptions] = None,
+    ) -> maps.Map:
+        """As :function:`htmap.force_starmap`, but the ``func`` argument is the mapped function."""
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.force_starmap(
+            map_id = map_id,
+            func = self.func,
+            args = args,
+            kwargs = kwargs,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
+        )
+
+    def force_build_map(
+        self,
+        map_id: str,
+        map_options: Optional[options.MapOptions] = None,
+    ) -> mapping.MapBuilder:
+        """As :function:`htmap.force_build_map`, but the ``func`` argument is the mapped function."""
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.force_build_map(
+            map_id = map_id,
+            func = self.func,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
+        )
+
+    def htmap(
+        self,
+        args: Iterable[Any],
+        map_options: options.MapOptions = None,
+        **kwargs,
+    ) -> mapping.EphemeralMapIterator:
+        """As :function:`htmap.htmap`, but the ``func`` argument is the mapped function."""
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.htmap(
+            func = self.func,
+            args = args,
+            map_options = options.MapOptions.merge(map_options, self.map_options),
+            **kwargs
+        )
+
+    def htstarmap(
+        self,
+        args: Optional[Iterable[tuple]] = None,
+        kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+        map_options: Optional[options.MapOptions] = None,
+    ) -> mapping.EphemeralMapIterator:
+        """As :function:`htmap.htstarmap`, but the ``func`` argument is the mapped function."""
+        if map_options is None:
+            map_options = options.MapOptions()
+
+        return mapping.htstarmap(
+            func = self.func,
+            args = args,
+            kwargs = kwargs,
             map_options = options.MapOptions.merge(map_options, self.map_options),
         )
 

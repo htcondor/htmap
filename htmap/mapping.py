@@ -292,12 +292,41 @@ def force_starmap(
 id_gen = itertools.count()
 
 
+def get_ephemeral_map_id() -> str:
+    return f'tmp-{int(time.time())}-{next(id_gen)}'
+
+
+class EphemeralMapIterator:
+    def __init__(self, map: maps.Map):
+        self.map = map
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._cleanup()
+
+        return False  # re-raise exceptions
+
+    def __iter__(self):
+        try:
+            yield from self.map
+        finally:
+            self._cleanup()
+
+    def _cleanup(self):
+        try:
+            self.map.remove()
+        except exceptions.MapWasRemoved:
+            pass
+
+
 def htmap(
     func: Callable,
     args: Iterable[Any],
     map_options: options.MapOptions = None,
     **kwargs,
-) -> Iterator[Any]:
+) -> EphemeralMapIterator:
     """
     Map a function call over a one-dimensional iterable of arguments.
     The function must take a single positional argument and any number of keyword arguments.
@@ -320,7 +349,7 @@ def htmap(
     iter :
         An iterator over the results of the function calls (in input order).
     """
-    yield from yield_from_and_cleanup_map(
+    return EphemeralMapIterator(
         map(
             map_id = get_ephemeral_map_id(),
             func = func,
@@ -336,7 +365,7 @@ def htstarmap(
     args: Optional[Iterable[tuple]] = None,
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
     map_options: options.MapOptions = None,
-) -> Iterator[Any]:
+) -> EphemeralMapIterator:
     """
     Map a function call over aligned iterables of arguments and keyword arguments.
     Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
@@ -357,7 +386,7 @@ def htstarmap(
     iter :
         An iterator over the results of the function calls (in input order).
     """
-    yield from yield_from_and_cleanup_map(
+    return EphemeralMapIterator(
         starmap(
             map_id = get_ephemeral_map_id(),
             func = func,
@@ -366,17 +395,6 @@ def htstarmap(
             map_options = map_options,
         )
     )
-
-
-def get_ephemeral_map_id() -> str:
-    return f'tmp-{int(time.time())}-{next(id_gen)}'
-
-
-def yield_from_and_cleanup_map(map):
-    try:
-        yield from map
-    finally:
-        map.remove()
 
 
 class MapBuilder:
@@ -416,7 +434,6 @@ class MapBuilder:
             func = self.func,
             args = self.args,
             kwargs = self.kwargs,
-            force_overwrite = self.force_overwrite,
             map_options = self.map_options
         )
 

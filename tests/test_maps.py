@@ -130,16 +130,6 @@ def test_cannot_use_same_mapid_again(mapped_doubler):
         again = mapped_doubler.map('foo', range(1))
 
 
-def test_can_use_same_mapid_again_if_force_overwrite(mapped_doubler):
-    result = mapped_doubler.map('foo', range(1))
-
-    again = mapped_doubler.map('foo', range(1), force_overwrite = True)
-
-
-def test_force_overwrite_with_already_free_mapid(mapped_doubler):
-    again = mapped_doubler.map('foo', range(1), force_overwrite = True)
-
-
 def test_empty_map_raises_empty_map_exception(mapped_doubler):
     with pytest.raises(htmap.exceptions.EmptyMap):
         mapped_doubler.map('foo', [])

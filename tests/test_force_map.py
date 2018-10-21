@@ -13,37 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+import time
 
 import pytest
 
 import htmap
 
 
-def test_htmap_map_is_cleaned_up_after_iter(doubler):
-    m = htmap.htmap(doubler, range(2))
+def test_can_use_same_mapid_again_with_force_map(mapped_doubler):
+    result = mapped_doubler.map('foo', range(1))
 
-    list(m)
-
-    assert len(htmap.map_ids()) == 0
+    again = mapped_doubler.force_map('foo', range(1))
 
 
-@pytest.mark.usefixtures('delivery_methods')
-def test_htmap_map_gets_right_results(doubler):
-    m = htmap.htmap(doubler, range(2))
-
-    assert list(m) == [0, 2]
+def test_force_map_with_already_free_mapid(mapped_doubler):
+    again = mapped_doubler.force_map('foo', range(1))
 
 
-def test_htstarmap_map_is_cleaned_up_after_iter(power):
-    m = htmap.htstarmap(power, args = [(1, 2), ])
+def test_can_use_same_mapid_again_with_force_starmap(mapped_power):
+    result = mapped_power.map('foo', [(1,)])
 
-    list(m)
-
-    assert len(htmap.map_ids()) == 0
+    again = mapped_power.force_map('foo', [(1,)])
 
 
-@pytest.mark.usefixtures('delivery_methods')
-def test_htstarmap_map_gets_right_results(power):
-    m = htmap.htstarmap(power, args = [(1, 2), ])
-
-    assert list(m) == [2, 4]
+def test_force_starmap_with_already_free_mapid(mapped_power):
+    again = mapped_power.force_map('foo', args = [(1,)])

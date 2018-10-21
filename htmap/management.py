@@ -73,8 +73,10 @@ def remove(map_id: str, not_exist_ok = True):
     try:
         r = recover(map_id)
         r.remove()
-    except exceptions.MapIdNotFound as e:
+    except (exceptions.MapIdNotFound, FileNotFoundError) as e:
         if not not_exist_ok:
+            if not isinstance(exceptions.MapIdNotFound):
+                raise exceptions.MapIdNotFound(f'map {map_id} not found') from e
             raise e
 
 
