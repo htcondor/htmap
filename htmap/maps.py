@@ -465,7 +465,7 @@ class Map:
         self,
         item: int,
         timeout: Optional[Union[int, datetime.timedelta]] = None,
-    ):
+    ) -> ComponentError:
         if isinstance(timeout, datetime.timedelta):
             timeout = timeout.total_seconds()
 

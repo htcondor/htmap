@@ -110,7 +110,7 @@ class MapOptions(collections.UserDict):
 
         if fixed_input_files is None:
             fixed_input_files = []
-        if isinstance(fixed_input_files, str):
+        if isinstance(fixed_input_files, (str, Path)):
             fixed_input_files = [fixed_input_files]
         self.fixed_input_files = fixed_input_files
 
