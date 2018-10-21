@@ -300,11 +300,14 @@ class EphemeralMapIterator:
     def __init__(self, map: maps.Map):
         self.map = map
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__}(map = {self.map})>'
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._cleanup()
+        self._remove()
 
         return False  # re-raise exceptions
 
@@ -312,11 +315,15 @@ class EphemeralMapIterator:
         try:
             yield from self.map
         finally:
-            self._cleanup()
+            self._remove()
 
-    def _cleanup(self):
+    def __del__(self):
+        self._remove()
+
+    def _remove(self):
         try:
             self.map.remove()
+            logger.debug(f'removed ephemeral map {self.map.map_id}')
         except exceptions.MapWasRemoved:
             pass
 

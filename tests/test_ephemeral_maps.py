@@ -16,7 +16,11 @@
 
 import pytest
 
+import gc
+
 import htmap
+
+from .conftest import gc_disabled
 
 
 def test_htmap_map_is_cleaned_up_after_iter(doubler):
@@ -27,7 +31,6 @@ def test_htmap_map_is_cleaned_up_after_iter(doubler):
     assert len(htmap.map_ids()) == 0
 
 
-@pytest.mark.usefixtures('delivery_methods')
 def test_htmap_map_gets_right_results(doubler):
     m = htmap.htmap(doubler, range(2))
 
@@ -42,7 +45,6 @@ def test_htstarmap_map_is_cleaned_up_after_iter(power):
     assert len(htmap.map_ids()) == 0
 
 
-@pytest.mark.usefixtures('delivery_methods')
 def test_htstarmap_map_gets_right_results(power):
     m = htmap.htstarmap(power, args = [(1,), (2,)])
 
@@ -75,12 +77,9 @@ class DummyException(Exception):
     pass
 
 
-@pytest.mark.xfail
 def test_ephemeral_map_is_cleaned_up_after_iter_if_error_during_iter():
-    # https://www.python.org/dev/peps/pep-0533/
-    # basically no way to make this work as expected right now
-
-    m = htmap.htmap(lambda x: x, range(1))
+    # relies on the try/finally in __iter__
+    m = htmap.htmap(lambda x: x, range(2))
 
     try:
         for out in m:
@@ -98,5 +97,16 @@ def test_ephemeral_map_is_cleaned_up_after_iter_if_error_during_iter_inside_with
                 raise DummyException
     except DummyException:
         pass
+
+    assert len(htmap.map_ids()) == 0
+
+
+def test_ephemeral_map_is_cleaned_up_by_gc():
+    m = htmap.htmap(lambda x: x, range(1))
+
+    assert len(htmap.map_ids()) == 1
+
+    del m
+    gc.collect()  # force a GC cycle
 
     assert len(htmap.map_ids()) == 0

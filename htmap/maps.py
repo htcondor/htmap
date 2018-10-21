@@ -24,6 +24,7 @@ import textwrap
 import functools
 import inspect
 import collections
+import weakref
 from copy import copy
 from pathlib import Path
 
@@ -198,7 +199,7 @@ class ComponentError:
         return '\n'.join(lines)
 
 
-MAPS = {}
+MAPS = weakref.WeakValueDictionary()
 
 
 @_protect_map_after_remove
@@ -747,7 +748,10 @@ class Map:
         self._remove_from_queue()
         self._rm_map_dir()
         self._is_removed = True
-        MAPS.pop(self.map_id)
+        try:
+            MAPS.pop(self.map_id)
+        except KeyError:  # may already be gone depending on when GC runs
+            pass
         logger.info(f'removed map {self.map_id}')
 
     def hold(self):

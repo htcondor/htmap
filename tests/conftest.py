@@ -16,6 +16,7 @@
 import functools
 import time
 import itertools
+import gc
 import subprocess
 from pathlib import Path
 
@@ -38,8 +39,8 @@ def set_transplant_dir(tmpdir_factory):
 @pytest.fixture(
     params = [
         'assume',
-        # 'docker',
-        # 'transplant',
+        'docker',
+        'transplant',
     ],
 )
 def delivery_methods(request):
@@ -135,3 +136,11 @@ def mapped_exception():
 
 def exception_msg(exc_info) -> str:
     return str(exc_info.value)
+
+
+class gc_disabled:
+    def __enter__(self):
+        gc.disable()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        gc.enable()
