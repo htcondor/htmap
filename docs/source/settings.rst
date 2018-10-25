@@ -74,6 +74,7 @@ These settings control how the ``docker`` delivery method works.
 ``IMAGE`` - the path to the Docker image to run components with.
 Defaults to ``'continuumio/anaconda3:latest'``.
 
+.. _transplant-settings:
 
 TRANSPLANT
 ++++++++++
@@ -81,6 +82,7 @@ TRANSPLANT
 These settings control how the ``transplant`` delivery method works.
 
 ``PATH`` - the path to the directory where the zipped Python install will be cached.
+Defaults to the ``HTMAP_DIR``.
 
 ``ALTERNATE_INPUT_PATH`` - a string that will be used in the HTCondor ``transfer_input_files`` option **instead of** the local file path.
 If set to ``None``, the local path will be used (the default).

@@ -118,6 +118,8 @@ At runtime:
 If you are running HTMap from a standalone Python install (like an Anaconda installation), you can use this delivery mechanism to transfer a copy of your entire Python install.
 All locally-installed packages (including ``pip -e`` installs) will be available.
 
+For advanced transplant functionality, see :ref:`transplant-settings`.
+
 .. note::
 
     The first time you run a map after installing/removing packages, you will need to wait while HTMap re-zips your installation.

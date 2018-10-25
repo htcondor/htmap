@@ -71,10 +71,16 @@ For example, if you know that a certain function always takes a large amount of 
 Additionally, default keyword arguments can be set globally via ``settings['MAP_OPTIONS.<option_name>'] = <option_value>``.
 
 .. warning::
-   Only certain options make sense as inherited options.
-   For example, they shouldn't be variadic options.
 
-   ``fixed_input_files`` has special behavior as an inherited option: they are *merged together* instead of overridden.
+    Only certain options make sense as inherited options.
+    For example, they shouldn't be variadic options.
+
+    ``fixed_input_files`` has special behavior as an inherited option: they are *merged together* instead of overridden.
+
+.. note::
+
+    When looking at examples of raw HTCondor submit files, you may see submit descriptors that are prefixed with a ``+`` or a ``MY.``.
+    Those options should be passed to :class:`htmap.MapOptions` via the ``custom_options`` keyword arguments.
 
 .. autoclass:: htmap.MapOptions
    :members:

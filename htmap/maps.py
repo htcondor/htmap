@@ -304,7 +304,7 @@ class Map:
         return self._act(htcondor.JobAction.Remove)
 
     def _rm_map_dir(self):
-        shutil.rmtree(self._map_dir)
+        shutil.rmtree(str(self._map_dir.absolute()))
         logger.debug(f'removed map directory for map {self.map_id}')
 
     def _clean_outputs_dir(self):
@@ -629,6 +629,9 @@ class Map:
                 break
 
             time.sleep(1)
+
+    def iter_inputs(self):
+        yield from (htio.load_object(input_path) for input_path in self._input_file_paths)
 
     def error_reports(self):
         for item in range(len(self.hashes)):

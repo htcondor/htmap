@@ -327,7 +327,7 @@ def submit_map(
         # so delete the entire map directory
         # the condor bindings should prevent any jobs from being submitted
         logger.exception(f'map submission for map {map_id} aborted due to')
-        shutil.rmtree(map_dir)
+        shutil.rmtree(str(map_dir.absolute()))
         logger.debug(f'removed malformed map directory {map_dir}')
         raise e
 

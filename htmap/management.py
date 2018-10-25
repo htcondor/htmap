@@ -92,7 +92,7 @@ def force_remove(map_id: str):
     map_id
         The ``map_id`` to force-remove.
     """
-    shutil.rmtree(mapping.map_dir_path(map_id), ignore_errors = True)
+    shutil.rmtree(str(mapping.map_dir_path(map_id).absolute()), ignore_errors = True)
     logger.debug(f'force-removed map {map_id}')
 
 
@@ -114,7 +114,7 @@ def force_clean():
         See :ref:`cleanup-after-force-removal`.
     """
     for map_dir in _map_paths():
-        shutil.rmtree(map_dir)
+        shutil.rmtree(str(map_dir.absolute()))
 
     logger.debug('force-cleaned maps directory')
 
