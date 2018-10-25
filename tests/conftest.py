@@ -36,15 +36,20 @@ def set_transplant_dir(tmpdir_factory):
     htmap.settings['TRANSPLANT.PATH'] = path
 
 
-@pytest.fixture(
-    params = [
-        'assume',
-        # 'docker',
-        # 'transplant',
-    ],
-)
-def delivery_methods(request):
-    htmap.settings['DELIVERY_METHOD'] = request.param
+def pytest_addoption(parser):
+    parser.addoption(
+        "--delivery",
+        action = "store",
+        default = 'assume',
+    )
+
+
+def pytest_generate_tests(metafunc):
+    if 'delivery_methods' in metafunc.fixturenames:
+        metafunc.parametrize(
+            "delivery_methods",
+            metafunc.config.getoption('delivery').split(),
+        )
 
 
 def get_base_options_for_tests(map_id, map_dir, delivery, test_id = None):
