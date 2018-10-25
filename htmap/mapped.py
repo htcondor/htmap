@@ -16,7 +16,7 @@
 from typing import Iterable, Dict, Union, Optional, Callable, Any
 import logging
 
-from . import mapping, options, result
+from . import mapping, options, maps
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class MappedFunction:
             map_options = options.MapOptions()
         self.map_options = map_options
 
-        logger.debug(f'initialized mapped function for {self.func} with options {self.map_options}')
+        logger.debug(f'created mapped function for {self.func} with options {self.map_options}')
 
     def __repr__(self):
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
@@ -58,7 +58,7 @@ class MappedFunction:
         force_overwrite: bool = False,
         map_options: Optional[options.MapOptions] = None,
         **kwargs,
-    ) -> result.MapResult:
+    ) -> maps.Map:
         """
         Map a function call over a one-dimensional iterable of arguments.
         The function must take a single positional argument and any number of keyword arguments.
@@ -81,7 +81,7 @@ class MappedFunction:
         Returns
         -------
         result :
-            A :class:`htmap.MapResult` representing the map.
+            A :class:`htmap.Map` representing the map.
         """
         if map_options is None:
             map_options = options.MapOptions()
@@ -102,7 +102,7 @@ class MappedFunction:
         kwargs: Optional[Iterable[Dict[str, Any]]] = None,
         force_overwrite: bool = False,
         map_options: Optional[options.MapOptions] = None,
-    ) -> result.MapResult:
+    ) -> maps.Map:
         """
         Map a function call over aligned iterables of arguments and keyword arguments.
         Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
@@ -123,7 +123,7 @@ class MappedFunction:
         Returns
         -------
         result :
-            A :class:`htmap.MapResult` representing the map.
+            A :class:`htmap.Map` representing the map.
         """
         if map_options is None:
             map_options = options.MapOptions()
@@ -171,7 +171,7 @@ class MappedFunction:
         )
 
 
-def htmap(map_options: Optional[options.MapOptions] = None) -> Union[Callable, MappedFunction]:
+def mapped(map_options: Optional[options.MapOptions] = None) -> Union[Callable, MappedFunction]:
     """
     A decorator that wraps a function in an :class:`MappedFunction`,
     which provides an interface for mapping functions calls out to an HTCondor cluster.

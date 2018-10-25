@@ -80,7 +80,7 @@ If you have a function that you want to create many maps from, you may find it c
 
     import htmap
 
-    @htmap.htmap
+    @htmap.mapped
     def double(x):
         return 2 * x
 

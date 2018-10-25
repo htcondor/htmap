@@ -18,7 +18,7 @@ We'll request 1 GB of RAM, 20 GB of disk space, and send our input file.
 
     import htmap
 
-    @htmap.htmap(
+    @htmap.mapped(
         request_memory = '1GB',
         request_disk = '20GB',
         fixed_input_files = ['huge_input_file.blob'],

@@ -40,7 +40,7 @@ If we wait a little while and check the status of our jobs, we'll see that one o
     # Map inv (10 inputs): Held = 1 | Idle = 0 | Run = 0 | Done = 9
 
 
-To find out why, use :class:`htmap.MapResult.hold_reasons()`:
+To find out why, use :class:`htmap.Map.hold_reasons()`:
 
 .. code-block:: python
 

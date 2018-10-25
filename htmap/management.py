@@ -19,14 +19,14 @@ import logging
 from pathlib import Path
 import shutil
 
-from . import mapping, result, utils, exceptions
+from . import mapping, maps, utils, exceptions
 
 logger = logging.getLogger(__name__)
 
 
-def recover(map_id: str) -> result.MapResult:
+def recover(map_id: str) -> maps.Map:
     """
-    Reconstruct a :class:`MapResult` from its ``map_id``.
+    Reconstruct a :class:`Map` from its ``map_id``.
 
     Parameters
     ----------
@@ -35,10 +35,10 @@ def recover(map_id: str) -> result.MapResult:
 
     Returns
     -------
-    result
+    map
         The result with the given ``map_id``.
     """
-    return result.MapResult.recover(map_id)
+    return maps.Map.recover(map_id)
 
 
 def _map_paths() -> Iterator[Path]:
@@ -54,8 +54,8 @@ def map_ids() -> Tuple[str]:
     return tuple(path.stem for path in _map_paths())
 
 
-def map_results() -> Tuple[result.MapResult, ...]:
-    """Return a :class:`tuple` containing the :class:`MapResult` for all existing maps."""
+def map_results() -> Tuple[maps.Map, ...]:
+    """Return a :class:`tuple` containing the :class:`Map` for all existing maps."""
     return tuple(recover(map_id) for map_id in map_ids())
 
 
@@ -126,12 +126,12 @@ def status() -> str:
     counts = [r.status_counts() for r in results]
 
     return utils.table(
-        headers = ['Map ID'] + [str(d) for d in result.Status.display_statuses()] + ['Data'],
+        headers = ['Map ID'] + [str(d) for d in maps.Status.display_statuses()] + ['Data'],
         rows = [
-            [map_id] + [count[d] for d in result.Status.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
+            [map_id] + [count[d] for d in maps.Status.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
             for map_id, count in sorted(
                 zip(ids, counts),
-                key = lambda map_id_and_count: map_id_and_count[1][result.Status.RUNNING],
+                key = lambda map_id_and_count: map_id_and_count[1][maps.Status.RUNNING],
             )
         ],
     )
