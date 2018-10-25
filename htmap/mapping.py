@@ -23,7 +23,7 @@ import itertools
 
 import htcondor
 
-from . import htio, management, exceptions, maps, options, settings
+from . import htio, exceptions, maps, options, settings
 
 logger = logging.getLogger(__name__)
 
@@ -131,277 +131,83 @@ def starmap(
     )
 
 
-def map_or_recover(
-    map_id: str,
+id_gen = itertools.count()
+
+
+def get_transient_map_id() -> str:
+    return f'tmp-{int(time.time())}-{next(id_gen)}'
+
+
+class TransientMap:
+    def __init__(self, map: maps.Map):
+        self._map = map
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}(map = {self._map})>'
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._cleanup()
+
+        return False  # re-raise exceptions
+
+    def __iter__(self):
+        try:
+            yield from self._map
+        finally:
+            self._cleanup()
+
+    def __del__(self):
+        self._cleanup()
+
+    def _cleanup(self):
+        try:
+            self._map.remove()
+            logger.debug(f'removed transient map {self._map.map_id}')
+        except exceptions.MapWasRemoved:
+            pass
+
+
+def transient_map(
     func: Callable,
     args: Iterable[Any],
     map_options: options.MapOptions = None,
     **kwargs,
-):
+) -> TransientMap:
     """
-    As :func:`htmap.starmap`, but if the given ``map_id`` already exists, the associated :class:`htmap.Map` will be recovered and returned instead of submitting a new map.
-
-    Parameters
-    ----------
-    map_id
-        The ``map_id`` to assign to this map.
-    func
-        The function to map the arguments over.
-    args
-        An iterable of arguments to pass to the mapped function.
-    kwargs
-        Any additional keyword arguments are passed as keyword arguments to the mapped function.
-    map_options
-        An instance of :class:`htmap.MapOptions`.
-
-    Returns
-    -------
-    result :
-        A :class:`htmap.Map` representing the map.
+    As :func:`htmap.map`, except that it returns an iterator over the outputs and the map is immediately removed after use.
     """
-    try:
-        return maps.Map.recover(map_id)
-    except exceptions.MapIdNotFound:
-        return map(
-            map_id = map_id,
-            func = func,
-            args = args,
-            map_options = map_options,
-            **kwargs,
-        )
-
-
-def starmap_or_recover(
-    map_id: str,
-    func: Callable,
-    args: Optional[Iterable[tuple]] = None,
-    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-    map_options: options.MapOptions = None,
-):
-    """
-    As :func:`htmap.starmap`, but if the given ``map_id`` already exists, the associated :class:`htmap.Map` will be recovered and returned instead of submitting a new map.
-
-    Parameters
-    ----------
-    map_id
-        The ``map_id`` to assign to this map.
-    func
-        The function to map the arguments over.
-    args
-        An iterable of tuples of positional arguments to unpack into the mapped function.
-    kwargs
-        An iterable of dictionaries of keyword arguments to unpack into the mapped function.
-    map_options
-        An instance of :class:`htmap.MapOptions`.
-
-    Returns
-    -------
-    result :
-        A :class:`htmap.Map` representing the map.
-    """
-    try:
-        return maps.Map.recover(map_id)
-    except exceptions.MapIdNotFound:
-        return starmap(
-            map_id = map_id,
-            func = func,
-            args = args,
-            kwargs = kwargs,
-            map_options = map_options,
-        )
-
-
-def force_map(
-    map_id: str,
-    func: Callable,
-    args: Iterable[Any],
-    map_options: options.MapOptions = None,
-    **kwargs,
-) -> maps.Map:
-    """
-    As :func:`htmap.map`, but if the given ``map_id`` already exists the associated :class:`htmap.Map` is removed before creating the new map.
-
-    Parameters
-    ----------
-    map_id
-        The ``map_id`` to assign to this map.
-    func
-        The function to map the arguments over.
-    args
-        An iterable of arguments to pass to the mapped function.
-    kwargs
-        Any additional keyword arguments are passed as keyword arguments to the mapped function.
-    map_options
-        An instance of :class:`htmap.MapOptions`.
-
-    Returns
-    -------
-    result :
-        A :class:`htmap.Map` representing the map.
-    """
-    management.remove(map_id, not_exist_ok = True)
-
-    return map(
-        map_id = map_id,
+    m = map(
+        map_id = get_transient_map_id(),
         func = func,
         args = args,
         map_options = map_options,
         **kwargs,
     )
 
+    return TransientMap(m)
 
-def force_starmap(
-    map_id: str,
+
+def transient_starmap(
     func: Callable,
     args: Optional[Iterable[tuple]] = None,
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
     map_options: options.MapOptions = None,
-) -> maps.Map:
+) -> TransientMap:
     """
-    As :func:`htmap.starmap`, but if the given ``map_id`` already exists the associated :class:`htmap.Map` is removed before creating the new map.
-
-    Parameters
-    ----------
-    map_id
-        The ``map_id`` to assign to this map.
-    func
-        The function to map the arguments over.
-    args
-        An iterable of tuples of positional arguments to unpack into the mapped function.
-    kwargs
-        An iterable of dictionaries of keyword arguments to unpack into the mapped function.
-    map_options
-        An instance of :class:`htmap.MapOptions`.
-
-    Returns
-    -------
-    result :
-        A :class:`htmap.Map` representing the map.
+    As :func:`htmap.starmap`, except that it returns an iterator over the outputs and the map is immediately removed after use.
     """
-    management.remove(map_id, not_exist_ok = True)
-
-    return starmap(
-        map_id = map_id,
+    m = starmap(
+        map_id = get_transient_map_id(),
         func = func,
         args = args,
         kwargs = kwargs,
         map_options = map_options,
     )
 
-
-id_gen = itertools.count()
-
-
-def get_ephemeral_map_id() -> str:
-    return f'tmp-{int(time.time())}-{next(id_gen)}'
-
-
-class EphemeralMapIterator:
-    def __init__(self, map: maps.Map):
-        self.map = map
-
-    def __repr__(self):
-        return f'<{self.__class__.__name__}(map = {self.map})>'
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._remove()
-
-        return False  # re-raise exceptions
-
-    def __iter__(self):
-        try:
-            yield from self.map
-        finally:
-            self._remove()
-
-    def __del__(self):
-        self._remove()
-
-    def _remove(self):
-        try:
-            self.map.remove()
-            logger.debug(f'removed ephemeral map {self.map.map_id}')
-        except exceptions.MapWasRemoved:
-            pass
-
-
-def htmap(
-    func: Callable,
-    args: Iterable[Any],
-    map_options: options.MapOptions = None,
-    **kwargs,
-) -> EphemeralMapIterator:
-    """
-    Map a function call over a one-dimensional iterable of arguments.
-    The function must take a single positional argument and any number of keyword arguments.
-
-    The same keyword arguments are passed to *each call*, not mapped over.
-
-    Parameters
-    ----------
-    func
-        The function to map the arguments over.
-    args
-        An iterable of arguments to pass to the mapped function.
-    kwargs
-        Any additional keyword arguments are passed as keyword arguments to the mapped function.
-    map_options
-        An instance of :class:`htmap.MapOptions`.
-
-    Returns
-    -------
-    iter :
-        An iterator over the results of the function calls (in input order).
-    """
-    return EphemeralMapIterator(
-        map(
-            map_id = get_ephemeral_map_id(),
-            func = func,
-            args = args,
-            map_options = map_options,
-            **kwargs,
-        )
-    )
-
-
-def htstarmap(
-    func: Callable,
-    args: Optional[Iterable[tuple]] = None,
-    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-    map_options: options.MapOptions = None,
-) -> EphemeralMapIterator:
-    """
-    Map a function call over aligned iterables of arguments and keyword arguments.
-    Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
-
-    Parameters
-    ----------
-    func
-        The function to map the arguments over.
-    args
-        An iterable of tuples of positional arguments to unpack into the mapped function.
-    kwargs
-        An iterable of dictionaries of keyword arguments to unpack into the mapped function.
-    map_options
-        An instance of :class:`htmap.MapOptions`.
-
-    Returns
-    -------
-    iter :
-        An iterator over the results of the function calls (in input order).
-    """
-    return EphemeralMapIterator(
-        starmap(
-            map_id = get_ephemeral_map_id(),
-            func = func,
-            args = args,
-            kwargs = kwargs,
-            map_options = map_options,
-        )
-    )
+    return TransientMap(m)
 
 
 class MapBuilder:
@@ -409,12 +215,10 @@ class MapBuilder:
         self,
         map_id: str,
         func: Callable,
-        force_overwrite: bool = False,
         map_options: options.MapOptions = None,
     ):
         self.func = func
         self.map_id = map_id
-        self.force_overwrite = force_overwrite
         self.map_options = map_options
 
         self.args = []
@@ -495,35 +299,18 @@ def build_map(
     )
 
 
-def force_build_map(
+def build_transient_map(
     map_id: str,
     func: Callable,
     map_options: options.MapOptions = None,
-) -> MapBuilder:
-    """
-    As :func:`htmap.build_map`, but if the given ``map_id`` already exists the associated :class:`htmap.Map` is removed before creating the new map.
-
-    Parameters
-    ----------
-    map_id
-        The ``map_id`` to assign to this map.
-    func
-        The function to map over.
-    map_options
-        An instance of :class:`htmap.MapOptions`.
-
-    Returns
-    -------
-    map_builder :
-        A :class:`MapBuilder` for the given function.
-    """
-    management.remove(map_id, not_exist_ok = True)
-
-    return build_map(
+) -> TransientMap:
+    mb = MapBuilder(
         map_id = map_id,
         func = func,
         map_options = map_options,
     )
+
+    return TransientMap(mb.result)
 
 
 def submit_map(

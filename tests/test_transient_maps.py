@@ -20,11 +20,9 @@ import gc
 
 import htmap
 
-from .conftest import gc_disabled
-
 
 def test_htmap_map_is_cleaned_up_after_iter(doubler):
-    m = htmap.htmap(doubler, range(2))
+    m = htmap.transient_map(doubler, range(2))
 
     list(m)
 
@@ -32,13 +30,13 @@ def test_htmap_map_is_cleaned_up_after_iter(doubler):
 
 
 def test_htmap_map_gets_right_results(doubler):
-    m = htmap.htmap(doubler, range(2))
+    m = htmap.transient_map(doubler, range(2))
 
     assert list(m) == [0, 2]
 
 
 def test_htstarmap_map_is_cleaned_up_after_iter(power):
-    m = htmap.htstarmap(power, args = [(1, 2), ])
+    m = htmap.transient_starmap(power, args = [(1, 2), ])
 
     list(m)
 
@@ -46,13 +44,13 @@ def test_htstarmap_map_is_cleaned_up_after_iter(power):
 
 
 def test_htstarmap_map_gets_right_results(power):
-    m = htmap.htstarmap(power, args = [(1,), (2,)])
+    m = htmap.transient_starmap(power, args = [(1,), (2,)])
 
     assert [1, 4] == list(m)
 
 
-def test_ephemeral_map_is_cleaned_up_after_iter_if_single_error_during_execute():
-    m = htmap.htmap(lambda x: 1 / 0, range(1))
+def test_transient_map_is_cleaned_up_after_iter_if_single_error_during_execute():
+    m = htmap.transient_map(lambda x: 1 / 0, range(1))
 
     try:
         list(m)
@@ -62,8 +60,8 @@ def test_ephemeral_map_is_cleaned_up_after_iter_if_single_error_during_execute()
     assert len(htmap.map_ids()) == 0
 
 
-def test_ephemeral_map_is_cleaned_up_after_iter_if_multiple_error_during_execute():
-    m = htmap.htmap(lambda x: 1 / 0, range(2))
+def test_transient_map_is_cleaned_up_after_iter_if_multiple_error_during_execute():
+    m = htmap.transient_map(lambda x: 1 / 0, range(2))
 
     try:
         list(m)
@@ -77,9 +75,9 @@ class DummyException(Exception):
     pass
 
 
-def test_ephemeral_map_is_cleaned_up_after_iter_if_error_during_iter():
+def test_transient_map_is_cleaned_up_after_iter_if_error_during_iter():
     # relies on the try/finally in __iter__
-    m = htmap.htmap(lambda x: x, range(2))
+    m = htmap.transient_map(lambda x: x, range(2))
 
     try:
         for out in m:
@@ -90,9 +88,9 @@ def test_ephemeral_map_is_cleaned_up_after_iter_if_error_during_iter():
     assert len(htmap.map_ids()) == 0
 
 
-def test_ephemeral_map_is_cleaned_up_after_iter_if_error_during_iter_inside_with():
+def test_transient_map_is_cleaned_up_after_iter_if_error_during_iter_inside_with():
     try:
-        with htmap.htmap(lambda x: x, range(1)) as m:
+        with htmap.transient_map(lambda x: x, range(1)) as m:
             for out in m:
                 raise DummyException
     except DummyException:
@@ -101,8 +99,8 @@ def test_ephemeral_map_is_cleaned_up_after_iter_if_error_during_iter_inside_with
     assert len(htmap.map_ids()) == 0
 
 
-def test_ephemeral_map_is_cleaned_up_by_gc():
-    m = htmap.htmap(lambda x: x, range(1))
+def test_transient_map_is_cleaned_up_by_gc():
+    m = htmap.transient_map(lambda x: x, range(1))
 
     assert len(htmap.map_ids()) == 1
 

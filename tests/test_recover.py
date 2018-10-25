@@ -22,7 +22,7 @@ import htmap
 def test_recover_shortcut(mapped_doubler):
     result = mapped_doubler.map('map', range(3))
 
-    recovered = htmap.recover('map')
+    recovered = htmap.load('map')
 
     assert recovered is result
 
@@ -37,4 +37,4 @@ def test_recover_classmethod(mapped_doubler):
 
 def test_recover_on_bad_mapid_raises_map_id_not_found():
     with pytest.raises(htmap.exceptions.MapIdNotFound):
-        htmap.recover('no_such_mapid')
+        htmap.load('no_such_mapid')

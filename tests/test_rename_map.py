@@ -50,6 +50,8 @@ def test_rename_raises_if_jobs_held(mapped_doubler):
     with pytest.raises(htmap.exceptions.CannotRenameMap):
         result.rename('new')
 
+    result.remove()  # cleanup
+
 
 def test_rename_raises_if_new_map_id_already_exists(mapped_doubler):
     result = mapped_doubler.map('old', range(1))
@@ -77,4 +79,4 @@ def test_can_be_recovered_after_rename(mapped_doubler):
 
     result.rename('new')
 
-    htmap.recover('new')
+    htmap.load('new')

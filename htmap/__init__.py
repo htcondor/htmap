@@ -20,16 +20,17 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 from .mapping import (
     map, starmap, build_map,
-    MapBuilder,
-    htmap, htstarmap,
-    map_or_recover, starmap_or_recover,
-    force_map, force_starmap, force_build_map,
+    transient_map, transient_starmap, build_transient_map,
+    MapBuilder, TransientMap,
 )
 from .mapped import mapped, MappedFunction
 from .maps import Map, Status
 from .options import MapOptions
 from .management import (
-    clean, map_ids, map_results, status,
-    force_clean, recover, remove, force_remove,
+    status,
+    map_ids, map_results,
+    load,
+    clean, force_clean,
+    remove, force_remove,
 )
 from . import exceptions

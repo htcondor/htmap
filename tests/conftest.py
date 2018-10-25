@@ -39,8 +39,8 @@ def set_transplant_dir(tmpdir_factory):
 @pytest.fixture(
     params = [
         'assume',
-        'docker',
-        'transplant',
+        # 'docker',
+        # 'transplant',
     ],
 )
 def delivery_methods(request):

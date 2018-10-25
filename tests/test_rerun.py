@@ -29,7 +29,7 @@ def test_rerun(mapped_doubler):
 def test_recover_then_rerun(mapped_doubler):
     result = mapped_doubler.map('map', [1, 2, 3])
 
-    recovered = htmap.recover('map')
+    recovered = htmap.load('map')
     recovered.rerun()
 
     assert list(recovered) == [2, 4, 6]
