@@ -48,7 +48,7 @@ def clean_dir(target_dir: Path):
 
 def wait_for_path_to_exist(
     path: Path,
-    timeout: Optional[Union[int, datetime.timedelta]] = None,
+    timeout: Optional[Union[int, float, datetime.timedelta]] = None,
     wait_time: Union[int, datetime.timedelta] = 1,
 ):
     """
@@ -63,16 +63,29 @@ def wait_for_path_to_exist(
     wait_time
         The time to wait between checks.
     """
-    if isinstance(timeout, datetime.timedelta):
-        timeout = timeout.total_seconds()
-    if isinstance(wait_time, datetime.timedelta):
-        wait_time = wait_time.total_seconds()
+    timeout = timeout_to_seconds(timeout)
+    wait_time = timeout_to_seconds(wait_time)
 
     start_time = time.time()
     while not path.exists():
-        if timeout is not None and (timeout == 0 or time.time() > start_time + timeout):
+        if timeout is not None and (timeout < 0 or time.time() > start_time + timeout):
             raise exceptions.TimeoutError(f'timeout while waiting for {path} to exist')
         time.sleep(wait_time)
+
+
+Timeout = Optional[Union[int, float, datetime.timedelta]]
+
+
+def timeout_to_seconds(timeout: Union[int, float, datetime.timedelta]) -> Optional[float]:
+    """
+    Coerce a timeout given as a :class:`datetime.timedelta` or an :class:`int` to a number of seconds as a :class:`float`.
+    ``None`` is passed through.
+    """
+    if timeout is None:
+        return timeout
+    if isinstance(timeout, datetime.timedelta):
+        return timeout.total_seconds()
+    return float(timeout)
 
 
 class rstr(str):
@@ -95,7 +108,7 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]], fill: str = '',
         Should be an iterable of iterables or mappings, with the outer level containing the rows, and each inner iterable containing the entries for each column.
         A ``None`` in the outer iterable produces a horizontal bar at that position.
         An iterable-type row is printed in order.
-        A mapping-type row uses the headers as keys to align the output and can have missing values, which are filled using the ```fill`` value.
+        A mapping-type row uses the headers as keys to align the stdout and can have missing values, which are filled using the ```fill`` value.
     fill
         The string to print in place of a missing value in a mapping-type row.
 

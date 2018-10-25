@@ -144,7 +144,7 @@ def test_huge_output_file_is_not_read_too_early():
     https://github.com/htcondor/htmap/issues/8
     """
 
-    @htmap.htmap
+    @htmap.mapped
     def huge_output(_):
         return '0' * 1_000_000_000
 

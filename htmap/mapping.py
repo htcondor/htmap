@@ -177,7 +177,7 @@ def transient_map(
     **kwargs,
 ) -> TransientMap:
     """
-    As :func:`htmap.map`, except that it returns an iterator over the outputs and the map is immediately removed after use.
+    As :func:`htmap.map`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
     """
     m = map(
         map_id = get_transient_map_id(),
@@ -197,7 +197,7 @@ def transient_starmap(
     map_options: options.MapOptions = None,
 ) -> TransientMap:
     """
-    As :func:`htmap.starmap`, except that it returns an iterator over the outputs and the map is immediately removed after use.
+    As :func:`htmap.starmap`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
     """
     m = starmap(
         map_id = get_transient_map_id(),
@@ -304,6 +304,9 @@ def build_transient_map(
     func: Callable,
     map_options: options.MapOptions = None,
 ) -> TransientMap:
+    """
+    As :func:`htmap.build_map`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
+    """
     mb = MapBuilder(
         map_id = map_id,
         func = func,

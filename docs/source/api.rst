@@ -49,7 +49,7 @@ MappedFunction
 
 A more convenient and flexible way to work with HTMap is to use the :func:`htmap` decorator to build an :class:`MappedFunction`.
 
-.. autofunction:: htmap.htmap
+.. autofunction:: htmap.mapped
 
 .. autoclass:: htmap.MappedFunction
    :members:
@@ -108,9 +108,9 @@ These functions help you manage your maps.
 
 .. autofunction:: htmap.status
 
-.. autofunction:: htmap.recover
-
 .. autofunction:: htmap.map_ids
+
+.. autofunction:: htmap.load
 
 .. autofunction:: htmap.map_results
 

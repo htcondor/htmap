@@ -58,7 +58,7 @@ class MappedFunction:
         map_options: Optional[options.MapOptions] = None,
         **kwargs,
     ) -> maps.Map:
-        """As :function:`htmap.map`, but the ``func`` argument is the mapped function."""
+        """As :func:`htmap.map`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -77,7 +77,7 @@ class MappedFunction:
         kwargs: Optional[Iterable[Dict[str, Any]]] = None,
         map_options: Optional[options.MapOptions] = None,
     ) -> maps.Map:
-        """As :function:`htmap.starmap`, but the ``func`` argument is the mapped function."""
+        """As :func:`htmap.starmap`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -94,7 +94,7 @@ class MappedFunction:
         map_id: str,
         map_options: Optional[options.MapOptions] = None,
     ) -> mapping.MapBuilder:
-        """As :function:`htmap.build_map`, but the ``func`` argument is the mapped function."""
+        """As :func:`htmap.build_map`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -110,7 +110,7 @@ class MappedFunction:
         map_options: options.MapOptions = None,
         **kwargs,
     ) -> mapping.TransientMap:
-        """As :function:`htmap.htmap`, but the ``func`` argument is the mapped function."""
+        """As :func:`htmap.htmap`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 
@@ -127,7 +127,7 @@ class MappedFunction:
         kwargs: Optional[Iterable[Dict[str, Any]]] = None,
         map_options: Optional[options.MapOptions] = None,
     ) -> mapping.TransientMap:
-        """As :function:`htmap.htstarmap`, but the ``func`` argument is the mapped function."""
+        """As :func:`htmap.htstarmap`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
 

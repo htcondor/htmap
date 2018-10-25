@@ -363,7 +363,7 @@ class Map:
 
     def wait(
         self,
-        timeout: Optional[Union[int, datetime.timedelta]] = None,
+        timeout: utils.Timeout = None,
         show_progress_bar: bool = False,
     ) -> datetime.timedelta:
         """
@@ -384,8 +384,7 @@ class Map:
         """
         t = datetime.datetime.now()
         start_time = time.time()
-        if isinstance(timeout, datetime.timedelta):
-            timeout = timeout.total_seconds()
+        timeout = utils.timeout_to_seconds(timeout)
 
         if show_progress_bar:
             pbar = tqdm(
@@ -426,7 +425,7 @@ class Map:
             return result.output
         elif result.status == 'ERR':
             index = self._hash_to_index(result.input_hash)
-            raise exceptions.MapComponentError(f'component {index} of map {self.map_id} encountered error while executing. Error report:\n{self._load_error(output_path).report()}')
+            raise exceptions.MapComponentError(f'component {index} of map {self.map_id} encountered stderr while executing. Error report:\n{self._load_error(output_path).report()}')
         else:
             raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
 
@@ -443,7 +442,7 @@ class Map:
     def get(
         self,
         item: int,
-        timeout: Optional[Union[int, datetime.timedelta]] = None,
+        timeout: utils.Timeout = None,
     ) -> Any:
         """
         Return the output associated with the input index.
@@ -456,8 +455,7 @@ class Map:
             How long to wait for the output to exist before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
         """
-        if isinstance(timeout, datetime.timedelta):
-            timeout = timeout.total_seconds()
+        timeout = utils.timeout_to_seconds(timeout)
 
         h = self._index_to_hash(item)
         output_path = self._outputs_dir / f'{h}.out'
@@ -475,10 +473,9 @@ class Map:
     def get_err(
         self,
         item: int,
-        timeout: Optional[Union[int, datetime.timedelta]] = None,
+        timeout: utils.Timeout = None,
     ) -> ComponentError:
-        if isinstance(timeout, datetime.timedelta):
-            timeout = timeout.total_seconds()
+        timeout = utils.timeout_to_seconds(timeout)
 
         h = self._index_to_hash(item)
         output_path = self._outputs_dir / f'{h}.out'
@@ -503,7 +500,7 @@ class Map:
     def iter(
         self,
         callback: Optional[Callable] = None,
-        timeout: Optional[Union[int, datetime.timedelta]] = None,
+        timeout: utils.Timeout = None,
     ) -> Iterator[Any]:
         """
         Returns an iterator over the output of the :class:`htmap.Map` in the same order as the inputs,
@@ -530,7 +527,7 @@ class Map:
     def iter_with_inputs(
         self,
         callback: Optional[Callable] = None,
-        timeout: Optional[Union[int, datetime.timedelta]] = None,
+        timeout: utils.Timeout = None,
     ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
         Returns an iterator over the inputs and output of the :class:`htmap.Map` in the same order as the inputs,
@@ -558,7 +555,7 @@ class Map:
     def iter_as_available(
         self,
         callback: Optional[Callable] = None,
-        timeout: Optional[Union[int, datetime.timedelta]] = None,
+        timeout: utils.Timeout = None,
     ) -> Iterator[Any]:
         """
         Returns an iterator over the output of the :class:`htmap.Map`,
@@ -574,8 +571,7 @@ class Map:
             How long to wait for the entire iteration to complete before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
         """
-        if isinstance(timeout, datetime.timedelta):
-            timeout = timeout.total_seconds()
+        timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
 
         if callback is None:
@@ -600,7 +596,7 @@ class Map:
     def iter_as_available_with_inputs(
         self,
         callback: Optional[Callable] = None,
-        timeout: Optional[Union[int, datetime.timedelta]] = None,
+        timeout: utils.Timeout = None,
     ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
         Returns an iterator over the inputs and output of the :class:`htmap.Map`,
@@ -616,8 +612,7 @@ class Map:
             How long to wait for the entire iteration to complete before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
         """
-        if isinstance(timeout, datetime.timedelta):
-            timeout = timeout.total_seconds()
+        timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
 
         if callback is None:
@@ -824,29 +819,75 @@ class Map:
             disk = f'{disk}MB'
         self._edit('RequestDisk', disk)
 
-    def _iter_output(self, item: int) -> Iterator[str]:
-        h = self._index_to_hash(item)
-        with (self._map_dir / 'job_logs' / f'{h}.output').open() as file:
-            yield from file
+    def stdout(
+        self,
+        item: int,
+        timeout: utils.Timeout = None,
+    ) -> str:
+        """
+        Return a string containing the stdout from a single map component.
 
-    def _iter_error(self, item: int) -> Iterator[str]:
-        h = self._index_to_hash(item)
-        with (self._map_dir / 'job_logs' / f'{h}.error').open() as file:
-            yield from file
+        Parameters
+        ----------
+        item
+            The index of the map component to look up.
+        timeout
+            How long to wait before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
 
-    def output(self, item: int) -> str:
+        Returns
+        -------
+        stderr :
+            The standard output of the map component.
         """
-        Return a string containing the stdout from a single completed map argument.
-        The argument is the index of the input in the original arguments to the map.
-        """
-        return utils.rstr(''.join(self._iter_output(item)))
+        timeout = utils.timeout_to_seconds(timeout)
 
-    def error(self, item: int) -> str:
+        path = self._map_dir / 'job_logs' / f'{self._index_to_hash(item)}.stdout'
+
+        try:
+            utils.wait_for_path_to_exist(path, timeout)
+        except exceptions.TimeoutError as e:
+            if timeout <= 0:
+                raise exceptions.OutputNotFound(f'stdout for index {item} not found') from e
+            else:
+                raise e
+
+        return utils.rstr(path.read_text())
+
+    def stderr(
+        self,
+        item: int,
+        timeout: utils.Timeout = None,
+    ) -> str:
         """
-        Return a string containing the stderr from a single completed map argument.
-        The argument is the index of the input in the original arguments to the map.
+        Return a string containing the stderr from a single map component.
+
+        Parameters
+        ----------
+        item
+            The index of the map component to look up.
+        timeout
+            How long to wait before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+
+        Returns
+        -------
+        stderr :
+            The standard error of the map component.
         """
-        return utils.rstr(''.join(self._iter_error(item)))
+        timeout = utils.timeout_to_seconds(timeout)
+
+        path = self._map_dir / 'job_logs' / f'{self._index_to_hash(item)}.stderr'
+
+        try:
+            utils.wait_for_path_to_exist(path, timeout)
+        except exceptions.TimeoutError as e:
+            if timeout <= 0:
+                raise exceptions.OutputNotFound(f'stderr for index {item} not found') from e
+            else:
+                raise e
+
+        return utils.rstr(path.read_text())
 
     def tail(self):
         """

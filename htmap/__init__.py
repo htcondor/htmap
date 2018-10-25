@@ -28,8 +28,8 @@ from .maps import Map, Status
 from .options import MapOptions
 from .management import (
     status,
-    map_ids, map_results,
-    load,
+    map_ids,
+    load, map_results,
     clean, force_clean,
     remove, force_remove,
 )
