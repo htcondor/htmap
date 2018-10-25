@@ -235,8 +235,6 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
 
     sub = htcondor.Submit(options_dict)
 
-    print(sub)
-
     return sub, itemdata
 
 

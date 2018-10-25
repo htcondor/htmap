@@ -471,6 +471,9 @@ class MapResult:
 
             time.sleep(1)
 
+    def iter_inputs(self):
+        yield from (htio.load_object(input_path) for input_path in self._input_file_paths)
+
     def _requirements(self, requirements: Optional[str] = None) -> str:
         """Build an HTCondor requirements expression that captures all of the ``cluster_id`` for this map."""
         base = f"({' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)})"
