@@ -47,9 +47,14 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
     if 'delivery_methods' in metafunc.fixturenames:
         metafunc.parametrize(
-            "delivery_methods",
+            'delivery_method',
             metafunc.config.getoption('delivery').split(),
         )
+
+
+@pytest.fixture()
+def delivery_methods(delivery_method):
+    htmap.settings['DELIVERY_METHOD'] = delivery_method
 
 
 def get_base_options_for_tests(map_id, map_dir, delivery, test_id = None):
