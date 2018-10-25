@@ -40,5 +40,5 @@ def test_decorator_with_map_options():
     assert isinstance(foo, htmap.MappedFunction)
 
 
-def test_can_still_call_function_as_normal(mapped_doubler):
+def test_can_still_call_wrapped_function_as_normal(mapped_doubler):
     assert mapped_doubler(5) == 10

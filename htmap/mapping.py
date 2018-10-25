@@ -16,6 +16,7 @@
 from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any
 import logging
 
+import time
 import shutil
 from pathlib import Path
 import itertools
@@ -50,7 +51,6 @@ def map(
     map_id: str,
     func: Callable,
     args: Iterable[Any],
-    force_overwrite: bool = False,
     map_options: options.MapOptions = None,
     **kwargs,
 ) -> maps.Map:
@@ -70,8 +70,6 @@ def map(
         An iterable of arguments to pass to the mapped function.
     kwargs
         Any additional keyword arguments are passed as keyword arguments to the mapped function.
-    force_overwrite
-        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
     map_options
         An instance of :class:`htmap.MapOptions`.
 
@@ -86,7 +84,6 @@ def map(
         map_id,
         func,
         args_and_kwargs,
-        force_overwrite = force_overwrite,
         map_options = map_options,
     )
 
@@ -96,7 +93,6 @@ def starmap(
     func: Callable,
     args: Optional[Iterable[tuple]] = None,
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-    force_overwrite: bool = False,
     map_options: options.MapOptions = None,
 ) -> maps.Map:
     """
@@ -113,8 +109,6 @@ def starmap(
         An iterable of tuples of positional arguments to unpack into the mapped function.
     kwargs
         An iterable of dictionaries of keyword arguments to unpack into the mapped function.
-    force_overwrite
-        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
     map_options
         An instance of :class:`htmap.MapOptions`.
 
@@ -133,9 +127,87 @@ def starmap(
         map_id,
         func,
         args_and_kwargs,
-        force_overwrite = force_overwrite,
         map_options = map_options,
     )
+
+
+id_gen = itertools.count()
+
+
+def get_transient_map_id() -> str:
+    return f'tmp-{int(time.time())}-{next(id_gen)}'
+
+
+class TransientMap:
+    def __init__(self, map: maps.Map):
+        self._map = map
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}(map = {self._map})>'
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._cleanup()
+
+        return False  # re-raise exceptions
+
+    def __iter__(self):
+        try:
+            yield from self._map
+        finally:
+            self._cleanup()
+
+    def __del__(self):
+        self._cleanup()
+
+    def _cleanup(self):
+        try:
+            self._map.remove()
+            logger.debug(f'removed transient map {self._map.map_id}')
+        except exceptions.MapWasRemoved:
+            pass
+
+
+def transient_map(
+    func: Callable,
+    args: Iterable[Any],
+    map_options: options.MapOptions = None,
+    **kwargs,
+) -> TransientMap:
+    """
+    As :func:`htmap.map`, except that it returns an iterator over the outputs and the map is immediately removed after use.
+    """
+    m = map(
+        map_id = get_transient_map_id(),
+        func = func,
+        args = args,
+        map_options = map_options,
+        **kwargs,
+    )
+
+    return TransientMap(m)
+
+
+def transient_starmap(
+    func: Callable,
+    args: Optional[Iterable[tuple]] = None,
+    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+    map_options: options.MapOptions = None,
+) -> TransientMap:
+    """
+    As :func:`htmap.starmap`, except that it returns an iterator over the outputs and the map is immediately removed after use.
+    """
+    m = starmap(
+        map_id = get_transient_map_id(),
+        func = func,
+        args = args,
+        kwargs = kwargs,
+        map_options = map_options,
+    )
+
+    return TransientMap(m)
 
 
 class MapBuilder:
@@ -143,12 +215,10 @@ class MapBuilder:
         self,
         map_id: str,
         func: Callable,
-        force_overwrite: bool = False,
         map_options: options.MapOptions = None,
     ):
         self.func = func
         self.map_id = map_id
-        self.force_overwrite = force_overwrite
         self.map_options = map_options
 
         self.args = []
@@ -175,7 +245,6 @@ class MapBuilder:
             func = self.func,
             args = self.args,
             kwargs = self.kwargs,
-            force_overwrite = self.force_overwrite,
             map_options = self.map_options
         )
 
@@ -204,7 +273,6 @@ class MapBuilder:
 def build_map(
     map_id: str,
     func: Callable,
-    force_overwrite: bool = False,
     map_options: options.MapOptions = None,
 ) -> MapBuilder:
     """
@@ -216,8 +284,6 @@ def build_map(
         The ``map_id`` to assign to this map.
     func
         The function to map over.
-    force_overwrite
-        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
     map_options
         An instance of :class:`htmap.MapOptions`.
 
@@ -229,16 +295,28 @@ def build_map(
     return MapBuilder(
         map_id = map_id,
         func = func,
-        force_overwrite = force_overwrite,
         map_options = map_options,
     )
+
+
+def build_transient_map(
+    map_id: str,
+    func: Callable,
+    map_options: options.MapOptions = None,
+) -> TransientMap:
+    mb = MapBuilder(
+        map_id = map_id,
+        func = func,
+        map_options = map_options,
+    )
+
+    return TransientMap(mb.result)
 
 
 def submit_map(
     map_id: str,
     func: Callable,
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
-    force_overwrite: bool = False,
     map_options: Optional[options.MapOptions] = None,
 ) -> maps.Map:
     """
@@ -257,8 +335,6 @@ def submit_map(
         The function to map the arguments over.
     args_and_kwargs
         The arguments and keyword arguments to map over - the output of :func:`zip_args_and_kwargs`.
-    force_overwrite
-        If ``True``, and there is already a map with the given ``map_id``, it will be removed before running this one.
     map_options
         An instance of :class:`htmap.MapOptions`.
 
@@ -268,16 +344,7 @@ def submit_map(
         A :class:`htmap.Map` representing the map.
     """
     raise_if_map_id_is_invalid(map_id)
-
-    if force_overwrite:
-        try:
-            existing_result = maps.Map.recover(map_id)
-            existing_result.remove()
-            logger.debug(f'force-overwrote map {map_id}')
-        except exceptions.MapIdNotFound:
-            logger.debug(f'force-overwrite not needed for map_id {map_id}')
-    else:
-        raise_if_map_id_already_exists(map_id)
+    raise_if_map_id_already_exists(map_id)
 
     logger.debug(f'creating map {map_id}...')
 

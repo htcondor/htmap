@@ -22,19 +22,9 @@ import htmap
 def test_recover_shortcut(mapped_doubler):
     result = mapped_doubler.map('map', range(3))
 
-    recovered = htmap.recover('map')
+    recovered = htmap.load('map')
 
-    assert result.map_id == recovered.map_id
-    assert result.cluster_ids == recovered.cluster_ids
-    assert result.hashes == recovered.hashes
-
-
-def test_recover_shortcut_calls_recover_method(mapped_doubler, mocker):
-    mocked = mocker.patch.object(htmap.map.Map, 'recover')
-
-    htmap.recover('map')
-
-    assert mocked.was_called
+    assert recovered is result
 
 
 def test_recover_classmethod(mapped_doubler):
@@ -42,11 +32,9 @@ def test_recover_classmethod(mapped_doubler):
 
     recovered = htmap.Map.recover('map')
 
-    assert result.map_id == recovered.map_id
-    assert result.cluster_ids == recovered.cluster_ids
-    assert result.hashes == recovered.hashes
+    assert recovered is result
 
 
 def test_recover_on_bad_mapid_raises_map_id_not_found():
     with pytest.raises(htmap.exceptions.MapIdNotFound):
-        htmap.recover('no_such_mapid')
+        htmap.load('no_such_mapid')

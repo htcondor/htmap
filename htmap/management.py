@@ -24,7 +24,7 @@ from . import mapping, maps, utils, exceptions
 logger = logging.getLogger(__name__)
 
 
-def recover(map_id: str) -> maps.Map:
+def load(map_id: str) -> maps.Map:
     """
     Reconstruct a :class:`Map` from its ``map_id``.
 
@@ -56,7 +56,7 @@ def map_ids() -> Tuple[str]:
 
 def map_results() -> Tuple[maps.Map, ...]:
     """Return a :class:`tuple` containing the :class:`Map` for all existing maps."""
-    return tuple(recover(map_id) for map_id in map_ids())
+    return tuple(load(map_id) for map_id in map_ids())
 
 
 def remove(map_id: str, not_exist_ok = True):
@@ -71,10 +71,12 @@ def remove(map_id: str, not_exist_ok = True):
         If ``False``, raise :class:`htmap.exceptions.MapIdNotFound` if the ``map_id`` doesn't exist.
     """
     try:
-        r = recover(map_id)
+        r = load(map_id)
         r.remove()
-    except exceptions.MapIdNotFound as e:
+    except (exceptions.MapIdNotFound, FileNotFoundError) as e:
         if not not_exist_ok:
+            if not isinstance(e, exceptions.MapIdNotFound):
+                raise exceptions.MapIdNotFound(f'map {map_id} not found') from e
             raise e
 
 

@@ -12,8 +12,23 @@ Every map that you run produces a :class:`Map` which is connected to a unique ``
 A ``map_id`` cannot be re-used until the associated map has been deleted.
 
 
-Mapping Functions
------------------
+Transient Mapping Functions
+---------------------------
+
+.. note::
+
+    The environment variable HTMAP_ON_EXECUTE is set to ``'1'`` while map components are executing out on the cluster.
+    This can be useful if you need to switch certain behavior on whether you're running your function locally or not.
+
+.. autofunction:: htmap.transient_map
+
+.. autofunction:: htmap.transient_starmap
+
+.. autofunction:: htmap.build_transient_map
+
+
+Persistent Mapping Functions
+----------------------------
 
 .. autofunction:: htmap.map
 
@@ -21,13 +36,13 @@ Mapping Functions
 
 .. autofunction:: htmap.build_map
 
+
+Map Builder
+-----------
+
 .. autoclass:: htmap.MapBuilder
    :members:
 
-.. note::
-
-    The environment variable HTMAP_ON_EXECUTE is set to ``'1'`` while map components are executing out on the cluster.
-    This can be useful if you need to switch certain behavior on whether you're running your function locally or not.
 
 MappedFunction
 --------------
@@ -41,7 +56,7 @@ A more convenient and flexible way to work with HTMap is to use the :func:`htmap
 
 
 Map
----------
+---
 
 The :class:`Map` is your window into the status and output of your map.
 Once you get a map result back from a map call,

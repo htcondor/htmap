@@ -16,6 +16,7 @@
 import functools
 import time
 import itertools
+import gc
 import subprocess
 from pathlib import Path
 
@@ -35,15 +36,25 @@ def set_transplant_dir(tmpdir_factory):
     htmap.settings['TRANSPLANT.PATH'] = path
 
 
-@pytest.fixture(
-    params = [
-        'assume',
-        'docker',
-        # 'transplant',
-    ],
-)
-def delivery_methods(request):
-    htmap.settings['DELIVERY_METHOD'] = request.param
+def pytest_addoption(parser):
+    parser.addoption(
+        "--delivery",
+        action = "store",
+        default = 'assume',
+    )
+
+
+def pytest_generate_tests(metafunc):
+    if 'delivery_methods' in metafunc.fixturenames:
+        metafunc.parametrize(
+            'delivery_method',
+            metafunc.config.getoption('delivery').split(),
+        )
+
+
+@pytest.fixture()
+def delivery_methods(delivery_method):
+    htmap.settings['DELIVERY_METHOD'] = delivery_method
 
 
 def get_base_options_for_tests(map_id, map_dir, delivery, test_id = None):
@@ -97,7 +108,7 @@ def mapped_doubler(doubler):
 
 @pytest.fixture(scope = 'session')
 def power():
-    def power(x = 0, p = 0):
+    def power(x = 0, p = 2):
         return x ** p
 
     return power
@@ -135,3 +146,11 @@ def mapped_exception():
 
 def exception_msg(exc_info) -> str:
     return str(exc_info.value)
+
+
+class gc_disabled:
+    def __enter__(self):
+        gc.disable()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        gc.enable()
