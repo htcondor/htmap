@@ -74,6 +74,7 @@ These settings control how the ``docker`` delivery method works.
 ``IMAGE`` - the path to the Docker image to run components with.
 Defaults to ``'continuumio/anaconda3:latest'``.
 
+.. _transplant-settings:
 
 TRANSPLANT
 ++++++++++
