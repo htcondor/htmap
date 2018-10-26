@@ -346,11 +346,15 @@ def _run_delivery_setup_for_transplant(
     map_dir: Path,
 ):
     if not _cached_py_is_current() or settings['TRANSPLANT.ASSUME_EXISTS']:
-        transplant_path = Path(settings['TRANSPLANT.PATH'])
+        if 'usr' in sys.executable:
+            raise exceptions.CannotTransplantPython('system Python installations cannot be transplanted')
         py_dir = Path(sys.executable).parent.parent
-        target = transplant_path / 'htmap_python'
 
-        logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent}...')
+        transplant_path = Path(settings['TRANSPLANT.PATH'])
+        target = transplant_path / 'htmap_python'
+        final_path = target.with_name('htmap_python.tar.gz')
+
+        logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
 
         try:
             shutil.make_archive(
@@ -359,10 +363,10 @@ def _run_delivery_setup_for_transplant(
                 root_dir = py_dir,
             )
         except BaseException as e:
-            target.with_name('htmap_python.tar.gz').unlink()
+            final_path.unlink()
             raise e
 
-        logger.debug('created zipped Python install for transplant')
+        logger.debug(f'created zipped Python install for transplant, stored at {final_path}')
 
         cached_req_path = transplant_path / 'freeze'
         cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
