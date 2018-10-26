@@ -46,7 +46,7 @@ def test_map_creates_correct_number_of_outputs_files(mapped_doubler):
     num_inputs = 3
     result = mapped_doubler.map('map', range(num_inputs))
 
-    result.wait()
+    result.wait(timeout = 180)
 
     assert get_number_of_files_in_dir(result._outputs_dir) == num_inputs
 
@@ -59,7 +59,7 @@ def test_starmap_creates_correct_number_of_output_files(mapped_power):
         kwargs = ({'p': p} for p in range(num_inputs)),
     )
 
-    result.wait()
+    result.wait(timeout = 180)
 
     assert get_number_of_files_in_dir(result._outputs_dir) == num_inputs
 

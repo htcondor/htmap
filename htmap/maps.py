@@ -224,10 +224,9 @@ class Map:
             This is an implementation detail and should not be relied on.
         """
         self.map_id = map_id
-        self.cluster_ids = cluster_ids
-        self.submit = submit
-        self.hashes = tuple(hashes)
-        self.hash_set = set(self.hashes)
+        self._cluster_ids = cluster_ids
+        self._submit = submit
+        self._hashes = tuple(hashes)
 
         self._is_removed = False
 
@@ -280,11 +279,18 @@ class Map:
 
     def __len__(self):
         """The length of a :class:`Map` is the number of inputs it contains."""
-        return len(self.hashes)
+        return len(self._hashes)
+
+    @property
+    def _hash_set(self):
+        """The map's input hashes, as a set."""
+        return set(self._hashes)
 
     @property
     def _indices_by_hash(self):
-        return {h: i for i, h in enumerate(self.hashes)}
+        """The inverse-mapping between hashes and indices."""
+        # todo: eventually replace with bidict
+        return {h: i for i, h in enumerate(self._hashes)}
 
     @property
     def _map_dir(self) -> Path:
@@ -304,12 +310,12 @@ class Map:
     @property
     def _input_file_paths(self):
         """The paths to the input files."""
-        yield from (self._inputs_dir / f'{h}.in' for h in self.hashes)
+        yield from (self._inputs_dir / f'{h}.in' for h in self._hashes)
 
     @property
     def _output_file_paths(self):
         """The paths to the output files."""
-        yield from (self._outputs_dir / f'{h}.out' for h in self.hashes)
+        yield from (self._outputs_dir / f'{h}.out' for h in self._hashes)
 
     def _remove_from_queue(self):
         return self._act(htcondor.JobAction.Remove)
@@ -323,7 +329,7 @@ class Map:
 
     def _index_to_hash(self, index: int) -> str:
         """Return the hash associated with an input index."""
-        return self.hashes[index]
+        return self._hashes[index]
 
     def _hash_to_index(self, hash: str) -> int:
         return self._indices_by_hash[hash]
@@ -336,13 +342,13 @@ class Map:
     def _missing_hashes(self) -> List[str]:
         """Return a list of input hashes that don't have output, ordered by input index."""
         done = set(f.stem for f in self._outputs_dir.iterdir())
-        return [h for h in self.hashes if h not in done]
+        return [h for h in self._hashes if h not in done]
 
     @property
     def _completed_hashes(self) -> List[str]:
         """Return a list of input hashes that do have output, ordered by input index."""
         done = set(f.stem for f in self._outputs_dir.iterdir())
-        return [h for h in self.hashes if h in done]
+        return [h for h in self._hashes if h in done]
 
     @property
     def is_done(self) -> bool:
@@ -640,7 +646,7 @@ class Map:
         yield from (htio.load_object(input_path) for input_path in self._input_file_paths)
 
     def error_reports(self):
-        for item in range(len(self.hashes)):
+        for item in range(len(self._hashes)):
             try:
                 yield self.get_err(item).report()
             except (exceptions.OutputNotFound, exceptions.ExpectedError) as e:
@@ -648,7 +654,7 @@ class Map:
 
     def _requirements(self, requirements: Optional[str] = None) -> str:
         """Build an HTCondor requirements expression that captures all of the ``cluster_id`` for this map."""
-        base = f"({' || '.join(f'ClusterId=={cid}' for cid in self.cluster_ids)})"
+        base = f"({' || '.join(f'ClusterId=={cid}' for cid in self._cluster_ids)})"
         extra = f' && {requirements}' if requirements is not None else ''
 
         return base + extra
@@ -674,7 +680,7 @@ class Map:
         classads :
             An iterator of matching :class:`classad.ClassAd`, with only the projected fields.
         """
-        if self.cluster_ids is None:
+        if self._cluster_ids is None:
             yield from ()
         if projection is None:
             projection = []
@@ -928,7 +934,7 @@ class Map:
             new_itemdata,
         )
 
-        self.cluster_ids.append(submit_result.cluster())
+        self._cluster_ids.append(submit_result.cluster())
 
         logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.map_id}')
 
@@ -986,7 +992,7 @@ class Map:
             dst = new_map_dir,
         )
 
-        submit = htcondor.Submit(dict(self.submit))
+        submit = htcondor.Submit(dict(self._submit))
         submit['JobBatchName'] = map_id
 
         # fix paths
@@ -1002,6 +1008,6 @@ class Map:
         return Map(
             map_id = map_id,
             submit = submit,
-            cluster_ids = self.cluster_ids,
-            hashes = self.hashes,
+            cluster_ids = self._cluster_ids,
+            hashes = self._hashes,
         )

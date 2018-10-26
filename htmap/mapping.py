@@ -80,7 +80,7 @@ def map(
     """
     args = ((arg,) for arg in args)
     args_and_kwargs = zip(args, itertools.repeat(kwargs))
-    return submit_map(
+    return create_map(
         map_id,
         func,
         args_and_kwargs,
@@ -97,7 +97,8 @@ def starmap(
 ) -> maps.Map:
     """
     Map a function call over aligned iterables of arguments and keyword arguments.
-    Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function, so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
+    Each element of ``args`` and ``kwargs`` is unpacked into the signature of the function,
+    so their elements should be tuples and dictionaries corresponding to position and keyword arguments of the mapped function.
 
     Parameters
     ----------
@@ -123,7 +124,7 @@ def starmap(
         kwargs = ()
 
     args_and_kwargs = zip_args_and_kwargs(args, kwargs)
-    return submit_map(
+    return create_map(
         map_id,
         func,
         args_and_kwargs,
@@ -316,7 +317,7 @@ def build_transient_map(
     return TransientMap(mb.result)
 
 
-def submit_map(
+def create_map(
     map_id: str,
     func: Callable,
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
@@ -464,7 +465,13 @@ def zip_args_and_kwargs(
     kwargs: Iterable[Dict],
 ) -> Iterator[Tuple[Tuple, Dict]]:
     """
-    Combine iterables of arguments and keyword arguments into a zipped, filled iterator of arguments and keyword arguments (i.e., tuples and dictionaries).
+    Combine iterables of arguments and keyword arguments into a zipped,
+    filled iterator of arguments and keyword arguments (i.e., tuples and dictionaries).
+
+    .. caution ::
+
+        This function will happily run forever when given infinite iterator inputs.
+        Be careful!
 
     Parameters
     ----------

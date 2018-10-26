@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import shutil
-import time
 
 import pytest
 

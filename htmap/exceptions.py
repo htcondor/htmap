@@ -80,16 +80,20 @@ class UnknownPythonDeliveryMechanism(HTMapException):
 
 
 class MapWasRemoved(HTMapException):
+    """This map has been removed, and can no longer be interacted with."""
     pass
 
 
 class InvalidOutputStatus(HTMapException):
+    """The output status of the map component was not recognized."""
     pass
 
 
 class MapComponentError(HTMapException):
+    """A map component experienced an error during remote execution."""
     pass
 
 
 class ExpectedError(HTMapException):
+    """A map component that contained an OK result was unpacked as if it contained an error."""
     pass
