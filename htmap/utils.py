@@ -89,7 +89,10 @@ def timeout_to_seconds(timeout: Union[int, float, datetime.timedelta]) -> Option
 
 
 class rstr(str):
-    """Identical to a normal Python string, except that it's __repr__ is its __str__, to make it work nicer in notebooks."""
+    """
+    Identical to a normal Python string, except that it's __repr__ is its __str__,
+    to make it work nicer in notebooks.
+    """
 
     def __repr__(self):
         return self.__str__()
@@ -105,10 +108,12 @@ def table(headers: Iterable[str], rows: Iterable[Iterable[Any]], fill: str = '',
         The column headers for the table.
     rows
         The entries for each row, for each column.
-        Should be an iterable of iterables or mappings, with the outer level containing the rows, and each inner iterable containing the entries for each column.
+        Should be an iterable of iterables or mappings, with the outer level containing the rows,
+        and each inner iterable containing the entries for each column.
         A ``None`` in the outer iterable produces a horizontal bar at that position.
         An iterable-type row is printed in order.
-        A mapping-type row uses the headers as keys to align the stdout and can have missing values, which are filled using the ```fill`` value.
+        A mapping-type row uses the headers as keys to align the stdout and can have missing values,
+        which are filled using the ```fill`` value.
     fill
         The string to print in place of a missing value in a mapping-type row.
 

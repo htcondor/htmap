@@ -15,37 +15,34 @@
 
 import pytest
 
+from datetime import timedelta
+from pathlib import Path
+
 import htmap
+from htmap.utils import wait_for_path_to_exist, timeout_to_seconds
 
 
-def test_decorator_without_parens():
-    @htmap.mapped
-    def foo(x):
-        return x
+def test_returns_when_path_does_exist():
+    path = Path(__file__)
 
-    assert isinstance(foo, htmap.MappedFunction)
+    wait_for_path_to_exist(path)
 
 
-def test_decorator_with_parens():
-    @htmap.mapped()
-    def foo(x):
-        return x
+def test_timeout_on_nonexistent_path():
+    path = Path('foo')
 
-    assert isinstance(foo, htmap.MappedFunction)
-
-
-def test_decorator_with_map_options():
-    @htmap.mapped(map_options = htmap.MapOptions())
-    def foo(x):
-        return x
-
-    assert isinstance(foo, htmap.MappedFunction)
+    with pytest.raises(htmap.exceptions.TimeoutError):
+        wait_for_path_to_exist(path, timeout = .01)
 
 
-def test_can_still_call_wrapped_function_as_normal(mapped_doubler):
-    assert mapped_doubler(5) == 10
-
-
-def test_bad_call_raises():
-    with pytest.raises(TypeError):
-        htmap.mapped('foo')
+@pytest.mark.parametrize(
+    'timeout, expected',
+    [
+        (1, 1.0),
+        (.1, .1),
+        (timedelta(seconds = 2.3), 2.3),
+        (None, None),
+    ]
+)
+def test_timeout_to_seconds(timeout, expected):
+    assert timeout_to_seconds(timeout) == expected

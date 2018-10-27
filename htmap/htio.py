@@ -62,6 +62,7 @@ def load_object(path: Path) -> Any:
 
         # this tries to figure out if the file is currently being transferred
         # if so, retry until it succeeds or stops changing size (transfer is done and something else is wrong)
+        # todo: remove once the new event log code is implemented
         except (pickle.UnpicklingError, EOFError) as e:
             curr_size = utils.get_file_size(path)
             if curr_size == old_size:

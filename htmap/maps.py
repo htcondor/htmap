@@ -71,25 +71,6 @@ JOB_STATUS_STRINGS = {
 }
 
 
-def _protector(method):
-    @functools.wraps(method)
-    def _protect(self, *args, **kwargs):
-        if self._is_removed:
-            raise exceptions.MapWasRemoved(f'cannot call {method} for map {self.map_id} because it has been removed')
-        return method(self, *args, **kwargs)
-
-    return _protect
-
-
-def _protect_map_after_remove(result_class):
-    # decorate all public instance methods
-    for key, member in inspect.getmembers(result_class, predicate = inspect.isfunction):
-        if not key.startswith('_'):
-            setattr(result_class, key, _protector(member))
-
-    return result_class
-
-
 class ComponentError:
     def __init__(
         self,
@@ -199,6 +180,25 @@ class ComponentError:
         return '\n'.join(lines)
 
 
+def _protector(method):
+    @functools.wraps(method)
+    def _protect(self, *args, **kwargs):
+        if self._is_removed:
+            raise exceptions.MapWasRemoved(f'cannot call {method} for map {self.map_id} because it has been removed')
+        return method(self, *args, **kwargs)
+
+    return _protect
+
+
+def _protect_map_after_remove(result_class):
+    # decorate all public instance methods
+    for key, member in inspect.getmembers(result_class, predicate = inspect.isfunction):
+        if not key.startswith('_'):
+            setattr(result_class, key, _protector(member))
+
+    return result_class
+
+
 MAPS = weakref.WeakValueDictionary()
 
 
@@ -206,12 +206,29 @@ MAPS = weakref.WeakValueDictionary()
 class Map:
     """
     Represents the results from a map call.
-    The constructor is documented here, but you should never need to build a :class:`Map` manually.
+    The constructor is documented here, but you should never build a :class:`Map` manually.
     Instead, you'll get your :class:`Map` by calling a :class:`MappedFunction` class method or by using :func:`htmap.recover`.
     """
 
-    def __init__(self, map_id: str, cluster_ids: List[int], submit, hashes: Iterable[str]):
+    def __new__(cls, map_id: str, *args, **kwargs):
+        try:
+            return MAPS[map_id]
+        except KeyError:
+            return super().__new__(cls)
+
+    def __init__(
+        self,
+        map_id: str,
+        cluster_ids: Iterable[int],
+        submit: htcondor.Submit,
+        hashes: Iterable[str],
+    ):
         """
+        .. warning ::
+
+            You should never instantiate a :class:`Map` directly!
+            We are not responsible for whatever vile contraption you build if you do.
+
         Parameters
         ----------
         map_id
@@ -223,8 +240,11 @@ class Map:
             The hashes of the inputs for this :class:`Map`.
             This is an implementation detail and should not be relied on.
         """
+        if map_id in MAPS:  # implies, via __new__, that the map object was already initialized
+            return
+
         self.map_id = map_id
-        self._cluster_ids = cluster_ids
+        self._cluster_ids = list(cluster_ids)
         self._submit = submit
         self._hashes = tuple(hashes)
 
@@ -233,9 +253,9 @@ class Map:
         MAPS[self.map_id] = self
 
     @classmethod
-    def recover(cls, map_id: str) -> 'Map':
+    def load(cls, map_id: str) -> 'Map':
         """
-        Reconstruct a :class:`Map` from its ``map_id``.
+        Load a :class:`Map` by looking up its ``map_id``.
 
         Raises :class:`htmap.exceptions.MapIdNotFound` if the ``map_id`` does not exist.
 
@@ -246,33 +266,31 @@ class Map:
 
         Returns
         -------
-        result
-            The result with the given ``map_id``.
+        map
+            The map with the given ``map_id``.
         """
         try:
             return MAPS[map_id]
         except KeyError:
-            pass
+            map_dir = mapping.map_dir_path(map_id)
+            try:
+                with (map_dir / 'cluster_ids').open() as file:
+                    cluster_ids = [int(cid.strip()) for cid in file]
 
-        map_dir = mapping.map_dir_path(map_id)
-        try:
-            with (map_dir / 'cluster_ids').open() as file:
-                cluster_ids = [int(cid.strip()) for cid in file]
+                hashes = htio.load_hashes(map_dir)
+                submit = htio.load_submit(map_dir)
 
-            hashes = htio.load_hashes(map_dir)
-            submit = htio.load_submit(map_dir)
+            except FileNotFoundError:
+                raise exceptions.MapIdNotFound(f'the map_id {map_id} could not be found')
 
-        except FileNotFoundError:
-            raise exceptions.MapIdNotFound(f'the map_id {map_id} could not be found')
+            logger.debug(f'recovered map result for map {map_id} from {map_dir}')
 
-        logger.debug(f'recovered map result for map {map_id} from {map_dir}')
-
-        return cls(
-            map_id = map_id,
-            cluster_ids = cluster_ids,
-            submit = submit,
-            hashes = hashes,
-        )
+            return cls(
+                map_id = map_id,
+                cluster_ids = cluster_ids,
+                submit = submit,
+                hashes = hashes,
+            )
 
     def __repr__(self):
         return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
@@ -974,7 +992,7 @@ class Map:
 
         if force_overwrite:
             try:
-                existing_result = Map.recover(map_id)
+                existing_result = Map.load(map_id)
                 existing_result.remove()
                 logger.debug(f'force-overwrote map {map_id}')
             except exceptions.MapIdNotFound:

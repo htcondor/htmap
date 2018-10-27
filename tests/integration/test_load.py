@@ -13,39 +13,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import pytest
 
 import htmap
 
 
-def test_decorator_without_parens():
-    @htmap.mapped
-    def foo(x):
-        return x
+def test_load_shortcut(mapped_doubler):
+    result = mapped_doubler.map('map', range(3))
 
-    assert isinstance(foo, htmap.MappedFunction)
+    recovered = htmap.load('map')
 
-
-def test_decorator_with_parens():
-    @htmap.mapped()
-    def foo(x):
-        return x
-
-    assert isinstance(foo, htmap.MappedFunction)
+    assert recovered is result
 
 
-def test_decorator_with_map_options():
-    @htmap.mapped(map_options = htmap.MapOptions())
-    def foo(x):
-        return x
+def test_load_classmethod(mapped_doubler):
+    result = mapped_doubler.map('map', range(3))
 
-    assert isinstance(foo, htmap.MappedFunction)
+    recovered = htmap.Map.load('map')
 
-
-def test_can_still_call_wrapped_function_as_normal(mapped_doubler):
-    assert mapped_doubler(5) == 10
+    assert recovered is result
 
 
-def test_bad_call_raises():
-    with pytest.raises(TypeError):
-        htmap.mapped('foo')
+def test_load_on_bad_mapid_raises_map_id_not_found():
+    with pytest.raises(htmap.exceptions.MapIdNotFound):
+        htmap.load('no_such_mapid')

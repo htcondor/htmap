@@ -15,37 +15,31 @@
 
 import pytest
 
-import htmap
+from pathlib import Path
+
+from htmap import utils
 
 
-def test_decorator_without_parens():
-    @htmap.mapped
-    def foo(x):
-        return x
+def test_file_size(tmpdir):
+    path = Path(tmpdir.mkdir('file_size').join('obj'))
+    n = 1000
 
-    assert isinstance(foo, htmap.MappedFunction)
+    path.write_bytes(b'0' * n)
 
-
-def test_decorator_with_parens():
-    @htmap.mapped()
-    def foo(x):
-        return x
-
-    assert isinstance(foo, htmap.MappedFunction)
+    assert utils.get_file_size(path) == n
 
 
-def test_decorator_with_map_options():
-    @htmap.mapped(map_options = htmap.MapOptions())
-    def foo(x):
-        return x
-
-    assert isinstance(foo, htmap.MappedFunction)
-
-
-def test_can_still_call_wrapped_function_as_normal(mapped_doubler):
-    assert mapped_doubler(5) == 10
-
-
-def test_bad_call_raises():
-    with pytest.raises(TypeError):
-        htmap.mapped('foo')
+@pytest.mark.parametrize(
+    'num_bytes, expected',
+    [
+        (100, '100.0 B'),
+        (1024, '1.0 KB'),
+        (2048, '2.0 KB'),
+        (2049, '2.0 KB'),
+        (1024 * 1024 * 1024 * .5, '512.0 MB'),
+        (1024 * 1024 * 1024, '1.0 GB'),
+        (1024 * 1024 * 1024 * 1024 * .25, '256.0 GB'),
+    ]
+)
+def test_num_bytes_to_str(num_bytes, expected):
+    assert expected == utils.num_bytes_to_str(num_bytes)

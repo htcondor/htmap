@@ -13,28 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import pytest
 
 import htmap
 
 
-def test_recover_shortcut(mapped_doubler):
-    result = mapped_doubler.map('map', range(3))
+def test_loaded_map_is_same_object_as_previously_created_map():
+    map = htmap.Map('singleton', [], None, ())
 
-    recovered = htmap.load('map')
+    recovered = htmap.load('singleton')
 
-    assert recovered is result
-
-
-def test_recover_classmethod(mapped_doubler):
-    result = mapped_doubler.map('map', range(3))
-
-    recovered = htmap.Map.recover('map')
-
-    assert recovered is result
+    assert recovered is map
 
 
-def test_recover_on_bad_mapid_raises_map_id_not_found():
-    with pytest.raises(htmap.exceptions.MapIdNotFound):
-        htmap.load('no_such_mapid')
+def test_new_map_with_same_map_id_is_same_object():
+    map = htmap.Map('singleton', [], None, ())
+
+    again = htmap.Map('singleton', [], None, ())
+
+    assert again is map
+
+
+def test_new_map_with_same_map_id_does_not_change_data():
+    map = htmap.Map('singleton', [], None, ())
+
+    again = htmap.Map('singleton', [], None, ('a', 'b', 'c'))
+
+    assert again._hashes == ()

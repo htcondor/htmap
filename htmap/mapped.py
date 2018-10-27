@@ -16,7 +16,7 @@
 from typing import Iterable, Dict, Union, Optional, Callable, Any, Iterator
 import logging
 
-from . import mapping, options, maps
+from . import mapping, options, maps, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -169,3 +169,5 @@ def mapped(map_options: Optional[options.MapOptions] = None) -> Union[Callable, 
             return MappedFunction(func, map_options = map_options)
 
         return wrapper
+
+    raise TypeError('incorrect use of @mapped decorator - argument should be a callable or a MapOptions, or no argument')

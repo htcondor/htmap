@@ -38,7 +38,7 @@ def load(map_id: str) -> maps.Map:
     map
         The result with the given ``map_id``.
     """
-    return maps.Map.recover(map_id)
+    return maps.Map.load(map_id)
 
 
 def _map_paths() -> Iterator[Path]:
