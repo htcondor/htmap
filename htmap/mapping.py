@@ -369,11 +369,10 @@ def create_map(
         htio.save_itemdata(map_dir, itemdata)
 
         logger.debug(f'submitting map {map_id}...')
-        submit_result = execute_submit(
+        cluster_id = execute_submit(
             submit_object = submit_obj,
             itemdata = itemdata,
         )
-        cluster_id = submit_result.cluster()
 
         logger.debug(f'map {map_id} was assigned clusterid {cluster_id}')
 
@@ -447,8 +446,11 @@ def make_map_dir_and_subdirs(map_dir):
     logger.debug(f'created map directory {map_dir} and subdirectories')
 
 
-def execute_submit(submit_object, itemdata) -> htcondor.SubmitResult:
-    """Execute a map via the scheduler defined by the settings."""
+def execute_submit(submit_object, itemdata) -> int:
+    """
+    Execute a map via the scheduler defined by the settings.
+    Return the HTCondor cluster ID of the map's jobs.
+    """
     schedd = get_schedd()
     with schedd.transaction() as txn:
         submit_result = submit_object.queue_with_itemdata(
@@ -457,7 +459,7 @@ def execute_submit(submit_object, itemdata) -> htcondor.SubmitResult:
             iter(itemdata),
         )
 
-        return submit_result
+        return submit_result.cluster()
 
 
 def zip_args_and_kwargs(

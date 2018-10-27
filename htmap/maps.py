@@ -929,12 +929,11 @@ class Map:
 
         submit_obj = htio.load_submit(self._map_dir)
 
-        submit_result = mapping.execute_submit(
+        new_cluster_id = mapping.execute_submit(
             submit_obj,
             new_itemdata,
         )
-
-        self._cluster_ids.append(submit_result.cluster())
+        self._cluster_ids.append(new_cluster_id)
 
         logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.map_id}')
 
@@ -969,7 +968,7 @@ class Map:
         if map_id == self.map_id:
             raise exceptions.CannotRenameMap('cannot rename a map to the same ``map_id`` it already has')
         if not self.is_done:
-            raise exceptions.CannotRenameMap(f'cannot rename a map that is not complete (job status: {self.status_counts()})')
+            raise exceptions.CannotRenameMap(f'cannot rename a map that is not complete (map status: {self.status_counts()})')
 
         mapping.raise_if_map_id_is_invalid(map_id)
 
