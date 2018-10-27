@@ -16,7 +16,7 @@
 from pathlib import Path
 
 import pytest
-from .conftest import exception_msg
+from tests.conftest import exception_msg
 
 import htmap
 from htmap.options import create_submit_object_and_itemdata, get_base_options_dict
