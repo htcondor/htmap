@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Iterable, Optional, Callable, Dict
+from typing import Union, Iterable, Optional, Callable, Dict, List
 import logging
 
 import sys
@@ -174,7 +174,12 @@ def normalize_path(path: Union[str, Path]) -> str:
     return normalize_path(Path(path))  # local file path, but as a string
 
 
-def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
+def create_submit_object_and_itemdata(
+    map_id: str,
+    map_dir: Path,
+    hashes: List[int],
+    map_options: Optional[MapOptions] = None,
+):
     if map_options is None:
         map_options = MapOptions()
 
@@ -184,16 +189,16 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         settings['DELIVERY_METHOD'],
     )
 
-    options_dict = get_base_options_dict(
+    descriptors = get_base_descriptors(
         map_id,
         map_dir,
         settings['DELIVERY_METHOD'],
     )
 
     itemdata = [{'hash': h} for h in hashes]
-    options_dict['transfer_output_files'] = '$(hash).out'
+    descriptors['transfer_output_files'] = '$(hash).out'
 
-    input_files = options_dict.get('transfer_input_files', [])
+    input_files = descriptors.get('transfer_input_files', [])
     input_files += [
         (map_dir / 'func').as_posix(),
         (map_dir / 'inputs' / '$(hash).in').as_posix(),
@@ -212,14 +217,12 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
             raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {len(hashes)})')
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
-
-    options_dict['transfer_input_files'] = ','.join(input_files)
+    descriptors['transfer_input_files'] = ','.join(input_files)
 
     output_remaps = [
         f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
     ]
-
-    options_dict['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
+    descriptors['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
@@ -229,11 +232,11 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
                 raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {len(hashes)})')
             for dct, v in zip(itemdata, opt_value):
                 dct[itemdata_key] = v
-            options_dict[opt_key] = f'$({itemdata_key})'
+            descriptors[opt_key] = f'$({itemdata_key})'
         else:
-            options_dict[opt_key] = opt_value
+            descriptors[opt_key] = opt_value
 
-    sub = htcondor.Submit(options_dict)
+    sub = htcondor.Submit(descriptors)
 
     return sub, itemdata
 
@@ -250,7 +253,12 @@ def register_delivery_mechanism(
     SETUP_FUNCTION_BY_DELIVERY[name] = setup_func
 
 
-def get_base_options_dict(
+def unregister_delivery_mechanism(name: str):
+    BASE_OPTIONS_FUNCTION_BY_DELIVERY.pop(name)
+    SETUP_FUNCTION_BY_DELIVERY.pop(name)
+
+
+def get_base_descriptors(
     map_id: str,
     map_dir: Path,
     delivery: str,
@@ -269,7 +277,7 @@ def get_base_options_dict(
     try:
         base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
-        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
+        raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
     return {
         **core,
@@ -282,14 +290,14 @@ def run_delivery_setup(
     map_id: str,
     map_dir: Path,
     delivery: str,
-):
+) -> None:
     try:
         SETUP_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
-        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
+        raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
 
-def _get_base_options_dict_for_assume(
+def _get_base_descriptors_for_assume(
     map_id: str,
     map_dir: Path,
 ) -> dict:
@@ -301,11 +309,11 @@ def _get_base_options_dict_for_assume(
 
 register_delivery_mechanism(
     'assume',
-    options_func = _get_base_options_dict_for_assume,
+    options_func = _get_base_descriptors_for_assume,
 )
 
 
-def _get_base_options_dict_for_docker(
+def _get_base_descriptors_for_docker(
     map_id: str,
     map_dir: Path,
 ) -> dict:
@@ -319,11 +327,11 @@ def _get_base_options_dict_for_docker(
 
 register_delivery_mechanism(
     'docker',
-    options_func = _get_base_options_dict_for_docker,
+    options_func = _get_base_descriptors_for_docker,
 )
 
 
-def _get_base_options_dict_for_transplant(
+def _get_base_descriptors_for_transplant(
     map_id: str,
     map_dir: Path,
 ) -> dict:
@@ -391,6 +399,6 @@ def _cached_py_is_current() -> bool:
 
 register_delivery_mechanism(
     'transplant',
-    options_func = _get_base_options_dict_for_transplant,
+    options_func = _get_base_descriptors_for_transplant,
     setup_func = _run_delivery_setup_for_transplant,
 )

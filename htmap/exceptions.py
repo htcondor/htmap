@@ -74,7 +74,7 @@ class CannotRenameMap(HTMapException):
     pass
 
 
-class UnknownPythonDeliveryMechanism(HTMapException):
+class UnknownPythonDeliveryMethod(HTMapException):
     """The specified Python delivery mechanism has not been registered."""
     pass
 

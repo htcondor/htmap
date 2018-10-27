@@ -16,10 +16,11 @@
 import pytest
 
 import htmap
+import htcondor
 
 
 def test_loaded_map_is_same_object_as_previously_created_map():
-    map = htmap.Map('singleton', [], None, ())
+    map = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
 
     recovered = htmap.load('singleton')
 
@@ -27,16 +28,16 @@ def test_loaded_map_is_same_object_as_previously_created_map():
 
 
 def test_new_map_with_same_map_id_is_same_object():
-    map = htmap.Map('singleton', [], None, ())
+    map = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
 
-    again = htmap.Map('singleton', [], None, ())
+    again = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
 
     assert again is map
 
 
 def test_new_map_with_same_map_id_does_not_change_data():
-    map = htmap.Map('singleton', [], None, ())
+    map = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
 
-    again = htmap.Map('singleton', [], None, ('a', 'b', 'c'))
+    again = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
 
     assert again._hashes == ()

@@ -17,13 +17,12 @@ import functools
 import time
 import itertools
 import gc
-import subprocess
 from pathlib import Path
 
 import pytest
 
 import htmap
-from htmap.options import get_base_options_dict
+from htmap.options import get_base_descriptors
 from htmap.settings import BASE_SETTINGS
 
 # start with base settings (ignore user settings for tests)
@@ -57,39 +56,18 @@ def delivery_methods(delivery_method):
     htmap.settings['DELIVERY_METHOD'] = delivery_method
 
 
-def get_base_options_for_tests(map_id, map_dir, delivery, test_id = None):
-    opts = get_base_options_dict(map_id, map_dir, delivery)
-    opts['+htmap_test_id'] = str(test_id)
-
-    return opts
-
-
-ids = itertools.count()
-
-
-# todo: break this into two fixtures, one for setting htmap_dir, one for test_id and cleanup
 @pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir_and_clean_after(tmpdir_factory, mocker):
-    """Use a fresh HTMAP_DIR for every test."""
+def set_htmap_dir_and_clean_after(tmpdir_factory):
+    """Use a fresh HTMAP_DIR for every test and clean it up when done."""
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
     htmap.settings['HTMAP_DIR'] = path
 
-    test_id = next(ids)
-    mocker.patch(
-        'htmap.options.get_base_options_dict',
-        functools.partial(get_base_options_for_tests, test_id = test_id),
-    )
-
     yield
 
-    subprocess.run(
-        [
-            'condor_rm',
-            f'--constraint htmap_test_id=={test_id}',
-        ],
-        stdout = subprocess.DEVNULL,
-        stderr = subprocess.DEVNULL,
-    )
+    try:
+        htmap.clean()
+    except PermissionError:
+        pass
 
 
 @pytest.fixture(scope = 'session')

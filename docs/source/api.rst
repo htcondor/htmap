@@ -112,7 +112,7 @@ These functions help you manage your maps.
 
 .. autofunction:: htmap.load
 
-.. autofunction:: htmap.map_results
+.. autofunction:: htmap.load_maps
 
 .. autofunction:: htmap.remove
 

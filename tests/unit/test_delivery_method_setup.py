@@ -15,24 +15,12 @@
 
 import pytest
 
+from pathlib import Path
+
 import htmap
-
-N = 1
-
-
-def test_hold(mapped_sleepy_double):
-    result = mapped_sleepy_double.map('sleepy', range(N))
-
-    result.hold()
-
-    assert result.status_counts()[htmap.Status.HELD] == N
+from htmap.options import run_delivery_setup
 
 
-def test_hold_then_release(mapped_sleepy_double):
-    result = mapped_sleepy_double.map('sleepy', range(N))
-
-    result.hold()
-    assert result.status_counts()[htmap.Status.HELD] == N
-
-    result.release()
-    assert result.status_counts()[htmap.Status.HELD] == 0
+def test_unknown_delivery_method_raises():
+    with pytest.raises(htmap.exceptions.UnknownPythonDeliveryMethod):
+        run_delivery_setup('foo', Path.cwd(), 'definitely-not-real')

@@ -28,11 +28,18 @@ def test_returns_when_path_does_exist():
     wait_for_path_to_exist(path)
 
 
-def test_timeout_on_nonexistent_path():
+@pytest.mark.parametrize(
+    'timeout',
+    [
+        0,
+        -1
+    ]
+)
+def test_timeout_on_nonexistent_path(timeout):
     path = Path('foo')
 
     with pytest.raises(htmap.exceptions.TimeoutError):
-        wait_for_path_to_exist(path, timeout = .01)
+        wait_for_path_to_exist(path, timeout = timeout)
 
 
 @pytest.mark.parametrize(

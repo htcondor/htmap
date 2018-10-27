@@ -68,7 +68,7 @@ def wait_for_path_to_exist(
 
     start_time = time.time()
     while not path.exists():
-        if timeout is not None and (timeout < 0 or time.time() > start_time + timeout):
+        if timeout is not None and (timeout <= 0 or time.time() > start_time + timeout):
             raise exceptions.TimeoutError(f'timeout while waiting for {path} to exist')
         time.sleep(wait_time)
 

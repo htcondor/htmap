@@ -33,7 +33,7 @@ def test_map_results(mapped_doubler):
     mapped_doubler.map('b', range(1))
     mapped_doubler.map('c', range(1))
 
-    results = htmap.map_results()
+    results = htmap.load_maps()
 
     assert len(results) == 3
 

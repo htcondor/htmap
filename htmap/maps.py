@@ -220,8 +220,8 @@ class Map:
         self,
         map_id: str,
         cluster_ids: Iterable[int],
-        submit: htcondor.Submit,
         hashes: Iterable[str],
+        submit: htcondor.Submit,
     ):
         """
         .. warning ::

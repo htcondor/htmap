@@ -25,11 +25,11 @@ from .mapping import (
 )
 from .mapped import mapped, MappedFunction
 from .maps import Map, Status
-from .options import MapOptions
+from .options import MapOptions, register_delivery_mechanism
 from .management import (
     status,
     map_ids,
-    load, map_results,
+    load, load_maps,
     clean, force_clean,
     remove, force_remove,
 )

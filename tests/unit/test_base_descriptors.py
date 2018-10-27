@@ -15,24 +15,22 @@
 
 import pytest
 
+from pathlib import Path
+
 import htmap
-
-N = 1
-
-
-def test_hold(mapped_sleepy_double):
-    result = mapped_sleepy_double.map('sleepy', range(N))
-
-    result.hold()
-
-    assert result.status_counts()[htmap.Status.HELD] == N
+from htmap.options import get_base_descriptors, register_delivery_mechanism, unregister_delivery_mechanism
 
 
-def test_hold_then_release(mapped_sleepy_double):
-    result = mapped_sleepy_double.map('sleepy', range(N))
+@pytest.fixture(scope = 'module', autouse = True)
+def add_null_delivery():
+    register_delivery_mechanism('null', lambda map_id, map_dir: {})
 
-    result.hold()
-    assert result.status_counts()[htmap.Status.HELD] == N
+    yield
 
-    result.release()
-    assert result.status_counts()[htmap.Status.HELD] == 0
+    unregister_delivery_mechanism('null')
+
+
+def test_job_batch_name_is_map_id():
+    descriptors = get_base_descriptors('foo', Path.cwd(), 'null')
+
+    assert descriptors['JobBatchName'] == 'foo'
