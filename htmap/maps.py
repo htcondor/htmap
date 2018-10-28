@@ -913,21 +913,48 @@ class Map:
 
         return utils.rstr(path.read_text())
 
+    def reader(self):
+        return EventLogReader(self._map_dir / 'cluster_logs' / f'{self._cluster_ids[-1]}.log')
+
     def tail(self):
         """
         Stream any new text added to the map's most recent log file to stdout.
         This function runs forever, so it should only be used in interactive contexts (i.e., the REPL or a Jupyter notebook or similar) where it can be cancelled.
         """
-        with (self._map_dir / 'cluster_logs' / f'{self.cluster_ids[-1]}.log').open() as file:
-            file.seek(0, 2)
-            while True:
-                current = file.tell()
-                line = file.readline()
-                if line == '':
-                    file.seek(current)
-                    time.sleep(.1)
-                else:
-                    print(line, end = '')
+        event_log_path = self._map_dir / 'cluster_logs' / f'{self._cluster_ids[-1]}.log'
+        events = htcondor.JobEventLog(event_log_path.as_posix())
+
+        x = events.events(0)
+        while True:
+            try:
+                event = next(x)
+                print(event.type)
+                print(event.cluster, event.proc)
+                if event.type is htcondor.JobEventType.JOB_AD_INFORMATION:
+                    print(event.arguments)
+                print()
+            except StopIteration:
+                time.sleep(1)
+
+        # print()
+        # for event in events.events(0):
+        #     print(event.type)
+        #     print(event.cluster, event.proc)
+        #     if event.type is htcondor.JobEventType.JOB_AD_INFORMATION:
+        #         print(event.arguments)
+        #
+        #     print()
+
+        # with (self._map_dir / 'cluster_logs' / f'{self.cluster_ids[-1]}.log').open() as file:
+        #     file.seek(0, 2)
+        #     while True:
+        #         current = file.tell()
+        #         line = file.readline()
+        #         if line == '':
+        #             file.seek(current)
+        #             time.sleep(.1)
+        #         else:
+        #             print(line, end = '')
 
     def rerun(self):
         """Reruns the entire map from scratch."""
@@ -1028,3 +1055,36 @@ class Map:
             cluster_ids = self._cluster_ids,
             hashes = self._hashes,
         )
+
+
+IGNORED_EVENTS = (
+    htcondor.JobEventType.IMAGE_SIZE,
+)
+
+
+class EventLogReader:
+    def __init__(
+        self,
+        event_log_path: Path,
+    ):
+        self._events = htcondor.JobEventLog(event_log_path.as_posix()).events(0)
+
+    def events(self):
+        while True:
+            event, info = next(self._events), next(self._events)
+            if event.type in IGNORED_EVENTS:
+                continue
+            yield JobEvent(hash = info.arguments, type = event.type)
+
+
+class JobEvent:
+    def __init__(
+        self,
+        hash: str,
+        type: htcondor.JobEventType,
+    ):
+        self.hash = hash
+        self.type = type
+
+    def __str__(self):
+        return f'{self.__class__.__name__}(hash = {self.hash}, type = {self.type})'
