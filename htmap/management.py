@@ -127,12 +127,12 @@ def status() -> str:
     counts = [m.status_counts() for m in load_maps()]
 
     return utils.table(
-        headers = ['Map ID'] + [str(d) for d in maps.Status.display_statuses()] + ['Data'],
+        headers = ['Map ID'] + [str(d) for d in maps.ComponentStatus.display_statuses()] + ['Data'],
         rows = [
-            [map_id] + [count[d] for d in maps.Status.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
+            [map_id] + [count[d] for d in maps.ComponentStatus.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
             for map_id, count in sorted(
                 zip(ids, counts),
-                key = lambda map_id_and_count: map_id_and_count[1][maps.Status.RUNNING],
+                key = lambda map_id_and_count: map_id_and_count[1][maps.ComponentStatus.RUNNING],
             )
         ],
     )

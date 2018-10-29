@@ -38,7 +38,7 @@ from . import htio, exceptions, utils, mapping
 logger = logging.getLogger(__name__)
 
 
-class Status(enum.IntEnum):
+class ComponentStatus(enum.IntEnum):
     IDLE = 1
     RUNNING = 2
     REMOVED = 3
@@ -48,10 +48,10 @@ class Status(enum.IntEnum):
     SUSPENDED = 7
 
     def __str__(self):
-        return JOB_STATUS_STRINGS[self]
+        return COMPONENT_STATUS_STRINGS[self]
 
     @classmethod
-    def display_statuses(cls) -> Tuple['Status', ...]:
+    def display_statuses(cls) -> Tuple['ComponentStatus', ...]:
         return (
             cls.HELD,
             cls.IDLE,
@@ -60,14 +60,14 @@ class Status(enum.IntEnum):
         )
 
 
-JOB_STATUS_STRINGS = {
-    Status.IDLE: 'Idle',
-    Status.RUNNING: 'Run',
-    Status.REMOVED: 'Removed',
-    Status.COMPLETED: 'Done',
-    Status.HELD: 'Held',
-    Status.TRANSFERRING_OUTPUT: 'Transferring Output',
-    Status.SUSPENDED: 'Suspended',
+COMPONENT_STATUS_STRINGS = {
+    ComponentStatus.IDLE: 'Idle',
+    ComponentStatus.RUNNING: 'Run',
+    ComponentStatus.REMOVED: 'Removed',
+    ComponentStatus.COMPLETED: 'Done',
+    ComponentStatus.HELD: 'Held',
+    ComponentStatus.TRANSFERRING_OUTPUT: 'Transferring Output',
+    ComponentStatus.SUSPENDED: 'Suspended',
 }
 
 
@@ -206,15 +206,14 @@ MAPS = weakref.WeakValueDictionary()
 class Map:
     """
     Represents the results from a map call.
-    The constructor is documented here, but you should never build a :class:`Map` manually.
-    Instead, you'll get your :class:`Map` by calling a :class:`MappedFunction` class method or by using :func:`htmap.recover`.
-    """
 
-    def __new__(cls, map_id: str, *args, **kwargs):
-        try:
-            return MAPS[map_id]
-        except KeyError:
-            return super().__new__(cls)
+    .. warning ::
+
+        You should never instantiate a :class:`Map` directly!
+        Instead, you'll get your :class:`Map` by calling a top-level mapping function like :func:`htmap.map`, a :class:`MappedFunction` mapping method, or by using :func:`htmap.load`.
+        We are not responsible for whatever vile contraption you build if you bypass the correct methods!
+
+    """
 
     def __init__(
         self,
@@ -223,32 +222,16 @@ class Map:
         hashes: Iterable[str],
         submit: htcondor.Submit,
     ):
-        """
-        .. warning ::
-
-            You should never instantiate a :class:`Map` directly!
-            We are not responsible for whatever vile contraption you build if you do.
-
-        Parameters
-        ----------
-        map_id
-            The ``map_id`` to assign to this :class:`Map`.
-        cluster_ids
-            All of the ``cluster_id`` for the jobs associated with this :class:`Map`.
-            This is an implementation detail and should not be relied on.
-        hashes
-            The hashes of the inputs for this :class:`Map`.
-            This is an implementation detail and should not be relied on.
-        """
-        if map_id in MAPS:  # implies, via __new__, that the map object was already initialized
-            return
-
         self.map_id = map_id
         self._cluster_ids = list(cluster_ids)
         self._submit = submit
         self._hashes = tuple(hashes)
 
         self._is_removed = False
+
+        self._events = htcondor.JobEventLog((self._map_dir / 'event_log').as_posix()).events(0)
+        self._clusterproc_to_idx = {}
+        self._component_statuses = [ComponentStatus.IDLE for _ in self._hashes]
 
         MAPS[self.map_id] = self
 
@@ -382,7 +365,7 @@ class Map:
         return any(
             v != 0
             for k, v in self.status_counts().items()
-            if k != Status.COMPLETED
+            if k != ComponentStatus.COMPLETED
         )
 
     def wait(
@@ -715,29 +698,51 @@ class Map:
 
         yield from q
 
+    def _update_component_status(self):
+        hash_to_index = self._indices_by_hash
+        for event in self._events:
+            if event.type == htcondor.JobEventType.SUBMIT:
+                self._clusterproc_to_idx[(event.cluster, event.proc)] = hash_to_index[event.LogNotes]
+
+            new_status = None
+            if event.type == htcondor.JobEventType.JOB_TERMINATED:
+                new_status = ComponentStatus.COMPLETED
+            elif event.type == htcondor.JobEventType.EXECUTE:
+                new_status = ComponentStatus.RUNNING
+            elif event.type in (
+                htcondor.JobEventType.SUBMIT,
+                htcondor.JobEventType.JOB_RELEASED,
+                htcondor.JobEventType.JOB_EVICTED,
+                htcondor.JobEventType.JOB_UNSUSPENDED,
+            ):
+                new_status = ComponentStatus.IDLE
+            elif event.type == htcondor.JobEventType.JOB_HELD:
+                new_status = ComponentStatus.HELD
+            elif event.type == htcondor.JobEventType.JOB_SUSPENDED:
+                new_status = ComponentStatus.SUSPENDED
+
+            if new_status is not None:
+                # this lookup is safe because the SUBMIT event always comes first
+                idx = self._clusterproc_to_idx[(event.cluster, event.proc)]
+                self._component_statuses[idx] = new_status
+
     def status_counts(self) -> collections.Counter:
         """Return a dictionary that describes how many map components are in each status."""
-        query = self._query(projection = ['JobStatus'])
-        counter = collections.Counter(Status(classad['JobStatus']) for classad in query)
+        self._update_component_status()
+        return collections.Counter(self._component_statuses)
 
-        # if the job has fully completed, we'll get zero for everything
-        # so make sure the completed count makes sense
-        counter[Status.COMPLETED] = len(self._completed_hashes)
-
-        return counter
-
-    def status(self) -> str:
+    def status_msg(self) -> str:
         """Return a string containing the number of jobs in each status."""
         counts = self.status_counts()
-        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in Status.display_statuses())
-        msg = f'Map {self.map_id} ({len(self)} inputs): {stat}'
+        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in ComponentStatus.display_statuses())
+        msg = f'{self.__class__.__name__} {self.map_id} ({len(self)} components): {stat}'
 
         return utils.rstr(msg)
 
     def hold_reasons(self) -> str:
         """Return a string containing a table showing any held jobs, along with their hold reasons."""
         query = self._query(
-            requirements = self._requirements(f'JobStatus=={Status.HELD}'),
+            requirements = self._requirements(f'JobStatus=={ComponentStatus.HELD}'),
             projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
         )
 
@@ -760,13 +765,9 @@ class Map:
 
     def remove(self):
         """
-        Permanently remove the map and delete all associated input and output files.
-
-        .. warning::
-
-            Interacting with a :class:`Map` after calling this method on it may produce unexpected and undefined behavior!
-            Don't do it!
+        Permanently remove the map and delete all associated input, output, and metadata files.
         """
+        del self._events  # todo: this is a workaround for the file object not being exposed
         self._remove_from_queue()
         self._rm_map_dir()
         self._is_removed = True
@@ -913,49 +914,6 @@ class Map:
 
         return utils.rstr(path.read_text())
 
-    def reader(self):
-        return EventLogReader(self._map_dir / 'cluster_logs' / f'{self._cluster_ids[-1]}.log')
-
-    def tail(self):
-        """
-        Stream any new text added to the map's most recent log file to stdout.
-        This function runs forever, so it should only be used in interactive contexts (i.e., the REPL or a Jupyter notebook or similar) where it can be cancelled.
-        """
-        event_log_path = self._map_dir / 'cluster_logs' / f'{self._cluster_ids[-1]}.log'
-        events = htcondor.JobEventLog(event_log_path.as_posix())
-
-        x = events.events(0)
-        while True:
-            try:
-                event = next(x)
-                print(event.type)
-                print(event.cluster, event.proc)
-                if event.type is htcondor.JobEventType.JOB_AD_INFORMATION:
-                    print(event.arguments)
-                print()
-            except StopIteration:
-                time.sleep(1)
-
-        # print()
-        # for event in events.events(0):
-        #     print(event.type)
-        #     print(event.cluster, event.proc)
-        #     if event.type is htcondor.JobEventType.JOB_AD_INFORMATION:
-        #         print(event.arguments)
-        #
-        #     print()
-
-        # with (self._map_dir / 'cluster_logs' / f'{self.cluster_ids[-1]}.log').open() as file:
-        #     file.seek(0, 2)
-        #     while True:
-        #         current = file.tell()
-        #         line = file.readline()
-        #         if line == '':
-        #             file.seek(current)
-        #             time.sleep(.1)
-        #         else:
-        #             print(line, end = '')
-
     def rerun(self):
         """Reruns the entire map from scratch."""
         self._clean_outputs_dir()
@@ -1060,21 +1018,6 @@ class Map:
 IGNORED_EVENTS = (
     htcondor.JobEventType.IMAGE_SIZE,
 )
-
-
-class EventLogReader:
-    def __init__(
-        self,
-        event_log_path: Path,
-    ):
-        self._events = htcondor.JobEventLog(event_log_path.as_posix()).events(0)
-
-    def events(self):
-        while True:
-            event, info = next(self._events), next(self._events)
-            if event.type in IGNORED_EVENTS:
-                continue
-            yield JobEvent(hash = info.arguments, type = event.type)
 
 
 class JobEvent:

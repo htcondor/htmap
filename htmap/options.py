@@ -266,8 +266,8 @@ def get_base_descriptors(
     core = {
         'JobBatchName': map_id,
         'arguments': '$(hash)',
-        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-        'job_ad_information_attrs': 'arguments,hash',
+        'log': (map_dir / 'event_log').as_posix(),
+        'submit_event_notes': '$(hash)',
         'stdout': (map_dir / 'job_logs' / '$(hash).stdout').as_posix(),
         'stderr': (map_dir / 'job_logs' / '$(hash).stderr').as_posix(),
         'should_transfer_files': 'YES',

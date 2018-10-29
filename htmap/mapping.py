@@ -434,7 +434,6 @@ MAP_SUBDIR_NAMES = (
     'inputs',
     'outputs',
     'job_logs',
-    'cluster_logs',
 )
 
 
