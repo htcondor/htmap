@@ -98,7 +98,7 @@ def test_getitem_too_soon_raises_output_not_found(mapped_sleepy_double):
     result = mapped_sleepy_double.map('map', range(n))
 
     with pytest.raises(htmap.exceptions.OutputNotFound):
-        print(result[n - 1])
+        print(result[0])
 
 
 @pytest.mark.parametrize(

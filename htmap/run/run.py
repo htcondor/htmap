@@ -32,10 +32,10 @@ class ComponentResult:
     def __init__(
         self,
         *,
-        input_hash,
+        component,
         status,
     ):
-        self.input_hash = input_hash
+        self.component = component
         self.status = status
 
 
@@ -53,7 +53,7 @@ class ComponentOk(ComponentResult):
         self.output = output
 
     def __repr__(self):
-        return '<OK for input hash {}>'.format(self.input_hash)
+        return '<OK for component {}>'.format(self.component)
 
 
 class ComponentError(ComponentResult):
@@ -79,7 +79,7 @@ class ComponentError(ComponentResult):
         self.stack_summary = stack_summary
 
     def __repr__(self):
-        return '<ERROR for input hash {}>'.format(self.input_hash)
+        return '<ERROR for component {}>'.format(self.component)
 
 
 def get_node_info():
@@ -132,28 +132,26 @@ def load_func():
         return cloudpickle.load(file)
 
 
-def load_args_and_kwargs(arg_hash):
+def load_args_and_kwargs(component):
     import cloudpickle
-    with Path('{}.in'.format(arg_hash)).open(mode = 'rb') as file:
+    with Path('{}.in'.format(component)).open(mode = 'rb') as file:
         return cloudpickle.load(file)
 
 
-def save_result(arg_hash, result):
+def save_result(component, result):
     import cloudpickle
-    with Path('{}.out'.format(arg_hash)).open(mode = 'wb') as file:
+    with Path('{}.out'.format(component)).open(mode = 'wb') as file:
         cloudpickle.dump(result, file)
 
 
-def print_run_info(arg_hash, func, args, kwargs):
+def print_run_info(component, func, args, kwargs):
     s = '\n'.join((
-        'Running',
+        'Running component {}'.format(component),
         '  {}'.format(func),
         'with args',
         '  {}'.format(args),
         'and kwargs',
         '  {}'.format(kwargs),
-        'from input hash',
-        '  {}'.format(arg_hash),
     ))
 
     print(s)
@@ -176,7 +174,7 @@ def build_frames(tb):
         yield summ
 
 
-def main(input_hash):
+def main(component):
     node_info = get_node_info()
     print_node_info(node_info)
     print()
@@ -195,16 +193,16 @@ def main(input_hash):
 
     try:
         func = load_func()
-        args, kwargs = load_args_and_kwargs(input_hash)
+        args, kwargs = load_args_and_kwargs(component)
 
-        print_run_info(input_hash, func, args, kwargs)
+        print_run_info(component, func, args, kwargs)
 
         print('\n----- MAP COMPONENT OUTPUT START -----\n')
         output = func(*args, **kwargs)
         print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
         result = ComponentOk(
-            input_hash = input_hash,
+            component = component,
             status = 'OK',
             output = output,
         )
@@ -214,7 +212,7 @@ def main(input_hash):
         stack_summ = traceback.StackSummary.from_list(build_frames(trace))
 
         result = ComponentError(
-            input_hash = input_hash,
+            component = component,
             status = 'ERR',
             exception_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip(),
             stack_summary = stack_summ,
@@ -223,10 +221,10 @@ def main(input_hash):
             working_dir_contents = contents,
         )
 
-    save_result(input_hash, result)
+    save_result(component, result)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 
 
 if __name__ == '__main__':
-    main(input_hash = sys.argv[1])
+    main(component = sys.argv[1])

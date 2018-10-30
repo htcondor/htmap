@@ -66,7 +66,7 @@ def set_htmap_dir_and_clean_after(tmpdir_factory):
 
     try:
         htmap.clean()
-    except PermissionError:
+    except (PermissionError, OSError, AttributeError):
         pass
 
 
@@ -101,7 +101,7 @@ def mapped_power(power):
 @pytest.fixture(scope = 'session')
 def sleepy_double():
     def sleepy_double(x):
-        time.sleep(5)
+        time.sleep(30)
         return 2 * x
 
     return sleepy_double

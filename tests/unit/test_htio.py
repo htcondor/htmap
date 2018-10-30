@@ -56,24 +56,3 @@ def test_loaded_obj_equals_saved_obj(obj, tmpdir):
 
     assert loaded == obj
 
-
-@pytest.mark.parametrize('obj', BUILTIN_OBJECTS)
-def test_saved_bytes_path_exists(obj, tmpdir):
-    path = Path(tmpdir.mkdir('htio_save_bytes_path_test').join('obj'))
-
-    b = htio.to_bytes(obj)
-    htio.save_bytes(b, path)
-
-    assert path.exists()
-
-
-@pytest.mark.parametrize('obj', BUILTIN_OBJECTS)
-def saved_bytes_can_be_loaded(obj, tmpdir):
-    path = Path(tmpdir.mkdir('htio_save_bytes_load_object_test').join('obj'))
-
-    b = htio.to_bytes(obj)
-    htio.save_bytes(b, path)
-
-    loaded = htio.load_object(path)
-
-    assert loaded == obj

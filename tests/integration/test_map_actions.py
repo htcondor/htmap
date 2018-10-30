@@ -15,24 +15,35 @@
 
 import pytest
 
-import htmap
+import time
 
-N = 1
+import htmap
 
 
 def test_hold(mapped_sleepy_double):
-    result = mapped_sleepy_double.map('sleepy', range(N))
+    result = mapped_sleepy_double.map('sleepy', range(1))
 
     result.hold()
+    time.sleep(.1)
+    status_counts_after_hold = result.status_counts()
 
-    assert result.status_counts()[htmap.ComponentStatus.HELD] == N
+    print(status_counts_after_hold)
+    assert status_counts_after_hold[htmap.ComponentStatus.HELD] == 1
 
 
 def test_hold_then_release(mapped_sleepy_double):
-    result = mapped_sleepy_double.map('sleepy', range(N))
+    result = mapped_sleepy_double.map('sleepy', range(1))
 
     result.hold()
-    assert result.status_counts()[htmap.ComponentStatus.HELD] == N
+    time.sleep(.1)
+    status_counts_after_hold = result.status_counts()
+
+    print(status_counts_after_hold)
+    assert status_counts_after_hold[htmap.ComponentStatus.HELD] == 1
 
     result.release()
-    assert result.status_counts()[htmap.ComponentStatus.HELD] == 0
+    time.sleep(.1)
+    status_counts_after_release = result.status_counts()
+
+    print(status_counts_after_release)
+    assert status_counts_after_release[htmap.ComponentStatus.HELD] == 0
