@@ -356,16 +356,16 @@ def create_map(
     try:
         make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
-        num_inputs = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
+        num_components = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
             map_id,
             map_dir,
-            num_inputs,
+            num_components,
             map_options,
         )
 
-        htio.save_num_inputs(map_dir, num_inputs)
+        htio.save_num_components(map_dir, num_components)
         htio.save_submit(map_dir, submit_obj)
         htio.save_itemdata(map_dir, itemdata)
 
@@ -387,7 +387,7 @@ def create_map(
             map_id = map_id,
             cluster_ids = cluster_ids,
             submit = submit_obj,
-            num_inputs = num_inputs,
+            num_components = num_components,
         )
 
         logger.info(f'submitted map {map_id}')

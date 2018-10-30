@@ -25,43 +25,43 @@ def get_number_of_files_in_dir(dir):
 
 
 def test_map_creates_correct_number_of_input_files(mapped_doubler):
-    num_inputs = 3
-    result = mapped_doubler.map('map', range(num_inputs))
+    num_components = 3
+    result = mapped_doubler.map('map', range(num_components))
 
-    assert get_number_of_files_in_dir(result._inputs_dir) == num_inputs
+    assert get_number_of_files_in_dir(result._inputs_dir) == num_components
 
 
 def test_starmap_creates_correct_number_of_input_files(mapped_power):
-    num_inputs = 3
+    num_components = 3
     result = mapped_power.starmap(
         'map',
-        args = ((x,) for x in range(num_inputs)),
-        kwargs = ({'p': p} for p in range(num_inputs)),
+        args = ((x,) for x in range(num_components)),
+        kwargs = ({'p': p} for p in range(num_components)),
     )
 
-    assert get_number_of_files_in_dir(result._inputs_dir) == num_inputs
+    assert get_number_of_files_in_dir(result._inputs_dir) == num_components
 
 
 def test_map_creates_correct_number_of_outputs_files(mapped_doubler):
-    num_inputs = 3
-    result = mapped_doubler.map('map', range(num_inputs))
+    num_components = 3
+    result = mapped_doubler.map('map', range(num_components))
 
     result.wait(timeout = 180)
 
-    assert get_number_of_files_in_dir(result._outputs_dir) == num_inputs
+    assert get_number_of_files_in_dir(result._outputs_dir) == num_components
 
 
 def test_starmap_creates_correct_number_of_output_files(mapped_power):
-    num_inputs = 3
+    num_components = 3
     result = mapped_power.starmap(
         'map',
-        args = ((x,) for x in range(num_inputs)),
-        kwargs = ({'p': p} for p in range(num_inputs)),
+        args = ((x,) for x in range(num_components)),
+        kwargs = ({'p': p} for p in range(num_components)),
     )
 
     result.wait(timeout = 180)
 
-    assert get_number_of_files_in_dir(result._outputs_dir) == num_inputs
+    assert get_number_of_files_in_dir(result._outputs_dir) == num_components
 
 
 @pytest.mark.usefixtures('delivery_methods')

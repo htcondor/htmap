@@ -177,7 +177,7 @@ def normalize_path(path: Union[str, Path]) -> str:
 def create_submit_object_and_itemdata(
     map_id: str,
     map_dir: Path,
-    num_inputs: int,
+    num_components: int,
     map_options: Optional[MapOptions] = None,
 ):
     if map_options is None:
@@ -195,7 +195,7 @@ def create_submit_object_and_itemdata(
         settings['DELIVERY_METHOD'],
     )
 
-    itemdata = [{'component': str(idx)} for idx in range(num_inputs)]
+    itemdata = [{'component': str(idx)} for idx in range(num_components)]
     descriptors['transfer_output_files'] = '$(component).out'
 
     input_files = descriptors.get('transfer_input_files', [])
@@ -213,8 +213,8 @@ def create_submit_object_and_itemdata(
             else ', '.join(normalize_path(f) for f in files)
             for files in map_options.input_files
         ]
-        if len(joined) != num_inputs:
-            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_inputs})')
+        if len(joined) != num_components:
+            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
     descriptors['transfer_input_files'] = ','.join(input_files)
@@ -228,8 +228,8 @@ def create_submit_object_and_itemdata(
         if not isinstance(opt_value, str):  # implies it is iterable
             itemdata_key = f'itemdata_for_{opt_key}'
             opt_value = tuple(opt_value)
-            if len(opt_value) != num_inputs:
-                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_inputs})')
+            if len(opt_value) != num_components:
+                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
             for dct, v in zip(itemdata, opt_value):
                 dct[itemdata_key] = v
             descriptors[opt_key] = f'$({itemdata_key})'

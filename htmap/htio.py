@@ -60,32 +60,32 @@ def save_args_and_kwargs(
     Returns the number of inputs to the map.
     """
     base_path = map_dir / 'inputs'
-    num_inputs = 0
+    num_components = 0
     for component, a_and_k in enumerate(args_and_kwargs):
         save_object(a_and_k, base_path / f'{component}.in')
 
-        num_inputs += 1
+        num_components += 1
 
-    if num_inputs == 0:
+    if num_components == 0:
         raise exceptions.EmptyMap()
 
     logger.debug(f'saved args and kwargs in {base_path}')
 
-    return num_inputs
+    return num_components
 
 
-def save_num_inputs(map_dir: Path, num_inputs: int):
-    path = _num_inputs_path(map_dir)
-    path.write_text(str(num_inputs))
+def save_num_components(map_dir: Path, num_components: int):
+    path = _num_components_path(map_dir)
+    path.write_text(str(num_components))
 
 
-def load_num_inputs(map_dir: Path) -> int:
-    path = _num_inputs_path(map_dir)
+def load_num_components(map_dir: Path) -> int:
+    path = _num_components_path(map_dir)
     return int(path.read_text())
 
 
-def _num_inputs_path(map_dir: Path):
-    return map_dir / 'num_inputs'
+def _num_components_path(map_dir: Path):
+    return map_dir / 'num_components'
 
 
 def save_submit(map_dir: Path, submit: htcondor.Submit):

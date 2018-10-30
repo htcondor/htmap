@@ -218,13 +218,13 @@ class Map:
         self,
         map_id: str,
         cluster_ids: Iterable[int],
-        num_inputs: int,
+        num_components: int,
         submit: htcondor.Submit,
     ):
         self.map_id = map_id
         self._cluster_ids = list(cluster_ids)
         self._submit = submit
-        self._num_inputs = num_inputs
+        self._num_components = num_components
 
         self._is_removed = False
 
@@ -259,7 +259,7 @@ class Map:
                 with (map_dir / 'cluster_ids').open() as file:
                     cluster_ids = [int(cid.strip()) for cid in file]
 
-                num_inputs = htio.load_num_inputs(map_dir)
+                num_components = htio.load_num_components(map_dir)
                 submit = htio.load_submit(map_dir)
 
             except FileNotFoundError:
@@ -270,7 +270,7 @@ class Map:
             return cls(
                 map_id = map_id,
                 cluster_ids = cluster_ids,
-                num_inputs = num_inputs,
+                num_components = num_components,
                 submit = submit,
             )
 
@@ -279,11 +279,11 @@ class Map:
 
     def __len__(self):
         """The length of a :class:`Map` is the number of inputs it contains."""
-        return self._num_inputs
+        return self._num_components
 
     @property
     def component_indices(self):
-        return range(self._num_inputs)
+        return range(self._num_components)
 
     @property
     def _map_dir(self) -> Path:
@@ -324,7 +324,10 @@ class Map:
         logger.debug(f'removed map directory for map {self.map_id}')
 
     def _clean_outputs_dir(self):
-        utils.clean_dir(self._outputs_dir)
+        def update_status(path: Path):
+            self.component_statuses[int(path.stem)] = ComponentStatus.REMOVED
+
+        utils.clean_dir(self._outputs_dir, on_file = update_status)
 
     @property
     def _missing_components(self) -> List[int]:
@@ -718,6 +721,7 @@ class Map:
                 # this lookup is safe because the SUBMIT event always comes first
                 idx = self._clusterproc_to_idx[(event.cluster, event.proc)]
                 self._component_statuses[idx] = new_status
+                logger.debug(f'status of component {idx} of map {self.map_id} changed to {new_status}')
 
     def status_counts(self) -> collections.Counter:
         """Return a dictionary that describes how many map components are in each status."""
@@ -1009,7 +1013,7 @@ class Map:
             map_id = map_id,
             submit = submit,
             cluster_ids = self._cluster_ids,
-            num_inputs = self._num_inputs,
+            num_components = self._num_components,
         )
 
 

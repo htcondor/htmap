@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping
+from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable
 import logging
 
 import time
@@ -31,7 +31,7 @@ MutableMapping.register(ClassAd)
 logger = logging.getLogger(__name__)
 
 
-def clean_dir(target_dir: Path):
+def clean_dir(target_dir: Path, on_file: Callable[[Path], None] = None):
     """
     Remove all files in the given directory `target_dir`.
 
@@ -40,8 +40,12 @@ def clean_dir(target_dir: Path):
     target_dir
         The directory to clean up.
     """
+    if on_file is None:
+        on_file = lambda p: p
+
     logger.debug(f'removing all files in {target_dir}...')
     for path in (p for p in target_dir.iterdir() if p.is_file()):
+        on_file(path)
         path.unlink()
         logger.debug(f'removed file {path}')
 
