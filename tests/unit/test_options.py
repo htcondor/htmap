@@ -48,28 +48,12 @@ def test_reserved_kwargs_are_case_insensitive():
         )
 
 
-def test_request_memory_for_int():
-    opts = htmap.MapOptions(
-        request_memory = 200
-    )
-
-    assert opts['request_memory'] == '200MB'
-
-
 def test_request_memory_for_str():
     opts = htmap.MapOptions(
         request_memory = '150MB'
     )
 
     assert opts['request_memory'] == '150MB'
-
-
-def test_request_disk_for_int():
-    opts = htmap.MapOptions(
-        request_disk = 20
-    )
-
-    assert opts['request_disk'] == '20GB'
 
 
 def test_request_disk_for_str():
@@ -225,8 +209,6 @@ def test_fewer_input_files_than_components():
     'rm',
     [
         ['239MB'],
-        [239],
-        [239.0],
     ]
 )
 def test_list_request_memory(rm):
@@ -255,8 +237,6 @@ def test_list_request_memory(rm):
     'rd',
     [
         ['239GB'],
-        [239],
-        [239.0],
     ]
 )
 def test_list_request_disk(rd):

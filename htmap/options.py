@@ -55,8 +55,6 @@ class MapOptions(collections.UserDict):
     def __init__(
         self,
         *,
-        request_memory: Union[int, str, float, Iterable[Union[int, str, float]]] = '100MB',
-        request_disk: Union[int, str, float, Iterable[Union[int, str, float]]] = '1GB',
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
         input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
         custom_options: Dict[str, str] = None,
@@ -65,12 +63,6 @@ class MapOptions(collections.UserDict):
         """
         Parameters
         ----------
-        request_memory
-            The amount of memory (RAM) to request.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **MB**.
-        request_disk
-            The amount of disk space to use.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **GB**.
         fixed_input_files
             A single file, or an iterable of files, to send to all components of the map.
             Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
@@ -101,28 +93,6 @@ class MapOptions(collections.UserDict):
         kwargs = {**kwargs, **{'+' + key: val for key, val in cleaned_custom_options.items()}}
 
         super().__init__(**kwargs)
-
-        if isinstance(request_memory, str):
-            self['request_memory'] = request_memory
-        elif isinstance(request_memory, (int, float)):
-            self['request_memory'] = f'{request_memory}MB'
-        else:  # implies it is iterable
-            self['request_memory'] = [
-                rm if isinstance(rm, str)
-                else f'{int(rm)}MB'
-                for rm in request_memory
-            ]
-
-        if isinstance(request_disk, str):
-            self['request_disk'] = request_disk
-        elif isinstance(request_disk, (int, float)):
-            self['request_disk'] = f'{request_disk}GB'
-        else:  # implies it is iterable
-            self['request_disk'] = [
-                rd if isinstance(rd, str)
-                else f'{int(rd)}GB'
-                for rd in request_disk
-            ]
 
         if fixed_input_files is None:
             fixed_input_files = []
