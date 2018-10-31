@@ -39,6 +39,7 @@ class MapOptions(collections.UserDict):
         'executable',
         'transfer_executable',
         'log',
+        'submit_event_notes',
         'stdout',
         'stderr',
         'transfer_output_files',
