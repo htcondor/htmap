@@ -228,8 +228,7 @@ class Map:
 
         self._is_removed = False
 
-        self._event_log_path.touch()  # make sure the event log exists
-        self._events = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
+        self._events = None
         self._clusterproc_to_component = {}
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
 
@@ -696,11 +695,14 @@ class Map:
 
     @property
     def component_statuses(self):
-        time.sleep(.01)  # smooth things out by giving condor time to write to the event log
         self._update_component_statuses()
         return self._component_statuses
 
     def _update_component_statuses(self):
+        time.sleep(.01)  # smooth things out by giving condor time to write to the event log
+        if self._events is None:
+            self._events = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
+
         for event in self._events:
             if event.type == htcondor.JobEventType.SUBMIT:
                 self._clusterproc_to_component[(event.cluster, event.proc)] = int(event.LogNotes)
@@ -742,17 +744,25 @@ class Map:
 
     def hold_reasons(self) -> str:
         """Return a string containing a table showing any held jobs, along with their hold reasons."""
+        self._update_component_statuses()  # to make sure _clusterproc_to_component is populated
+
         query = self._query(
             requirements = self._requirements(f'JobStatus=={ComponentStatus.HELD}'),
             projection = ['ClusterId', 'ProcId', 'HoldReason', 'HoldReasonCode']
         )
 
         return utils.table(
-            headers = ['Input Index', 'Hold Reason Code', 'Hold Reason'],
+            headers = ['Component Index', 'ClusterID.ProcID' 'Hold Reason Code', 'Hold Reason'],
             rows = [
-                [classad['ProcId'], classad['HoldReasonCode'], classad['HoldReason']]
+                [
+                    self._clusterproc_to_component[classad['ClusterId'], classad['ProcId']],
+                    f"{classad['ClusterID']}.{classad['ProcId']}",
+                    classad['HoldReasonCode'],
+                    classad['HoldReason'],
+                ]
                 for classad in query
-            ]
+            ],
+            draw_borders = False,
         )
 
     def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None) -> classad.ClassAd:
