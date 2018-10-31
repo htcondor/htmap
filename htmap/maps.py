@@ -228,8 +228,9 @@ class Map:
 
         self._is_removed = False
 
-        self._events = htcondor.JobEventLog((self._map_dir / 'event_log').as_posix()).events(0)
-        self._clusterproc_to_idx = {}
+        self._event_log_path.touch()  # make sure the event log exists
+        self._events = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
+        self._clusterproc_to_component = {}
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
 
         MAPS[self.map_id] = self
@@ -289,6 +290,10 @@ class Map:
     def _map_dir(self) -> Path:
         """The path to the map directory."""
         return mapping.map_dir_path(self.map_id)
+
+    @property
+    def _event_log_path(self) -> Path:
+        return self._map_dir / 'event_log'
 
     @property
     def _inputs_dir(self) -> Path:
@@ -698,7 +703,7 @@ class Map:
     def _update_component_statuses(self):
         for event in self._events:
             if event.type == htcondor.JobEventType.SUBMIT:
-                self._clusterproc_to_idx[(event.cluster, event.proc)] = int(event.LogNotes)
+                self._clusterproc_to_component[(event.cluster, event.proc)] = int(event.LogNotes)
 
             new_status = None
             if event.type == htcondor.JobEventType.JOB_TERMINATED:
@@ -719,7 +724,7 @@ class Map:
 
             if new_status is not None:
                 # this lookup is safe because the SUBMIT event always comes first
-                idx = self._clusterproc_to_idx[(event.cluster, event.proc)]
+                idx = self._clusterproc_to_component[(event.cluster, event.proc)]
                 self._component_statuses[idx] = new_status
                 logger.debug(f'status of component {idx} of map {self.map_id} changed to {new_status}')
 
@@ -739,7 +744,7 @@ class Map:
         """Return a string containing a table showing any held jobs, along with their hold reasons."""
         query = self._query(
             requirements = self._requirements(f'JobStatus=={ComponentStatus.HELD}'),
-            projection = ['ProcId', 'HoldReason', 'HoldReasonCode']
+            projection = ['ClusterId', 'ProcId', 'HoldReason', 'HoldReasonCode']
         )
 
         return utils.table(
@@ -922,7 +927,6 @@ class Map:
         self._rerun(components = self._missing_components)
 
     def _rerun(self, components):
-        print(components)
         component_set = set(components)
         itemdata = htio.load_itemdata(self._map_dir)
         new_itemdata = [item for item in itemdata if int(item['component']) in component_set]
