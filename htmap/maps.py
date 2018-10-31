@@ -748,7 +748,7 @@ class Map:
 
         query = self._query(
             requirements = self._requirements(f'JobStatus=={ComponentStatus.HELD}'),
-            projection = ['ClusterId', 'ProcId', 'HoldReason', 'HoldReasonCode']
+            projection = ['ClusterID', 'ProcId', 'HoldReason', 'HoldReasonCode']
         )
 
         return utils.table(
