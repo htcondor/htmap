@@ -46,9 +46,9 @@ class MapOptions(collections.UserDict):
         'transfer_input_files',
         'should_transfer_files',
         'when_to_transfer_output',
-        'htmap',
-        '+htmap',
-        'MY.htmap',
+        'IsHTMapJob',
+        '+IsHTMapJob',
+        'MY.IsHTMapJob',
     }
 
     def __init__(
@@ -241,7 +241,7 @@ def get_base_descriptors(
         'stderr': (map_dir / 'job_logs' / '$(hash).stderr').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT',
-        '+htmap': 'True',
+        '+IsHTMapJob': 'True',
     }
 
     try:
