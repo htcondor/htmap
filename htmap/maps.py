@@ -174,6 +174,14 @@ class Hold(NamedTuple):
         return f'<{self.__class__.__name__}(code = {self.code}, reason = {self.reason}>'
 
 
+class Usage(NamedTuple):
+    memory: int  # MB
+    disk: int  # KB
+
+    def __str__(self):
+        return f'mem: {self.memory} | disk: {self.disk}'
+
+
 def _protector(method):
     @functools.wraps(method)
     def _protect(self, *args, **kwargs):
@@ -227,6 +235,7 @@ class Map:
         self._clusterproc_to_component = {}
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
         self._hold_reasons = {}
+        self._usage = {}
 
         MAPS[self.map_id] = self
 
@@ -718,6 +727,8 @@ class Map:
 
             if event.type is htcondor.JobEventType.JOB_TERMINATED:
                 new_status = ComponentStatus.COMPLETED
+                u = Usage(memory = event.MemoryUsage, disk = event.DiskUsage)
+                self._usage[component] = u
 
             elif event.type is htcondor.JobEventType.EXECUTE:
                 new_status = ComponentStatus.RUNNING
@@ -735,7 +746,7 @@ class Map:
 
             elif event.type is htcondor.JobEventType.JOB_HELD:
                 new_status = ComponentStatus.HELD
-                h = Hold(event.HoldReasonCode, event.HoldReason.strip())
+                h = Hold(code = event.HoldReasonCode, reason = event.HoldReason.strip())
                 self._hold_reasons[component] = h
 
             elif event.type is htcondor.JobEventType.JOB_SUSPENDED:
