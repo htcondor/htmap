@@ -14,10 +14,26 @@
 # limitations under the License.
 
 import logging
-
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+import logging.handlers
 
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.NullHandler())
+
+# SET UP LOG FILE
+logfile_handler = logging.handlers.RotatingFileHandler(
+    filename = settings['HTMAP_DIR'] / 'htmap.log',
+    mode = 'a',
+    maxBytes = 10 * 1024 * 1024,  # 10 MB
+    backupCount = 4,
+)
+fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logfile_handler.setFormatter(fmt)
+logfile_handler.setLevel(logging.DEBUG)
+logger.addHandler(logfile_handler)
+
 from .mapping import (
     map, starmap, build_map,
     transient_map, transient_starmap, build_transient_map,
