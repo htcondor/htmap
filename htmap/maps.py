@@ -393,35 +393,36 @@ class Map:
         start_time = time.time()
         timeout = utils.timeout_to_seconds(timeout)
 
-        if show_progress_bar:
-            pbar = tqdm(
-                desc = self.map_id,
-                total = len(self),
-                unit = 'input',
-                ncols = 80,
-                ascii = True,
-            )
-
-            previous_pbar_len = 0
-
-        expected_num_hashes = len(self)
-
-        while True:
-            num_missing_components = len(self._missing_components)
+        try:
             if show_progress_bar:
-                pbar_len = expected_num_hashes - num_missing_components
-                pbar.update(pbar_len - previous_pbar_len)
-                previous_pbar_len = pbar_len
-            if num_missing_components == 0:
-                break
+                pbar = tqdm(
+                    desc = self.map_id,
+                    total = len(self),
+                    unit = 'input',
+                    ncols = 80,
+                    ascii = True,
+                )
 
-            if timeout is not None and time.time() - timeout > start_time:
-                raise exceptions.TimeoutError(f'timeout while waiting for {self}')
+                previous_pbar_len = 0
 
-            time.sleep(1)
+            expected_num_hashes = len(self)
 
-        if show_progress_bar:
-            pbar.close()
+            while True:
+                num_missing_components = len(self._missing_components)
+                if show_progress_bar:
+                    pbar_len = expected_num_hashes - num_missing_components
+                    pbar.update(pbar_len - previous_pbar_len)
+                    previous_pbar_len = pbar_len
+                if num_missing_components == 0:
+                    break
+
+                if timeout is not None and time.time() - timeout > start_time:
+                    raise exceptions.TimeoutError(f'timeout while waiting for {self}')
+
+                time.sleep(settings['WAIT_TIME'])
+        finally:
+            if show_progress_bar:
+                pbar.close()
 
         return datetime.datetime.now() - t
 
