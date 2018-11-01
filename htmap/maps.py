@@ -955,7 +955,7 @@ class Map:
 
         logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.map_id}')
 
-    def rename(self, map_id: str, force_overwrite: bool = False) -> 'Map':
+    def rename(self, map_id: str) -> 'Map':
         """
         Give this map a new ``map_id``.
         This function returns a **new** :class:`Map` for the renamed map.
@@ -989,19 +989,6 @@ class Map:
             raise exceptions.CannotRenameMap(f'cannot rename a map that is not complete (map status: {self.status_counts()})')
 
         mapping.raise_if_map_id_is_invalid(map_id)
-
-        if force_overwrite:
-            try:
-                existing_result = Map.load(map_id)
-                existing_result.remove()
-                logger.debug(f'force-overwrote map {map_id}')
-            except exceptions.MapIdNotFound:
-                logger.debug(f'force-overwrite not needed to rename {self.map_id} to {map_id}')
-        else:
-            try:
-                mapping.raise_if_map_id_already_exists(map_id)
-            except exceptions.MapIdAlreadyExists as e:
-                raise exceptions.CannotRenameMap(f'cannot rename map to {map_id} because it already exists') from e
 
         new_map_dir = mapping.map_dir_path(map_id)
         shutil.copytree(

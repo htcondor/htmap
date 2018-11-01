@@ -65,6 +65,13 @@ def reasons(id):
 
 
 @cli.command()
+@click.command('id')
+@click.command('newid')
+def rename(id, newid):
+    cli_load(id).rename(newid)
+
+
+@cli.command()
 def version():
     """Print HTMap version information."""
     click.echo(htmap.version())
