@@ -24,7 +24,7 @@ from .mapping import (
     MapBuilder, TransientMap,
 )
 from .mapped import mapped, MappedFunction
-from .maps import Map, ComponentStatus
+from .maps import Map, ComponentStatus, Hold
 from .options import MapOptions, register_delivery_mechanism
 from .management import (
     status,

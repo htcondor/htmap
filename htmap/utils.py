@@ -20,6 +20,7 @@ import time
 import datetime
 import subprocess
 import sys
+import enum
 from pathlib import Path
 
 from . import exceptions
@@ -29,6 +30,11 @@ from classad import ClassAd
 MutableMapping.register(ClassAd)
 
 logger = logging.getLogger(__name__)
+
+
+class StrEnum(enum.Enum):
+    def __str__(self):
+        return self.value
 
 
 def clean_dir(target_dir: Path, on_file: Callable[[Path], None] = None):

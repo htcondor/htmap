@@ -13,11 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, List, Iterable, Any, Optional, Union, Callable, Iterator, Dict
+from typing import NamedTuple, Tuple, List, Iterable, Any, Optional, Union, Callable, Iterator, Dict
 import logging
 
 import datetime
-import enum
 import shutil
 import time
 import textwrap
@@ -39,17 +38,13 @@ from . import htio, exceptions, utils, mapping, settings
 logger = logging.getLogger(__name__)
 
 
-class ComponentStatus(enum.IntEnum):
-    IDLE = 1
-    RUNNING = 2
-    REMOVED = 3
-    COMPLETED = 4
-    HELD = 5
-    TRANSFERRING_OUTPUT = 6
-    SUSPENDED = 7
-
-    def __str__(self):
-        return COMPONENT_STATUS_STRINGS[self]
+class ComponentStatus(utils.StrEnum):
+    IDLE = 'IDLE'
+    RUNNING = 'RUNNING'
+    REMOVED = 'REMOVED'
+    COMPLETED = 'COMPLETED'
+    HELD = 'HELD'
+    SUSPENDED = 'SUSPENDED'
 
     @classmethod
     def display_statuses(cls) -> Tuple['ComponentStatus', ...]:
@@ -59,17 +54,6 @@ class ComponentStatus(enum.IntEnum):
             cls.RUNNING,
             cls.COMPLETED,
         )
-
-
-COMPONENT_STATUS_STRINGS = {
-    ComponentStatus.IDLE: 'Idle',
-    ComponentStatus.RUNNING: 'Run',
-    ComponentStatus.REMOVED: 'Removed',
-    ComponentStatus.COMPLETED: 'Done',
-    ComponentStatus.HELD: 'Held',
-    ComponentStatus.TRANSFERRING_OUTPUT: 'Transferring Output',
-    ComponentStatus.SUSPENDED: 'Suspended',
-}
 
 
 class ComponentError:
@@ -179,6 +163,17 @@ class ComponentError:
         return '\n'.join(lines)
 
 
+class Hold(NamedTuple):
+    code: int
+    reason: str
+
+    def __str__(self):
+        return f'[{self.code}] {self.reason}'
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}(code = {self.code}, reason = {self.reason}>'
+
+
 def _protector(method):
     @functools.wraps(method)
     def _protect(self, *args, **kwargs):
@@ -231,6 +226,7 @@ class Map:
         self._events = None
         self._clusterproc_to_component = {}
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
+        self._hold_reasons = {}
 
         MAPS[self.map_id] = self
 
@@ -416,6 +412,11 @@ class Map:
                 if num_missing_components == 0:
                     break
 
+                missing_component_statuses = zip(self._missing_components, (self.component_statuses[idx] for idx in self._missing_components))
+                for component, status in missing_component_statuses:
+                    if status is ComponentStatus.HELD:
+                        raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} was held')
+
                 if timeout is not None and time.time() - timeout > start_time:
                     raise exceptions.TimeoutError(f'timeout while waiting for {self}')
 
@@ -434,7 +435,7 @@ class Map:
             if status == ComponentStatus.COMPLETED:
                 break
             elif status == ComponentStatus.HELD:
-                raise exceptions.MapComponentError(f'component {component} of map {self.map_id} is held')
+                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held. Reason: {self.hold_reasons[component]}')
 
             if timeout is not None and (time.time() >= start_time + timeout):
                 if timeout <= 0:
@@ -695,7 +696,8 @@ class Map:
         yield from q
 
     @property
-    def component_statuses(self):
+    def component_statuses(self) -> List[ComponentStatus]:
+        """Return a list"""
         self._update_component_statuses()
         return self._component_statuses
 
@@ -708,34 +710,48 @@ class Map:
             if event.type == htcondor.JobEventType.SUBMIT:
                 self._clusterproc_to_component[(event.cluster, event.proc)] = int(event.LogNotes)
 
+            # this lookup is safe because the SUBMIT event always comes first
+            component = self._clusterproc_to_component[(event.cluster, event.proc)]
             new_status = None
-            if event.type == htcondor.JobEventType.JOB_TERMINATED:
+
+            # START SWITCH
+
+            if event.type is htcondor.JobEventType.JOB_TERMINATED:
                 new_status = ComponentStatus.COMPLETED
-            elif event.type == htcondor.JobEventType.EXECUTE:
+
+            elif event.type is htcondor.JobEventType.EXECUTE:
                 new_status = ComponentStatus.RUNNING
+
             elif event.type in (
                 htcondor.JobEventType.SUBMIT,
-                htcondor.JobEventType.JOB_RELEASED,
                 htcondor.JobEventType.JOB_EVICTED,
                 htcondor.JobEventType.JOB_UNSUSPENDED,
             ):
                 new_status = ComponentStatus.IDLE
-            elif event.type == htcondor.JobEventType.JOB_HELD:
+
+            elif event.type is htcondor.JobEventType.JOB_RELEASED:
+                new_status = ComponentStatus.IDLE
+                self._hold_reasons.pop(component, None)
+
+            elif event.type is htcondor.JobEventType.JOB_HELD:
                 new_status = ComponentStatus.HELD
-            elif event.type == htcondor.JobEventType.JOB_SUSPENDED:
+                h = Hold(event.HoldReasonCode, event.HoldReason.strip())
+                self._hold_reasons[component] = h
+
+            elif event.type is htcondor.JobEventType.JOB_SUSPENDED:
                 new_status = ComponentStatus.SUSPENDED
 
+            # END SWITCH
+
             if new_status is not None:
-                # this lookup is safe because the SUBMIT event always comes first
-                idx = self._clusterproc_to_component[(event.cluster, event.proc)]
-                self._component_statuses[idx] = new_status
-                logger.debug(f'status of component {idx} of map {self.map_id} changed to {new_status}')
+                self._component_statuses[component] = new_status
+                logger.debug(f'status of component {component} of map {self.map_id} changed to {new_status}')
 
     def status_counts(self) -> collections.Counter:
         """Return a dictionary that describes how many map components are in each status."""
         return collections.Counter(self.component_statuses)
 
-    def status_msg(self) -> str:
+    def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
         counts = self.status_counts()
         stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in ComponentStatus.display_statuses())
@@ -743,28 +759,26 @@ class Map:
 
         return utils.rstr(msg)
 
-    def hold_reasons(self) -> str:
-        """Return a string containing a table showing any held jobs, along with their hold reasons."""
-        self._update_component_statuses()  # to make sure _clusterproc_to_component is populated
+    @property
+    def hold_reasons(self) -> Dict[int, Hold]:
+        """Return a dictionary that maps component indices to their :class:`Hold` (if they are held)."""
+        self._update_component_statuses()
+        return self._hold_reasons
 
-        query = self._query(
-            requirements = self._requirements(f'JobStatus=={ComponentStatus.HELD}'),
-            projection = ['ClusterID', 'ProcId', 'HoldReason', 'HoldReasonCode']
-        )
+    def holds(self) -> str:
+        """Return a string containing a table describing any held components."""
+        top = 'Component │ Hold Reason'
+        under_top = ''.join('─' if char != '│' else '┼' for char in top)
+        bottom = ''.join('─' if char != '│' else '┴' for char in top)
 
-        return utils.table(
-            headers = ['Component Index', 'ClusterID.ProcID' 'Hold Reason Code', 'Hold Reason'],
-            rows = [
-                [
-                    self._clusterproc_to_component[classad['ClusterId'], classad['ProcId']],
-                    f"{classad['ClusterID']}.{classad['ProcId']}",
-                    classad['HoldReasonCode'],
-                    classad['HoldReason'],
-                ]
-                for classad in query
-            ],
-            draw_borders = False,
-        )
+        lines = []
+        for component, hold in self.hold_reasons.items():
+            component_text = str(component).center(len('Component'))
+            hold_text = str(hold)
+
+            lines.append(f'{component_text} │ {hold_text}')
+
+        return '\n'.join([top, under_top, *lines, bottom])
 
     def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None) -> classad.ClassAd:
         schedd = mapping.get_schedd()
@@ -1030,11 +1044,6 @@ class Map:
             cluster_ids = self._cluster_ids,
             num_components = self._num_components,
         )
-
-
-IGNORED_EVENTS = (
-    htcondor.JobEventType.IMAGE_SIZE,
-)
 
 
 class JobEvent:
