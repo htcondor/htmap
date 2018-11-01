@@ -14,7 +14,7 @@ def cli():
 @cli.command()
 def ids():
     """Print map ids."""
-    click.echo('\n'.join(htmap.map_ids()))
+    click.echo(id_list())
 
 
 @cli.command()
@@ -64,9 +64,22 @@ def reasons(id):
     click.echo(cli_load(id).hold_reasons())
 
 
+@cli.command()
+def version():
+    """Print HTMap version information."""
+    click.echo(htmap.version())
+
+
 def cli_load(map_id) -> htmap.Map:
     try:
         return htmap.load(map_id)
     except Exception as e:
-        click.echo(f'ERR: could not find a map with map_id {map_id}')
+        click.echo(f'Error: could not find a map with map_id {map_id}')
+        click.echo(f'Your map ids are...')
+        click.echo(id_list())
+
         sys.exit(1)
+
+
+def id_list() -> str:
+    return '\n'.join(htmap.map_ids())
