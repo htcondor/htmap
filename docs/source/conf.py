@@ -17,6 +17,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath('../../'))
 
+import htmap
+
 # -- Project information -----------------------------------------------------
 
 project = 'HTMap'
@@ -24,9 +26,9 @@ copyright = '2018, HTCondor Team, Computer Sciences Department, University of Wi
 author = 'HTCondor Team'
 
 # The short X.Y version
-version = ''
+version = htmap.__version__[:5]
 # The full version, including alpha/beta/rc tags
-release = ''
+release = htmap.__version__
 
 # -- General configuration ---------------------------------------------------
 

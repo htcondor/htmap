@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__version__ = '0.1.0'
+
+from typing import Tuple as _Tuple
 import logging as _logging
 import logging.handlers as _handlers
 from pathlib import Path as _Path
@@ -61,3 +64,17 @@ from .management import (
     remove, force_remove,
 )
 from . import exceptions
+
+
+def version():
+    """Return a string containing human-readable version information."""
+    return f'HTMap version {__version__}'
+
+
+def _version_info(v: str) -> _Tuple[int, int, int, str]:
+    return (*(int(x) for x in v[:5].split('.')), v[5:])
+
+
+def version_info() -> _Tuple[int, int, int, str]:
+    """Return a tuple of version information: ``(major, minor, micro, release_level)``."""
+    return _version_info(__version__)
