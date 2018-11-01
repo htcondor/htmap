@@ -13,25 +13,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import logging.handlers
+import logging as _logging
+import logging.handlers as _handlers
+from pathlib import Path as _Path
 
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.NullHandler())
+# SET UP NULL LOG HANDLER
+logger = _logging.getLogger(__name__)
+logger.setLevel(_logging.DEBUG)
+logger.addHandler(_logging.NullHandler())
+
+# ENSURE HTMAP DIR EXISTS
+htmap_dir = _Path(settings['HTMAP_DIR'])
+if not htmap_dir.exists():
+    try:
+        htmap_dir.mkdir(parents = True, exist_ok = True)
+        logger.debug(f'created HTMap dir at {htmap_dir}')
+    except PermissionError as e:
+        raise PermissionError(f'the HTMap directory ({htmap_dir}) needs to be writable') from e
 
 # SET UP LOG FILE
-logfile_handler = logging.handlers.RotatingFileHandler(
+logfile_handler = _handlers.RotatingFileHandler(
     filename = settings['HTMAP_DIR'] / 'htmap.log',
     mode = 'a',
     maxBytes = 10 * 1024 * 1024,  # 10 MB
     backupCount = 4,
 )
-fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fmt = _logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logfile_handler.setFormatter(fmt)
-logfile_handler.setLevel(logging.DEBUG)
+logfile_handler.setLevel(_logging.DEBUG)
 logger.addHandler(logfile_handler)
 
 from .mapping import (
