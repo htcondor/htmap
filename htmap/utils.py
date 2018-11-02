@@ -112,7 +112,6 @@ def table(
     headers: Iterable[str],
     rows: Iterable[Iterable[Any]],
     fill: str = '',
-    draw_borders = True,
 ) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
@@ -131,8 +130,6 @@ def table(
         which are filled using the ```fill`` value.
     fill
         The string to print in place of a missing value in a mapping-type row.
-    draw_borders
-        If ``True``, borders will be drawn around the edges of the table. If ``False``, they won't.
 
     Returns
     -------
@@ -172,10 +169,6 @@ def table(
         *lines,
         bottom_bar,
     ))
-
-    if not draw_borders:
-        for char in '│ ─ ┼ ┴'.split():
-            output = output.replace(char, ' ')
 
     return rstr(output)
 
