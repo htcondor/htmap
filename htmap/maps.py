@@ -975,8 +975,6 @@ class Map:
         ----------
         map_id
             The ``map_id`` to assign to this map.
-        force_overwrite
-            If ``True``, and there is already a map with the given ``map_id``, it will be removed before renaming this one.
 
         Returns
         -------
@@ -984,11 +982,15 @@ class Map:
             A new :class:`Map` for the renamed map.
         """
         if map_id == self.map_id:
-            raise exceptions.CannotRenameMap('cannot rename a map to the same ``map_id`` it already has')
+            raise exceptions.CannotRenameMap('cannot rename a map to the same map_id it already has')
         if not self.is_done:
-            raise exceptions.CannotRenameMap(f'cannot rename a map that is not complete (map status: {self.status_counts()})')
+            raise exceptions.CannotRenameMap(f'cannot rename a map that is not complete (map status: {self.status()})')
 
-        mapping.raise_if_map_id_is_invalid(map_id)
+        try:
+            mapping.raise_if_map_id_is_invalid(map_id)
+            mapping.raise_if_map_id_already_exists(map_id)
+        except (exceptions.InvalidMapId, exceptions.MapIdAlreadyExists) as e:
+            raise exceptions.CannotRenameMap(f'cannot rename map because of previous exception: {e}') from e
 
         new_map_dir = mapping.map_dir_path(map_id)
         shutil.copytree(
