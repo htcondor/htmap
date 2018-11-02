@@ -47,9 +47,9 @@ class MapOptions(collections.UserDict):
         'transfer_input_files',
         'should_transfer_files',
         'when_to_transfer_output',
-        'htmap',
-        '+htmap',
-        'MY.htmap',
+        'IsHTMapJob',
+        '+IsHTMapJob',
+        'MY.IsHTMapJob',
     }
 
     def __init__(
@@ -244,7 +244,7 @@ def get_base_descriptors(
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT',
         '+component': '$(component)',
-        '+htmap': 'True',
+        '+IsHTMapJob': 'True',
     }
 
     try:

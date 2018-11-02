@@ -185,3 +185,10 @@ Exceptions
 .. automodule:: htmap.exceptions
    :members:
 
+
+Version
+-------
+
+.. autofunction:: htmap.version
+
+.. autofunction:: htmap.version_info
