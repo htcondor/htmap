@@ -65,6 +65,12 @@ change the properties of the map while its running,
 pause, restart, or cancel the map,
 and finally retrieve the output once the map is done.
 
+The various methods that allow you to get and iterate over components will raise exceptions if something has gone wrong with your map:
+
+* :class:`htmap.exceptions.MapComponentError` if a component experienced an error while executing.
+* :class:`htmap.exceptions.MapComponentHeld` if a component was held by HTCondor, likely because an input file did not exist or the component used too much memory or disk.
+
+
 .. autoclass:: htmap.Map
    :members:
 
