@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import time
 
 import pytest
 
@@ -58,5 +58,7 @@ def test_held_then_released_component_not_in_hold_reasons(mapped_doubler):
     assert isinstance(m.hold_reasons[0], htmap.Hold)
 
     m.release()
+
+    time.sleep(1)  # wait for htcondor to write events
 
     assert len(m.hold_reasons) == 0

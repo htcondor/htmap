@@ -432,7 +432,7 @@ class Map:
 
         return datetime.datetime.now() - t
 
-    def _load_result(self, component: int, timeout = None):
+    def _wait_for_component(self, component: int, timeout = None):
         timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
         while True:
@@ -449,6 +449,9 @@ class Map:
                     raise exceptions.TimeoutError(f'timed out while waiting for component {component} of map {self.map_id}')
 
             time.sleep(settings['WAIT_TIME'])
+
+    def _load_result(self, component: int, timeout = None):
+        self._wait_for_component(component, timeout)
 
         return htio.load_object(self._output_file_path(component))
 
@@ -923,18 +926,9 @@ class Map:
         stderr :
             The standard output of the map component.
         """
-        timeout = utils.timeout_to_seconds(timeout)
+        self._wait_for_component(component, timeout)
 
         path = self._map_dir / 'job_logs' / f'{component}.stdout'
-
-        try:
-            utils.wait_for_path_to_exist(path, timeout)
-        except exceptions.TimeoutError as e:
-            if timeout <= 0:
-                raise exceptions.OutputNotFound(f'stdout for component {component} not found') from e
-            else:
-                raise e
-
         return utils.rstr(path.read_text())
 
     def stderr(
@@ -958,18 +952,9 @@ class Map:
         stderr :
             The standard error of the map component.
         """
-        timeout = utils.timeout_to_seconds(timeout)
+        self._wait_for_component(component, timeout)
 
         path = self._map_dir / 'job_logs' / f'{component}.stderr'
-
-        try:
-            utils.wait_for_path_to_exist(path, timeout)
-        except exceptions.TimeoutError as e:
-            if timeout <= 0:
-                raise exceptions.OutputNotFound(f'stderr for component {component} not found') from e
-            else:
-                raise e
-
         return utils.rstr(path.read_text())
 
     def rerun(self):
