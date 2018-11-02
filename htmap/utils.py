@@ -100,7 +100,7 @@ def timeout_to_seconds(timeout: Union[int, float, datetime.timedelta]) -> Option
 
 class rstr(str):
     """
-    Identical to a normal Python string, except that it's __repr__ is its __str__,
+    Identical to a normal Python string, except that it's ``__repr__`` is its ``__str__``,
     to make it work nicer in notebooks.
     """
 
