@@ -13,8 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import time
 
 import pytest
 
 import htmap
+
+
+def test_memory_usage_is_nonzero_after_map_complete():
+    # need it run for at least 5 seconds for it generate an image size event
+    m = htmap.map('mem-usage-nonzero', lambda x: time.sleep(10), range(2))
+
+    m.wait()
+    print(m.memory_usage)
+
+    assert all(x > 0 for x in m.memory_usage)

@@ -39,6 +39,10 @@ logger = logging.getLogger(__name__)
 
 
 class ComponentStatus(utils.StrEnum):
+    """
+    An enumeration of the possible statuses that a map component can be in.
+    These are mostly identical to the HTCondor job statuses of the same name.
+    """
     IDLE = 'IDLE'
     RUNNING = 'RUNNING'
     REMOVED = 'REMOVED'
@@ -174,14 +178,6 @@ class Hold(NamedTuple):
         return f'<{self.__class__.__name__}(code = {self.code}, reason = {self.reason}>'
 
 
-class Usage(NamedTuple):
-    memory: int  # MB
-    disk: int  # KB
-
-    def __str__(self):
-        return f'mem: {self.memory} | disk: {self.disk}'
-
-
 def _protector(method):
     @functools.wraps(method)
     def _protect(self, *args, **kwargs):
@@ -235,7 +231,7 @@ class Map:
         self._clusterproc_to_component = {}
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
         self._hold_reasons = {}
-        self._usage = {}
+        self._memory_usage = [0 for _ in self.component_indices]
 
         MAPS[self.map_id] = self
 
@@ -649,8 +645,9 @@ class Map:
 
             time.sleep(settings['WAIT_TIME'])
 
-    def iter_inputs(self):
-        yield from (self._load_input(idx) for idx in self.component_indices)
+    def iter_inputs(self) -> Iterator[Any]:
+        """Returns an iterator over the inputs of the :class:`htmap.Map`."""
+        return (self._load_input(idx) for idx in self.component_indices)
 
     def error_reports(self):
         for idx in self.component_indices:
@@ -704,31 +701,33 @@ class Map:
 
         yield from q
 
-    @property
-    def component_statuses(self) -> List[ComponentStatus]:
-        """Return a list"""
-        self._update_component_statuses()
-        return self._component_statuses
-
-    def _update_component_statuses(self):
+    def _read_events(self):
         time.sleep(.01)  # smooth things out by giving condor time to write to the event log
         if self._events is None:
             self._events = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
         for event in self._events:
+            # skip events that aren't part of this map (if any leak in)
+            if event.cluster not in self._cluster_ids:
+                continue
+
             if event.type == htcondor.JobEventType.SUBMIT:
                 self._clusterproc_to_component[(event.cluster, event.proc)] = int(event.LogNotes)
+
+            # START EVENT TYPE SWITCH
 
             # this lookup is safe because the SUBMIT event always comes first
             component = self._clusterproc_to_component[(event.cluster, event.proc)]
             new_status = None
 
-            # START SWITCH
+            if event.type is htcondor.JobEventType.IMAGE_SIZE:
+                mem = int(event.MemoryUsage)
+                self._memory_usage[component] = mem
+                logger.debug(f'memory_usage of component {component} of map {self.map_id} changed to {mem}')
 
-            if event.type is htcondor.JobEventType.JOB_TERMINATED:
+            elif event.type is htcondor.JobEventType.JOB_TERMINATED:
                 new_status = ComponentStatus.COMPLETED
-                u = Usage(memory = event.MemoryUsage, disk = event.DiskUsage)
-                self._usage[component] = u
+                # todo: get final memory/disk usage from here
 
             elif event.type is htcondor.JobEventType.EXECUTE:
                 new_status = ComponentStatus.RUNNING
@@ -752,11 +751,22 @@ class Map:
             elif event.type is htcondor.JobEventType.JOB_SUSPENDED:
                 new_status = ComponentStatus.SUSPENDED
 
-            # END SWITCH
+            elif event.type is htcondor.JobEventType.JOB_ABORTED:
+                new_status = ComponentStatus.REMOVED
+
+            # END EVENT TYPE SWITCH
 
             if new_status is not None:
                 self._component_statuses[component] = new_status
                 logger.debug(f'status of component {component} of map {self.map_id} changed to {new_status}')
+
+    @property
+    def component_statuses(self) -> List[ComponentStatus]:
+        """
+        Return the current :class:`ComponentStatus` of each component in the map.
+        """
+        self._read_events()
+        return self._component_statuses
 
     def status_counts(self) -> collections.Counter:
         """Return a dictionary that describes how many map components are in each status."""
@@ -773,7 +783,7 @@ class Map:
     @property
     def hold_reasons(self) -> Dict[int, Hold]:
         """Return a dictionary that maps component indices to their :class:`Hold` (if they are held)."""
-        self._update_component_statuses()
+        self._read_events()
         return self._hold_reasons
 
     def holds(self) -> str:
@@ -790,6 +800,15 @@ class Map:
             lines.append(f'{component_text} │ {hold_text}')
 
         return '\n'.join([top, under_top, *lines, bottom])
+
+    @property
+    def memory_usage(self) -> List[int]:
+        """
+        Return the latest peak memory usage of each map component, measured in MB.
+        A component that hasn't reported yet will show a ``0``.
+        """
+        self._read_events()
+        return self._memory_usage
 
     def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None) -> classad.ClassAd:
         schedd = mapping.get_schedd()
