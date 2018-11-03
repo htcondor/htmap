@@ -237,7 +237,6 @@ def get_base_descriptors(
 ) -> dict:
     core = {
         'JobBatchName': map_id,
-        'arguments': '$(component)',
         'log': (map_dir / 'event_log').as_posix(),
         'submit_event_notes': '$(component)',
         'stdout': (map_dir / 'job_logs' / '$(component).stdout').as_posix(),
@@ -278,6 +277,7 @@ def _get_base_descriptors_for_assume(
     return {
         'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'arguments': '$(component)',
     }
 
 
@@ -295,6 +295,7 @@ def _get_base_descriptors_for_docker(
         'universe': 'docker',
         'docker_image': settings['DOCKER.IMAGE'],
         'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'arguments': '$(component)',
         'transfer_executable': 'True',
     }
 
@@ -316,6 +317,7 @@ def _get_base_descriptors_for_transplant(
     return {
         'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
+        'arguments': f'$(component) {_get_transplant_hash()}',
         'transfer_input_files': [
             (Path(__file__).parent / 'run' / 'run.py').as_posix(),
             tif_path,
@@ -340,6 +342,7 @@ def _run_delivery_setup_for_transplant(
         final_path = target.with_name(f'{target.stem}.tar.gz')
 
         if final_path.exists():  # cached version already exists
+            logger.debug(f'using cached zipped python install at {final_path}')
             return
 
         logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
