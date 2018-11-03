@@ -19,6 +19,7 @@ import logging
 import sys
 import shutil
 import collections
+import hashlib
 from pathlib import Path
 
 import htcondor
@@ -329,7 +330,7 @@ def _get_base_options_dict_for_transplant(
 ) -> dict:
     tif_path = settings['TRANSPLANT.ALTERNATE_INPUT_PATH']
     if tif_path is None:
-        tif_path = (Path(settings['TRANSPLANT.PATH']) / 'htmap_python.tar.gz').as_posix()
+        tif_path = (Path(settings['TRANSPLANT.DIR']) / f'{_get_transplant_hash()}.tar.gz').as_posix()
 
     return {
         'universe': 'vanilla',
@@ -338,6 +339,7 @@ def _get_base_options_dict_for_transplant(
             (Path(__file__).parent / 'run' / 'run.py').as_posix(),
             tif_path,
         ],
+        'file_remaps': f'"htmap_python.tar.gz = local:{_get_transplant_hash()}.tar.gz"'
     }
 
 
@@ -345,14 +347,19 @@ def _run_delivery_setup_for_transplant(
     map_id: str,
     map_dir: Path,
 ):
-    if not _cached_py_is_current() or settings['TRANSPLANT.ASSUME_EXISTS']:
+    if not settings['TRANSPLANT.ASSUME_EXISTS']:
         if 'usr' in sys.executable:
             raise exceptions.CannotTransplantPython('system Python installations cannot be transplanted')
+        if sys.platform == 'win32':
+            raise exceptions.CannotTransplantPython('transplant delivery does not work from Windows')
+
         py_dir = Path(sys.executable).parent.parent
 
-        transplant_path = Path(settings['TRANSPLANT.PATH'])
-        target = transplant_path / 'htmap_python'
-        final_path = target.with_name('htmap_python.tar.gz')
+        target = Path(settings['TRANSPLANT.DIR']) / _get_transplant_hash()
+        final_path = target.with_name(f'{target.stem}.tar.gz')
+
+        if final_path.exists():  # cached version already exists
+            return
 
         logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
 
@@ -364,33 +371,16 @@ def _run_delivery_setup_for_transplant(
             )
         except BaseException as e:
             final_path.unlink()
+            logger.debug(f'removed partial zipped Python install at {target}')
             raise e
 
         logger.debug(f'created zipped Python install for transplant, stored at {final_path}')
 
-        cached_req_path = transplant_path / 'freeze'
-        cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
 
-        logger.debug(f'saved transplant cache file to {cached_req_path}')
-
-
-def _cached_py_is_current() -> bool:
-    logger.debug('checking if cached zipped Python install is current...')
-    transplant_path = Path(settings['TRANSPLANT.PATH'])
-    cached_req_path = transplant_path / 'freeze'
-    py_install_path = transplant_path / 'htmap_python.tar.gz'
-    if not cached_req_path.exists() or not py_install_path.exists():
-        logger.debug('did not find cached zipped Python install')
-        return False
-
-    cached_reqs = cached_req_path.read_text(encoding = 'utf-8')
-    current_reqs = utils.pip_freeze()
-
-    reqs_match = (current_reqs == cached_reqs)
-
-    logger.debug(f'cached zipped Python install {"is" if reqs_match else "is not"} current')
-
-    return reqs_match
+def _get_transplant_hash() -> str:
+    h = hashlib.md5()
+    h.update(utils.pip_freeze().encode('utf-8'))
+    return h.hexdigest()
 
 
 register_delivery_mechanism(
