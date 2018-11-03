@@ -933,6 +933,8 @@ class Map:
         stderr :
             The standard output of the map component.
         """
+        self._wait_for_component(component, timeout)
+
         path = self._map_dir / 'job_logs' / f'{component}.stdout'
         return utils.rstr(path.read_text())
 
@@ -957,6 +959,8 @@ class Map:
         stderr :
             The standard error of the map component.
         """
+        self._wait_for_component(component, timeout)
+
         path = self._map_dir / 'job_logs' / f'{component}.stderr'
         return utils.rstr(path.read_text())
 
