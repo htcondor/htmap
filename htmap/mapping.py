@@ -212,6 +212,22 @@ def transient_starmap(
 
 
 class MapBuilder:
+    """
+    The :class:`htmap.MapBuilder` provides an alternate way to create maps.
+    Once created via :meth:`htmap.build_map` or similar as a context manager,
+    the map builder can be called as if it were the function you're mapping over.
+    When the ``with`` block exits, the inputs are collected and submitted as a single map.
+
+    .. code-block:: python
+
+        with htmap.build_map(map_id = 'pow', func = lambda x, p: x ** p) as builder:
+            for x in range(1, 4):
+                builder(x, x)
+
+        result = builder.result
+        print(list(result))  # [1, 4, 27]
+    """
+
     def __init__(
         self,
         map_id: str,
@@ -356,24 +372,24 @@ def create_map(
     try:
         make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
-        hashes = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
-        htio.save_hashes(map_dir, hashes)
+        num_components = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
             map_id,
             map_dir,
-            hashes,
+            num_components,
             map_options,
         )
+
+        htio.save_num_components(map_dir, num_components)
         htio.save_submit(map_dir, submit_obj)
         htio.save_itemdata(map_dir, itemdata)
 
         logger.debug(f'submitting map {map_id}...')
-        submit_result = execute_submit(
+        cluster_id = execute_submit(
             submit_object = submit_obj,
             itemdata = itemdata,
         )
-        cluster_id = submit_result.cluster()
 
         logger.debug(f'map {map_id} was assigned clusterid {cluster_id}')
 
@@ -387,7 +403,7 @@ def create_map(
             map_id = map_id,
             cluster_ids = cluster_ids,
             submit = submit_obj,
-            hashes = hashes,
+            num_components = num_components,
         )
 
         logger.info(f'submitted map {map_id}')
@@ -435,7 +451,6 @@ MAP_SUBDIR_NAMES = (
     'inputs',
     'outputs',
     'job_logs',
-    'cluster_logs',
 )
 
 
@@ -447,8 +462,11 @@ def make_map_dir_and_subdirs(map_dir):
     logger.debug(f'created map directory {map_dir} and subdirectories')
 
 
-def execute_submit(submit_object, itemdata) -> htcondor.SubmitResult:
-    """Execute a map via the scheduler defined by the settings."""
+def execute_submit(submit_object, itemdata) -> int:
+    """
+    Execute a map via the scheduler defined by the settings.
+    Return the HTCondor cluster ID of the map's jobs.
+    """
     schedd = get_schedd()
     with schedd.transaction() as txn:
         submit_result = submit_object.queue_with_itemdata(
@@ -457,7 +475,7 @@ def execute_submit(submit_object, itemdata) -> htcondor.SubmitResult:
             iter(itemdata),
         )
 
-        return submit_result
+        return submit_result.cluster()
 
 
 def zip_args_and_kwargs(

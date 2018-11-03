@@ -17,26 +17,35 @@ import pytest
 
 import htmap
 
-N = 1
+
+def test_decorator_without_parens():
+    @htmap.mapped
+    def foo(x):
+        return x
+
+    assert isinstance(foo, htmap.MappedFunction)
 
 
-def test_hold(mapped_sleepy_double):
-    result = mapped_sleepy_double.map('sleepy', range(N))
+def test_decorator_with_parens():
+    @htmap.mapped()
+    def foo(x):
+        return x
 
-    result.hold()
-
-    assert result.status_counts()[htmap.Status.HELD] == N
-
-    result.remove()  # cleanup
+    assert isinstance(foo, htmap.MappedFunction)
 
 
-def test_hold_then_release(mapped_sleepy_double):
-    result = mapped_sleepy_double.map('sleepy', range(N))
+def test_decorator_with_map_options():
+    @htmap.mapped(map_options = htmap.MapOptions())
+    def foo(x):
+        return x
 
-    result.hold()
-    assert result.status_counts()[htmap.Status.HELD] == N
+    assert isinstance(foo, htmap.MappedFunction)
 
-    result.release()
-    assert result.status_counts()[htmap.Status.HELD] == 0
 
-    result.remove()  # cleanup
+def test_can_still_call_wrapped_function_as_normal(mapped_doubler):
+    assert mapped_doubler(5) == 10
+
+
+def test_bad_call_raises():
+    with pytest.raises(TypeError):
+        htmap.mapped('foo')

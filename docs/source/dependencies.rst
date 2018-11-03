@@ -10,6 +10,16 @@ HTMap provides several methods for ensuring that your dependencies are available
 
 HTMap requires that the execute location can execute a Python script using a Python install that has the module ``cloudpickle`` installed.
 
+The built-in delivery methods are
+
+* ``assume`` - assumes that the dependencies have already been installed at the execute location.
+* ``docker`` - runs in a user-supplied Docker container.
+* ``transplant`` - copy the user's Python installation to the execute node.
+
+More details on each of these methods can be found below.
+
+The default delivery method is ``docker``, with image ``continuumio/anaconda3:latest``.
+
 .. attention::
 
     HTMap can transfer inputs and outputs between different versions of Python 3, but it can't magically make features from later Python versions available.
@@ -115,8 +125,9 @@ At runtime:
 
     htmap.settings['DELIVERY_METHOD'] = 'transplant'
 
-If you are running HTMap from a standalone Python install (like an Anaconda installation), you can use this delivery mechanism to transfer a copy of your entire Python install.
-All locally-installed packages (including ``pip -e`` installs) will be available.
+If you are running HTMap from a standalone Python install (like an Anaconda installation),
+you can use this delivery mechanism to transfer a copy of your entire Python install.
+All locally-installed packages (including ``pip -e`` "editable" installs) will be available.
 
 For advanced transplant functionality, see :ref:`transplant-settings`.
 

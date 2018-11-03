@@ -17,6 +17,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath('../../'))
 
+import htmap
+
 # -- Project information -----------------------------------------------------
 
 project = 'HTMap'
@@ -24,9 +26,9 @@ copyright = '2018, HTCondor Team, Computer Sciences Department, University of Wi
 author = 'HTCondor Team'
 
 # The short X.Y version
-version = ''
+version = htmap.__version__[:5]
 # The full version, including alpha/beta/rc tags
-release = ''
+release = htmap.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -174,72 +176,3 @@ autodoc_default_flags = ['undoc-members']
 # autodoc_mock_imports = ['htcondor', 'classad']  # breaks making ClassAd a MutableMapping
 
 napoleon_use_rtype = False
-
-# MONKEY PATCH GET_DOC TO PUT PARAMETERS BEFORE ATTRIBUTES
-
-import sphinx.ext.autodoc
-import sphinx
-from sphinx.util import force_decode
-from sphinx.util.docstrings import prepare_docstring
-from six import text_type
-
-
-def get_doc(self, encoding = None, ignore = 1):
-    lines = getattr(self, '_new_docstrings', None)
-    if lines is not None:
-        return lines
-
-    content = self.env.config.autoclass_content
-
-    docstrings = []
-    attrdocstring = self.get_attr(self.object, '__doc__', None)
-    if attrdocstring:
-        docstrings.append(attrdocstring)
-
-    # for classes, what the "docstring" is can be controlled via a
-    # config value; the default is only the class docstring
-    if content in ('both', 'init'):
-        initdocstring = self.get_attr(
-            self.get_attr(self.object, '__init__', None), '__doc__')
-        # for new-style classes, no __init__ means default __init__
-        if (initdocstring is not None and
-            (initdocstring == object.__init__.__doc__ or  # for pypy
-             initdocstring.strip() == object.__init__.__doc__)):  # for !pypy
-            initdocstring = None
-        if not initdocstring:
-            # try __new__
-            initdocstring = self.get_attr(
-                self.get_attr(self.object, '__new__', None), '__doc__')
-            # for new-style classes, no __new__ means default __new__
-            if (initdocstring is not None and
-                (initdocstring == object.__new__.__doc__ or  # for pypy
-                 initdocstring.strip() == object.__new__.__doc__)):  # for !pypy
-                initdocstring = None
-        if initdocstring:
-            if content == 'init':
-                docstrings = [initdocstring]
-            else:
-                if len(docstrings) == 0 or 'Attributes' not in docstrings[0]:
-                    docstrings.append(initdocstring)
-                else:
-                    class_str = docstrings[0]
-
-                    lines = class_str.split('\n')
-                    for attributes_line, line in enumerate(lines):
-                        if 'Attributes' in line:
-                            break
-
-                    lines = lines[:attributes_line] + [s[4:] for s in initdocstring.splitlines()] + lines[attributes_line:]
-
-                    docstrings = ['\n'.join(lines)]
-    doc = []
-    for docstring in docstrings:
-        if isinstance(docstring, text_type):
-            doc.append(prepare_docstring(docstring, ignore))
-        elif isinstance(docstring, str):  # this will not trigger on Py3
-            doc.append(prepare_docstring(force_decode(docstring, encoding),
-                                         ignore))
-    return doc
-
-
-sphinx.ext.autodoc.ClassDocumenter.get_doc = get_doc

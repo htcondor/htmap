@@ -38,7 +38,7 @@ def load(map_id: str) -> maps.Map:
     map
         The result with the given ``map_id``.
     """
-    return maps.Map.recover(map_id)
+    return maps.Map.load(map_id)
 
 
 def _map_paths() -> Iterator[Path]:
@@ -54,7 +54,7 @@ def map_ids() -> Tuple[str]:
     return tuple(path.stem for path in _map_paths())
 
 
-def map_results() -> Tuple[maps.Map, ...]:
+def load_maps() -> Tuple[maps.Map, ...]:
     """Return a :class:`tuple` containing the :class:`Map` for all existing maps."""
     return tuple(load(map_id) for map_id in map_ids())
 
@@ -101,7 +101,7 @@ def force_remove(map_id: str):
 def clean():
     """Remove all existing maps."""
     logger.debug('cleaning maps directory...')
-    for map_result in map_results():
+    for map_result in load_maps():
         map_result.remove()
     logger.debug('cleaned maps directory')
 
@@ -124,16 +124,15 @@ def force_clean():
 def status() -> str:
     """Return a string containing a table showing the status of all existing maps, as well as their disk usage."""
     ids = map_ids()
-    results = map_results()
-    counts = [r.status_counts() for r in results]
+    counts = [m.status_counts() for m in load_maps()]
 
     return utils.table(
-        headers = ['Map ID'] + [str(d) for d in maps.Status.display_statuses()] + ['Data'],
+        headers = ['Map ID'] + [str(d) for d in maps.ComponentStatus.display_statuses()] + ['Data'],
         rows = [
-            [map_id] + [count[d] for d in maps.Status.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
+            [map_id] + [count[d] for d in maps.ComponentStatus.display_statuses()] + [utils.get_dir_size_as_str(mapping.map_dir_path(map_id))]
             for map_id, count in sorted(
                 zip(ids, counts),
-                key = lambda map_id_and_count: map_id_and_count[1][maps.Status.RUNNING],
+                key = lambda map_id_and_count: map_id_and_count[1][maps.ComponentStatus.RUNNING],
             )
         ],
     )

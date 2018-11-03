@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Dict, Union, Optional, Callable, Any, Iterator
+from typing import Iterable, Dict, Union, Optional, Callable, Any
 import logging
 
 from . import mapping, options, maps
@@ -169,3 +169,5 @@ def mapped(map_options: Optional[options.MapOptions] = None) -> Union[Callable, 
             return MappedFunction(func, map_options = map_options)
 
         return wrapper
+
+    raise TypeError('incorrect use of @mapped decorator - argument should be a callable or a MapOptions, or no argument')

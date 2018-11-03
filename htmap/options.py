@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Iterable, Optional, Callable, Dict
+from typing import Union, Iterable, Optional, Callable, Dict, List
 import logging
 
 import sys
@@ -40,6 +40,7 @@ class MapOptions(collections.UserDict):
         'executable',
         'transfer_executable',
         'log',
+        'submit_event_notes',
         'stdout',
         'stderr',
         'transfer_output_files',
@@ -47,16 +48,14 @@ class MapOptions(collections.UserDict):
         'transfer_input_files',
         'should_transfer_files',
         'when_to_transfer_output',
-        'htmap',
-        '+htmap',
-        'MY.htmap',
+        'IsHTMapJob',
+        '+IsHTMapJob',
+        'MY.IsHTMapJob',
     }
 
     def __init__(
         self,
         *,
-        request_memory: Union[int, str, float, Iterable[Union[int, str, float]]] = '100MB',
-        request_disk: Union[int, str, float, Iterable[Union[int, str, float]]] = '1GB',
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
         input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
         custom_options: Dict[str, str] = None,
@@ -65,12 +64,6 @@ class MapOptions(collections.UserDict):
         """
         Parameters
         ----------
-        request_memory
-            The amount of memory (RAM) to request.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **MB**.
-        request_disk
-            The amount of disk space to use.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **GB**.
         fixed_input_files
             A single file, or an iterable of files, to send to all components of the map.
             Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
@@ -101,28 +94,6 @@ class MapOptions(collections.UserDict):
         kwargs = {**kwargs, **{'+' + key: val for key, val in cleaned_custom_options.items()}}
 
         super().__init__(**kwargs)
-
-        if isinstance(request_memory, str):
-            self['request_memory'] = request_memory
-        elif isinstance(request_memory, (int, float)):
-            self['request_memory'] = f'{request_memory}MB'
-        else:  # implies it is iterable
-            self['request_memory'] = [
-                rm if isinstance(rm, str)
-                else f'{int(rm)}MB'
-                for rm in request_memory
-            ]
-
-        if isinstance(request_disk, str):
-            self['request_disk'] = request_disk
-        elif isinstance(request_disk, (int, float)):
-            self['request_disk'] = f'{request_disk}GB'
-        else:  # implies it is iterable
-            self['request_disk'] = [
-                rd if isinstance(rd, str)
-                else f'{int(rd)}GB'
-                for rd in request_disk
-            ]
 
         if fixed_input_files is None:
             fixed_input_files = []
@@ -175,7 +146,12 @@ def normalize_path(path: Union[str, Path]) -> str:
     return normalize_path(Path(path))  # local file path, but as a string
 
 
-def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
+def create_submit_object_and_itemdata(
+    map_id: str,
+    map_dir: Path,
+    num_components: int,
+    map_options: Optional[MapOptions] = None,
+):
     if map_options is None:
         map_options = MapOptions()
 
@@ -185,19 +161,19 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         settings['DELIVERY_METHOD'],
     )
 
-    options_dict = get_base_options_dict(
+    descriptors = get_base_descriptors(
         map_id,
         map_dir,
         settings['DELIVERY_METHOD'],
     )
 
-    itemdata = [{'hash': h} for h in hashes]
-    options_dict['transfer_output_files'] = '$(hash).out'
+    itemdata = [{'component': str(idx)} for idx in range(num_components)]
+    descriptors['transfer_output_files'] = '$(component).out'
 
-    input_files = options_dict.get('transfer_input_files', [])
+    input_files = descriptors.get('transfer_input_files', [])
     input_files += [
         (map_dir / 'func').as_posix(),
-        (map_dir / 'inputs' / '$(hash).in').as_posix(),
+        (map_dir / 'inputs' / '$(component).in').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
@@ -209,32 +185,30 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
             else ', '.join(normalize_path(f) for f in files)
             for files in map_options.input_files
         ]
-        if len(hashes) != len(joined):
-            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {len(hashes)})')
+        if len(joined) != num_components:
+            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
-
-    options_dict['transfer_input_files'] = ','.join(input_files)
+    descriptors['transfer_input_files'] = ','.join(input_files)
 
     output_remaps = [
-        f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
+        f'$(component).out={(map_dir / "outputs" / "$(component).out").as_posix()}',
     ]
-
-    options_dict['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
+    descriptors['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
             itemdata_key = f'itemdata_for_{opt_key}'
             opt_value = tuple(opt_value)
-            if len(opt_value) != len(hashes):
-                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {len(hashes)})')
+            if len(opt_value) != num_components:
+                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
             for dct, v in zip(itemdata, opt_value):
                 dct[itemdata_key] = v
-            options_dict[opt_key] = f'$({itemdata_key})'
+            descriptors[opt_key] = f'$({itemdata_key})'
         else:
-            options_dict[opt_key] = opt_value
+            descriptors[opt_key] = opt_value
 
-    sub = htcondor.Submit(options_dict)
+    sub = htcondor.Submit(descriptors)
 
     return sub, itemdata
 
@@ -251,26 +225,33 @@ def register_delivery_mechanism(
     SETUP_FUNCTION_BY_DELIVERY[name] = setup_func
 
 
-def get_base_options_dict(
+def unregister_delivery_mechanism(name: str):
+    BASE_OPTIONS_FUNCTION_BY_DELIVERY.pop(name)
+    SETUP_FUNCTION_BY_DELIVERY.pop(name)
+
+
+def get_base_descriptors(
     map_id: str,
     map_dir: Path,
     delivery: str,
 ) -> dict:
     core = {
         'JobBatchName': map_id,
-        'arguments': '$(hash)',
-        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-        'stdout': (map_dir / 'job_logs' / '$(hash).stdout').as_posix(),
-        'stderr': (map_dir / 'job_logs' / '$(hash).stderr').as_posix(),
+        'arguments': '$(component)',
+        'log': (map_dir / 'event_log').as_posix(),
+        'submit_event_notes': '$(component)',
+        'stdout': (map_dir / 'job_logs' / '$(component).stdout').as_posix(),
+        'stderr': (map_dir / 'job_logs' / '$(component).stderr').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT',
-        '+htmap': 'True',
+        '+component': '$(component)',
+        '+IsHTMapJob': 'True',
     }
 
     try:
         base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
-        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
+        raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
     return {
         **core,
@@ -283,14 +264,14 @@ def run_delivery_setup(
     map_id: str,
     map_dir: Path,
     delivery: str,
-):
+) -> None:
     try:
         SETUP_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
-        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
+        raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
 
-def _get_base_options_dict_for_assume(
+def _get_base_descriptors_for_assume(
     map_id: str,
     map_dir: Path,
 ) -> dict:
@@ -302,11 +283,11 @@ def _get_base_options_dict_for_assume(
 
 register_delivery_mechanism(
     'assume',
-    options_func = _get_base_options_dict_for_assume,
+    options_func = _get_base_descriptors_for_assume,
 )
 
 
-def _get_base_options_dict_for_docker(
+def _get_base_descriptors_for_docker(
     map_id: str,
     map_dir: Path,
 ) -> dict:
@@ -320,11 +301,11 @@ def _get_base_options_dict_for_docker(
 
 register_delivery_mechanism(
     'docker',
-    options_func = _get_base_options_dict_for_docker,
+    options_func = _get_base_descriptors_for_docker,
 )
 
 
-def _get_base_options_dict_for_transplant(
+def _get_base_descriptors_for_transplant(
     map_id: str,
     map_dir: Path,
 ) -> dict:
@@ -385,6 +366,6 @@ def _get_transplant_hash() -> str:
 
 register_delivery_mechanism(
     'transplant',
-    options_func = _get_base_options_dict_for_transplant,
+    options_func = _get_base_descriptors_for_transplant,
     setup_func = _run_delivery_setup_for_transplant,
 )

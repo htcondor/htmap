@@ -51,7 +51,11 @@ If not given, defaults to ``~/.htmap``.
 
 ``DELIVERY_METHOD`` - the name of the delivery method to use.
 The different delivery methods are discussed in :ref:`dependency-management`.
+Defaults to ``docker``.
 
+``WAIT_TIME`` - how long to wait between polling for component statuses, files existing, etc.
+Measured in seconds.
+Defaults to ``1`` (1 second).
 
 MAP_OPTIONS
 +++++++++++

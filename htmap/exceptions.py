@@ -74,7 +74,7 @@ class CannotRenameMap(HTMapException):
     pass
 
 
-class UnknownPythonDeliveryMechanism(HTMapException):
+class UnknownPythonDeliveryMethod(HTMapException):
     """The specified Python delivery mechanism has not been registered."""
     pass
 
@@ -91,6 +91,11 @@ class InvalidOutputStatus(HTMapException):
 
 class MapComponentError(HTMapException):
     """A map component experienced an error during remote execution."""
+    pass
+
+
+class MapComponentHeld(HTMapException):
+    """A map component has been held by HTCondor."""
     pass
 
 

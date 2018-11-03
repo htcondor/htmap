@@ -31,21 +31,6 @@ from htmap import exceptions, utils
 logger = logging.getLogger(__name__)
 
 
-def to_bytes(obj: Any) -> bytes:
-    """Serialize a Python object (including "objects", like functions) into bytes."""
-    return cloudpickle.dumps(obj)
-
-
-def hash_bytes(b: bytes) -> str:
-    """Return a string-ified hash for the bytes ``b``."""
-    return hashlib.md5(b).hexdigest()
-
-
-def save_bytes(b: bytes, path: Path) -> None:
-    """Write the bytes ``b`` to a file at the given ``path``."""
-    path.write_bytes(b)
-
-
 def save_object(obj: Any, path: Path) -> None:
     """Serialize a Python object (including "objects", like functions) to a file at the given ``path``."""
     with path.open(mode = 'wb') as file:
@@ -54,20 +39,8 @@ def save_object(obj: Any, path: Path) -> None:
 
 def load_object(path: Path) -> Any:
     """Deserialize an object from the file at the given ``path``."""
-    old_size = None
-    while True:
-        try:
-            with path.open(mode = 'rb') as file:
-                return cloudpickle.load(file)
-
-        # this tries to figure out if the file is currently being transferred
-        # if so, retry until it succeeds or stops changing size (transfer is done and something else is wrong)
-        except (pickle.UnpicklingError, EOFError) as e:
-            curr_size = utils.get_file_size(path)
-            if curr_size == old_size:
-                raise e
-            old_size = curr_size
-            time.sleep(.01)
+    with path.open(mode = 'rb') as file:
+        return cloudpickle.load(file)
 
 
 def save_func(map_dir, func):
@@ -81,49 +54,38 @@ def save_func(map_dir, func):
 def save_args_and_kwargs(
     map_dir: Path,
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
-) -> List[str]:
+) -> int:
     """
     Save the arguments to the mapped function to the map's input directory.
-    Returns the hashes (via :func:`hash_bytes`) of each argument.
+    Returns the number of inputs to the map.
     """
     base_path = map_dir / 'inputs'
-    hashes = []
-    num_inputs = 0
-    for a_and_k in args_and_kwargs:
-        b = to_bytes(a_and_k)
-        h = hash_bytes(b)
-        hashes.append(h)
+    num_components = 0
+    for component, a_and_k in enumerate(args_and_kwargs):
+        save_object(a_and_k, base_path / f'{component}.in')
 
-        input_path = base_path / f'{h}.in'
-        save_bytes(b, input_path)
+        num_components += 1
 
-        num_inputs += 1
-
-    if num_inputs == 0:
+    if num_components == 0:
         raise exceptions.EmptyMap()
 
     logger.debug(f'saved args and kwargs in {base_path}')
 
-    return hashes
+    return num_components
 
 
-def save_hashes(map_dir: Path, hashes: Iterable[str]):
-    """Save a file containing the hashes of the arguments to the map directory."""
-    path = _hashes_path(map_dir)
-    with path.open(mode = 'w') as file:
-        file.write('\n'.join(hashes))
-
-    logger.debug(f'saved hashes to {path}')
+def save_num_components(map_dir: Path, num_components: int):
+    path = _num_components_path(map_dir)
+    path.write_text(str(num_components))
 
 
-def load_hashes(map_dir: Path) -> Tuple[str, ...]:
-    """Load hashes that were saved using :func:`save_hashes`."""
-    with _hashes_path(map_dir).open() as file:
-        return tuple(h.strip() for h in file)
+def load_num_components(map_dir: Path) -> int:
+    path = _num_components_path(map_dir)
+    return int(path.read_text())
 
 
-def _hashes_path(map_dir: Path) -> Path:
-    return map_dir / 'hashes'
+def _num_components_path(map_dir: Path):
+    return map_dir / 'num_components'
 
 
 def save_submit(map_dir: Path, submit: htcondor.Submit):

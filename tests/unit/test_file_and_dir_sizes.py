@@ -13,28 +13,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import pytest
 
-import htmap
+from pathlib import Path
+
+from htmap import utils
 
 
-def test_recover_shortcut(mapped_doubler):
-    result = mapped_doubler.map('map', range(3))
+def test_file_size(tmpdir):
+    path = Path(tmpdir.mkdir('file_size').join('obj'))
+    n = 1000
 
-    recovered = htmap.load('map')
+    path.write_bytes(b'0' * n)
 
-    assert recovered is result
-
-
-def test_recover_classmethod(mapped_doubler):
-    result = mapped_doubler.map('map', range(3))
-
-    recovered = htmap.Map.recover('map')
-
-    assert recovered is result
+    assert utils.get_file_size(path) == n
 
 
-def test_recover_on_bad_mapid_raises_map_id_not_found():
-    with pytest.raises(htmap.exceptions.MapIdNotFound):
-        htmap.load('no_such_mapid')
+@pytest.mark.parametrize(
+    'num_bytes, expected',
+    [
+        (100, '100.0 B'),
+        (1024, '1.0 KB'),
+        (2048, '2.0 KB'),
+        (2049, '2.0 KB'),
+        (1024 * 1024 * 1024 * .5, '512.0 MB'),
+        (1024 * 1024 * 1024, '1.0 GB'),
+        (1024 * 1024 * 1024 * 1024 * .25, '256.0 GB'),
+    ]
+)
+def test_num_bytes_to_str(num_bytes, expected):
+    assert expected == utils.num_bytes_to_str(num_bytes)

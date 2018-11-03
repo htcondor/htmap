@@ -13,32 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 import htmap
+import htcondor
 
 
-def test_decorator_without_parens():
-    @htmap.mapped
-    def foo(x):
-        return x
+def test_loaded_map_is_same_object_as_previously_created_map():
+    map = htmap.map('singleton', lambda x: x, range(1))
 
-    assert isinstance(foo, htmap.MappedFunction)
+    recovered = htmap.load('singleton')
 
-
-def test_decorator_with_parens():
-    @htmap.mapped()
-    def foo(x):
-        return x
-
-    assert isinstance(foo, htmap.MappedFunction)
-
-
-def test_decorator_with_map_options():
-    @htmap.mapped(map_options = htmap.MapOptions())
-    def foo(x):
-        return x
-
-    assert isinstance(foo, htmap.MappedFunction)
-
-
-def test_can_still_call_wrapped_function_as_normal(mapped_doubler):
-    assert mapped_doubler(5) == 10
+    assert recovered is map

@@ -45,10 +45,15 @@ setup(
     package_data = {
         '': ['*.sh'],
     },
+    entry_points = '''
+        [console_scripts]
+        htmap=htmap.cli:cli
+    ''',
     install_requires = [
         'htcondor >= 8.7.9',
         'cloudpickle',
         'toml',
         'tqdm',
+        'click',
     ],
 )

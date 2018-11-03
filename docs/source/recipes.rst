@@ -75,3 +75,10 @@ Cleanup After Force Removal
 If you use :func:`htmap.force_remove` or :func:`htmap.force_clean` you may end up with dangling map jobs.
 These maps jobs are in the cluster's queue, but since you force-removed your map, you don't have a way to reconnect to them from inside HTMap.
 You'll need to use the command line HTCondor tools ``condor_q`` and ``condor_rm`` to clean them up.
+
+
+Conditional Execution on Cluster vs. Submit
+-------------------------------------------
+
+The environment variable HTMAP_ON_EXECUTE is set to ``'1'`` while map components are executing out on the cluster.
+This can be useful if you need to switch certain behavior on whether you're running your function locally or not.
