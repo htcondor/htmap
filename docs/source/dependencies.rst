@@ -18,6 +18,8 @@ The built-in delivery methods are
 
 More details on each of these methods can be found below.
 
+The default delivery method is ``docker``, with image ``continuumio/anaconda3:latest``.
+
 .. attention::
 
     HTMap can transfer inputs and outputs between different versions of Python 3, but it can't magically make features from later Python versions available.
