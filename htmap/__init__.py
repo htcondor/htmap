@@ -54,7 +54,7 @@ from .mapping import (
     MapBuilder, TransientMap,
 )
 from .mapped import mapped, MappedFunction
-from .maps import Map, Status
+from .maps import Map, ComponentStatus, Hold, ComponentError
 from .options import MapOptions, register_delivery_mechanism
 from .management import (
     status,
@@ -66,12 +66,13 @@ from .management import (
 from . import exceptions
 
 
-def version():
+def version() -> str:
     """Return a string containing human-readable version information."""
     return f'HTMap version {__version__}'
 
 
 def _version_info(v: str) -> _Tuple[int, int, int, str]:
+    """Un-format ``__version__``."""
     return (*(int(x) for x in v[:5].split('.')), v[5:])
 
 

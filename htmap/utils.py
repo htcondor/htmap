@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping
+from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable
 import logging
 
 import time
 import datetime
 import subprocess
 import sys
+import enum
 from pathlib import Path
 
 from . import exceptions
@@ -31,7 +32,12 @@ MutableMapping.register(ClassAd)
 logger = logging.getLogger(__name__)
 
 
-def clean_dir(target_dir: Path):
+class StrEnum(enum.Enum):
+    def __str__(self):
+        return self.value
+
+
+def clean_dir(target_dir: Path, on_file: Callable[[Path], None] = None):
     """
     Remove all files in the given directory `target_dir`.
 
@@ -40,8 +46,12 @@ def clean_dir(target_dir: Path):
     target_dir
         The directory to clean up.
     """
+    if on_file is None:
+        on_file = lambda p: p
+
     logger.debug(f'removing all files in {target_dir}...')
     for path in (p for p in target_dir.iterdir() if p.is_file()):
+        on_file(path)
         path.unlink()
         logger.debug(f'removed file {path}')
 
@@ -90,7 +100,7 @@ def timeout_to_seconds(timeout: Union[int, float, datetime.timedelta]) -> Option
 
 class rstr(str):
     """
-    Identical to a normal Python string, except that it's __repr__ is its __str__,
+    Identical to a normal Python string, except that it's ``__repr__`` is its ``__str__``,
     to make it work nicer in notebooks.
     """
 
@@ -98,7 +108,11 @@ class rstr(str):
         return self.__str__()
 
 
-def table(headers: Iterable[str], rows: Iterable[Iterable[Any]], fill: str = '', ) -> str:
+def table(
+    headers: Iterable[str],
+    rows: Iterable[Iterable[Any]],
+    fill: str = '',
+) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
 

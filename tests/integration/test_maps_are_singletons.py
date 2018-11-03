@@ -20,24 +20,8 @@ import htcondor
 
 
 def test_loaded_map_is_same_object_as_previously_created_map():
-    map = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
+    map = htmap.map('singleton', lambda x: x, range(1))
 
     recovered = htmap.load('singleton')
 
     assert recovered is map
-
-
-def test_new_map_with_same_map_id_is_same_object():
-    map = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
-
-    again = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
-
-    assert again is map
-
-
-def test_new_map_with_same_map_id_does_not_change_data():
-    map = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
-
-    again = htmap.Map('singleton', cluster_ids = [], hashes = (), submit = htcondor.Submit())
-
-    assert again._hashes == ()

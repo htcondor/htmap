@@ -212,6 +212,22 @@ def transient_starmap(
 
 
 class MapBuilder:
+    """
+    The :class:`htmap.MapBuilder` provides an alternate way to create maps.
+    Once created via :meth:`htmap.build_map` or similar as a context manager,
+    the map builder can be called as if it were the function you're mapping over.
+    When the ``with`` block exits, the inputs are collected and submitted as a single map.
+
+    .. code-block:: python
+
+        with htmap.build_map(map_id = 'pow', func = lambda x, p: x ** p) as builder:
+            for x in range(1, 4):
+                builder(x, x)
+
+        result = builder.result
+        print(list(result))  # [1, 4, 27]
+    """
+
     def __init__(
         self,
         map_id: str,
@@ -356,15 +372,16 @@ def create_map(
     try:
         make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
-        hashes = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
-        htio.save_hashes(map_dir, hashes)
+        num_components = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
             map_id,
             map_dir,
-            hashes,
+            num_components,
             map_options,
         )
+
+        htio.save_num_components(map_dir, num_components)
         htio.save_submit(map_dir, submit_obj)
         htio.save_itemdata(map_dir, itemdata)
 
@@ -386,7 +403,7 @@ def create_map(
             map_id = map_id,
             cluster_ids = cluster_ids,
             submit = submit_obj,
-            hashes = hashes,
+            num_components = num_components,
         )
 
         logger.info(f'submitted map {map_id}')
@@ -434,7 +451,6 @@ MAP_SUBDIR_NAMES = (
     'inputs',
     'outputs',
     'job_logs',
-    'cluster_logs',
 )
 
 

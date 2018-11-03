@@ -17,6 +17,8 @@ import pytest
 
 from pathlib import Path
 
+import htcondor
+
 from htmap import htio
 
 BUILTIN_OBJECTS = [
@@ -38,7 +40,7 @@ BUILTIN_OBJECTS = [
 
 
 @pytest.mark.parametrize('obj', BUILTIN_OBJECTS)
-def test_saved_obj_path_exists(obj, tmpdir):
+def test_saved_obj_path_exists(tmpdir, obj):
     path = Path(tmpdir.mkdir('htio_save_object_path_test').join('obj'))
 
     htio.save_object(obj, path)
@@ -47,7 +49,7 @@ def test_saved_obj_path_exists(obj, tmpdir):
 
 
 @pytest.mark.parametrize('obj', BUILTIN_OBJECTS)
-def test_loaded_obj_equals_saved_obj(obj, tmpdir):
+def test_loaded_obj_equals_saved_obj(tmpdir, obj):
     path = Path(tmpdir.mkdir('htio_load_object_test').join('obj'))
 
     htio.save_object(obj, path)
@@ -57,23 +59,34 @@ def test_loaded_obj_equals_saved_obj(obj, tmpdir):
     assert loaded == obj
 
 
-@pytest.mark.parametrize('obj', BUILTIN_OBJECTS)
-def test_saved_bytes_path_exists(obj, tmpdir):
-    path = Path(tmpdir.mkdir('htio_save_bytes_path_test').join('obj'))
+def test_save_and_load_num_components(tmpdir):
+    path = Path(tmpdir.mkdir('num_components_test_dir'))
 
-    b = htio.to_bytes(obj)
-    htio.save_bytes(b, path)
+    htio.save_num_components(path, 5)
+    loaded = htio.load_num_components(path)
 
-    assert path.exists()
+    assert loaded == 5
 
 
-@pytest.mark.parametrize('obj', BUILTIN_OBJECTS)
-def saved_bytes_can_be_loaded(obj, tmpdir):
-    path = Path(tmpdir.mkdir('htio_save_bytes_load_object_test').join('obj'))
+def test_save_and_load_submit(tmpdir):
+    path = Path(tmpdir.mkdir('save_and_load_submit_test_dir'))
 
-    b = htio.to_bytes(obj)
-    htio.save_bytes(b, path)
+    sub = htcondor.Submit({'foo': 'bar'})
 
-    loaded = htio.load_object(path)
+    htio.save_submit(path, sub)
 
-    assert loaded == obj
+    loaded = htio.load_submit(path)
+
+    assert loaded['foo'] == sub['foo']
+
+
+def test_save_and_load_itemdata(tmpdir):
+    path = Path(tmpdir.mkdir('itemdata_test_dir'))
+
+    itemdata = [{'hello': 'goodbye'}, {'foo': 'bar'}]
+
+    htio.save_itemdata(path, itemdata)
+
+    loaded = htio.load_itemdata(path)
+
+    assert loaded == itemdata

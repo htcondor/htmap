@@ -39,6 +39,7 @@ class MapOptions(collections.UserDict):
         'executable',
         'transfer_executable',
         'log',
+        'submit_event_notes',
         'stdout',
         'stderr',
         'transfer_output_files',
@@ -147,7 +148,7 @@ def normalize_path(path: Union[str, Path]) -> str:
 def create_submit_object_and_itemdata(
     map_id: str,
     map_dir: Path,
-    hashes: List[int],
+    num_components: int,
     map_options: Optional[MapOptions] = None,
 ):
     if map_options is None:
@@ -165,13 +166,13 @@ def create_submit_object_and_itemdata(
         settings['DELIVERY_METHOD'],
     )
 
-    itemdata = [{'hash': h} for h in hashes]
-    descriptors['transfer_output_files'] = '$(hash).out'
+    itemdata = [{'component': str(idx)} for idx in range(num_components)]
+    descriptors['transfer_output_files'] = '$(component).out'
 
     input_files = descriptors.get('transfer_input_files', [])
     input_files += [
         (map_dir / 'func').as_posix(),
-        (map_dir / 'inputs' / '$(hash).in').as_posix(),
+        (map_dir / 'inputs' / '$(component).in').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
@@ -183,14 +184,14 @@ def create_submit_object_and_itemdata(
             else ', '.join(normalize_path(f) for f in files)
             for files in map_options.input_files
         ]
-        if len(hashes) != len(joined):
-            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {len(hashes)})')
+        if len(joined) != num_components:
+            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
     descriptors['transfer_input_files'] = ','.join(input_files)
 
     output_remaps = [
-        f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
+        f'$(component).out={(map_dir / "outputs" / "$(component).out").as_posix()}',
     ]
     descriptors['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
 
@@ -198,8 +199,8 @@ def create_submit_object_and_itemdata(
         if not isinstance(opt_value, str):  # implies it is iterable
             itemdata_key = f'itemdata_for_{opt_key}'
             opt_value = tuple(opt_value)
-            if len(opt_value) != len(hashes):
-                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {len(hashes)})')
+            if len(opt_value) != num_components:
+                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
             for dct, v in zip(itemdata, opt_value):
                 dct[itemdata_key] = v
             descriptors[opt_key] = f'$({itemdata_key})'
@@ -235,12 +236,14 @@ def get_base_descriptors(
 ) -> dict:
     core = {
         'JobBatchName': map_id,
-        'arguments': '$(hash)',
-        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-        'stdout': (map_dir / 'job_logs' / '$(hash).stdout').as_posix(),
-        'stderr': (map_dir / 'job_logs' / '$(hash).stderr').as_posix(),
+        'arguments': '$(component)',
+        'log': (map_dir / 'event_log').as_posix(),
+        'submit_event_notes': '$(component)',
+        'stdout': (map_dir / 'job_logs' / '$(component).stdout').as_posix(),
+        'stderr': (map_dir / 'job_logs' / '$(component).stderr').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT',
+        '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }
 

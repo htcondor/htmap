@@ -151,6 +151,7 @@ BASE_SETTINGS = Settings(dict(
     HTMAP_DIR = htmap_dir,
     MAPS_DIR_NAME = 'maps',
     DELIVERY_METHOD = 'assume',
+    WAIT_TIME = 1,
     HTCONDOR = dict(
         SCHEDD = None,
     ),

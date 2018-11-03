@@ -94,6 +94,11 @@ class MapComponentError(HTMapException):
     pass
 
 
+class MapComponentHeld(HTMapException):
+    """A map component has been held by HTCondor."""
+    pass
+
+
 class ExpectedError(HTMapException):
     """A map component that contained an OK result was unpacked as if it contained an error."""
     pass
