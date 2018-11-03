@@ -65,8 +65,8 @@ def reasons(id):
 
 
 @cli.command()
-@click.command('id')
-@click.command('newid')
+@click.argument('id')
+@click.argument('newid')
 def rename(id, newid):
     cli_load(id).rename(newid)
 
