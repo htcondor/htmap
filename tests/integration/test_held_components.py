@@ -48,17 +48,17 @@ def test_held_component_shows_up_in_hold_reasons(mapped_doubler):
     m = mapped_doubler.map('hold-reasons', range(1))
     m.hold()
 
-    assert isinstance(m.hold_reasons[0], htmap.Hold)
+    assert isinstance(m.holds[0], htmap.Hold)
 
 
 def test_held_then_released_component_not_in_hold_reasons(mapped_doubler):
     m = mapped_doubler.map('hold-reasons', range(1))
     m.hold()
 
-    assert isinstance(m.hold_reasons[0], htmap.Hold)
+    assert isinstance(m.holds[0], htmap.Hold)
 
     m.release()
 
     time.sleep(1)  # wait for htcondor to write events
 
-    assert len(m.hold_reasons) == 0
+    assert len(m.holds) == 0

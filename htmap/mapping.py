@@ -212,6 +212,22 @@ def transient_starmap(
 
 
 class MapBuilder:
+    """
+    The :class:`htmap.MapBuilder` provides an alternate way to create maps.
+    Once created via :meth:`htmap.build_map` or similar as a context manager,
+    the map builder can be called as if it were the function you're mapping over.
+    When the ``with`` block exits, the inputs are collected and submitted as a single map.
+
+    .. code-block:: python
+
+        with htmap.build_map(map_id = 'pow', func = lambda x, p: x ** p) as builder:
+            for x in range(1, 4):
+                builder(x, x)
+
+        result = builder.result
+        print(list(result))  # [1, 4, 27]
+    """
+
     def __init__(
         self,
         map_id: str,

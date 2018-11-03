@@ -61,7 +61,7 @@ def hold(id):
 @click.argument('id')
 def reasons(id):
     """Print the hold reasons for a map."""
-    click.echo(cli_load(id).hold_reasons())
+    click.echo(cli_load(id).hold_report())
 
 
 @cli.command()

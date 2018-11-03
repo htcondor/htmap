@@ -84,7 +84,8 @@ class ComponentError:
         return f'<ComponentError(map = {self.map}, component = {self.component})>'
 
     @classmethod
-    def from_error(cls, map, error):
+    def _from_error(cls, map, error):
+        """Construct a :class:`ComponentError` from a raw component result."""
         return cls(
             map = map,
             component = error.component,
@@ -140,7 +141,10 @@ class ComponentError:
             )
         return result
 
-    def report(self):
+    def report(self) -> str:
+        """
+        Return a formatted error report.
+        """
         lines = [f'  Start error report for component {self.component} of map {self.map.map_id}  '.center(80, '=')]
 
         lines.append('Landed on execute node {} ({}) at {}'.format(*self.node_info))
@@ -168,6 +172,8 @@ class ComponentError:
 
 
 class Hold(NamedTuple):
+    """Represents an HTCondor hold."""
+
     code: int
     reason: str
 
@@ -230,7 +236,7 @@ class Map:
         self._events = None
         self._clusterproc_to_component = {}
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
-        self._hold_reasons = {}
+        self._holds = {}
         self._memory_usage = [0 for _ in self.component_indices]
 
         MAPS[self.map_id] = self
@@ -279,11 +285,12 @@ class Map:
         return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
 
     def __len__(self):
-        """The length of a :class:`Map` is the number of inputs it contains."""
+        """The length of a :class:`Map` is the number of components it contains."""
         return self._num_components
 
     @property
-    def component_indices(self):
+    def component_indices(self) -> Iterator[int]:
+        """Return an iterator over the component indices for the :class:`htmap.Map`."""
         return range(self._num_components)
 
     @property
@@ -440,7 +447,7 @@ class Map:
             if status == ComponentStatus.COMPLETED:
                 break
             elif status == ComponentStatus.HELD:
-                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held. Reason: {self.hold_reasons[component]}')
+                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held. Reason: {self.holds[component]}')
 
             if timeout is not None and (time.time() >= start_time + timeout):
                 if timeout <= 0:
@@ -474,7 +481,7 @@ class Map:
         if result.status == 'OK':
             raise exceptions.ExpectedError
         elif result.status == 'ERR':
-            return ComponentError.from_error(map = self, error = result)
+            return ComponentError._from_error(map = self, error = result)
         else:
             raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
 
@@ -744,12 +751,12 @@ class Map:
 
             elif event.type is htcondor.JobEventType.JOB_RELEASED:
                 new_status = ComponentStatus.IDLE
-                self._hold_reasons.pop(component, None)
+                self._holds.pop(component, None)
 
             elif event.type is htcondor.JobEventType.JOB_HELD:
                 new_status = ComponentStatus.HELD
                 h = Hold(code = event.HoldReasonCode, reason = event.HoldReason.strip())
-                self._hold_reasons[component] = h
+                self._holds[component] = h
 
             elif event.type is htcondor.JobEventType.JOB_SUSPENDED:
                 new_status = ComponentStatus.SUSPENDED
@@ -784,19 +791,19 @@ class Map:
         return utils.rstr(msg)
 
     @property
-    def hold_reasons(self) -> Dict[int, Hold]:
+    def holds(self) -> Dict[int, Hold]:
         """Return a dictionary that maps component indices to their :class:`Hold` (if they are held)."""
         self._read_events()
-        return self._hold_reasons
+        return self._holds
 
-    def holds(self) -> str:
+    def hold_report(self) -> str:
         """Return a string containing a table describing any held components."""
         top = 'Component │ Hold Reason'
         under_top = ''.join('─' if char != '│' else '┼' for char in top)
         bottom = ''.join('─' if char != '│' else '┴' for char in top)
 
         lines = []
-        for component, hold in self.hold_reasons.items():
+        for component, hold in self.holds.items():
             component_text = str(component).center(len('Component'))
             hold_text = str(hold)
 
