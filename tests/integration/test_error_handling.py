@@ -30,7 +30,7 @@ def mapped_div_by_x():
 
 
 def test_iterating_over_errored_component_raises(mapped_div_by_x):
-    m = mapped_div_by_x.map('m', range(1))
+    m = mapped_div_by_x.map('iterating-over-errored-component', range(1))
 
     with pytest.raises(htmap.exceptions.MapComponentError):
         list(m)

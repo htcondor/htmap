@@ -27,6 +27,7 @@ from htmap.settings import BASE_SETTINGS
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
+htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for testing
 
 
 @pytest.fixture(scope = 'session', autouse = True)
