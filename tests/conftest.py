@@ -33,7 +33,7 @@ htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for testin
 @pytest.fixture(scope = 'session', autouse = True)
 def set_transplant_dir(tmpdir_factory):
     path = Path(tmpdir_factory.mktemp('htmap_transplant_dir'))
-    htmap.settings['TRANSPLANT.PATH'] = path
+    htmap.settings['TRANSPLANT.DIR'] = path
 
 
 def pytest_addoption(parser):

@@ -20,6 +20,7 @@ import pytest
 import htmap
 
 
+@pytest.mark.usefixtures('delivery_methods')
 def test_env_var_is_set_on_execute():
     @htmap.mapped
     def check(x):
