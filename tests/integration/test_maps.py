@@ -139,19 +139,6 @@ def test_empty_starmap_raises_empty_map_exception(mapped_doubler):
         mapped_doubler.starmap('foo', [], [])
 
 
-def test_huge_output_file_is_not_read_too_early():
-    """
-    https://github.com/htcondor/htmap/issues/8
-    """
-
-    @htmap.mapped
-    def huge_output(_):
-        return '0' * 1_000_000_000
-
-    results = huge_output.map('huge', range(1))
-    list(results)  # this will raise an unpickling error if it reads during file transfer
-
-
 def test_iter_inputs(mapped_doubler):
     m = mapped_doubler.map('iter_inputs', range(3))
 

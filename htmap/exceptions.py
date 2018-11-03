@@ -102,3 +102,8 @@ class MapComponentHeld(HTMapException):
 class ExpectedError(HTMapException):
     """A map component that contained an OK result was unpacked as if it contained an error."""
     pass
+
+
+class CannotTransplantPython(HTMapException):
+    """The Python interpreter you are using cannot be transplanted."""
+    pass

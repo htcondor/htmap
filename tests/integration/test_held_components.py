@@ -24,6 +24,8 @@ def test_waiting_on_held_component_raises(mapped_doubler):
     m = mapped_doubler.map('waiting-on-held-raises', range(1))
     m.hold()
 
+    time.sleep(1)  # wait for it to propagate
+
     with pytest.raises(htmap.exceptions.MapComponentHeld):
         m.wait()
 
@@ -31,6 +33,8 @@ def test_waiting_on_held_component_raises(mapped_doubler):
 def test_getting_held_component_raises(mapped_doubler):
     m = mapped_doubler.map('getting-on-held-raises', range(1))
     m.hold()
+
+    time.sleep(1)  # wait for it to propagate
 
     with pytest.raises(htmap.exceptions.MapComponentHeld):
         m[0]
@@ -40,6 +44,8 @@ def test_iterating_over_held_component_raises(mapped_doubler):
     m = mapped_doubler.map('getting-on-held-raises', range(1))
     m.hold()
 
+    time.sleep(1)  # wait for it to propagate
+
     with pytest.raises(htmap.exceptions.MapComponentHeld):
         list(m)
 
@@ -48,12 +54,16 @@ def test_held_component_shows_up_in_hold_reasons(mapped_doubler):
     m = mapped_doubler.map('hold-reasons', range(1))
     m.hold()
 
+    time.sleep(1)  # wait for it to propagate
+
     assert isinstance(m.holds[0], htmap.Hold)
 
 
 def test_held_then_released_component_not_in_hold_reasons(mapped_doubler):
     m = mapped_doubler.map('hold-reasons', range(1))
     m.hold()
+
+    time.sleep(1)  # wait for it to propagate
 
     assert isinstance(m.holds[0], htmap.Hold)
 

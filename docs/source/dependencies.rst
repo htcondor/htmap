@@ -26,9 +26,11 @@ The default delivery method is ``docker``, with image ``continuumio/anaconda3:la
     For example, if you run Python 3.6 submit-side you can use f-strings in your code.
     But if you use Python 3.5 execute-side, your code will hit syntax errors because f-strings were not added until Python 3.6.
 
-    Try to always use the latest version of Python everywhere.
-    Failing that, it's probably better to use a later version of Python execute-side than submit-side.
-
+    HTMap **cannot** transfer inputs and outputs between different versions of ``cloudpickle``.
+    Ensure that you have the same version of ``cloudpickle`` installed locally that you're going to use remotely.
+    For example, if you're using Docker delivery, you could run your maps from the same Anaconda Python that is used in the Docker image.
+    If you see an exception on a component related to ``cloudpickle.load``, this is the most likely culprit.
+    Note that you may need to manually upgrade/downgrade your local or remote ``cloudpickle``.
 
 Assume Dependencies are Present
 -------------------------------

@@ -161,7 +161,7 @@ BASE_SETTINGS = Settings(dict(
         IMAGE = 'continuumio/anaconda3:latest',
     ),
     TRANSPLANT = dict(
-        PATH = htmap_dir,
+        DIR = htmap_dir / 'transplants',
         ALTERNATE_INPUT_PATH = None,
         ASSUME_EXISTS = False,
     ),
