@@ -233,7 +233,7 @@ class Map:
 
         self._is_removed = False
 
-        self._events = None
+        self._events = None  # delayed until _read_events is called
         self._clusterproc_to_component = {}
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
         self._holds = {}
@@ -712,13 +712,14 @@ class Map:
         yield from q
 
     def _read_events(self):
-        time.sleep(.01)  # smooth things out by giving condor time to write to the event log
         if self._events is None:
             self._events = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
+        cluster_id_set = set(self._cluster_ids)
+
         for event in self._events:
             # skip events that aren't part of this map (if any leak in)
-            if event.cluster not in self._cluster_ids:
+            if event.cluster not in cluster_id_set:
                 continue
 
             if event.type == htcondor.JobEventType.SUBMIT:
@@ -733,7 +734,6 @@ class Map:
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
                 mem = int(event.MemoryUsage)
                 self._memory_usage[component] = mem
-                logger.debug(f'memory_usage of component {component} of map {self.map_id} changed to {mem}')
 
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
                 new_status = ComponentStatus.COMPLETED
@@ -768,7 +768,6 @@ class Map:
 
             if new_status is not None:
                 self._component_statuses[component] = new_status
-                logger.debug(f'status of component {component} of map {self.map_id} changed to {new_status}')
 
     @property
     def component_statuses(self) -> List[ComponentStatus]:
