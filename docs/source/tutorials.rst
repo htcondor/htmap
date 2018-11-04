@@ -1,9 +1,11 @@
 Tutorials
 =========
 
+:doc:`tutorials/why-htmap`
+   If this is your first time using HTMap, start here!
+
 :doc:`tutorials/first-steps`
    An introduction to the basics of HTMap.
-   If this is your first time using HTMap, start here!
 
 :doc:`tutorials/error-handling`
    What do when something goes wrong.
@@ -25,6 +27,7 @@ Tutorials
    :maxdepth: 2
    :hidden:
 
+   tutorials/why-htmap
    tutorials/first-steps
    tutorials/error-handling
    tutorials/advanced-mapping
