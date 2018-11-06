@@ -8,7 +8,21 @@ It provides tools for submitting, managing, and processing the output of arbitra
 
 Our goal is to provide as transparent an interface as possible to high-throughput computing resources so that you can spend more time thinking about your own code, and less about how to get it running on a cluster.
 
-If you're just getting started, first check :ref:`install` to learn how to install HTMap,
+Launching a map over a Python function is as easy as
+
+.. code-block:: python
+
+    import htmap
+
+    def double(x):
+        return 2 * x
+
+    doubled = list(htmap.transient_map(double, range(10)))
+    print(doubled)
+    # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+
+
+If you're just getting started, first check out :ref:`install`,
 then jump into the first tutorial: :doc:`tutorials/first-steps`.
 
 :doc:`tutorials`
@@ -24,6 +38,9 @@ then jump into the first tutorial: :doc:`tutorials/first-steps`.
    Documentation for the various settings.
 
 :doc:`recipes`
+   Deeper dives on specific, common tasks.
+
+:doc:`tips-and-tricks`
    Useful code snippets, tips, and tricks.
 
 :doc:`faq`
@@ -43,6 +60,7 @@ then jump into the first tutorial: :doc:`tutorials/first-steps`.
    api
    settings
    recipes
+   tips-and-tricks
    faq
    devs
 

@@ -224,8 +224,8 @@ class MapBuilder:
             for x in range(1, 4):
                 builder(x, x)
 
-        result = builder.result
-        print(list(result))  # [1, 4, 27]
+        map = builder.map
+        print(list(map))  # [1, 4, 27]
     """
 
     def __init__(
@@ -241,7 +241,7 @@ class MapBuilder:
         self.args = []
         self.kwargs = []
 
-        self._result = None
+        self._map = None
 
         logger.debug(f'initialized map builder for map {map_id} for {self.func}')
 
@@ -257,7 +257,7 @@ class MapBuilder:
             logger.exception(f'map builder for map {self.map_id} aborted due to')
             return False
 
-        self._result = starmap(
+        self._map = starmap(
             map_id = self.map_id,
             func = self.func,
             args = self.args,
@@ -273,14 +273,14 @@ class MapBuilder:
         self.kwargs.append(kwargs)
 
     @property
-    def result(self) -> maps.Map:
+    def map(self) -> maps.Map:
         """
         The :class:`Map` associated with this :class:`MapBuilder`.
-        Will raise :class:`htmap.exceptions.NoResultYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
+        Will raise :class:`htmap.exceptions.NoMapYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
         """
-        if self._result is None:
-            raise exceptions.NoResultYet('result does not exist until after with block')
-        return self._result
+        if self._map is None:
+            raise exceptions.NoMapYet('map does not exist until after with block')
+        return self._map
 
     def __len__(self):
         """The length of a :class:`MapBuilder` is the number of inputs it has been sent."""
@@ -314,23 +314,6 @@ def build_map(
         func = func,
         map_options = map_options,
     )
-
-
-def build_transient_map(
-    map_id: str,
-    func: Callable,
-    map_options: options.MapOptions = None,
-) -> TransientMap:
-    """
-    As :func:`htmap.build_map`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
-    """
-    mb = MapBuilder(
-        map_id = map_id,
-        func = func,
-        map_options = map_options,
-    )
-
-    return TransientMap(mb.result)
 
 
 def create_map(

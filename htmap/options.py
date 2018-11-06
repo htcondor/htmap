@@ -181,8 +181,8 @@ def create_submit_object_and_itemdata(
         input_files.append('$(extra_input_files)')
 
         joined = [
-            normalize_path(files) if isinstance(files, str)
-            else ', '.join(normalize_path(f) for f in files)
+            normalize_path(files) if isinstance(files, (str, Path))  # single file
+            else ', '.join(normalize_path(f) for f in files)  # multiple files
             for files in map_options.input_files
         ]
         if len(joined) != num_components:

@@ -50,7 +50,7 @@ logger.addHandler(logfile_handler)
 
 from .mapping import (
     map, starmap, build_map,
-    transient_map, transient_starmap, build_transient_map,
+    transient_map, transient_starmap,
     MapBuilder, TransientMap,
 )
 from .mapped import mapped, MappedFunction
