@@ -34,7 +34,7 @@ class OutputNotFound(HTMapException):
     pass
 
 
-class NoResultYet(HTMapException):
+class NoMapYet(HTMapException):
     """The :class:`htmap.MapBuilder` does not have an associated :class:`htmap.Map` yet because it is still inside the ``with`` block."""
     pass
 

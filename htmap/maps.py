@@ -471,7 +471,7 @@ class Map:
         if result.status == 'OK':
             return result.output
         elif result.status == 'ERR':
-            raise exceptions.MapComponentError(f'component {component} of map {self.map_id} encountered stderr while executing. Error report:\n{self._load_error(component).report()}')
+            raise exceptions.MapComponentError(f'component {component} of map {self.map_id} encountered error while executing. Error report:\n{self._load_error(component).report()}')
         else:
             raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
 
@@ -659,7 +659,8 @@ class Map:
         """Returns an iterator over the inputs of the :class:`htmap.Map`."""
         return (self._load_input(idx) for idx in self.component_indices)
 
-    def error_reports(self):
+    def error_reports(self) -> Iterator[str]:
+        """Yields the error reports for any components that experienced an error during execution."""
         for idx in self.component_indices:
             try:
                 yield self.get_err(idx).report()
@@ -929,7 +930,7 @@ class Map:
 
         Returns
         -------
-        stderr :
+        stdout :
             The standard output of the map component.
         """
         self._wait_for_component(component, timeout)
