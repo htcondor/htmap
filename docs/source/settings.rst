@@ -77,6 +77,7 @@ These settings control how the ``docker`` delivery method works.
 
 ``IMAGE`` - the path to the Docker image to run components with.
 Defaults to ``'continuumio/anaconda3:latest'``.
+If the environment variable ``HTMAP_DOCKER_IMAGE`` is set, that will be used as the default instead.
 
 .. _transplant-settings:
 

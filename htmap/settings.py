@@ -13,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, MutableMapping
+from typing import MutableMapping, Union
 import logging
 
+import os
 import itertools
 import functools
 from pathlib import Path
@@ -158,7 +159,7 @@ BASE_SETTINGS = Settings(dict(
     MAP_OPTIONS = dict(
     ),
     DOCKER = dict(
-        IMAGE = 'continuumio/anaconda3:latest',
+        IMAGE = os.getenv('HTMAP_DOCKER_IMAGE', 'continuumio/anaconda3:latest'),
     ),
     TRANSPLANT = dict(
         DIR = htmap_dir / 'transplants',
