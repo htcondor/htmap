@@ -12,8 +12,8 @@ HTMap requires that the execute location can execute a Python script using a Pyt
 
 The built-in delivery methods are
 
-* ``assume`` - assumes that the dependencies have already been installed at the execute location.
 * ``docker`` - runs in a user-supplied Docker container.
+* ``assume`` - assumes that the dependencies have already been installed at the execute location.
 * ``transplant`` - copy the user's Python installation to the execute node.
 
 More details on each of these methods can be found below.
@@ -31,34 +31,6 @@ The default delivery method is ``docker``, with image ``continuumio/anaconda3:la
     For example, if you're using Docker delivery, you could run your maps from the same Anaconda Python that is used in the Docker image.
     If you see an exception on a component related to ``cloudpickle.load``, this is the most likely culprit.
     Note that you may need to manually upgrade/downgrade your local or remote ``cloudpickle``.
-
-Assume Dependencies are Present
--------------------------------
-
-In your ``~/.htmaprc`` file:
-
-.. code-block:: bash
-
-    DELIVERY_METHOD = "assume"
-
-At runtime:
-
-.. code-block:: python
-
-    htmap.settings['DELIVERY_METHOD'] = 'assume'
-
-In this mode, HTMap assumes that a Python installation with all Python dependencies is already present.
-This will almost surely require some additional setup by your HTCondor pool's administrators.
-
-Additional dependencies can still be delivered via :class:`MapOptions`.
-
-.. note::
-
-    When using this delivery method, HTMap will discover Python using this shebang as whatever user HTCondor runs your job as:
-
-    .. code-block:: bash
-
-        #!/usr/bin/env python3
 
 
 Run Inside a Docker Container
@@ -106,6 +78,35 @@ Of course, you could also add the ``pip install`` line to your own image.
 .. note::
 
     When using this delivery method, HTMap will discover Python inside the container using this shebang:
+
+    .. code-block:: bash
+
+        #!/usr/bin/env python3
+
+
+Assume Dependencies are Present
+-------------------------------
+
+In your ``~/.htmaprc`` file:
+
+.. code-block:: bash
+
+    DELIVERY_METHOD = "assume"
+
+At runtime:
+
+.. code-block:: python
+
+    htmap.settings['DELIVERY_METHOD'] = 'assume'
+
+In this mode, HTMap assumes that a Python installation with all Python dependencies is already present.
+This will almost surely require some additional setup by your HTCondor pool's administrators.
+
+Additional dependencies can still be delivered via :class:`MapOptions`.
+
+.. note::
+
+    When using this delivery method, HTMap will discover Python using this shebang as whatever user HTCondor runs your job as:
 
     .. code-block:: bash
 
