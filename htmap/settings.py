@@ -176,7 +176,7 @@ except FileNotFoundError:
     USER_SETTINGS = Settings()
     logger.debug(f'no user settings at {USER_SETTINGS_PATH}')
 
-settings = Settings.from_settings(USER_SETTINGS, BASE_SETTINGS)
+settings = Settings.from_settings(Settings(), USER_SETTINGS, BASE_SETTINGS)
 
 logger.debug(f'htmap directory is {settings["HTMAP_DIR"]}')
 logger.debug(f'maps directory name is {settings["MAPS_DIR_NAME"]}')
