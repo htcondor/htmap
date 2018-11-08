@@ -238,6 +238,7 @@ class Map:
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
         self._holds = {}
         self._memory_usage = [0 for _ in self.component_indices]
+        self._runtime = [datetime.timedelta(0) for _ in self.component_indices]
 
         MAPS[self.map_id] = self
 
@@ -447,7 +448,13 @@ class Map:
             if status == ComponentStatus.COMPLETED:
                 break
             elif status == ComponentStatus.HELD:
-                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held. Reason: {self.holds[component]}')
+                reason = "\n".join(
+                    textwrap.wrap(
+                        str(self.holds[component]),
+                        break_long_words = False,
+                    )
+                )
+                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held. Reason:\n{reason}')
 
             if timeout is not None and (time.time() >= start_time + timeout):
                 if timeout <= 0:
@@ -738,6 +745,8 @@ class Map:
 
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
                 new_status = ComponentStatus.COMPLETED
+                self._runtime[component] = parse_runtime(event.RunRemoteUsage)
+
                 # todo: get final memory/disk usage from here
 
             elif event.type is htcondor.JobEventType.EXECUTE:
@@ -778,13 +787,14 @@ class Map:
         self._read_events()
         return self._component_statuses
 
+    @property
     def status_counts(self) -> collections.Counter:
         """Return a dictionary that describes how many map components are in each status."""
         return collections.Counter(self.component_statuses)
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
-        counts = self.status_counts()
+        counts = self.status_counts
         stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in ComponentStatus.display_statuses())
         msg = f'{self.__class__.__name__} {self.map_id} ({len(self)} components): {stat}'
 
@@ -816,9 +826,16 @@ class Map:
         """
         Return the latest peak memory usage of each map component, measured in MB.
         A component that hasn't reported yet will show a ``0``.
+
+        Due to current limitations in the HTCondor Python bindings, memory use for very short-lived components (<5 seconds) will not be accurate.
         """
         self._read_events()
         return self._memory_usage
+
+    @property
+    def runtime(self) -> List[datetime.timedelta]:
+        self._read_events()
+        return self._runtime
 
     def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None) -> classad.ClassAd:
         schedd = mapping.get_schedd()
@@ -1068,3 +1085,25 @@ class JobEvent:
 
     def __str__(self):
         return f'{self.__class__.__name__}(hash = {self.hash}, type = {self.type})'
+
+
+def parse_runtime(runtime_string: str) -> datetime.timedelta:
+    (_, usr_days, usr_hms), (_, sys_days, sys_hms) = [s.split() for s in runtime_string.split(',')]
+
+    usr_h, usr_m, usr_s = usr_hms.split(':')
+    sys_h, sys_m, sys_s = sys_hms.split(':')
+
+    usr_time = datetime.timedelta(
+        days = int(usr_days),
+        hours = int(usr_h),
+        minutes = int(usr_m),
+        seconds = int(usr_s),
+    )
+    sys_time = datetime.timedelta(
+        days = int(sys_days),
+        hours = int(sys_h),
+        minutes = int(sys_m),
+        seconds = int(sys_s),
+    )
+
+    return usr_time + sys_time

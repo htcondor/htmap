@@ -25,7 +25,7 @@ def test_hold(mapped_sleepy_double):
 
     result.hold()
     time.sleep(.1)
-    status_counts_after_hold = result.status_counts()
+    status_counts_after_hold = result.status_counts
 
     print(status_counts_after_hold)
     assert status_counts_after_hold[htmap.ComponentStatus.HELD] == 1
@@ -36,14 +36,14 @@ def test_hold_then_release(mapped_sleepy_double):
 
     result.hold()
     time.sleep(.1)
-    status_counts_after_hold = result.status_counts()
+    status_counts_after_hold = result.status_counts
 
     print(status_counts_after_hold)
     assert status_counts_after_hold[htmap.ComponentStatus.HELD] == 1
 
     result.release()
     time.sleep(.1)
-    status_counts_after_release = result.status_counts()
+    status_counts_after_release = result.status_counts
 
     print(status_counts_after_release)
     assert status_counts_after_release[htmap.ComponentStatus.HELD] == 0
