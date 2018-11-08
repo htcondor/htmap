@@ -238,6 +238,7 @@ class Map:
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
         self._holds = {}
         self._memory_usage = [0 for _ in self.component_indices]
+        self._runtime = [datetime.timedelta(0) for _ in self.component_indices]
 
         MAPS[self.map_id] = self
 
@@ -738,6 +739,8 @@ class Map:
 
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
                 new_status = ComponentStatus.COMPLETED
+                self._runtime[component] = parse_runtime(event.RunRemoteUsage)
+
                 # todo: get final memory/disk usage from here
 
             elif event.type is htcondor.JobEventType.EXECUTE:
@@ -822,6 +825,11 @@ class Map:
         """
         self._read_events()
         return self._memory_usage
+
+    @property
+    def runtime(self) -> List[datetime.timedelta]:
+        self._read_events()
+        return self._runtime
 
     def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None) -> classad.ClassAd:
         schedd = mapping.get_schedd()
@@ -1071,3 +1079,25 @@ class JobEvent:
 
     def __str__(self):
         return f'{self.__class__.__name__}(hash = {self.hash}, type = {self.type})'
+
+
+def parse_runtime(runtime_string: str) -> datetime.timedelta:
+    (_, usr_days, usr_hms), (_, sys_days, sys_hms) = [s.split() for s in runtime_string.split(',')]
+
+    usr_h, usr_m, usr_s = usr_hms.split(':')
+    sys_h, sys_m, sys_s = sys_hms.split(':')
+
+    usr_time = datetime.timedelta(
+        days = int(usr_days),
+        hours = int(usr_h),
+        minutes = int(usr_m),
+        seconds = int(usr_s),
+    )
+    sys_time = datetime.timedelta(
+        days = int(sys_days),
+        hours = int(sys_h),
+        minutes = int(sys_m),
+        seconds = int(sys_s),
+    )
+
+    return usr_time + sys_time

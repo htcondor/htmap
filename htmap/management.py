@@ -18,6 +18,7 @@ import logging
 
 from pathlib import Path
 import shutil
+import datetime
 
 from . import mapping, maps, utils, exceptions
 
@@ -133,13 +134,14 @@ def status() -> str:
 
     headers = ['Map ID']
     headers += [str(d) for d in maps.ComponentStatus.display_statuses()]
-    headers += ['Local Data', 'Max Mem.']
+    headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
 
     rows = [
         [map.map_id]
         + [counts[d] for d in maps.ComponentStatus.display_statuses()]
         + [utils.get_dir_size_as_str(mapping.map_dir_path(map.map_id))]
         + [utils.num_bytes_to_str(max(map.memory_usage) * 1024 * 1024)]  # memory usage is measured in MB
+        + [max(map.runtime), sum(map.runtime, datetime.timedelta())]
         for map, counts in zip(map_list, (map.status_counts for map in map_list))
     ]
 
