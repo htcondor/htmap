@@ -778,13 +778,14 @@ class Map:
         self._read_events()
         return self._component_statuses
 
+    @property
     def status_counts(self) -> collections.Counter:
         """Return a dictionary that describes how many map components are in each status."""
         return collections.Counter(self.component_statuses)
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
-        counts = self.status_counts()
+        counts = self.status_counts
         stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in ComponentStatus.display_statuses())
         msg = f'{self.__class__.__name__} {self.map_id} ({len(self)} components): {stat}'
 
@@ -816,6 +817,8 @@ class Map:
         """
         Return the latest peak memory usage of each map component, measured in MB.
         A component that hasn't reported yet will show a ``0``.
+
+        Due to current limitations in the HTCondor Python bindings, memory use for very short-lived components (<5 seconds) will not be accurate.
         """
         self._read_events()
         return self._memory_usage
