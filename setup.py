@@ -13,14 +13,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup, find_packages
 import os
+import re
+from pathlib import Path
+
+from setuptools import setup, find_packages
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
+
+def find_version():
+    """Grab the version out of htmap/__init__.py without importing it."""
+    version_file_text = (Path(THIS_DIR) / 'htmap' / '__init__.py').read_text()
+    version_match = re.search(
+        r"^__version__ = ['\"]([^'\"]*)['\"]",
+        version_file_text,
+        re.M,
+    )
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
+
 setup(
     name = 'htmap',
-    version = '0.1.0',
+    version = find_version(),
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
     description = 'High-Throughput Computing in Python, powered by HTCondor',
@@ -50,7 +67,7 @@ setup(
         htmap=htmap.cli:cli
     ''',
     install_requires = [
-        'htcondor >= 8.7.9',
+        'htcondor >= 8.7.10',
         'cloudpickle',
         'toml',
         'tqdm',
