@@ -167,6 +167,58 @@ def test_list_of_str_input_files():
     assert itemdata == expected
 
 
+def test_list_of_path_input_files():
+    map_id = 'foo'
+    map_dir = Path().cwd()
+    num_components = 3
+    map_options = htmap.MapOptions(
+        input_files = [Path('foo.txt'), Path('bar.txt'), Path('buz.txt')],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        num_components,
+        map_options,
+    )
+
+    expected = [
+        {'component': '0', 'extra_input_files': Path('foo.txt').absolute().as_posix()},
+        {'component': '1', 'extra_input_files': Path('bar.txt').absolute().as_posix()},
+        {'component': '2', 'extra_input_files': Path('buz.txt').absolute().as_posix()},
+    ]
+
+    assert itemdata == expected
+
+
+def test_list_of_list_of_path_input_files():
+    map_id = 'foo'
+    map_dir = Path().cwd()
+    num_components = 3
+    map_options = htmap.MapOptions(
+        input_files = [
+            [Path('foo.txt'), Path('foo2.txt')],
+            [Path('bar.txt'), Path('bar2.txt')],
+            [Path('buz.txt'), Path('buz2.txt')],
+        ],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        num_components,
+        map_options,
+    )
+
+    expected = [
+        {'component': '0', 'extra_input_files': f"{Path('foo.txt').absolute().as_posix()}, {Path('foo2.txt').absolute().as_posix()}"},
+        {'component': '1', 'extra_input_files': f"{Path('bar.txt').absolute().as_posix()}, {Path('bar2.txt').absolute().as_posix()}"},
+        {'component': '2', 'extra_input_files': f"{Path('buz.txt').absolute().as_posix()}, {Path('buz2.txt').absolute().as_posix()}"},
+    ]
+
+    assert itemdata == expected
+
+
 def test_fewer_components_than_input_files():
     map_id = 'foo'
     map_dir = Path().cwd()
