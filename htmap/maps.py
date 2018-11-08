@@ -448,7 +448,13 @@ class Map:
             if status == ComponentStatus.COMPLETED:
                 break
             elif status == ComponentStatus.HELD:
-                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held. Reason: {self.holds[component]}')
+                reason = "\n".join(
+                    textwrap.wrap(
+                        str(self.holds[component]),
+                        break_long_words = False,
+                    )
+                )
+                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held. Reason:\n{reason}')
 
             if timeout is not None and (time.time() >= start_time + timeout):
                 if timeout <= 0:
