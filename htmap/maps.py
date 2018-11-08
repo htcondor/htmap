@@ -950,9 +950,12 @@ class Map:
         stdout :
             The standard output of the map component.
         """
-        self._wait_for_component(component, timeout)
-
         path = self._map_dir / 'job_logs' / f'{component}.stdout'
+        utils.wait_for_path_to_exist(
+            path,
+            timeout = timeout,
+            wait_time = settings['WAIT_TIME'],
+        )
         return utils.rstr(path.read_text())
 
     def stderr(
@@ -976,9 +979,12 @@ class Map:
         stderr :
             The standard error of the map component.
         """
-        self._wait_for_component(component, timeout)
-
         path = self._map_dir / 'job_logs' / f'{component}.stderr'
+        utils.wait_for_path_to_exist(
+            path,
+            timeout = timeout,
+            wait_time = settings['WAIT_TIME'],
+        )
         return utils.rstr(path.read_text())
 
     def rerun(self):

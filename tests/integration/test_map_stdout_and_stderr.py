@@ -20,34 +20,6 @@ import pytest
 import htmap
 
 
-def test_looking_at_stdout_too_early_zero_timeout():
-    m = htmap.map('stdout-too-early', lambda x: x, range(1))
-
-    with pytest.raises(htmap.exceptions.OutputNotFound):
-        print(m.stdout(0, timeout = 0))
-
-
-def test_looking_at_stderr_too_early_zero_timeout():
-    m = htmap.map('stderr-too-early', lambda x: x, range(1))
-
-    with pytest.raises(htmap.exceptions.OutputNotFound):
-        print(m.stderr(0, timeout = 0))
-
-
-def test_looking_at_stdout_too_early_small_timeout():
-    m = htmap.map('stdout-too-early', lambda x: x, range(1))
-
-    with pytest.raises(htmap.exceptions.TimeoutError):
-        print(m.stdout(0, timeout = 0.001))
-
-
-def test_looking_at_stderr_too_early_small_timeout():
-    m = htmap.map('stderr-too-early', lambda x: x, range(1))
-
-    with pytest.raises(htmap.exceptions.TimeoutError):
-        print(m.stderr(0, timeout = 0.001))
-
-
 @pytest.mark.usefixtures('delivery_methods')
 def test_stdout_sees_print():
     m = htmap.map('stdout-sees-print', lambda x: print('foobar'), range(1))
