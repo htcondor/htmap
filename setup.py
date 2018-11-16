@@ -56,9 +56,9 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Topic :: System :: Distributed Computing",
     ],
-    packages = find_packages(
-        exclude = ['tests'],
-    ),
+    packages = [
+        'htmap',
+    ],
     package_data = {
         '': ['*.sh'],
     },
