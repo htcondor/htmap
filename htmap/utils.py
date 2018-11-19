@@ -16,6 +16,7 @@
 from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable
 import logging
 
+import os
 import time
 import datetime
 import subprocess
@@ -173,19 +174,14 @@ def table(
     return rstr(output)
 
 
-def get_file_size(path: Path) -> int:
-    """Return the size of a file in bytes."""
-    return path.stat().st_size
-
-
 def get_dir_size(path: Path) -> int:
     """Return the size of a directory (including all contents recursively) in bytes."""
     size = 0
-    for p in path.iterdir():
-        if p.is_dir():
-            size += get_dir_size(p)
-        elif p.is_file():
-            size += get_file_size(p)
+    for entry in os.scandir(path):
+        if entry.is_file(follow_symlinks = False):
+            size += entry.stat().st_size
+        elif entry.is_dir():
+            size += get_dir_size(entry)
     return size
 
 
@@ -196,11 +192,6 @@ def num_bytes_to_str(num_bytes: int) -> str:
             return f'{num_bytes:.1f} {unit}'
         num_bytes /= 1024
     return f'{num_bytes:.1f} TB'
-
-
-def get_file_size_as_str(path: Path) -> str:
-    """Return the size of a file as a human-readable string."""
-    return num_bytes_to_str(get_file_size(path))
 
 
 def get_dir_size_as_str(path: Path) -> str:
