@@ -730,52 +730,23 @@ class Map:
             if event.cluster not in cluster_id_set:
                 continue
 
-            if event.type == htcondor.JobEventType.SUBMIT:
+            if event.type is htcondor.JobEventType.SUBMIT:
                 self._clusterproc_to_component[(event.cluster, event.proc)] = int(event.LogNotes)
-
-            # START EVENT TYPE SWITCH
 
             # this lookup is safe because the SUBMIT event always comes first
             component = self._clusterproc_to_component[(event.cluster, event.proc)]
-            new_status = None
 
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                mem = int(event.MemoryUsage)
-                self._memory_usage[component] = mem
-
+                self._memory_usage[component] = int(event.MemoryUsage)
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
-                new_status = ComponentStatus.COMPLETED
                 self._runtime[component] = parse_runtime(event.RunRemoteUsage)
-
-                # todo: get final memory/disk usage from here
-
-            elif event.type is htcondor.JobEventType.EXECUTE:
-                new_status = ComponentStatus.RUNNING
-
-            elif event.type in (
-                htcondor.JobEventType.SUBMIT,
-                htcondor.JobEventType.JOB_EVICTED,
-                htcondor.JobEventType.JOB_UNSUSPENDED,
-            ):
-                new_status = ComponentStatus.IDLE
-
             elif event.type is htcondor.JobEventType.JOB_RELEASED:
-                new_status = ComponentStatus.IDLE
                 self._holds.pop(component, None)
-
             elif event.type is htcondor.JobEventType.JOB_HELD:
-                new_status = ComponentStatus.HELD
                 h = Hold(code = event.HoldReasonCode, reason = event.HoldReason.strip())
                 self._holds[component] = h
 
-            elif event.type is htcondor.JobEventType.JOB_SUSPENDED:
-                new_status = ComponentStatus.SUSPENDED
-
-            elif event.type is htcondor.JobEventType.JOB_ABORTED:
-                new_status = ComponentStatus.REMOVED
-
-            # END EVENT TYPE SWITCH
-
+            new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
             if new_status is not None:
                 self._component_statuses[component] = new_status
 
@@ -1080,17 +1051,17 @@ class Map:
         )
 
 
-class JobEvent:
-    def __init__(
-        self,
-        hash: str,
-        type: htcondor.JobEventType,
-    ):
-        self.hash = hash
-        self.type = type
-
-    def __str__(self):
-        return f'{self.__class__.__name__}(hash = {self.hash}, type = {self.type})'
+JOB_EVENT_STATUS_TRANSITIONS = {
+    htcondor.JobEventType.SUBMIT: ComponentStatus.IDLE,
+    htcondor.JobEventType.JOB_EVICTED: ComponentStatus.IDLE,
+    htcondor.JobEventType.JOB_UNSUSPENDED: ComponentStatus.IDLE,
+    htcondor.JobEventType.JOB_RELEASED: ComponentStatus.IDLE,
+    htcondor.JobEventType.JOB_TERMINATED: ComponentStatus.COMPLETED,
+    htcondor.JobEventType.EXECUTE: ComponentStatus.RUNNING,
+    htcondor.JobEventType.JOB_HELD: ComponentStatus.HELD,
+    htcondor.JobEventType.JOB_SUSPENDED: ComponentStatus.SUSPENDED,
+    htcondor.JobEventType.JOB_ABORTED: ComponentStatus.REMOVED,
+}
 
 
 def parse_runtime(runtime_string: str) -> datetime.timedelta:
