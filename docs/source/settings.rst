@@ -57,6 +57,9 @@ Defaults to ``docker``.
 Measured in seconds.
 Defaults to ``1`` (1 second).
 
+``CLI`` - set to ``True`` automatically when HTMap is being used from the CLI.
+Defaults to ``False``.
+
 MAP_OPTIONS
 +++++++++++
 

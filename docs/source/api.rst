@@ -19,8 +19,6 @@ Transient Mapping Functions
 
 .. autofunction:: htmap.transient_starmap
 
-.. autofunction:: htmap.build_transient_map
-
 
 Persistent Mapping Functions
 ----------------------------

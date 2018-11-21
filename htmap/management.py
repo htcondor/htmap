@@ -20,12 +20,13 @@ from pathlib import Path
 import shutil
 import datetime
 
-from . import mapping, maps, utils, exceptions
+from . import mapping, utils, exceptions
+from .maps import Map, ComponentStatus
 
 logger = logging.getLogger(__name__)
 
 
-def load(map_id: str) -> maps.Map:
+def load(map_id: str) -> Map:
     """
     Reconstruct a :class:`Map` from its ``map_id``.
 
@@ -39,7 +40,7 @@ def load(map_id: str) -> maps.Map:
     map
         The result with the given ``map_id``.
     """
-    return maps.Map.load(map_id)
+    return Map.load(map_id)
 
 
 def _map_paths() -> Iterator[Path]:
@@ -55,7 +56,7 @@ def map_ids() -> Tuple[str]:
     return tuple(path.stem for path in _map_paths())
 
 
-def load_maps() -> Tuple[maps.Map, ...]:
+def load_maps() -> Tuple[Map, ...]:
     """Return a :class:`tuple` containing the :class:`Map` for all existing maps."""
     return tuple(load(map_id) for map_id in map_ids())
 
@@ -122,28 +123,40 @@ def force_clean():
     logger.debug('force-cleaned maps directory')
 
 
-def status() -> str:
+def status(
+    maps = None,
+    state = True,
+    meta = True,
+) -> str:
     """
     Return a string containing a table showing the status of all existing maps,
     as well as metadata like local disk usage and remote memory usage.
     """
-    map_list = sorted(
-        load_maps(),
-        key = lambda m: -m.status_counts[maps.ComponentStatus.RUNNING]
-    )
+    if maps is None:
+        maps = load_maps()
+
+    maps = sorted(maps, key = lambda m: m.map_id)
 
     headers = ['Map ID']
-    headers += [str(d) for d in maps.ComponentStatus.display_statuses()]
-    headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
+    if state:
+        headers += [str(d) for d in ComponentStatus.display_statuses()]
+    if meta:
+        headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
 
-    rows = [
-        [map.map_id]
-        + [counts[d] for d in maps.ComponentStatus.display_statuses()]
-        + [utils.get_dir_size_as_str(mapping.map_dir_path(map.map_id))]
-        + [utils.num_bytes_to_str(max(map.memory_usage) * 1024 * 1024)]  # memory usage is measured in MB
-        + [max(map.runtime), sum(map.runtime, datetime.timedelta())]
-        for map, counts in zip(map_list, (map.status_counts for map in map_list))
-    ]
+    rows = []
+    for map in maps:
+        row = [map.map_id]
+        if state:
+            row.extend(map.status_counts[d] for d in ComponentStatus.display_statuses())
+        if meta:
+            row.extend([
+                utils.get_dir_size_as_str(mapping.map_dir_path(map.map_id)),
+                utils.num_bytes_to_str(max(map.memory_usage) * 1024 * 1024),  # memory usage is measured in MB
+                max(map.runtime),
+                sum(map.runtime, datetime.timedelta()),
+            ])
+
+        rows.append(row)
 
     return utils.table(
         headers = headers,

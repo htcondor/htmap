@@ -407,8 +407,7 @@ class Map:
                 pbar = tqdm(
                     desc = self.map_id,
                     total = len(self),
-                    unit = 'input',
-                    ncols = 80,
+                    unit = 'component',
                     ascii = True,
                 )
 

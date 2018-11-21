@@ -147,12 +147,13 @@ class Settings:
         return utils.rstr(f'<{self.__class__.__name__}>')
 
 
-htmap_dir = Path.home() / '.htmap'
+htmap_dir = Path(os.getenv('HTMAP_DIR', Path.home() / '.htmap'))
 BASE_SETTINGS = Settings(dict(
     HTMAP_DIR = htmap_dir,
     MAPS_DIR_NAME = 'maps',
     DELIVERY_METHOD = 'docker',
     WAIT_TIME = 1,
+    CLI = False,
     HTCONDOR = dict(
         SCHEDD = None,
     ),

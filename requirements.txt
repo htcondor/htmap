@@ -3,3 +3,5 @@ cloudpickle
 toml
 tqdm
 click
+click-didyoumean
+halo
