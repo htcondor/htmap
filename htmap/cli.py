@@ -35,7 +35,12 @@ def _read_ids_from_stdin(ctx, param, value):
 
 
 @click.group(context_settings = CONTEXT_SETTINGS, cls = DYMGroup)
-@click.option('--verbose', '-v', is_flag = True, default = False, help = 'Show log messages as the CLI runs.')
+@click.option(
+    '--verbose', '-v',
+    is_flag = True,
+    default = False,
+    help = 'Show log messages as the CLI runs.',
+)
 def cli(verbose):
     """HTMap command line tools."""
     htmap.settings['CLI'] = True
@@ -130,7 +135,6 @@ def clean(yes, force):
     nargs = -1,
     callback = _read_ids_from_stdin,
     required = False,
-    help = 'The map to wait for.',
 )
 def wait(ids):
     """Wait for maps to complete."""
@@ -144,7 +148,6 @@ def wait(ids):
     nargs = -1,
     callback = _read_ids_from_stdin,
     required = False,
-    help = 'The map to remove.',
 )
 @click.option(
     '--force',
@@ -167,7 +170,6 @@ def remove(ids, force):
     nargs = -1,
     callback = _read_ids_from_stdin,
     required = False,
-    help = 'The maps to release.',
 )
 def release(ids):
     """Release maps."""
@@ -181,7 +183,6 @@ def release(ids):
     nargs = -1,
     callback = _read_ids_from_stdin,
     required = False,
-    help = 'The maps to hold',
 )
 def hold(ids):
     """Hold maps."""
@@ -195,7 +196,6 @@ def hold(ids):
     nargs = -1,
     callback = _read_ids_from_stdin,
     required = False,
-    help = 'The maps to print hold reasons for.',
 )
 def reasons(ids):
     """Print the hold reasons for maps."""
@@ -204,8 +204,8 @@ def reasons(ids):
 
 
 @cli.command()
-@click.argument('id', help = 'The map to rename.')
-@click.argument('newid', help = 'The new name for the map.')
+@click.argument('id')
+@click.argument('newid')
 def rename(id, newid):
     """Rename a map."""
     _cli_load(id).rename(newid)
