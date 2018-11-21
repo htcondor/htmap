@@ -1,3 +1,18 @@
+# Copyright 2018 HTCondor Team, Computer Sciences Department,
+# University of Wisconsin-Madison, WI.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import logging
 import sys
 import random
@@ -6,23 +21,24 @@ import htmap
 
 import click
 from click_didyoumean import DYMGroup
+
 from halo import Halo
 from spinners import Spinners
 
-spinners = list(name for name in Spinners.__members__ if 'dots' in name)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+SPINNERS = list(name for name in Spinners.__members__ if 'dots' in name)
 
 
 def make_spinner(*args, **kwargs):
     return Halo(
         *args,
-        spinner = random.choice(spinners),
+        spinner = random.choice(SPINNERS),
         stream = sys.stderr,
         **kwargs,
     )
 
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
 
@@ -116,7 +132,7 @@ def clean(yes, force):
             '\nType YES to delete all of your maps: ',
             fg = 'red',
         )
-        answer = input()
+        answer = input('> ')
     else:
         answer = 'YES'
 

@@ -26,7 +26,7 @@ from pathlib import Path
 import cloudpickle
 import htcondor
 
-from htmap import exceptions, utils
+from htmap import exceptions
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,7 @@ import os
 import re
 from pathlib import Path
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
