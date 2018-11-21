@@ -310,7 +310,7 @@ def _get_base_descriptors_for_transplant(
     map_id: str,
     map_dir: Path,
 ) -> dict:
-    tif_path = settings['TRANSPLANT.ALTERNATE_INPUT_PATH']
+    tif_path = settings.get('TRANSPLANT.ALTERNATE_INPUT_PATH')
     if tif_path is None:
         tif_path = (Path(settings['TRANSPLANT.DIR']) / f'{_get_transplant_hash()}.tar.gz').as_posix()
 
@@ -330,7 +330,7 @@ def _run_delivery_setup_for_transplant(
     map_id: str,
     map_dir: Path,
 ):
-    if not settings['TRANSPLANT.ASSUME_EXISTS']:
+    if not settings.get('TRANSPLANT.ASSUME_EXISTS', False):
         if 'usr' in sys.executable:
             raise exceptions.CannotTransplantPython('system Python installations cannot be transplanted')
         if sys.platform == 'win32':

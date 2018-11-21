@@ -38,7 +38,7 @@ if not htmap_dir.exists():
 
 # SET UP LOG FILE
 logfile_handler = _handlers.RotatingFileHandler(
-    filename = settings['HTMAP_DIR'] / 'htmap.log',
+    filename = _Path(settings['HTMAP_DIR']) / 'htmap.log',
     mode = 'a',
     maxBytes = 10 * 1024 * 1024,  # 10 MB
     backupCount = 4,
@@ -57,7 +57,7 @@ from .mapped import mapped, MappedFunction
 from .maps import Map, ComponentStatus, Hold, ComponentError
 from .options import MapOptions, register_delivery_mechanism
 from .management import (
-    status,
+    status, status_json, status_csv,
     map_ids,
     load, load_maps,
     clean, force_clean,

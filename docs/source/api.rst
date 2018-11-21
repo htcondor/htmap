@@ -164,6 +164,15 @@ These functions help you manage your maps.
 
 .. autofunction:: htmap.force_clean
 
+Programmatic Status Messages
+++++++++++++++++++++++++++++
+
+These functions are useful for generating machine-readable status information.
+
+.. autofunction:: htmap.status_json
+
+.. autofunction:: htmap.status_csv
+
 
 Settings
 --------

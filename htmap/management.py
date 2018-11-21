@@ -13,12 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterator
+from typing import Tuple, Iterator, Iterable
 import logging
 
 from pathlib import Path
 import shutil
 import datetime
+import json
+import csv
+import io
 
 from . import mapping, utils, exceptions
 from .maps import Map, ComponentStatus
@@ -124,13 +127,27 @@ def force_clean():
 
 
 def status(
-    maps = None,
-    state = True,
-    meta = True,
+    maps: Iterable[Map] = None,
+    state: bool = True,
+    meta: bool = True,
 ) -> str:
     """
-    Return a string containing a table showing the status of all existing maps,
-    as well as metadata like local disk usage and remote memory usage.
+    Return a formatted table containing information on the given maps.
+
+    Parameters
+    ----------
+    maps
+        The maps to display information on.
+        If ``None``, displays information on all existing maps.
+    state
+        If ``True``, include information on the state of the map's components.
+    meta
+        If ``True``, include information about the map's memory usage, disk usage, and runtime.
+
+    Returns
+    -------
+    table :
+        A text table containing information on the given maps.
     """
     if maps is None:
         maps = load_maps()
@@ -162,3 +179,118 @@ def status(
         headers = headers,
         rows = rows,
     )
+
+
+def status_json(
+    maps: Iterable[Map] = None,
+    state: bool = True,
+    meta: bool = True,
+    compact: bool = False,
+) -> dict:
+    """
+    Return a JSON-formatted dictionary containing information on the given maps.
+
+    Disk and memory usage are reported in bytes.
+    Runtimes are reported in seconds.
+
+    Parameters
+    ----------
+    maps
+        The maps to display information on.
+        If ``None``, displays information on all existing maps.
+    state
+        If ``True``, include information on the state of the map's components.
+    meta
+        If ``True``, include information about the map's memory usage, disk usage, and runtime.
+    compact
+        If ``True``, the JSON will be formatted in the most compact possible representation.
+
+    Returns
+    -------
+    json :
+        A JSON-formatted dictionary containing information on the given maps.
+    """
+    if maps is None:
+        maps = load_maps()
+
+    maps = sorted(maps, key = lambda m: m.map_id)
+
+    j = {}
+    for map in maps:
+        d = {'map_id': map.map_id}
+        if state:
+            d['component_status_counts'] = {}
+            for status in ComponentStatus.display_statuses():
+                d['component_status_counts'][status.value.lower()] = map.status_counts[status]
+        if meta:
+            d['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
+            d['max_memory_usage'] = max(map.memory_usage) * 1024 * 1024
+            d['max_runtime'] = max(map.runtime).total_seconds()
+            d['total_runtime'] = sum(map.runtime, datetime.timedelta()).total_seconds()
+
+        j[map.map_id] = d
+
+    if compact:
+        separators = (',', ':')
+        indent = 0
+    else:
+        separators = (', ', ': ')
+        indent = 4
+
+    return json.dumps(j, separators = separators, indent = indent)
+
+
+def status_csv(
+    maps: Iterable[Map] = None,
+    state: bool = True,
+    meta: bool = True,
+) -> str:
+    """
+    Return a CSV-formatted string containing information on the given maps.
+
+    Disk and memory usage are reported in bytes.
+    Runtimes are reported in seconds.
+
+    Parameters
+    ----------
+    maps
+        The maps to display information on.
+        If ``None``, displays information on all existing maps.
+    state
+        If ``True``, include information on the state of the map's components.
+    meta
+        If ``True``, include information about the map's memory usage, disk usage, and runtime.
+
+    Returns
+    -------
+    csv :
+        A CSV-formatted table containing information on the given maps.
+    """
+    if maps is None:
+        maps = load_maps()
+
+    maps = sorted(maps, key = lambda m: m.map_id)
+
+    rows = []
+    for map in maps:
+        row = {'map_id': map.map_id}
+        if state:
+            for status in ComponentStatus.display_statuses():
+                row[status.value.lower()] = map.status_counts[status]
+        if meta:
+            row['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
+            row['max_memory_usage'] = max(map.memory_usage) * 1024 * 1024
+            row['max_runtime'] = max(map.runtime).total_seconds()
+            row['total_runtime'] = sum(map.runtime, datetime.timedelta()).total_seconds()
+
+        rows.append(row)
+
+    if len(maps) == 0:
+        return ''
+
+    output = io.StringIO()
+    writer = csv.DictWriter(output, list(rows[0]))
+    writer.writeheader()
+    writer.writerows(rows)
+
+    return output.getvalue()

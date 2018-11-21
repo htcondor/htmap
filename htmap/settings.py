@@ -54,7 +54,7 @@ class Settings:
             try:
                 for component in path:
                     r = r[component]
-            except KeyError:
+            except (KeyError, TypeError):
                 continue
             return r
 
@@ -149,7 +149,7 @@ class Settings:
 
 htmap_dir = Path(os.getenv('HTMAP_DIR', Path.home() / '.htmap'))
 BASE_SETTINGS = Settings(dict(
-    HTMAP_DIR = htmap_dir,
+    HTMAP_DIR = htmap_dir.as_posix(),
     MAPS_DIR_NAME = 'maps',
     DELIVERY_METHOD = 'docker',
     WAIT_TIME = 1,
@@ -163,7 +163,7 @@ BASE_SETTINGS = Settings(dict(
         IMAGE = os.getenv('HTMAP_DOCKER_IMAGE', 'continuumio/anaconda3:latest'),
     ),
     TRANSPLANT = dict(
-        DIR = htmap_dir / 'transplants',
+        DIR = (htmap_dir / 'transplants').as_posix(),
         ALTERNATE_INPUT_PATH = None,
         ASSUME_EXISTS = False,
     ),

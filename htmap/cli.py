@@ -16,6 +16,7 @@
 import logging
 import sys
 import random
+from pathlib import Path
 
 import htmap
 
@@ -96,8 +97,30 @@ def ids():
     default = False,
     help = 'Do not show map metadata (memory, runtime, etc.).',
 )
-def status(no_state, no_meta):
+@click.option(
+    '--json',
+    is_flag = True,
+    default = False,
+    help = 'Output as human-readable JSON.',
+)
+@click.option(
+    '--jsonc',
+    is_flag = True,
+    default = False,
+    help = 'Output as compact JSON.',
+)
+@click.option(
+    '--csv',
+    is_flag = True,
+    default = False,
+    help = 'Output as CSV.',
+)
+def status(no_state, no_meta, json, jsonc, csv):
     """Print the status of all maps."""
+    if (json, jsonc, csv).count(True) > 1:
+        click.echo('Error: no more than one of --json, --jsonc, and --csv can be set.')
+        sys.exit(1)
+
     maps = htmap.load_maps()
     if not no_state:
         with make_spinner(text = 'Reading map component statuses...') as spinner:
@@ -105,7 +128,14 @@ def status(no_state, no_meta):
                 map.status_counts  # force maps to read event logs in advance
             spinner.succeed()
 
-    msg = htmap.status(maps, state = not no_state, meta = not no_meta)
+    if json:
+        msg = htmap.status_json(maps, state = not no_state, meta = not no_meta)
+    elif jsonc:
+        msg = htmap.status_json(maps, state = not no_state, meta = not no_meta, compact = True)
+    elif csv:
+        msg = htmap.status_csv(maps, state = not no_state, meta = not no_meta)
+    else:
+        msg = htmap.status(maps, state = not no_state, meta = not no_meta)
 
     click.echo(msg)
 
@@ -233,6 +263,20 @@ def version():
     click.echo(htmap.version())
 
 
+@cli.command()
+def settings():
+    click.echo(str(htmap.settings))
+
+
+@cli.command()
+@click.argument('setting')
+@click.argument('value')
+def set(setting, value):
+    htmap.USER_SETTINGS[setting] = value
+    htmap.USER_SETTINGS.save(Path.cwd() / '.htmaprc')
+    click.echo(f'changed setting {setting} to {value}')
+
+
 def _cli_load(map_id) -> htmap.Map:
     with make_spinner(text = f'Loading map {map_id}...') as spinner:
         try:
@@ -241,7 +285,6 @@ def _cli_load(map_id) -> htmap.Map:
             spinner.fail(f'Error: could not find a map with map_id {map_id}')
             click.echo(f'Your map ids are:')
             click.echo(_id_list())
-
             sys.exit(1)
 
 

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def maps_dir_path() -> Path:
     """The path to the directory where map directories are stored."""
-    return settings['HTMAP_DIR'] / settings['MAPS_DIR_NAME']
+    return Path(settings['HTMAP_DIR']) / settings['MAPS_DIR_NAME']
 
 
 def map_dir_path(map_id: str) -> Path:
