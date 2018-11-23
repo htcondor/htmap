@@ -19,6 +19,7 @@ import random
 from pathlib import Path
 
 import htmap
+from htmap.utils import read_events
 
 import click
 from click_didyoumean import DYMGroup
@@ -124,8 +125,7 @@ def status(no_state, no_meta, json, jsonc, csv):
     maps = htmap.load_maps()
     if not no_state:
         with make_spinner(text = 'Reading map component statuses...') as spinner:
-            for map in maps:
-                map.status_counts  # force maps to read event logs in advance
+            read_events(maps)
             spinner.succeed()
 
     if json:
@@ -265,6 +265,7 @@ def version():
 
 @cli.command()
 def settings():
+    """Print HTMap's base settings (defaults + your ~/.htmaprc file)."""
     click.echo(str(htmap.settings))
 
 
@@ -272,6 +273,7 @@ def settings():
 @click.argument('setting')
 @click.argument('value')
 def set(setting, value):
+    """Change a setting in your ~/.htmaprc file."""
     htmap.USER_SETTINGS[setting] = value
     htmap.USER_SETTINGS.save(Path.cwd() / '.htmaprc')
     click.echo(f'changed setting {setting} to {value}')

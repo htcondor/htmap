@@ -23,6 +23,7 @@ import subprocess
 import sys
 import enum
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 from . import exceptions
 
@@ -200,7 +201,14 @@ def get_dir_size_as_str(path: Path) -> str:
 
 
 def pip_freeze() -> str:
+    """Return the text of a ``pip --freeze`` call."""
     return subprocess.run(
         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
         stdout = subprocess.PIPE,
     ).stdout.decode('utf-8')
+
+
+def read_events(maps):
+    """Read the events logs of the given maps in parallel."""
+    with ThreadPoolExecutor() as pool:
+        pool.map(lambda map: map._read_events(), maps)

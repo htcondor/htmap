@@ -156,6 +156,7 @@ def status(
 
     headers = ['Map ID']
     if state:
+        utils.read_events(maps)
         headers += [str(d) for d in ComponentStatus.display_statuses()]
     if meta:
         headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
@@ -215,6 +216,9 @@ def status_json(
 
     maps = sorted(maps, key = lambda m: m.map_id)
 
+    if state:
+        utils.read_events(maps)
+
     j = {}
     for map in maps:
         d = {'map_id': map.map_id}
@@ -270,6 +274,9 @@ def status_csv(
         maps = load_maps()
 
     maps = sorted(maps, key = lambda m: m.map_id)
+
+    if state:
+        utils.read_events(maps)
 
     rows = []
     for map in maps:
