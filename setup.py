@@ -72,5 +72,7 @@ setup(
         'toml',
         'tqdm',
         'click',
+        'click-didyoumean',
+        'halo',
     ],
 )
