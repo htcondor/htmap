@@ -19,7 +19,7 @@ class HTMapException(Exception):
     pass
 
 
-class TimeoutError(TimeoutError, HTMapException):
+class TimeoutError(HTMapException):
     """An operation has timed out because it took too long."""
     pass
 

@@ -80,6 +80,7 @@ See :ref:`error_handling` for more details on error handling.
 .. autoclass:: htmap.ComponentStatus
    :members:
 
+
 .. _error_handling:
 
 Error Handling
@@ -164,6 +165,7 @@ These functions help you manage your maps.
 
 .. autofunction:: htmap.force_clean
 
+
 Programmatic Status Messages
 ++++++++++++++++++++++++++++
 
@@ -204,6 +206,7 @@ Each map is search in order, so earlier settings can flexibly override later set
 .. autoclass:: htmap.settings.Settings
    :members:
 
+
 Logging
 -------
 
@@ -232,6 +235,7 @@ After executing this code, you should be able to see HTMap log messages as you t
 
     The HTMap logger is not available in the context of the executing map function.
     Trying to use it will probably raise exceptions.
+
 
 Exceptions
 ----------

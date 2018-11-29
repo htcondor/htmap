@@ -39,7 +39,10 @@ class StrEnum(enum.Enum):
         return self.value
 
 
-def clean_dir(target_dir: Path, on_file: Callable[[Path], None] = None):
+def clean_dir(
+    target_dir: Path,
+    on_file: Optional[Callable[[Path], None]] = None,
+) -> None:
     """
     Remove all files in the given directory `target_dir`.
 
@@ -47,9 +50,11 @@ def clean_dir(target_dir: Path, on_file: Callable[[Path], None] = None):
     ----------
     target_dir
         The directory to clean up.
+    on_file
+        A function to call on each file before deleting it.
     """
     if on_file is None:
-        on_file = lambda p: p
+        on_file = lambda p: None
 
     logger.debug(f'removing all files in {target_dir}...')
     for path in (p for p in target_dir.iterdir() if p.is_file()):
@@ -61,8 +66,8 @@ def clean_dir(target_dir: Path, on_file: Callable[[Path], None] = None):
 def wait_for_path_to_exist(
     path: Path,
     timeout: Optional[Union[int, float, datetime.timedelta]] = None,
-    wait_time: Union[int, datetime.timedelta] = 1,
-):
+    wait_time: Optional[Union[int, float, datetime.timedelta]] = 1,
+) -> None:
     """
     Waits for the path `path` to exist.
 
@@ -76,7 +81,7 @@ def wait_for_path_to_exist(
         The time to wait between checks.
     """
     timeout = timeout_to_seconds(timeout)
-    wait_time = timeout_to_seconds(wait_time)
+    wait_time = timeout_to_seconds(wait_time) or .01  # minimum wait time
 
     start_time = time.time()
     while not path.exists():
@@ -88,7 +93,7 @@ def wait_for_path_to_exist(
 Timeout = Optional[Union[int, float, datetime.timedelta]]
 
 
-def timeout_to_seconds(timeout: Union[int, float, datetime.timedelta]) -> Optional[float]:
+def timeout_to_seconds(timeout: Optional[Union[int, float, datetime.timedelta]]) -> Optional[float]:
     """
     Coerce a timeout given as a :class:`datetime.timedelta` or an :class:`int` to a number of seconds as a :class:`float`.
     ``None`` is passed through.
@@ -182,11 +187,11 @@ def get_dir_size(path: Path) -> int:
         if entry.is_file(follow_symlinks = False):
             size += entry.stat().st_size
         elif entry.is_dir():
-            size += get_dir_size(entry)
+            size += get_dir_size(Path(entry.path))
     return size
 
 
-def num_bytes_to_str(num_bytes: int) -> str:
+def num_bytes_to_str(num_bytes: Union[int, float]) -> str:
     """Return a number of bytes as a human-readable string."""
     for unit in ('B', 'KB', 'MB', 'GB'):
         if num_bytes < 1024:

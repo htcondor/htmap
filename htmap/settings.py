@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import MutableMapping, Union
+from typing import MutableMapping, Union, Any, Optional
 import logging
 
 import os
@@ -29,11 +29,11 @@ from . import exceptions, utils
 logger = logging.getLogger(__name__)
 
 
-def nested_merge(map_1: MutableMapping, map_2: MutableMapping) -> MutableMapping:
+def nested_merge(map_1: dict, map_2: dict) -> dict:
     """Return a new dictionary containing the result of recursively merging the second map into the first, overwriting values and merging maps."""
     new = copy(map_1)
     for key, value in map_2.items():
-        if key in map_1 and isinstance(value, MutableMapping):
+        if key in map_1 and isinstance(value, dict):
             new[key] = nested_merge(map_1[key], value)
         else:
             new[key] = value
@@ -60,10 +60,10 @@ class Settings:
 
         raise exceptions.MissingSetting()
 
-    def __eq__(self, other: 'Settings'):
-        return self.to_dict() == other.to_dict()
+    def __eq__(self, other: Any) -> bool:
+        return type(self) is type(other) and self.to_dict() == other.to_dict()
 
-    def get(self, key, default = None):
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
         try:
             return self[key]
         except exceptions.MissingSetting:
@@ -89,12 +89,12 @@ class Settings:
         """Return a single dictionary with all of the settings in this :class:`Settings`, merged according to the lookup rules."""
         return functools.reduce(nested_merge, reversed(self.maps), {})
 
-    def replace(self, other: 'Settings'):
+    def replace(self, other: 'Settings') -> None:
         """Change the settings of this :class:`Settings` to be the settings from another :class:`Settings`."""
         self.maps = other.maps
         logger.debug('settings were replaced')
 
-    def append(self, other: Union['Settings', dict]):
+    def append(self, other: Union['Settings', dict]) -> None:
         """
         Add a map to the end of the search (i.e., it will be searched last, and be overridden by anything before it).
 
@@ -108,7 +108,7 @@ class Settings:
         else:
             self.maps.append(other)
 
-    def prepend(self, other: Union['Settings', dict]):
+    def prepend(self, other: Union['Settings', dict]) -> None:
         """
         Add a map to the beginning of the search (i.e., it will be searched first, and override anything after it).
 
@@ -123,8 +123,8 @@ class Settings:
             self.maps.insert(0, other)
 
     @classmethod
-    def from_settings(cls, *settings):
-        """Construct a new :class:`Settings` from other :class:`Settings`."""
+    def from_settings(cls, *settings: 'Settings') -> 'Settings':
+        """Construct a new :class:`Settings` from another :class:`Settings`."""
         return cls(*itertools.chain.from_iterable(s.maps for s in settings))
 
     @classmethod
@@ -133,7 +133,7 @@ class Settings:
         with path.open() as file:
             return cls(toml.load(file))
 
-    def save(self, path: Path):
+    def save(self, path: Path) -> None:
         """Save this :class:`Settings` to a file at the given path."""
         with path.open(mode = 'w') as file:
             toml.dump(self.maps[0], file)

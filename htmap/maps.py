@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import NamedTuple, Tuple, List, Iterable, Any, Optional, Union, Callable, Iterator, Dict
+from typing import NamedTuple, Tuple, List, Iterable, Any, Optional, Union, Callable, Iterator, Dict, MutableMapping
 import logging
 
 import datetime
@@ -145,9 +145,10 @@ class ComponentError:
         """
         Return a formatted error report.
         """
-        lines = [f'  Start error report for component {self.component} of map {self.map.map_id}  '.center(80, '=')]
-
-        lines.append('Landed on execute node {} ({}) at {}'.format(*self.node_info))
+        lines = [
+            f'  Start error report for component {self.component} of map {self.map.map_id}  '.center(80, '='),
+            'Landed on execute node {} ({}) at {}'.format(*self.node_info),
+        ]
 
         if self.python_info is not None:
             executable, version, packages = self.python_info
@@ -203,7 +204,7 @@ def _protect_map_after_remove(result_class):
     return result_class
 
 
-MAPS = weakref.WeakValueDictionary()
+MAPS: MutableMapping[str, 'Map'] = weakref.WeakValueDictionary()
 
 
 @_protect_map_after_remove
@@ -234,9 +235,9 @@ class Map:
         self._is_removed = False
 
         self._events = None  # delayed until _read_events is called
-        self._clusterproc_to_component = {}
+        self._clusterproc_to_component: Dict[Tuple[int, int], int] = {}
         self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
-        self._holds = {}
+        self._holds: Dict[int, Hold] = {}
         self._memory_usage = [0 for _ in self.component_indices]
         self._runtime = [datetime.timedelta(0) for _ in self.component_indices]
 
@@ -290,7 +291,7 @@ class Map:
         return self._num_components
 
     @property
-    def component_indices(self) -> Iterator[int]:
+    def component_indices(self) -> Iterable[int]:
         """Return an iterator over the component indices for the :class:`htmap.Map`."""
         return range(self._num_components)
 
@@ -329,15 +330,15 @@ class Map:
         """The paths to the output files."""
         yield from (self._output_file_path(idx) for idx in self.component_indices)
 
-    def _remove_from_queue(self):
+    def _remove_from_queue(self) -> classad.ClassAd:
         return self._act(htcondor.JobAction.Remove)
 
-    def _rm_map_dir(self):
+    def _rm_map_dir(self) -> None:
         shutil.rmtree(str(self._map_dir.absolute()))
         logger.debug(f'removed map directory for map {self.map_id}')
 
-    def _clean_outputs_dir(self):
-        def update_status(path: Path):
+    def _clean_outputs_dir(self) -> None:
+        def update_status(path: Path) -> None:
             self.component_statuses[int(path.stem)] = ComponentStatus.REMOVED
 
         utils.clean_dir(self._outputs_dir, on_file = update_status)
@@ -352,7 +353,7 @@ class Map:
         ]
 
     @property
-    def _completed_components(self) -> List[str]:
+    def _completed_components(self) -> List[int]:
         """Return a list of component indices that are complete."""
         return [
             idx
@@ -373,7 +374,7 @@ class Map:
         """
         return any(
             v != 0
-            for k, v in self.status_counts().items()
+            for k, v in self.status_counts.items()
             if k != ComponentStatus.COMPLETED
         )
 
@@ -381,7 +382,7 @@ class Map:
         self,
         timeout: utils.Timeout = None,
         show_progress_bar: bool = False,
-    ) -> datetime.timedelta:
+    ) -> None:
         """
         Wait until all output associated with this :class:`Map` is available.
 
@@ -392,11 +393,6 @@ class Map:
             If ``None``, wait forever.
         show_progress_bar
             If ``True``, a progress bar will be displayed.
-
-        Returns
-        -------
-        elapsed_time
-            The time elapsed from the beginning of the wait to the end.
         """
         t = datetime.datetime.now()
         start_time = time.time()
@@ -437,9 +433,7 @@ class Map:
             if show_progress_bar:
                 pbar.close()
 
-        return datetime.datetime.now() - t
-
-    def _wait_for_component(self, component: int, timeout = None):
+    def _wait_for_component(self, component: int, timeout: utils.Timeout = None) -> None:
         timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
         while True:
@@ -463,15 +457,19 @@ class Map:
 
             time.sleep(settings['WAIT_TIME'])
 
-    def _load_result(self, component: int, timeout = None):
+    def _load_result(self, component: int, timeout: utils.Timeout = None):
         self._wait_for_component(component, timeout)
 
         return htio.load_object(self._output_file_path(component))
 
-    def _load_input(self, component: int):
+    def _load_input(self, component: int) -> Tuple[Tuple[Any], Dict[str, Any]]:
         return htio.load_object(self._input_file_path(component))
 
-    def _load_output(self, component: int, timeout = None) -> Any:
+    def _load_output(
+        self,
+        component: int,
+        timeout: utils.Timeout = None,
+    ) -> Any:
         result = self._load_result(component, timeout)
 
         if result.status == 'OK':
@@ -481,7 +479,11 @@ class Map:
         else:
             raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
 
-    def _load_error(self, component: int, timeout = None) -> ComponentError:
+    def _load_error(
+        self,
+        component: int,
+        timeout: utils.Timeout = None,
+    ) -> ComponentError:
         result = self._load_result(component, timeout)
 
         if result.status == 'OK':
@@ -816,7 +818,7 @@ class Map:
 
         return a
 
-    def remove(self):
+    def remove(self) -> None:
         """
         Permanently remove the map and delete all associated input, output, and metadata files.
         """
@@ -832,36 +834,36 @@ class Map:
             pass
         logger.info(f'removed map {self.map_id}')
 
-    def hold(self):
+    def hold(self) -> None:
         """Temporarily remove the map from the queue, until it is released."""
         self._act(htcondor.JobAction.Hold)
         logger.debug(f'held map {self.map_id}')
 
-    def release(self):
+    def release(self) -> None:
         """Releases a held map back into the queue."""
         self._act(htcondor.JobAction.Release)
         logger.debug(f'released map {self.map_id}')
 
-    def pause(self):
+    def pause(self) -> None:
         self._act(htcondor.JobAction.Suspend)
         logger.debug(f'paused map {self.map_id}')
 
-    def resume(self):
+    def resume(self) -> None:
         self._act(htcondor.JobAction.Continue)
         logger.debug(f'resumed map {self.map_id}')
 
-    def vacate(self):
+    def vacate(self) -> None:
         """Force the map to give up any claimed resources."""
         self._act(htcondor.JobAction.Vacate)
         logger.debug(f'vacated map {self.map_id}')
 
-    def _edit(self, attr: str, value: str, requirements: Optional[str] = None):
+    def _edit(self, attr: str, value: str, requirements: Optional[str] = None) -> None:
         schedd = mapping.get_schedd()
         schedd.edit(self._requirements(requirements), attr, value)
 
         logger.debug(f'set attribute {attr} for map {self.map_id} to {value}')
 
-    def set_memory(self, memory: Union[str, int, float]):
+    def set_memory(self, memory: Union[str, int, float]) -> None:
         """
         Change the amount of memory (RAM) each map component needs.
 
@@ -880,7 +882,7 @@ class Map:
             memory = f'{memory}MB'
         self._edit('RequestMemory', memory)
 
-    def set_disk(self, disk: Union[str, int, float]):
+    def set_disk(self, disk: Union[str, int, float]) -> None:
         """
         Change the amount of disk space each map component needs.
 
@@ -1025,8 +1027,8 @@ class Map:
 
         new_map_dir = mapping.map_dir_path(map_id)
         shutil.copytree(
-            src = self._map_dir,
-            dst = new_map_dir,
+            src = str(self._map_dir),
+            dst = str(new_map_dir),
         )
 
         submit = htcondor.Submit(dict(self._submit))

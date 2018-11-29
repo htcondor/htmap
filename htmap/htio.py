@@ -14,13 +14,10 @@
 # limitations under the License.
 
 
-from typing import Any, List, Iterable, Tuple, Iterator, Dict
+from typing import Any, List, Tuple, Iterator, Dict, Callable
 import logging
 
-import hashlib
 import json
-import pickle
-import time
 from pathlib import Path
 
 import cloudpickle
@@ -43,7 +40,7 @@ def load_object(path: Path) -> Any:
         return cloudpickle.load(file)
 
 
-def save_func(map_dir, func):
+def save_func(map_dir: Path, func: Callable) -> None:
     """Save the mapped function to the map directory."""
     path = map_dir / 'func'
     save_object(func, path)
@@ -74,7 +71,7 @@ def save_args_and_kwargs(
     return num_components
 
 
-def save_num_components(map_dir: Path, num_components: int):
+def save_num_components(map_dir: Path, num_components: int) -> None:
     path = _num_components_path(map_dir)
     path.write_text(str(num_components))
 
@@ -84,11 +81,11 @@ def load_num_components(map_dir: Path) -> int:
     return int(path.read_text())
 
 
-def _num_components_path(map_dir: Path):
+def _num_components_path(map_dir: Path) -> Path:
     return map_dir / 'num_components'
 
 
-def save_submit(map_dir: Path, submit: htcondor.Submit):
+def save_submit(map_dir: Path, submit: htcondor.Submit) -> None:
     """Save a dictionary that represents the map's :class:`htcondor.Submit` object."""
     path = _submit_path(map_dir)
     with path.open(mode = 'w') as f:
@@ -112,7 +109,7 @@ def _submit_path(map_dir: Path) -> Path:
     return map_dir / 'submit'
 
 
-def save_itemdata(map_dir: Path, itemdata: List[dict]):
+def save_itemdata(map_dir: Path, itemdata: List[dict]) -> None:
     """Save the map's itemdata as a list of JSON dictionaries."""
     path = _itemdata_path(map_dir)
     with path.open(mode = 'w') as f:

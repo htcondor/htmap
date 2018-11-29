@@ -56,7 +56,7 @@ class MappedFunction:
         map_id: str,
         args: Iterable[Any],
         map_options: Optional[options.MapOptions] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> maps.Map:
         """As :func:`htmap.map`, but the ``func`` argument is the mapped function."""
         if map_options is None:
@@ -107,8 +107,8 @@ class MappedFunction:
     def transient_map(
         self,
         args: Iterable[Any],
-        map_options: options.MapOptions = None,
-        **kwargs,
+        map_options: Optional[options.MapOptions] = None,
+        **kwargs: Any,
     ) -> mapping.TransientMap:
         """As :func:`htmap.htmap`, but the ``func`` argument is the mapped function."""
         if map_options is None:

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterator, Iterable
+from typing import Tuple, Iterator, Iterable, Dict, Union
 import logging
 
 from pathlib import Path
@@ -51,10 +51,10 @@ def _map_paths() -> Iterator[Path]:
     try:
         yield from mapping.maps_dir_path().iterdir()
     except FileNotFoundError:  # maps dir doesn't exist for some reason, which means we have no maps
-        yield from ()
+        return
 
 
-def map_ids() -> Tuple[str]:
+def map_ids() -> Tuple[str, ...]:
     """Return a tuple containing the ``map_id`` for all existing maps."""
     return tuple(path.stem for path in _map_paths())
 
@@ -64,7 +64,7 @@ def load_maps() -> Tuple[Map, ...]:
     return tuple(load(map_id) for map_id in map_ids())
 
 
-def remove(map_id: str, not_exist_ok = True):
+def remove(map_id: str, not_exist_ok: bool = True) -> None:
     """
     Remove the map with the given ``map_id``.
 
@@ -85,7 +85,7 @@ def remove(map_id: str, not_exist_ok = True):
             raise e
 
 
-def force_remove(map_id: str):
+def force_remove(map_id: str) -> None:
     """
     Force-remove a map by trying to delete its map directory directly.
 
@@ -103,7 +103,7 @@ def force_remove(map_id: str):
     logger.debug(f'force-removed map {map_id}')
 
 
-def clean():
+def clean() -> None:
     """Remove all existing maps."""
     logger.debug('cleaning maps directory...')
     for map_result in load_maps():
@@ -111,7 +111,7 @@ def clean():
     logger.debug('cleaned maps directory')
 
 
-def force_clean():
+def force_clean() -> None:
     """
     Force-remove all existing maps by trying to delete their map directories directly.
 
@@ -165,13 +165,13 @@ def status(
     for map in maps:
         row = [map.map_id]
         if state:
-            row.extend(map.status_counts[d] for d in ComponentStatus.display_statuses())
+            row.extend(str(map.status_counts[d]) for d in ComponentStatus.display_statuses())
         if meta:
             row.extend([
                 utils.get_dir_size_as_str(mapping.map_dir_path(map.map_id)),
                 utils.num_bytes_to_str(max(map.memory_usage) * 1024 * 1024),  # memory usage is measured in MB
-                max(map.runtime),
-                sum(map.runtime, datetime.timedelta()),
+                str(max(map.runtime)),
+                str(sum(map.runtime, datetime.timedelta())),
             ])
 
         rows.append(row)
@@ -187,9 +187,9 @@ def status_json(
     state: bool = True,
     meta: bool = True,
     compact: bool = False,
-) -> dict:
+) -> str:
     """
-    Return a JSON-formatted dictionary containing information on the given maps.
+    Return a JSON-formatted string containing information on the given maps.
 
     Disk and memory usage are reported in bytes.
     Runtimes are reported in seconds.
@@ -221,11 +221,12 @@ def status_json(
 
     j = {}
     for map in maps:
-        d = {'map_id': map.map_id}
+        d: Dict[str, Union[dict, str, int, float]] = {'map_id': map.map_id}
         if state:
-            d['component_status_counts'] = {}
+            status_to_count = {}
             for status in ComponentStatus.display_statuses():
-                d['component_status_counts'][status.value.lower()] = map.status_counts[status]
+                status_to_count[status.value.lower()] = map.status_counts[status]
+            d['component_status_counts'] = status_to_count
         if meta:
             d['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
             d['max_memory_usage'] = max(map.memory_usage) * 1024 * 1024
@@ -280,7 +281,7 @@ def status_csv(
 
     rows = []
     for map in maps:
-        row = {'map_id': map.map_id}
+        row: Dict[str, Union[str, int, float]] = {'map_id': map.map_id}
         if state:
             for status in ComponentStatus.display_statuses():
                 row[status.value.lower()] = map.status_counts[status]

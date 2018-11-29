@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Iterable, Optional, Callable, Dict, List
+from typing import Union, Iterable, Optional, Callable, Dict, List, Tuple
 import logging
 
 import sys
@@ -62,7 +62,7 @@ class MapOptions(collections.UserDict):
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
         input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
         custom_options: Dict[str, str] = None,
-        **kwargs,
+        **kwargs: Union[str, Iterable[str]],
     ):
         """
         Parameters
@@ -154,7 +154,7 @@ def create_submit_object_and_itemdata(
     map_dir: Path,
     num_components: int,
     map_options: Optional[MapOptions] = None,
-):
+) -> Tuple[htcondor.Submit, List[Dict[str, str]]]:
     if map_options is None:
         map_options = MapOptions()
 
@@ -220,7 +220,7 @@ def register_delivery_mechanism(
     name: str,
     options_func: Callable[[str, Path], dict],
     setup_func: Optional[Callable[[str, Path], None]] = None,
-):
+) -> None:
     if setup_func is None:
         setup_func = lambda *args: None
 
@@ -228,7 +228,7 @@ def register_delivery_mechanism(
     SETUP_FUNCTION_BY_DELIVERY[name] = setup_func
 
 
-def unregister_delivery_mechanism(name: str):
+def unregister_delivery_mechanism(name: str) -> None:
     BASE_OPTIONS_FUNCTION_BY_DELIVERY.pop(name)
     SETUP_FUNCTION_BY_DELIVERY.pop(name)
 

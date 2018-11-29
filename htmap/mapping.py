@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any
+from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any, List, Generator
 import logging
 
 import time
@@ -51,8 +51,8 @@ def map(
     map_id: str,
     func: Callable,
     args: Iterable[Any],
-    map_options: options.MapOptions = None,
-    **kwargs,
+    map_options: Optional[options.MapOptions] = None,
+    **kwargs: Any,
 ) -> maps.Map:
     """
     Map a function call over a one-dimensional iterable of arguments.
@@ -175,7 +175,7 @@ def transient_map(
     func: Callable,
     args: Iterable[Any],
     map_options: options.MapOptions = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> TransientMap:
     """
     As :func:`htmap.map`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
@@ -238,8 +238,8 @@ class MapBuilder:
         self.map_id = map_id
         self.map_options = map_options
 
-        self.args = []
-        self.kwargs = []
+        self.args: List[Tuple[Any, ...]] = []
+        self.kwargs: List[Dict[str, Any]] = []
 
         self._map = None
 
@@ -248,7 +248,7 @@ class MapBuilder:
     def __repr__(self):
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
 
-    def __enter__(self):
+    def __enter__(self) -> 'MapBuilder':
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -267,7 +267,7 @@ class MapBuilder:
 
         logger.debug(f'finished executing map builder for map {self.map_id}')
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> None:
         """Adds the given inputs to the map."""
         self.args.append(args)
         self.kwargs.append(kwargs)
@@ -282,7 +282,7 @@ class MapBuilder:
             raise exceptions.NoMapYet('map does not exist until after with block')
         return self._map
 
-    def __len__(self):
+    def __len__(self) -> int:
         """The length of a :class:`MapBuilder` is the number of inputs it has been sent."""
         return len(self.args)
 
@@ -402,7 +402,7 @@ def create_map(
         raise e
 
 
-def raise_if_map_id_already_exists(map_id: str):
+def raise_if_map_id_already_exists(map_id: str) -> None:
     """Raise a :class:`htmap.exceptions.MapIdAlreadyExists` if the ``map_id`` already exists."""
     if map_dir_path(map_id).exists():
         raise exceptions.MapIdAlreadyExists(f'the requested map_id {map_id} already exists (recover the Map, then either use or delete it).')
@@ -423,7 +423,7 @@ INVALID_FILENAME_CHARACTERS = {
 }
 
 
-def raise_if_map_id_is_invalid(map_id: str):
+def raise_if_map_id_is_invalid(map_id: str) -> None:
     """Raise a :class:`htmap.exceptions.InvalidMapId` if the ``map_id`` contains any invalid characters."""
     invalid_chars = set(map_id).intersection(INVALID_FILENAME_CHARACTERS)
     if len(invalid_chars) != 0:
@@ -437,7 +437,7 @@ MAP_SUBDIR_NAMES = (
 )
 
 
-def make_map_dir_and_subdirs(map_dir):
+def make_map_dir_and_subdirs(map_dir: Path) -> None:
     """Create the input, output, and log subdirectories inside the map directory."""
     for path in (map_dir / d for d in MAP_SUBDIR_NAMES):
         path.mkdir(parents = True, exist_ok = True)
@@ -445,7 +445,7 @@ def make_map_dir_and_subdirs(map_dir):
     logger.debug(f'created map directory {map_dir} and subdirectories')
 
 
-def execute_submit(submit_object, itemdata) -> int:
+def execute_submit(submit_object: htcondor.Submit, itemdata: List[Dict[str, str]]) -> int:
     """
     Execute a map via the scheduler defined by the settings.
     Return the HTCondor cluster ID of the map's jobs.
@@ -462,9 +462,9 @@ def execute_submit(submit_object, itemdata) -> int:
 
 
 def zip_args_and_kwargs(
-    args: Iterable[Tuple],
-    kwargs: Iterable[Dict],
-) -> Iterator[Tuple[Tuple, Dict]]:
+    args: Iterable[Tuple[Any, ...]],
+    kwargs: Iterable[Dict[str, Any]],
+) -> Generator[Tuple[Tuple[Any, ...], Dict[str, Any]], None, None]:
     """
     Combine iterables of arguments and keyword arguments into a zipped,
     filled iterator of arguments and keyword arguments (i.e., tuples and dictionaries).
@@ -484,19 +484,18 @@ def zip_args_and_kwargs(
     Returns
     -------
     """
-    iterators = [iter(args), iter(kwargs)]
+    iterators: List[Iterator] = [iter(args), iter(kwargs)]
     fills = {0: (), 1: {}}
     num_active = 2
     while True:
         values = []
         for i, it in enumerate(iterators):
             try:
-                value = next(it)
+                values.append(next(it))
             except StopIteration:
                 num_active -= 1
                 if num_active == 0:
                     return
-                iterators[i] = itertools.repeat(fills[i])
-                value = fills[i]
-            values.append(value)
+                iterators[i] = itertools.repeat(fills[i])  # replace the iterator
+                values.append(fills[i])  # for this iteration, insert fills[i] manually
         yield tuple(values)

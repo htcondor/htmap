@@ -15,18 +15,7 @@
 
 import pytest
 
-from pathlib import Path
-
 from htmap import utils
-
-
-def test_file_size(tmpdir):
-    path = Path(tmpdir.mkdir('file_size').join('obj'))
-    n = 1000
-
-    path.write_bytes(b'0' * n)
-
-    assert utils.get_file_size(path) == n
 
 
 @pytest.mark.parametrize(

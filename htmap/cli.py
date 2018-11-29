@@ -67,6 +67,7 @@ def cli(verbose):
 
 
 def _start_htmap_logger():
+    """Initialize a basic logger for HTMap for the CLI."""
     htmap_logger = logging.getLogger('htmap')
     htmap_logger.setLevel(logging.DEBUG)
 
@@ -81,7 +82,7 @@ def _start_htmap_logger():
 
 @cli.command()
 def ids():
-    """Print map ids. Suitable for piping to other commands."""
+    """Print map ids. Can be piped to other commands."""
     click.echo(_id_list())
 
 
@@ -264,9 +265,24 @@ def version():
 
 
 @cli.command()
-def settings():
-    """Print HTMap's base settings (defaults + your ~/.htmaprc file)."""
-    click.echo(str(htmap.settings))
+@click.option(
+    '--user',
+    is_flag = True,
+    default = False,
+    help = 'Display only user settings (the contents of ~/.htmaprc).',
+)
+def settings(user):
+    """Print HTMap's base settings combined with your ~/.htmaprc file."""
+    if not user:
+        click.echo(str(htmap.settings))
+    else:
+        path = Path.home() / '.htmaprc'
+        try:
+            txt = path.read_text(encoding = 'utf-8')
+        except FileNotFoundError:
+            click.echo(f'Error: you do not have a ~/.htmaprc file ({path} was not found)')
+            sys.exit(1)
+        click.echo(txt)
 
 
 @cli.command()
@@ -279,7 +295,7 @@ def set(setting, value):
     click.echo(f'changed setting {setting} to {value}')
 
 
-def _cli_load(map_id) -> htmap.Map:
+def _cli_load(map_id: str) -> htmap.Map:
     with make_spinner(text = f'Loading map {map_id}...') as spinner:
         try:
             return htmap.load(map_id)

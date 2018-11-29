@@ -47,7 +47,7 @@ Here's the Dockerfile template that Josh uses:
 
     # install python dependencies
     RUN conda install -y python=<your preferred python version> \
-                         cloudpickle \
+                         cloudpickle=<the same version you have locally> \
         && \
         conda update -y --all && \
         conda clean -y --all
