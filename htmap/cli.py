@@ -295,6 +295,12 @@ def set(setting, value):
     click.echo(f'changed setting {setting} to {value}')
 
 
+@cli.command()
+def transplants():
+    """Display information on transplant installs."""
+    click.echo(htmap.transplant_info())
+
+
 def _cli_load(map_id: str) -> htmap.Map:
     with make_spinner(text = f'Loading map {map_id}...') as spinner:
         try:
