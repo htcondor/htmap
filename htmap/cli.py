@@ -296,7 +296,7 @@ def set(setting, value):
 
 
 @cli.group()
-def transplants(ctx):
+def transplants():
     """Manage transplant installs."""
 
 
@@ -311,7 +311,13 @@ def info():
 def remove(index):
     """Remove a transplant install by index."""
     try:
-        transplant = htmap.transplants()[int(index)]
+        index = int(index)
+    except ValueError:
+        click.echo(f'Error: index was not an integer (was {index}).')
+        sys.exit(1)
+
+    try:
+        transplant = htmap.transplants()[index]
     except IndexError:
         click.echo(f'Error: could not find a transplant install with index {index}.')
         click.echo(f'Your transplant installs are:')
