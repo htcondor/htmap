@@ -337,7 +337,7 @@ class Transplant(NamedTuple):
     def remove(self):
         self.path.with_suffix('.pip').unlink()
         self.path.unlink()
-        logger.info(f'removed transplant install {self.hash}')
+        logger.info(f'removed transplant install {self.hash}, which was created at {self.created}')
 
 
 def transplants() -> Tuple[Transplant, ...]:
@@ -352,15 +352,14 @@ def transplants() -> Tuple[Transplant, ...]:
 
 
 def transplant_info() -> str:
-    lines = []
+    entries = []
     for q, t in enumerate(transplants()):
-        lines.append(f'#{q}: transplant install {t.hash} created at {t.created}')
-        lines.append(
-            'Packages: ' + '\n'.join(textwrap.wrap(
-                ', '.join(t.packages),
-                subsequent_indent = ' ' * 4,
-                break_long_words = False,
-            ))
-        )
+        entry = f'#{q}: transplant install {t.hash} created at {t.created}'
+        entry += 'Packages: ' + '\n'.join(textwrap.wrap(
+            ', '.join(t.packages),
+            subsequent_indent = ' ' * 4,
+            break_long_words = False,
+        ))
+        entries.append(entry)
 
-    return '\n'.join(lines)
+    return utils.rstr('\n\n'.join(entries))
