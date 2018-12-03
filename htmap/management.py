@@ -354,12 +354,14 @@ def transplants() -> Tuple[Transplant, ...]:
 def transplant_info() -> str:
     entries = []
     for q, t in enumerate(transplants()):
-        entry = f'#{q}: transplant install {t.hash}\nCreated at {t.created}\nPackages: \n'
-        entry += '\n'.join(textwrap.wrap(
-            ', '.join(t.packages),
-            subsequent_indent = ' ' * 4,
-            break_long_words = False,
-        ))
+        packages = '\n'.join(
+            textwrap.wrap(
+                ', '.join(t.packages),
+                subsequent_indent = ' ' * 4,
+                break_long_words = False,
+            )
+        )
+        entry = f'# {q}\nHash: {t.hash}\nCreated at: {t.created}\nPackages: {packages}'
         entries.append(entry)
 
     return utils.rstr('\n\n'.join(entries))

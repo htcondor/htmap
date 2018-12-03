@@ -272,7 +272,7 @@ def version():
     help = 'Display only user settings (the contents of ~/.htmaprc).',
 )
 def settings(user):
-    """Print HTMap's base settings combined with your ~/.htmaprc file."""
+    """Print HTMap's settings."""
     if not user:
         click.echo(str(htmap.settings))
     else:
