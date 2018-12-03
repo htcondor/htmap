@@ -295,10 +295,27 @@ def set(setting, value):
     click.echo(f'changed setting {setting} to {value}')
 
 
-@cli.command()
-def transplants():
+@cli.group(invoke_without_command = True)
+@click.pass_context
+def transplants(ctx):
     """Display information on transplant installs."""
-    click.echo(htmap.transplant_info())
+    if ctx.invoked_subcommand is None:
+        click.echo(htmap.transplant_info())
+
+
+@transplants.command()
+@click.argument('index', help = 'The index of the install to remove (the number after # in `htmap transplants`).')
+def remove(index):
+    """Remove a transplant install by index."""
+    try:
+        transplant = htmap.transplants()[index]
+    except IndexError:
+        click.echo(f'Error: could not find a transplant install with index {index}.')
+        click.echo(f'Your transplant installs are:')
+        click.echo(htmap.transplant_info())
+        sys.exit(1)
+
+    transplant.remove()
 
 
 def _cli_load(map_id: str) -> htmap.Map:
