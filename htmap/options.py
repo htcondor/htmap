@@ -313,19 +313,20 @@ def _get_base_descriptors_for_transplant(
     map_id: str,
     map_dir: Path,
 ) -> dict:
+    pip_freeze = _get_pip_freeze()
+    h = _get_transplant_hash(pip_freeze)
     tif_path = settings.get('TRANSPLANT.ALTERNATE_INPUT_PATH')
     if tif_path is None:
-        tif_path = (Path(settings['TRANSPLANT.DIR']) / f'{_get_transplant_hash()}.tar.gz').as_posix()
+        tif_path = (Path(settings['TRANSPLANT.DIR']) / h).as_posix()
 
     return {
         'universe': 'vanilla',
         'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
-        'arguments': f'$(component) {_get_transplant_hash()}',
+        'arguments': f'$(component) {h}',
         'transfer_input_files': [
             (Path(__file__).parent / 'run' / 'run.py').as_posix(),
             tif_path,
         ],
-        'file_remaps': f'"htmap_python.tar.gz = local:{_get_transplant_hash()}.tar.gz"'
     }
 
 
@@ -340,12 +341,13 @@ def _run_delivery_setup_for_transplant(
             raise exceptions.CannotTransplantPython('transplant delivery does not work from Windows')
 
         py_dir = Path(sys.executable).parent.parent
+        pip_freeze = _get_pip_freeze()
 
-        target = Path(settings['TRANSPLANT.DIR']) / _get_transplant_hash()
-        final_path = target.with_name(f'{target.stem}.tar.gz')
+        target = Path(settings['TRANSPLANT.DIR']) / _get_transplant_hash(pip_freeze)
+        zip_path = target.with_name(f'{target.stem}.tar.gz')
 
-        if final_path.exists():  # cached version already exists
-            logger.debug(f'using cached zipped python install at {final_path}')
+        if zip_path.exists():  # cached version already exists
+            logger.debug(f'using cached zipped python install at {zip_path}')
             return
 
         logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
@@ -357,16 +359,25 @@ def _run_delivery_setup_for_transplant(
                 root_dir = py_dir,
             )
         except BaseException as e:
-            final_path.unlink()
+            zip_path.unlink()
             logger.debug(f'removed partial zipped Python install at {target}')
             raise e
 
-        logger.debug(f'created zipped Python install for transplant, stored at {final_path}')
+        zip_path.rename(target)
+
+        pip_path = zip_path.with_name(f'{target.stem}.pip')
+        pip_path.write_bytes(pip_freeze)
+
+        logger.debug(f'created zipped Python install for transplant, stored at {zip_path}')
 
 
-def _get_transplant_hash() -> str:
+def _get_pip_freeze() -> bytes:
+    return utils.pip_freeze().encode('utf-8')
+
+
+def _get_transplant_hash(pip_freeze_output: bytes) -> str:
     h = hashlib.md5()
-    h.update(utils.pip_freeze().encode('utf-8'))
+    h.update(pip_freeze_output)
     return h.hexdigest()
 
 

@@ -3,7 +3,6 @@
 set -e
 
 mkdir htmap_python
-tar -xzf $2.tar.gz -C htmap_python/
-echo "unpacked python install"
+tar -xzf $2 -C htmap_python/
 
 htmap_python/bin/python run.py $1
