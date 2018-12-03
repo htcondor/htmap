@@ -304,7 +304,7 @@ def transplants(ctx):
 
 
 @transplants.command()
-@click.argument('index', help = 'The index of the install to remove (the number after # in `htmap transplants`).')
+@click.argument('index')
 def remove(index):
     """Remove a transplant install by index."""
     try:
