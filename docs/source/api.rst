@@ -175,6 +175,17 @@ These functions are useful for generating machine-readable status information.
 
 .. autofunction:: htmap.status_csv
 
+Transplant Installs
++++++++++++++++++++
+
+These functions help you manage your transplant installs.
+
+.. autofunction:: htmap.transplants
+
+.. autoclass:: htmap.Transplant
+   :members:
+
+.. autofunction:: htmap.transplant_info
 
 Settings
 --------
