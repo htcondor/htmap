@@ -151,11 +151,12 @@ htmap_dir = Path(os.getenv('HTMAP_DIR', Path.home() / '.htmap'))
 BASE_SETTINGS = Settings(dict(
     HTMAP_DIR = htmap_dir.as_posix(),
     MAPS_DIR_NAME = 'maps',
-    DELIVERY_METHOD = 'docker',
+    DELIVERY_METHOD = os.getenv('HTMAP_DELIVERY_METHOD', 'docker'),
     WAIT_TIME = 1,
     CLI = False,
     HTCONDOR = dict(
-        SCHEDD = None,
+        SCHEDULER = os.getenv('HTMAP_CONDOR_SCHEDULER', None),
+        COLLECTOR = os.getenv('HTMAP_CONDOR_COLLECTOR', None),
     ),
     MAP_OPTIONS = dict(
     ),

@@ -52,6 +52,7 @@ If not given, defaults to ``~/.htmap``.
 ``DELIVERY_METHOD`` - the name of the delivery method to use.
 The different delivery methods are discussed in :ref:`dependency-management`.
 Defaults to ``docker``.
+Inherits the environment variable ``HTMAP_DELIVERY``.
 
 ``WAIT_TIME`` - how long to wait between polling for component statuses, files existing, etc.
 Measured in seconds.
@@ -70,9 +71,15 @@ Any settings in this section are passed to every :class:`MapOption` as keyword a
 HTCONDOR
 ++++++++
 
-``SCHEDD`` - the address of the HTCondor scheduler (see :class:`htcondor.Schedd`).
+``SCHEDULER`` - the address of the HTCondor scheduler (see :class:`htcondor.Schedd`).
 If set to ``None``, HTMap discovers the local scheduler automatically.
+Defaults to ``None``.
+Inherits the environment variable ``HTMAP_CONDOR_SCHEDULER`.
 
+``COLLECTOR`` - the address of the HTCondor collector (see :class:`htcondor.Collector`).
+If set to ``None``, HTMap discovers the local collector automatically.
+Defaults to ``None``.
+Inherits the environment variable ``HTMAP_CONDOR_COLLECTOR`.
 
 DOCKER
 ++++++

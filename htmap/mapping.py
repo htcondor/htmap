@@ -40,11 +40,13 @@ def map_dir_path(map_id: str) -> Path:
 
 def get_schedd():
     """Get the :class:`htcondor.Schedd` that represents the HTCondor scheduler."""
-    s = settings.get('HTCONDOR.SCHEDD', default = None)
-    if s is not None:
-        return htcondor.Schedd(s)
+    s = settings['HTCONDOR.SCHEDULER']
+    if s is None:
+        return htcondor.Schedd()
 
-    return htcondor.Schedd()
+    coll = htcondor.Collector(settings['HTCONDOR.COLLECTOR'])
+    schedd_ad = coll.locate(htcondor.DaemonTypes.Schedd, s)
+    return htcondor.Schedd(schedd_ad)
 
 
 def map(
