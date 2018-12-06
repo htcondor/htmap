@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterator, Iterable, Dict, Union
+from typing import Tuple, Iterator, Iterable, Dict, Union, NamedTuple
 import logging
 
 from pathlib import Path
@@ -22,8 +22,9 @@ import datetime
 import json
 import csv
 import io
+import textwrap
 
-from . import mapping, utils, exceptions
+from . import mapping, utils, settings, exceptions
 from .maps import Map, ComponentStatus
 
 logger = logging.getLogger(__name__)
@@ -302,3 +303,65 @@ def status_csv(
     writer.writerows(rows)
 
     return output.getvalue()
+
+
+class Transplant(NamedTuple):
+    hash: str
+    path: Path
+    created: datetime.datetime
+    size: int
+    packages: Tuple[str]
+
+    @classmethod
+    def load(cls, path: Path):
+        """
+
+        Parameters
+        ----------
+        path
+            The path to the transplant install.
+
+        Returns
+        -------
+
+        """
+
+        return cls(
+            hash = path.stem,
+            path = path,
+            created = datetime.datetime.fromtimestamp(path.stat().st_ctime),
+            size = path.stat().st_size,
+            packages = tuple(path.with_suffix('.pip').read_text().strip().split('\n')),
+        )
+
+    def remove(self):
+        self.path.with_suffix('.pip').unlink()
+        self.path.unlink()
+        logger.info(f'removed transplant install {self.hash}, which was created at {self.created}')
+
+
+def transplants() -> Tuple[Transplant, ...]:
+    return tuple(sorted(
+        (
+            Transplant.load(p)
+            for p in Path(settings['TRANSPLANT.DIR']).iterdir()
+            if p.suffix != '.pip'
+        ),
+        key = lambda t: t.created,
+    ))
+
+
+def transplant_info() -> str:
+    entries = []
+    for q, t in enumerate(transplants()):
+        packages = '\n'.join(
+            textwrap.wrap(
+                ', '.join(t.packages),
+                subsequent_indent = ' ' * 4,
+                break_long_words = False,
+            )
+        )
+        entry = f'# {q}\nHash: {t.hash}\nCreated at: {t.created}\nPackages: {packages}'
+        entries.append(entry)
+
+    return utils.rstr('\n\n'.join(entries))

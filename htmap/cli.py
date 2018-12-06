@@ -272,7 +272,7 @@ def version():
     help = 'Display only user settings (the contents of ~/.htmaprc).',
 )
 def settings(user):
-    """Print HTMap's base settings combined with your ~/.htmaprc file."""
+    """Print HTMap's settings."""
     if not user:
         click.echo(str(htmap.settings))
     else:
@@ -293,6 +293,38 @@ def set(setting, value):
     htmap.USER_SETTINGS[setting] = value
     htmap.USER_SETTINGS.save(Path.cwd() / '.htmaprc')
     click.echo(f'changed setting {setting} to {value}')
+
+
+@cli.group()
+def transplants():
+    """Manage transplant installs."""
+
+
+@transplants.command()
+def info():
+    """Display information on available transplant installs."""
+    click.echo(htmap.transplant_info())
+
+
+@transplants.command()
+@click.argument('index')
+def remove(index):
+    """Remove a transplant install by index."""
+    try:
+        index = int(index)
+    except ValueError:
+        click.echo(f'Error: index was not an integer (was {index}).')
+        sys.exit(1)
+
+    try:
+        transplant = htmap.transplants()[index]
+    except IndexError:
+        click.echo(f'Error: could not find a transplant install with index {index}.')
+        click.echo(f'Your transplant installs are:')
+        click.echo(htmap.transplant_info())
+        sys.exit(1)
+
+    transplant.remove()
 
 
 def _cli_load(map_id: str) -> htmap.Map:

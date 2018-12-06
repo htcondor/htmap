@@ -173,6 +173,5 @@ intersphinx_mapping = {
 autodoc_member_order = 'bysource'
 autoclass_content = 'both'
 autodoc_default_flags = ['undoc-members']
-# autodoc_mock_imports = ['htcondor', 'classad']  # breaks making ClassAd a MutableMapping
 
 napoleon_use_rtype = False
