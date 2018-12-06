@@ -799,17 +799,23 @@ class Map:
         Return the latest peak memory usage of each map component, measured in MB.
         A component that hasn't reported yet will show a ``0``.
 
-        Due to current limitations in the HTCondor Python bindings, memory use for very short-lived components (<5 seconds) will not be accurate.
+        .. warning::
+            Due to current limitations in the HTCondor Python bindings, memory use for very short-lived components (<5 seconds) will not be accurate.
         """
         self._read_events()
         return self._memory_usage
 
     @property
     def runtime(self) -> List[datetime.timedelta]:
+        """Return the total runtime (user + system) of each component."""
         self._read_events()
         return self._runtime
 
-    def _act(self, action: htcondor.JobAction, requirements: Optional[str] = None) -> classad.ClassAd:
+    def _act(
+        self,
+        action: htcondor.JobAction,
+        requirements: Optional[str] = None,
+    ) -> classad.ClassAd:
         schedd = mapping.get_schedd()
         req = self._requirements(requirements)
         a = schedd.act(action, req)
@@ -968,7 +974,7 @@ class Map:
         """Rerun any incomplete parts of the map from scratch."""
         self._rerun(components = self._missing_components)
 
-    def _rerun(self, components):
+    def _rerun(self, components: Iterable[int]):
         component_set = set(components)
         itemdata = htio.load_itemdata(self._map_dir)
         new_itemdata = [item for item in itemdata if int(item['component']) in component_set]
