@@ -109,7 +109,7 @@ class MappedFunction:
         args: Iterable[Any],
         map_options: Optional[options.MapOptions] = None,
         **kwargs: Any,
-    ) -> mapping.TransientMap:
+    ) -> maps.TransientMap:
         """As :func:`htmap.htmap`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()
@@ -126,7 +126,7 @@ class MappedFunction:
         args: Optional[Iterable[tuple]] = None,
         kwargs: Optional[Iterable[Dict[str, Any]]] = None,
         map_options: Optional[options.MapOptions] = None,
-    ) -> mapping.TransientMap:
+    ) -> maps.TransientMap:
         """As :func:`htmap.htstarmap`, but the ``func`` argument is the mapped function."""
         if map_options is None:
             map_options = options.MapOptions()

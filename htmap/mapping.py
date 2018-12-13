@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any, List, Generator
+from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any, List, Generator, Union
 import logging
 
 import time
@@ -141,79 +141,48 @@ def get_transient_map_id() -> str:
     return f'tmp-{int(time.time())}-{next(id_gen)}'
 
 
-class TransientMap:
-    def __init__(self, map: maps.Map):
-        self._map = map
-
-    def __repr__(self):
-        return f'<{self.__class__.__name__}(map = {self._map})>'
-
-    def wait(self, show_progress_bar = False):
-        self._map.wait(show_progress_bar = show_progress_bar)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._cleanup()
-
-        return False  # re-raise exceptions
-
-    def __iter__(self):
-        try:
-            yield from self._map
-        finally:
-            self._cleanup()
-
-    def __del__(self):
-        self._cleanup()
-
-    def _cleanup(self):
-        try:
-            self._map.remove()
-            logger.debug(f'removed transient map {self._map.map_id}')
-        except exceptions.MapWasRemoved:
-            pass
-
-
 def transient_map(
     func: Callable,
     args: Iterable[Any],
-    map_options: options.MapOptions = None,
+    map_options: Optional[options.MapOptions] = None,
     **kwargs: Any,
-) -> TransientMap:
+) -> maps.TransientMap:
     """
     As :func:`htmap.map`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
     """
-    m = map(
-        map_id = get_transient_map_id(),
-        func = func,
-        args = args,
+    args = ((arg,) for arg in args)
+    args_and_kwargs = zip(args, itertools.repeat(kwargs))
+    return create_map(
+        get_transient_map_id(),
+        func,
+        args_and_kwargs,
         map_options = map_options,
-        **kwargs,
+        map_type = maps.TransientMap,
     )
-
-    return TransientMap(m)
 
 
 def transient_starmap(
     func: Callable,
     args: Optional[Iterable[tuple]] = None,
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-    map_options: options.MapOptions = None,
-) -> TransientMap:
+    map_options: Optional[options.MapOptions] = None,
+) -> maps.TransientMap:
     """
     As :func:`htmap.starmap`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
     """
-    m = starmap(
-        map_id = get_transient_map_id(),
-        func = func,
-        args = args,
-        kwargs = kwargs,
-        map_options = map_options,
-    )
+    if args is None:
+        args = ()
+    if kwargs is None:
+        kwargs = ()
 
-    return TransientMap(m)
+    args_and_kwargs = zip_args_and_kwargs(args, kwargs)
+    return create_map(
+        get_transient_map_id(),
+        func,
+        args_and_kwargs,
+        map_options = map_options,
+        map_type = maps.TransientMap,
+    )
 
 
 class MapBuilder:
@@ -326,7 +295,8 @@ def create_map(
     func: Callable,
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
     map_options: Optional[options.MapOptions] = None,
-) -> maps.Map:
+    map_type: Any = maps.Map,
+) -> Union[maps.Map, maps.TransientMap]:
     """
     All map calls lead here.
     This function performs various checks on the ``map_id``,
@@ -387,7 +357,7 @@ def create_map(
         with (map_dir / 'cluster_ids').open() as file:
             cluster_ids = [int(cid.strip()) for cid in file]
 
-        r = maps.Map(
+        m = map_type(
             map_id = map_id,
             cluster_ids = cluster_ids,
             submit = submit_obj,
@@ -396,7 +366,7 @@ def create_map(
 
         logger.info(f'submitted map {map_id}')
 
-        return r
+        return m
     except BaseException as e:
         # something went wrong during submission, and the job is malformed
         # so delete the entire map directory

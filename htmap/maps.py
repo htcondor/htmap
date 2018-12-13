@@ -1091,3 +1091,28 @@ def parse_runtime(runtime_string: str) -> datetime.timedelta:
     )
 
     return usr_time + sys_time
+
+
+class TransientMap(Map):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._cleanup()
+
+        return False  # re-raise exceptions
+
+    def __iter__(self):
+        try:
+            yield from super().__iter__()
+        finally:
+            self._cleanup()
+
+    def __del__(self):
+        self._cleanup()
+
+    def _cleanup(self):
+        try:
+            self.remove()
+        except exceptions.MapWasRemoved:
+            pass

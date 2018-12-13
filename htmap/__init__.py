@@ -51,10 +51,10 @@ logger.addHandler(logfile_handler)
 from .mapping import (
     map, starmap, build_map,
     transient_map, transient_starmap,
-    MapBuilder, TransientMap,
+    MapBuilder,
 )
 from .mapped import mapped, MappedFunction
-from .maps import Map, ComponentStatus, Hold, ComponentError
+from .maps import Map, TransientMap, ComponentStatus, Hold, ComponentError
 from .options import MapOptions, register_delivery_mechanism
 from .management import (
     status, status_json, status_csv,
