@@ -148,6 +148,9 @@ class TransientMap:
     def __repr__(self):
         return f'<{self.__class__.__name__}(map = {self._map})>'
 
+    def wait(self, show_progress_bar = False):
+        self._map.wait(show_progress_bar = show_progress_bar)
+
     def __enter__(self):
         return self
 
