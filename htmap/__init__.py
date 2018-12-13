@@ -28,13 +28,13 @@ logger.setLevel(_logging.DEBUG)
 logger.addHandler(_logging.NullHandler())
 
 # ENSURE HTMAP DIR EXISTS
-htmap_dir = _Path(settings['HTMAP_DIR'])
-if not htmap_dir.exists():
+_htmap_dir = _Path(settings['HTMAP_DIR'])
+if not _htmap_dir.exists():
     try:
-        htmap_dir.mkdir(parents = True, exist_ok = True)
-        logger.debug(f'created HTMap dir at {htmap_dir}')
+        _htmap_dir.mkdir(parents = True, exist_ok = True)
+        logger.debug(f'created HTMap dir at {_htmap_dir}')
     except PermissionError as e:
-        raise PermissionError(f'the HTMap directory ({htmap_dir}) needs to be writable') from e
+        raise PermissionError(f'the HTMap directory ({_htmap_dir}) needs to be writable') from e
 
 # SET UP LOG FILE
 logfile_handler = _handlers.RotatingFileHandler(
