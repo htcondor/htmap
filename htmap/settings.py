@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import MutableMapping, Union, Any, Optional
+from typing import Union, Any, Optional
 import logging
 
 import os
@@ -159,6 +159,8 @@ BASE_SETTINGS = Settings(dict(
         COLLECTOR = os.getenv('HTMAP_CONDOR_COLLECTOR', None),
     ),
     MAP_OPTIONS = dict(
+        request_memory = '128MB',
+        request_disk = '1GB',
     ),
     DOCKER = dict(
         IMAGE = os.getenv('HTMAP_DOCKER_IMAGE', 'continuumio/anaconda3:latest'),
