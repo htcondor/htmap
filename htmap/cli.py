@@ -167,10 +167,13 @@ def clean(yes, force):
         answer = 'YES'
 
     if answer == 'YES':
-        if not force:
-            htmap.clean()
-        else:
-            htmap.force_clean()
+        with make_spinner('Cleaning maps...') as spinner:
+            if not force:
+                htmap.clean()
+            else:
+                htmap.force_clean()
+
+            spinner.succeed('Cleaned maps')
     else:
         click.echo('Answer was not YES, maps have not been deleted.')
 
@@ -204,10 +207,13 @@ def wait(ids):
 def remove(ids, force):
     """Remove maps."""
     for map_id in ids:
-        if not force:
-            _cli_load(map_id).remove()
-        else:
-            htmap.force_remove(map_id)
+        with make_spinner(f'Removing map {map_id} ...') as spinner:
+            if not force:
+                _cli_load(map_id).remove()
+            else:
+                htmap.force_remove(map_id)
+
+            spinner.succeed(f'Removed map {map_id}')
 
 
 @cli.command()
@@ -220,7 +226,9 @@ def remove(ids, force):
 def release(ids):
     """Release maps."""
     for map_id in ids:
-        _cli_load(map_id).release()
+        with make_spinner(f'Releasing map {map_id} ...') as spinner:
+            _cli_load(map_id).release()
+            spinner.succeed(f'Released map {map_id}')
 
 
 @cli.command()
@@ -233,7 +241,9 @@ def release(ids):
 def hold(ids):
     """Hold maps."""
     for map_id in ids:
-        _cli_load(map_id).hold()
+        with make_spinner(f'Holding map {map_id} ...') as spinner:
+            _cli_load(map_id).hold()
+            spinner.succeed(f'Held map {map_id}')
 
 
 @cli.command()
@@ -254,7 +264,9 @@ def reasons(ids):
 @click.argument('newid')
 def rename(id, newid):
     """Rename a map."""
-    _cli_load(id).rename(newid)
+    with make_spinner(f'Renaming map {id} to {newid} ...') as spinner:
+        _cli_load(id).rename(newid)
+        spinner.succeed(f'Renamed map {id} to {newid}')
 
 
 @cli.command()
