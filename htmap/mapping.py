@@ -393,13 +393,14 @@ INVALID_FILENAME_CHARACTERS = {
     '|',
     '?',
     '*',
-    '.',
     ' ',
 }
 
 
 def raise_if_map_id_is_invalid(map_id: str) -> None:
     """Raise a :class:`htmap.exceptions.InvalidMapId` if the ``map_id`` contains any invalid characters."""
+    if len(map_id) < 1:
+        raise exceptions.InvalidMapId("The map_id must be a non-empty string")
     invalid_chars = set(map_id).intersection(INVALID_FILENAME_CHARACTERS)
     if len(invalid_chars) != 0:
         raise exceptions.InvalidMapId(f'These characters in map_id {map_id} are not valid: {invalid_chars}')
