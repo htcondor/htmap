@@ -57,7 +57,7 @@ def _map_paths() -> Iterator[Path]:
 
 def map_ids() -> Tuple[str, ...]:
     """Return a tuple containing the ``map_id`` for all existing maps."""
-    return tuple(path.stem for path in _map_paths())
+    return tuple(path.name for path in _map_paths())
 
 
 def load_maps() -> Tuple[Map, ...]:
