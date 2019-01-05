@@ -125,9 +125,8 @@ def status(no_state, no_meta, json, jsonc, csv):
 
     maps = htmap.load_maps()
     if not no_state:
-        with make_spinner(text = 'Reading map component statuses...') as spinner:
+        with make_spinner(text = 'Reading map component statuses...'):
             read_events(maps)
-            spinner.succeed()
 
     if json:
         msg = htmap.status_json(maps, state = not no_state, meta = not no_meta)
