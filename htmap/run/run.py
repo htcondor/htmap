@@ -19,6 +19,7 @@ import sys
 import socket
 import datetime
 import os
+import gzip
 import textwrap
 import traceback
 import subprocess
@@ -126,24 +127,6 @@ def print_working_dir_contents(contents):
         print('  ' + path)
 
 
-def load_func():
-    import cloudpickle
-    with Path('func').open(mode = 'rb') as file:
-        return cloudpickle.load(file)
-
-
-def load_args_and_kwargs(component):
-    import cloudpickle
-    with Path('{}.in'.format(component)).open(mode = 'rb') as file:
-        return cloudpickle.load(file)
-
-
-def save_result(component, result):
-    import cloudpickle
-    with Path('{}.out'.format(component)).open(mode = 'wb') as file:
-        cloudpickle.dump(result, file)
-
-
 def print_run_info(component, func, args, kwargs):
     s = '\n'.join((
         'Running component {}'.format(component),
@@ -155,6 +138,30 @@ def print_run_info(component, func, args, kwargs):
     ))
 
     print(s)
+
+
+def load_object(path):
+    import cloudpickle
+    with gzip.open(path, mode = 'rb') as file:
+        return cloudpickle.load(file)
+
+
+def load_func():
+    return load_object('func')
+
+
+def load_args_and_kwargs(component):
+    return load_object('{}.in'.format(component))
+
+
+def save_object(obj, path):
+    import cloudpickle
+    with gzip.open(path, mode = 'wb') as file:
+        cloudpickle.dump(obj, file)
+
+
+def save_result(component, result):
+    save_object(result, '{}.out'.format(component))
 
 
 def build_frames(tb):
