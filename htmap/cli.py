@@ -30,7 +30,7 @@ from spinners import Spinners
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-SPINNERS = list(name for name in Spinners.__members__ if 'dots' in name)
+SPINNERS = list(name for name in Spinners.__members__ if name.startswith('dots'))
 
 
 def make_spinner(*args, **kwargs):
