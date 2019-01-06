@@ -17,6 +17,7 @@
 from typing import Any, List, Tuple, Iterator, Dict, Callable
 import logging
 
+import gzip
 import json
 from pathlib import Path
 
@@ -30,13 +31,13 @@ logger = logging.getLogger(__name__)
 
 def save_object(obj: Any, path: Path) -> None:
     """Serialize a Python object (including "objects", like functions) to a file at the given ``path``."""
-    with path.open(mode = 'wb') as file:
+    with gzip.open(path, mode = 'wb') as file:
         cloudpickle.dump(obj, file)
 
 
 def load_object(path: Path) -> Any:
     """Deserialize an object from the file at the given ``path``."""
-    with path.open(mode = 'rb') as file:
+    with gzip.open(path, mode = 'rb') as file:
         return cloudpickle.load(file)
 
 

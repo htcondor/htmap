@@ -47,7 +47,6 @@ class MapOptions(collections.UserDict):
         'transfer_output_remaps',
         'transfer_input_files',
         'should_transfer_files',
-        'when_to_transfer_output',
         'component',
         '+component',
         'MY.component',
@@ -245,7 +244,6 @@ def get_base_descriptors(
         'stdout': (map_dir / 'job_logs' / '$(component).stdout').as_posix(),
         'stderr': (map_dir / 'job_logs' / '$(component).stderr').as_posix(),
         'should_transfer_files': 'YES',
-        'when_to_transfer_output': 'ON_EXIT',
         '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }

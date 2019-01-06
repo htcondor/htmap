@@ -210,7 +210,7 @@ def pip_freeze() -> str:
     return subprocess.run(
         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
         stdout = subprocess.PIPE,
-    ).stdout.decode('utf-8')
+    ).stdout.decode('utf-8').strip()
 
 
 def read_events(maps):
