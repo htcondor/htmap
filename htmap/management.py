@@ -187,7 +187,7 @@ class MapStatus:
             return 'green'
         elif sc[ComponentStatus.RUNNING] > 0:
             return 'cyan'
-        elif sc[ComponentStatus.IDLE] == len(self._map):
+        elif sc[ComponentStatus.IDLE] > 0:
             return 'yellow'
 
         return None
