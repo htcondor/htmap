@@ -127,6 +127,72 @@ def force_clean() -> None:
     logger.debug('force-cleaned maps directory')
 
 
+class MapStatus:
+    def __init__(self, map: Map):
+        self._map = map
+
+        self._local_data = None
+        self._prev_status_counts = self.status_counts
+
+    @property
+    def map_id(self) -> str:
+        return self._map.map_id
+
+    @property
+    def status_counts(self):
+        return self._map.status_counts
+
+    @property
+    def local_data(self) -> str:
+        sc = self.status_counts
+        if self._prev_status_counts != sc or self._local_data is None:
+            self._local_data = utils.get_dir_size_as_str(mapping.map_dir_path(self._map.map_id))
+            self._prev_status_counts = sc
+
+        return self._local_data
+
+    @property
+    def max_memory(self) -> str:
+        return utils.num_bytes_to_str(max(self._map.memory_usage) * 1024 * 1024)
+
+    @property
+    def max_runtime(self) -> str:
+        return str(max(self._map.runtime))
+
+    @property
+    def total_runtime(self):
+        return str(sum(self._map.runtime, datetime.timedelta()))
+
+    @property
+    def tuple(self):
+        sc = self.status_counts
+        return (
+            self.map_id,
+            sc[ComponentStatus.HELD],
+            sc[ComponentStatus.IDLE],
+            sc[ComponentStatus.RUNNING],
+            sc[ComponentStatus.COMPLETED],
+            self.local_data,
+            self.max_memory,
+            self.max_runtime,
+            self.total_runtime,
+        )
+
+    @property
+    def color(self):
+        sc = self.status_counts
+        if sc[ComponentStatus.HELD] > 0:
+            return 'red'
+        elif sc[ComponentStatus.COMPLETED] == len(self._map):
+            return 'green'
+        elif sc[ComponentStatus.RUNNING] > 0:
+            return 'cyan'
+        elif sc[ComponentStatus.IDLE] == len(self._map):
+            return 'yellow'
+
+        return None
+
+
 def status(
     maps: Iterable[Map] = None,
     state: bool = True,

@@ -15,6 +15,7 @@
 
 import logging
 import sys
+import time
 import random
 from pathlib import Path
 
@@ -88,56 +89,79 @@ def ids():
 
 @cli.command()
 @click.option(
-    '--no-state',
+    '--live',
     is_flag = True,
     default = False,
-    help = 'Do not show map component states.',
+    help = 'Live reloading.',
 )
-@click.option(
-    '--no-meta',
-    is_flag = True,
-    default = False,
-    help = 'Do not show map metadata (memory, runtime, etc.).',
-)
-@click.option(
-    '--json',
-    is_flag = True,
-    default = False,
-    help = 'Output as human-readable JSON.',
-)
-@click.option(
-    '--jsonc',
-    is_flag = True,
-    default = False,
-    help = 'Output as compact JSON.',
-)
-@click.option(
-    '--csv',
-    is_flag = True,
-    default = False,
-    help = 'Output as CSV.',
-)
-def status(no_state, no_meta, json, jsonc, csv):
+def status(live):
     """Print the status of all maps."""
-    if (json, jsonc, csv).count(True) > 1:
-        click.echo('Error: no more than one of --json, --jsonc, and --csv can be set.')
-        sys.exit(1)
 
     maps = htmap.load_maps()
-    if not no_state:
-        with make_spinner(text = 'Reading map component statuses...'):
-            read_events(maps)
+    with make_spinner(text = 'Reading map component statuses...'):
+        read_events(maps)
 
-    if json:
-        msg = htmap.status_json(maps, state = not no_state, meta = not no_meta)
-    elif jsonc:
-        msg = htmap.status_json(maps, state = not no_state, meta = not no_meta, compact = True)
-    elif csv:
-        msg = htmap.status_csv(maps, state = not no_state, meta = not no_meta)
-    else:
-        msg = htmap.status(maps, state = not no_state, meta = not no_meta)
+    map_statuses = [htmap.MapStatus(map) for map in maps]
+    msg = _status_table(map_statuses)
 
     click.echo(msg)
+
+    while live:
+        num_lines = len(msg.splitlines())
+        msg = _status_table(map_statuses)
+
+        sys.stdout.write(f'\033[{num_lines}A\r')
+        click.echo(msg)
+        time.sleep(1)
+
+
+HEADERS = [
+    'Map ID',
+    'HELD',
+    'IDLE',
+    'RUNNING',
+    'COMPLETED',
+    'Local Data',
+    'Max Memory',
+    'Max Runtime',
+    'Total Runtime',
+]
+
+
+def _status_table(
+    map_statuses,
+) -> str:
+    lengths = [len(h) for h in HEADERS]
+    processed_rows = []
+
+    for ms in map_statuses:
+        processed_rows.append([str(entry) for entry in ms.tuple])
+
+    for ms in processed_rows:
+        if ms is None:
+            continue
+        lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, ms)]
+
+    header = click.style(
+        ' ' + '   '.join(h.center(l) for h, l in zip(HEADERS, lengths)) + ' ',
+        bold = True,
+    )
+
+    lines = []
+    for fields, ms in zip(processed_rows, map_statuses):
+        lines.append(
+            click.style(
+                ' ' + '   '.join(f.center(l) for f, l in zip(fields, lengths)),
+                fg = ms.color,
+            ),
+        )
+
+    output = '\n'.join((
+        header,
+        *lines,
+    ))
+
+    return output
 
 
 @cli.command()

@@ -63,6 +63,7 @@ from .management import (
     clean, force_clean,
     remove, force_remove,
     Transplant, transplants, transplant_info,
+    MapStatus,
 )
 from . import exceptions
 
