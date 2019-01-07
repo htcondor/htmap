@@ -397,7 +397,13 @@ def reasons(mapids, all):
     _check_map_ids(mapids)
 
     for map_id in mapids:
-        click.echo(_cli_load(map_id).hold_report())
+        m = _cli_load(map_id)
+
+        if len(m.holds) == 0:
+            continue
+
+        rep = f'Map {m.map_id} ({len(m.holds)}):' + m.hold_report() + '\n'
+        click.echo(rep)
 
 
 @cli.command()

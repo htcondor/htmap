@@ -792,10 +792,9 @@ class Map:
 
     def hold_report(self) -> str:
         """Return a string containing a table describing any held components."""
-
         headers = ['Component', 'Code', 'Hold Reason']
         rows = [
-            (component, hold.code, textwrap.wrap(hold.reason, width = 60))
+            (component, hold.code, hold.reason)
             for component, hold in self.holds.items()
         ]
 
