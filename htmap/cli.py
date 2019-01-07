@@ -577,7 +577,7 @@ def map(mapid):
 @click.argument('mapid')
 def events(mapid):
     """Echo the path to the map's job event log."""
-    click.echo(str(_cli_load(mapid)._map_dir))
+    click.echo(str(_cli_load(mapid)._event_log_path))
 
 
 def _cli_load(map_id: str) -> htmap.Map:
