@@ -431,8 +431,6 @@ def errors(mapid, limit):
 @click.argument('mapid')
 @click.option(
     '--components',
-    nargs = -1,
-    type = int,
     help = 'Rerun the given components',
 )
 @click.option(
@@ -456,7 +454,7 @@ def rerun(mapid, components, incomplete, all):
     m = _cli_load(mapid)
 
     if components:
-        m.rerun_components(components)
+        m.rerun_components((int(c) for c in components.split()))
     elif incomplete:
         m.rerun_incomplete()
     elif all:
