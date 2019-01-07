@@ -206,6 +206,7 @@ def _status(
         rows = rows,
         header_fmt = header_fmt,
         row_fmt = row_fmt,
+        alignment = {'Map ID': 'ljust'},
     )
 
 

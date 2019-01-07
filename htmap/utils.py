@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable
+from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable, Dict
 import logging
 
 import os
@@ -121,7 +121,7 @@ def table(
     fill: str = '',
     header_fmt: Callable[[str], str] = None,
     row_fmt: Callable[[str], str] = None,
-    first_col_left: bool = True,
+    alignment: Dict[str, str] = None,
 ) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
@@ -145,7 +145,7 @@ def table(
     row_fmt
         A function to be called on each row string.
         The return value is what will go in the output.
-    first_col_left
+    alignment
         If ``True``, the first column will be left-aligned instead of centered.
 
     Returns
@@ -157,13 +157,13 @@ def table(
         header_fmt = lambda _: _
     if row_fmt is None:
         row_fmt = lambda _: _
+    if alignment is None:
+        alignment = {}
 
     headers = tuple(headers)
     lengths = [len(h) for h in headers]
 
-    align_methods = ['center'] * len(headers)
-    if first_col_left:
-        align_methods[0] = 'ljust'
+    align_methods = [alignment.get(h, "center") for h in headers]
 
     processed_rows = []
     for row in rows:

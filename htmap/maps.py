@@ -802,6 +802,10 @@ class Map:
         return utils.table(
             headers = headers,
             rows = rows,
+            alignment = {
+                'Component': 'ljust',
+                'Hold Reason': 'ljust',
+            }
         )
 
     @property
