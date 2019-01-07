@@ -248,9 +248,19 @@ def clean(yes, force):
     callback = _read_ids_from_stdin,
     required = False,
 )
+@click.option(
+    '--all',
+    is_flag = True,
+    default = False,
+    help = 'Act on all maps.'
+)
 def wait(ids):
     """Wait for maps to complete."""
+    if all:
+        ids = htmap.map_ids()
+
     _check_map_ids(ids)
+
     for map_id in ids:
         _cli_load(map_id).wait(show_progress_bar = True)
 
@@ -268,9 +278,19 @@ def wait(ids):
     default = False,
     help = 'Do a force-remove instead of a normal remove.',
 )
-def remove(ids, force):
+@click.option(
+    '--all',
+    is_flag = True,
+    default = False,
+    help = 'Act on all maps.'
+)
+def remove(ids, force, all):
     """Remove maps."""
+    if all:
+        ids = htmap.map_ids()
+
     _check_map_ids(ids)
+
     for map_id in ids:
         with make_spinner(f'Removing map {map_id} ...') as spinner:
             if not force:
@@ -288,9 +308,19 @@ def remove(ids, force):
     callback = _read_ids_from_stdin,
     required = False,
 )
-def release(ids):
+@click.option(
+    '--all',
+    is_flag = True,
+    default = False,
+    help = 'Act on all maps.'
+)
+def release(ids, all):
     """Release maps."""
+    if all:
+        ids = htmap.map_ids()
+
     _check_map_ids(ids)
+
     for map_id in ids:
         with make_spinner(f'Releasing map {map_id} ...') as spinner:
             _cli_load(map_id).release()
@@ -304,9 +334,19 @@ def release(ids):
     callback = _read_ids_from_stdin,
     required = False,
 )
+@click.option(
+    '--all',
+    is_flag = True,
+    default = False,
+    help = 'Act on all maps.'
+)
 def hold(ids):
     """Hold maps."""
+    if all:
+        ids = htmap.map_ids()
+
     _check_map_ids(ids)
+
     for map_id in ids:
         with make_spinner(f'Holding map {map_id} ...') as spinner:
             _cli_load(map_id).hold()
@@ -320,9 +360,19 @@ def hold(ids):
     callback = _read_ids_from_stdin,
     required = False,
 )
+@click.option(
+    '--all',
+    is_flag = True,
+    default = False,
+    help = 'Act on all maps.'
+)
 def reasons(ids):
     """Print the hold reasons for maps."""
+    if all:
+        ids = htmap.map_ids()
+
     _check_map_ids(ids)
+
     for map_id in ids:
         click.echo(_cli_load(map_id).hold_report())
 
