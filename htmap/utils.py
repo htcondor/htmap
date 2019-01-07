@@ -121,7 +121,7 @@ def table(
     fill: str = '',
     header_fmt: Callable[[str], str] = None,
     row_fmt: Callable[[str], str] = None,
-    first_col_left = True,
+    first_col_left: bool = True,
 ) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
@@ -134,7 +134,6 @@ def table(
         The entries for each row, for each column.
         Should be an iterable of iterables or mappings, with the outer level containing the rows,
         and each inner iterable containing the entries for each column.
-        A ``None`` in the outer iterable produces a horizontal bar at that position.
         An iterable-type row is printed in order.
         A mapping-type row uses the headers as keys to align the stdout and can have missing values,
         which are filled using the ```fill`` value.
@@ -159,6 +158,7 @@ def table(
     if row_fmt is None:
         row_fmt = lambda _: _
 
+    headers = tuple(headers)
     lengths = [len(h) for h in headers]
 
     align_methods = ['center'] * len(headers)
@@ -166,28 +166,21 @@ def table(
         align_methods[0] = 'ljust'
 
     processed_rows = []
-
     for row in rows:
-        if row is None:
-            processed_rows.append(None)
-        elif isinstance(row, Mapping):
+        if isinstance(row, Mapping):
             processed_rows.append([str(row.get(key, fill)) for key in headers])
         else:
             processed_rows.append([str(entry) for entry in row])
 
     for row in processed_rows:
-        if row is None:
-            continue
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
 
     header = header_fmt('  '.join(getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)))
 
-    lines = []
-    for row in processed_rows:
-        if row is None:
-            lines.append('')
-        else:
-            lines.append(row_fmt('  '.join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods))))
+    lines = (
+        row_fmt('  '.join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods)))
+        for row in processed_rows
+    )
 
     output = '\n'.join((
         header,
