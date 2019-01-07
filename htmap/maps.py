@@ -991,9 +991,9 @@ class Map:
 
     def rerun_incomplete(self):
         """Rerun any incomplete parts of the map from scratch."""
-        self._rerun(components = self._missing_components)
+        self.rerun_components(components = self._missing_components)
 
-    def _rerun(self, components: Iterable[int]):
+    def rerun_components(self, components: Iterable[int]):
         component_set = set(components)
         itemdata = htio.load_itemdata(self._map_dir)
         new_itemdata = [item for item in itemdata if int(item['component']) in component_set]

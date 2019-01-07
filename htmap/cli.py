@@ -414,7 +414,7 @@ def stderr(mapid, component):
     '--limit',
     type = int,
     default = 0,
-    help = "The maximum number of error reports to show (0 for no limit)."
+    help = 'The maximum number of error reports to show (0 for no limit).',
 )
 def errors(mapid, limit):
     """Look at detailed error reports for a map."""
@@ -425,6 +425,42 @@ def errors(mapid, limit):
 
     for report in reports:
         click.echo(report)
+
+
+@cli.command()
+@click.argument('mapid')
+@click.option(
+    '--components',
+    nargs = -1,
+    type = int,
+    help = 'Rerun the given components',
+)
+@click.option(
+    '--incomplete',
+    is_flag = True,
+    default = False,
+    help = 'Rerun only the incomplete components of the map.'
+)
+@click.option(
+    '--all',
+    is_flag = True,
+    default = False,
+    help = 'Rerun the entire map',
+)
+def rerun(mapid, components, incomplete, all):
+    """Rerun part or all of a map."""
+    if tuple(map(bool, (components, incomplete, all))).count(True) != 1:
+        click.echo('Error: exactly one of --components, --incomplete, and --all can be used.')
+        sys.exit(1)
+
+    m = _cli_load(mapid)
+
+    if components:
+        m.rerun_components(components)
+    elif incomplete:
+        m.rerun_incomplete()
+    elif all:
+        m.rerun()
 
 
 @cli.command()
