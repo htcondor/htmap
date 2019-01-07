@@ -750,7 +750,7 @@ class Map:
             component = self._clusterproc_to_component[(event.cluster, event.proc)]
 
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                self._memory_usage[component] = int(event.MemoryUsage)
+                self._memory_usage[component] = max(self._memory_usage[component], int(event.MemoryUsage or 0))  # protection from bad events, apparently necessary?
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
                 self._runtime[component] = parse_runtime(event.RunRemoteUsage)
             elif event.type is htcondor.JobEventType.JOB_RELEASED:
