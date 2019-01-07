@@ -244,7 +244,7 @@ def clean(yes, force):
 def _multi_id_args(func):
     apply = [
         click.argument(
-            'ids',
+            'mapids',
             nargs = -1,
             callback = _read_ids_from_stdin,
             required = False,
@@ -265,14 +265,14 @@ def _multi_id_args(func):
 
 @cli.command()
 @_multi_id_args
-def wait(ids, all):
+def wait(mapids, all):
     """Wait for maps to complete."""
     if all:
         ids = htmap.map_ids()
 
-    _check_map_ids(ids)
+    _check_map_ids(mapids)
 
-    for map_id in ids:
+    for map_id in mapids:
         m = _cli_load(map_id)
         if not m.is_done:
             m.wait(show_progress_bar = True)
@@ -286,14 +286,14 @@ def wait(ids, all):
     default = False,
     help = 'Do a force-remove instead of a normal remove.',
 )
-def remove(ids, force, all):
+def remove(mapids, force, all):
     """Remove maps."""
     if all:
         ids = htmap.map_ids()
 
-    _check_map_ids(ids)
+    _check_map_ids(mapids)
 
-    for map_id in ids:
+    for map_id in mapids:
         with make_spinner(f'Removing map {map_id} ...') as spinner:
             if not force:
                 _cli_load(map_id).remove()
@@ -305,14 +305,14 @@ def remove(ids, force, all):
 
 @cli.command()
 @_multi_id_args
-def hold(ids, all):
+def hold(mapids, all):
     """Hold maps."""
     if all:
         ids = htmap.map_ids()
 
-    _check_map_ids(ids)
+    _check_map_ids(mapids)
 
-    for map_id in ids:
+    for map_id in mapids:
         with make_spinner(f'Holding map {map_id} ...') as spinner:
             _cli_load(map_id).hold()
             spinner.succeed(f'Held map {map_id}')
@@ -320,14 +320,14 @@ def hold(ids, all):
 
 @cli.command()
 @_multi_id_args
-def release(ids, all):
+def release(mapids, all):
     """Release maps."""
     if all:
         ids = htmap.map_ids()
 
-    _check_map_ids(ids)
+    _check_map_ids(mapids)
 
-    for map_id in ids:
+    for map_id in mapids:
         with make_spinner(f'Releasing map {map_id} ...') as spinner:
             _cli_load(map_id).release()
             spinner.succeed(f'Released map {map_id}')
@@ -335,14 +335,14 @@ def release(ids, all):
 
 @cli.command()
 @_multi_id_args
-def pause(ids, all):
+def pause(mapids, all):
     """Pause maps."""
     if all:
         ids = htmap.map_ids()
 
-    _check_map_ids(ids)
+    _check_map_ids(mapids)
 
-    for map_id in ids:
+    for map_id in mapids:
         with make_spinner(f'Pausing map {map_id} ...') as spinner:
             _cli_load(map_id).pause()
             spinner.succeed(f'Paused map {map_id}')
@@ -350,14 +350,14 @@ def pause(ids, all):
 
 @cli.command()
 @_multi_id_args
-def resume(ids, all):
+def resume(mapids, all):
     """Resume maps."""
     if all:
         ids = htmap.map_ids()
 
-    _check_map_ids(ids)
+    _check_map_ids(mapids)
 
-    for map_id in ids:
+    for map_id in mapids:
         with make_spinner(f'Resuming map {map_id} ...') as spinner:
             _cli_load(map_id).resume()
             spinner.succeed(f'Resumed map {map_id}')
@@ -365,14 +365,14 @@ def resume(ids, all):
 
 @cli.command()
 @_multi_id_args
-def vacate(ids, all):
+def vacate(mapids, all):
     """Force maps to give up their claimed resources."""
     if all:
         ids = htmap.map_ids()
 
-    _check_map_ids(ids)
+    _check_map_ids(mapids)
 
-    for map_id in ids:
+    for map_id in mapids:
         with make_spinner(f'Vacating map {map_id} ...') as spinner:
             _cli_load(map_id).vacate()
             spinner.succeed(f'Vacated map {map_id}')
@@ -380,24 +380,56 @@ def vacate(ids, all):
 
 @cli.command()
 @_multi_id_args
-def reasons(ids, all):
+def reasons(mapids, all):
     """Print the hold reasons for maps."""
     if all:
         ids = htmap.map_ids()
 
-    _check_map_ids(ids)
+    _check_map_ids(mapids)
 
-    for map_id in ids:
+    for map_id in mapids:
         click.echo(_cli_load(map_id).hold_report())
 
 
 @cli.command()
-@click.argument('id')
+@click.argument('mapid')
+@click.argument('component', type = int)
+def stdout(mapid, component):
+    """Look at the stdout for a map component."""
+    click.echo(_cli_load(mapid).stdout(component))
+
+
+@cli.command()
+@click.argument('mapid')
+@click.argument('component', type = int)
+def stderr(mapid, component):
+    """Look at the stderr for a map component."""
+    click.echo(_cli_load(mapid).stderr(component))
+
+
+@cli.command()
+@click.argument('mapid')
+@click.argument('component', type = int)
+@click.option(
+    '--limit',
+    type = int,
+    default = 0,
+    help = "The maximum number of error reports to show (0 for no limit)."
+)
+def errors(mapid):
+    """Look at detailed error reports for a map."""
+    m = _cli_load(mapid)
+    for report in m.error_reports():
+        click.echo(report)
+
+
+@cli.command()
+@click.argument('mapid')
 @click.argument('newid')
-def rename(id, newid):
+def rename(mapid, newid):
     """Rename a map."""
     with make_spinner(f'Renaming map {id} to {newid} ...') as spinner:
-        _cli_load(id).rename(newid)
+        _cli_load(mapid).rename(newid)
         spinner.succeed(f'Renamed map {id} to {newid}')
 
 
