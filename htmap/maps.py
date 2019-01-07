@@ -792,18 +792,17 @@ class Map:
 
     def hold_report(self) -> str:
         """Return a string containing a table describing any held components."""
-        top = 'Component │ Hold Reason'
-        under_top = ''.join('─' if char != '│' else '┼' for char in top)
-        bottom = ''.join('─' if char != '│' else '┴' for char in top)
 
-        lines = []
-        for component, hold in self.holds.items():
-            component_text = str(component).center(len('Component'))
-            hold_text = str(hold)
+        headers = ['Component', 'Code', 'Hold Reason']
+        rows = [
+            (component, hold.code, textwrap.wrap(hold.reason, width = 60))
+            for component, hold in self.holds.items()
+        ]
 
-            lines.append(f'{component_text} │ {hold_text}')
-
-        return '\n'.join([top, under_top, *lines, bottom])
+        return utils.table(
+            headers = headers,
+            rows = rows,
+        )
 
     @property
     def memory_usage(self) -> List[int]:
