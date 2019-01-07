@@ -555,6 +555,31 @@ def remove(index):
     transplant.remove()
 
 
+@cli.group()
+def path():
+    """Get paths to various things. Mostly for debugging."""
+
+
+@path.command()
+def logs():
+    """Echo the path to the HTMap log file."""
+    click.echo(str(htmap.LOG_FILE))
+
+
+@path.command()
+@click.argument('mapid')
+def map(mapid):
+    """Echo the path to the map's directory."""
+    click.echo(str(_cli_load(mapid)._map_dir))
+
+
+@path.command()
+@click.argument('mapid')
+def events(mapid):
+    """Echo the path to the map's job event log."""
+    click.echo(str(_cli_load(mapid)._map_dir))
+
+
 def _cli_load(map_id: str) -> htmap.Map:
     with make_spinner(text = f'Loading map {map_id}...') as spinner:
         try:
