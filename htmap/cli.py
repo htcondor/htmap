@@ -396,14 +396,19 @@ def reasons(mapids, all):
 
     _check_map_ids(mapids)
 
+    reps = []
     for map_id in mapids:
         m = _cli_load(map_id)
 
         if len(m.holds) == 0:
             continue
+        name = click.style(
+            f'Map {m.map_id} ({len(m.holds)} hold{"s" if len(m.holds) > 1 else ""})',
+            bold = True,
+        )
+        reps.append(f'{name}\n{m.hold_report()}')
 
-        rep = f'Map {m.map_id} ({len(m.holds)}):' + m.hold_report() + '\n'
-        click.echo(rep)
+    click.echo('\n'.join(reps))
 
 
 @cli.command()
