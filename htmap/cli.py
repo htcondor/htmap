@@ -95,37 +95,87 @@ _HEADER_FMT = functools.partial(click.style, bold = True)
 
 @cli.command()
 @click.option(
+    '--no-state',
+    is_flag = True,
+    default = False,
+    help = 'Do not show map component states.',
+)
+@click.option(
+    '--no-meta',
+    is_flag = True,
+    default = False,
+    help = 'Do not show map metadata (memory, runtime, etc.).',
+)
+@click.option(
+    '--json',
+    is_flag = True,
+    default = False,
+    help = 'Output as human-readable JSON.',
+)
+@click.option(
+    '--jsonc',
+    is_flag = True,
+    default = False,
+    help = 'Output as compact JSON.',
+)
+@click.option(
+    '--csv',
+    is_flag = True,
+    default = False,
+    help = 'Output as CSV.',
+)
+@click.option(
     '--live',
     is_flag = True,
     default = False,
     help = 'Live reloading.',
 )
-def status(live):
+def status(no_state, no_meta, json, jsonc, csv, live):
     """Print the status of all maps."""
+    if (json, jsonc, csv, live).count(True) > 1:
+        click.echo('Error: no more than one of --json, --jsonc, --csv, or --live can be set.')
+        sys.exit(1)
 
     maps = htmap.load_maps()
     with make_spinner(text = 'Reading map component statuses...'):
         read_events(maps)
 
-    msg = _status(
-        maps,
-        header_fmt = _HEADER_FMT,
-        row_fmt = _RowFmt(maps),
+    shared_kwargs = dict(
+        include_state = not no_state,
+        include_meta = not no_meta,
     )
 
-    click.echo(msg)
-
-    while live:
-        num_lines = len(msg.splitlines())
+    if json:
+        msg = htmap.status_json(maps, **shared_kwargs)
+    elif jsonc:
+        msg = htmap.status_json(maps, **shared_kwargs, compact = True)
+    elif csv:
+        msg = htmap.status_csv(maps, **shared_kwargs)
+    else:
         msg = _status(
             maps,
+            **shared_kwargs,
             header_fmt = _HEADER_FMT,
             row_fmt = _RowFmt(maps),
         )
 
-        sys.stdout.write(f'\033[{num_lines}A\r')
-        click.echo(msg)
-        time.sleep(1)
+    click.echo(msg)
+
+    try:
+        while live:
+            num_lines = len(msg.splitlines())
+            msg = _status(
+                maps,
+                **shared_kwargs,
+                header_fmt = _HEADER_FMT,
+                row_fmt = _RowFmt(maps),
+            )
+
+            sys.stdout.write(f'\033[{num_lines}A\r')
+            click.echo(msg)
+            time.sleep(1)
+    except KeyboardInterrupt:  # bypass click's interrupt handling and let it exit quietly
+        pass
 
 
 class _RowFmt:
