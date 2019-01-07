@@ -868,10 +868,12 @@ class Map:
         logger.debug(f'released map {self.map_id}')
 
     def pause(self) -> None:
+        """Pause the map."""
         self._act(htcondor.JobAction.Suspend)
         logger.debug(f'paused map {self.map_id}')
 
     def resume(self) -> None:
+        """Resume the map from a paused state."""
         self._act(htcondor.JobAction.Continue)
         logger.debug(f'resumed map {self.map_id}')
 

@@ -217,7 +217,7 @@ def _map_fg(map) -> Optional[str]:
     help = 'Do a force-clean instead of a normal clean.',
 )
 def clean(yes, force):
-    """Remove all maps."""
+    """Remove all maps, with more options than the remove command."""
     if not yes:
         click.secho(
             'Are you sure you want to delete all of your maps permanently?'
@@ -241,19 +241,30 @@ def clean(yes, force):
         click.echo('Answer was not YES, maps have not been deleted.')
 
 
+def _multi_id_args(func):
+    apply = [
+        click.argument(
+            'ids',
+            nargs = -1,
+            callback = _read_ids_from_stdin,
+            required = False,
+        ),
+        click.option(
+            '--all',
+            is_flag = True,
+            default = False,
+            help = 'Act on all maps.'
+        ),
+    ]
+
+    for a in reversed(apply):
+        func = a(func)
+
+    return func
+
+
 @cli.command()
-@click.argument(
-    'ids',
-    nargs = -1,
-    callback = _read_ids_from_stdin,
-    required = False,
-)
-@click.option(
-    '--all',
-    is_flag = True,
-    default = False,
-    help = 'Act on all maps.'
-)
+@_multi_id_args
 def wait(ids, all):
     """Wait for maps to complete."""
     if all:
@@ -268,23 +279,12 @@ def wait(ids, all):
 
 
 @cli.command()
-@click.argument(
-    'ids',
-    nargs = -1,
-    callback = _read_ids_from_stdin,
-    required = False,
-)
+@_multi_id_args
 @click.option(
     '--force',
     is_flag = True,
     default = False,
     help = 'Do a force-remove instead of a normal remove.',
-)
-@click.option(
-    '--all',
-    is_flag = True,
-    default = False,
-    help = 'Act on all maps.'
 )
 def remove(ids, force, all):
     """Remove maps."""
@@ -304,44 +304,7 @@ def remove(ids, force, all):
 
 
 @cli.command()
-@click.argument(
-    'ids',
-    nargs = -1,
-    callback = _read_ids_from_stdin,
-    required = False,
-)
-@click.option(
-    '--all',
-    is_flag = True,
-    default = False,
-    help = 'Act on all maps.'
-)
-def release(ids, all):
-    """Release maps."""
-    if all:
-        ids = htmap.map_ids()
-
-    _check_map_ids(ids)
-
-    for map_id in ids:
-        with make_spinner(f'Releasing map {map_id} ...') as spinner:
-            _cli_load(map_id).release()
-            spinner.succeed(f'Released map {map_id}')
-
-
-@cli.command()
-@click.argument(
-    'ids',
-    nargs = -1,
-    callback = _read_ids_from_stdin,
-    required = False,
-)
-@click.option(
-    '--all',
-    is_flag = True,
-    default = False,
-    help = 'Act on all maps.'
-)
+@_multi_id_args
 def hold(ids, all):
     """Hold maps."""
     if all:
@@ -356,18 +319,67 @@ def hold(ids, all):
 
 
 @cli.command()
-@click.argument(
-    'ids',
-    nargs = -1,
-    callback = _read_ids_from_stdin,
-    required = False,
-)
-@click.option(
-    '--all',
-    is_flag = True,
-    default = False,
-    help = 'Act on all maps.'
-)
+@_multi_id_args
+def release(ids, all):
+    """Release maps."""
+    if all:
+        ids = htmap.map_ids()
+
+    _check_map_ids(ids)
+
+    for map_id in ids:
+        with make_spinner(f'Releasing map {map_id} ...') as spinner:
+            _cli_load(map_id).release()
+            spinner.succeed(f'Released map {map_id}')
+
+
+@cli.command()
+@_multi_id_args
+def pause(ids, all):
+    """Pause maps."""
+    if all:
+        ids = htmap.map_ids()
+
+    _check_map_ids(ids)
+
+    for map_id in ids:
+        with make_spinner(f'Pausing map {map_id} ...') as spinner:
+            _cli_load(map_id).pause()
+            spinner.succeed(f'Paused map {map_id}')
+
+
+@cli.command()
+@_multi_id_args
+def resume(ids, all):
+    """Resume maps."""
+    if all:
+        ids = htmap.map_ids()
+
+    _check_map_ids(ids)
+
+    for map_id in ids:
+        with make_spinner(f'Resuming map {map_id} ...') as spinner:
+            _cli_load(map_id).resume()
+            spinner.succeed(f'Resumed map {map_id}')
+
+
+@cli.command()
+@_multi_id_args
+def vacate(ids, all):
+    """Force maps to give up their claimed resources."""
+    if all:
+        ids = htmap.map_ids()
+
+    _check_map_ids(ids)
+
+    for map_id in ids:
+        with make_spinner(f'Vacating map {map_id} ...') as spinner:
+            _cli_load(map_id).vacate()
+            spinner.succeed(f'Vacated map {map_id}')
+
+
+@cli.command()
+@_multi_id_args
 def reasons(ids, all):
     """Print the hold reasons for maps."""
     if all:
