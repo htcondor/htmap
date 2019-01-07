@@ -409,7 +409,6 @@ def stderr(mapid, component):
 
 @cli.command()
 @click.argument('mapid')
-@click.argument('component', type = int)
 @click.option(
     '--limit',
     type = int,
