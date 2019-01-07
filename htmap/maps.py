@@ -286,6 +286,18 @@ class Map:
     def __repr__(self):
         return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
 
+    def __gt__(self, other):
+        return self.map_id > other.map_id
+
+    def __lt__(self, other):
+        return self.map_id < other.map_id
+
+    def __ge__(self, other):
+        return self.map_id >= other.map_id
+
+    def __le__(self, other):
+        return self.map_id <= other.map_id
+
     def __len__(self):
         """The length of a :class:`Map` is the number of components it contains."""
         return self._num_components
@@ -810,6 +822,11 @@ class Map:
         """Return the total runtime (user + system) of each component."""
         self._read_events()
         return self._runtime
+
+    @property
+    def local_data(self) -> int:
+        """Return the number of bytes stored on the local disk by the map."""
+        return utils.get_dir_size(self._map_dir)
 
     def _act(
         self,

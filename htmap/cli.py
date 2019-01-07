@@ -12,14 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Optional
 
 import logging
 import sys
 import time
 import random
+import functools
 from pathlib import Path
 
 import htmap
+from htmap.management import _status
 from htmap.utils import read_events
 
 import click
@@ -87,6 +90,9 @@ def ids():
     click.echo(_id_list())
 
 
+_HEADER_FMT = functools.partial(click.style, bold = True)
+
+
 @cli.command()
 @click.option(
     '--live',
@@ -101,67 +107,50 @@ def status(live):
     with make_spinner(text = 'Reading map component statuses...'):
         read_events(maps)
 
-    map_statuses = [htmap.MapStatus(map) for map in maps]
-    msg = _status_table(map_statuses)
+    msg = _status(
+        maps,
+        header_fmt = _HEADER_FMT,
+        row_fmt = _RowFmt(maps),
+    )
 
     click.echo(msg)
 
     while live:
         num_lines = len(msg.splitlines())
-        msg = _status_table(map_statuses)
+        msg = _status(
+            maps,
+            header_fmt = _HEADER_FMT,
+            row_fmt = _RowFmt(maps),
+        )
 
         sys.stdout.write(f'\033[{num_lines}A\r')
         click.echo(msg)
         time.sleep(1)
 
 
-HEADERS = [
-    'Map ID',
-    'HELD',
-    'IDLE',
-    'RUNNING',
-    'COMPLETED',
-    'Local Data',
-    'Max Memory',
-    'Max Runtime',
-    'Total Runtime',
-]
+class _RowFmt:
+    def __init__(self, maps):
+        self.maps = maps
+        self.idx = -1
+
+    def __call__(self, text):
+        self.idx += 1
+        return click.style(text, fg = _map_fg(self.maps[self.idx]))
 
 
-def _status_table(
-    map_statuses,
-) -> str:
-    lengths = [len(h) for h in HEADERS]
-    processed_rows = []
+def _map_fg(map) -> Optional[str]:
+    sc = map.status_counts
 
-    for ms in map_statuses:
-        processed_rows.append([str(entry) for entry in ms.tuple])
-
-    for ms in processed_rows:
-        if ms is None:
-            continue
-        lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, ms)]
-
-    header = click.style(
-        ' ' + '   '.join(h.center(l) for h, l in zip(HEADERS, lengths)) + ' ',
-        bold = True,
-    )
-
-    lines = []
-    for fields, ms in zip(processed_rows, map_statuses):
-        lines.append(
-            click.style(
-                ' ' + '   '.join(f.center(l) for f, l in zip(fields, lengths)),
-                fg = ms.color,
-            ),
-        )
-
-    output = '\n'.join((
-        header,
-        *lines,
-    ))
-
-    return output
+    if sc[htmap.ComponentStatus.HELD] > 0:
+        return 'red'
+    elif sc[htmap.ComponentStatus.COMPLETED] == len(map):
+        return 'green'
+    elif sc[htmap.ComponentStatus.RUNNING] > 0:
+        return 'cyan'
+    elif sc[htmap.ComponentStatus.IDLE] > 0:
+        return 'yellow'
+    else:
+        return None
 
 
 @cli.command()

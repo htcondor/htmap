@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterator, Iterable, Dict, Union, NamedTuple
+from typing import Tuple, Iterator, Iterable, Dict, Union, NamedTuple, Callable
 import logging
 
 from pathlib import Path
@@ -127,76 +127,33 @@ def force_clean() -> None:
     logger.debug('force-cleaned maps directory')
 
 
-class MapStatus:
-    def __init__(self, map: Map):
-        self._map = map
+def _extract_status_data(
+    map,
+    include_status = True,
+    include_metadata = True,
+) -> dict:
+    sd = {}
 
-        self._local_data = None
-        self._prev_status_counts = self.status_counts
+    sd['Map ID'] = map.map_id
 
-    @property
-    def map_id(self) -> str:
-        return self._map.map_id
+    if include_status:
+        sc = map.status_counts
 
-    @property
-    def status_counts(self):
-        return self._map.status_counts
+        sd.update({str(k): sc[k] for k in ComponentStatus.display_statuses()})
 
-    @property
-    def local_data(self) -> str:
-        sc = self.status_counts
-        if self._prev_status_counts != sc or self._local_data is None:
-            self._local_data = utils.get_dir_size_as_str(mapping.map_dir_path(self._map.map_id))
-            self._prev_status_counts = sc
+    if include_metadata:
+        sd['Local Data'] = utils.num_bytes_to_str(map.local_data)
+        sd['Max Memory'] = utils.num_bytes_to_str(max(map.memory_usage) * 1024 * 1024)
+        sd['Max Runtime'] = str(max(map.runtime))
+        sd['Total Runtime'] = str(sum(map.runtime, datetime.timedelta()))
 
-        return self._local_data
-
-    @property
-    def max_memory(self) -> str:
-        return utils.num_bytes_to_str(max(self._map.memory_usage) * 1024 * 1024)
-
-    @property
-    def max_runtime(self) -> str:
-        return str(max(self._map.runtime))
-
-    @property
-    def total_runtime(self):
-        return str(sum(self._map.runtime, datetime.timedelta()))
-
-    @property
-    def tuple(self):
-        sc = self.status_counts
-        return (
-            self.map_id,
-            sc[ComponentStatus.HELD],
-            sc[ComponentStatus.IDLE],
-            sc[ComponentStatus.RUNNING],
-            sc[ComponentStatus.COMPLETED],
-            self.local_data,
-            self.max_memory,
-            self.max_runtime,
-            self.total_runtime,
-        )
-
-    @property
-    def color(self):
-        sc = self.status_counts
-        if sc[ComponentStatus.HELD] > 0:
-            return 'red'
-        elif sc[ComponentStatus.COMPLETED] == len(self._map):
-            return 'green'
-        elif sc[ComponentStatus.RUNNING] > 0:
-            return 'cyan'
-        elif sc[ComponentStatus.IDLE] > 0:
-            return 'yellow'
-
-        return None
+    return sd
 
 
 def status(
     maps: Iterable[Map] = None,
-    state: bool = True,
-    meta: bool = True,
+    include_state: bool = True,
+    include_meta: bool = True,
 ) -> str:
     """
     Return a formatted table containing information on the given maps.
@@ -206,9 +163,9 @@ def status(
     maps
         The maps to display information on.
         If ``None``, displays information on all existing maps.
-    state
+    include_state
         If ``True``, include information on the state of the map's components.
-    meta
+    include_meta
         If ``True``, include information about the map's memory usage, disk usage, and runtime.
 
     Returns
@@ -216,36 +173,42 @@ def status(
     table :
         A text table containing information on the given maps.
     """
+    return _status(
+        maps,
+        include_state = include_state,
+        include_meta = include_meta,
+    )
+
+
+def _status(
+    maps: Iterable[Map] = None,
+    include_state: bool = True,
+    include_meta: bool = True,
+    header_fmt: Callable[[str], str] = None,
+    row_fmt: Callable[[str], str] = None,
+) -> str:
     if maps is None:
         maps = load_maps()
 
-    maps = sorted(maps, key = lambda m: m.map_id)
+    maps = sorted(maps)
 
     headers = ['Map ID']
-    if state:
+    if include_state:
         utils.read_events(maps)
         headers += [str(d) for d in ComponentStatus.display_statuses()]
-    if meta:
+    if include_meta:
         headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
 
-    rows = []
-    for map in maps:
-        row = [map.map_id]
-        if state:
-            row.extend(str(map.status_counts[d]) for d in ComponentStatus.display_statuses())
-        if meta:
-            row.extend([
-                utils.get_dir_size_as_str(mapping.map_dir_path(map.map_id)),
-                utils.num_bytes_to_str(max(map.memory_usage) * 1024 * 1024),  # memory usage is measured in MB
-                str(max(map.runtime)),
-                str(sum(map.runtime, datetime.timedelta())),
-            ])
-
-        rows.append(row)
+    rows = [
+        _extract_status_data(map, include_status = include_state, include_metadata = include_meta)
+        for map in maps
+    ]
 
     return utils.table(
         headers = headers,
         rows = rows,
+        header_fmt = header_fmt,
+        row_fmt = row_fmt,
     )
 
 

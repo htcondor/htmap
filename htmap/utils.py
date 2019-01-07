@@ -119,6 +119,8 @@ def table(
     headers: Iterable[str],
     rows: Iterable[Iterable[Any]],
     fill: str = '',
+    header_fmt: Callable[[str], str] = None,
+    row_fmt: Callable[[str], str] = None,
 ) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
@@ -143,6 +145,11 @@ def table(
     table :
         A string containing the table.
     """
+    if header_fmt is None:
+        header_fmt = lambda _: _
+    if row_fmt is None:
+        row_fmt = lambda _: _
+
     lengths = [len(h) for h in headers]
     processed_rows = []
 
@@ -159,22 +166,18 @@ def table(
             continue
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
 
-    header = ' ' + ' │ '.join(h.center(l) for h, l in zip(headers, lengths)) + ' '
-    bar = ''.join('─' if char != '│' else '┼' for char in header)
-    bottom_bar = bar.replace('┼', '┴')
+    header = header_fmt('  '.join(h.center(l) for h, l in zip(headers, lengths)))
 
     lines = []
     for row in processed_rows:
         if row is None:
-            lines.append(bar)
+            lines.append('')
         else:
-            lines.append(' ' + ' │ '.join(f.center(l) for f, l in zip(row, lengths)))
+            lines.append(row_fmt('  '.join(f.center(l) for f, l in zip(row, lengths))))
 
     output = '\n'.join((
         header,
-        bar,
         *lines,
-        bottom_bar,
     ))
 
     return rstr(output)
