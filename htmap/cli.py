@@ -481,9 +481,9 @@ def rerun(mapid, components, incomplete, all):
 @click.argument('newid')
 def rename(mapid, newid):
     """Rename a map."""
-    with make_spinner(f'Renaming map {id} to {newid} ...') as spinner:
+    with make_spinner(f'Renaming map {mapid} to {newid} ...') as spinner:
         _cli_load(mapid).rename(newid)
-        spinner.succeed(f'Renamed map {id} to {newid}')
+        spinner.succeed(f'Renamed map {mapid} to {newid}')
 
 
 @cli.command()
