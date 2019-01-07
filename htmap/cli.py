@@ -136,7 +136,7 @@ def status(no_state, no_meta, json, jsonc, csv, live):
         click.echo('Error: no more than one of --json, --jsonc, --csv, or --live can be set.')
         sys.exit(1)
 
-    maps = htmap.load_maps()
+    maps = sorted(htmap.load_maps())
     with make_spinner(text = 'Reading map component statuses...'):
         read_events(maps)
 

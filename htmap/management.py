@@ -174,7 +174,6 @@ def status(
         A text table containing information on the given maps.
     """
     return _status(
-        maps,
         include_state = include_state,
         include_meta = include_meta,
     )
@@ -188,9 +187,7 @@ def _status(
     row_fmt: Callable[[str], str] = None,
 ) -> str:
     if maps is None:
-        maps = load_maps()
-
-    maps = sorted(maps)
+        maps = sorted(load_maps())
 
     headers = ['Map ID']
     if include_state:
