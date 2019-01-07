@@ -254,7 +254,7 @@ def clean(yes, force):
     default = False,
     help = 'Act on all maps.'
 )
-def wait(ids):
+def wait(ids, all):
     """Wait for maps to complete."""
     if all:
         ids = htmap.map_ids()
@@ -262,7 +262,9 @@ def wait(ids):
     _check_map_ids(ids)
 
     for map_id in ids:
-        _cli_load(map_id).wait(show_progress_bar = True)
+        m = _cli_load(map_id)
+        if not m.is_done:
+            m.wait(show_progress_bar = True)
 
 
 @cli.command()
@@ -340,7 +342,7 @@ def release(ids, all):
     default = False,
     help = 'Act on all maps.'
 )
-def hold(ids):
+def hold(ids, all):
     """Hold maps."""
     if all:
         ids = htmap.map_ids()
@@ -366,7 +368,7 @@ def hold(ids):
     default = False,
     help = 'Act on all maps.'
 )
-def reasons(ids):
+def reasons(ids, all):
     """Print the hold reasons for maps."""
     if all:
         ids = htmap.map_ids()
