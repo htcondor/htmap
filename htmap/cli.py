@@ -250,6 +250,7 @@ def clean(yes, force):
 )
 def wait(ids):
     """Wait for maps to complete."""
+    _check_map_ids(ids)
     for map_id in ids:
         _cli_load(map_id).wait(show_progress_bar = True)
 
@@ -269,6 +270,7 @@ def wait(ids):
 )
 def remove(ids, force):
     """Remove maps."""
+    _check_map_ids(ids)
     for map_id in ids:
         with make_spinner(f'Removing map {map_id} ...') as spinner:
             if not force:
@@ -288,6 +290,7 @@ def remove(ids, force):
 )
 def release(ids):
     """Release maps."""
+    _check_map_ids(ids)
     for map_id in ids:
         with make_spinner(f'Releasing map {map_id} ...') as spinner:
             _cli_load(map_id).release()
@@ -303,6 +306,7 @@ def release(ids):
 )
 def hold(ids):
     """Hold maps."""
+    _check_map_ids(ids)
     for map_id in ids:
         with make_spinner(f'Holding map {map_id} ...') as spinner:
             _cli_load(map_id).hold()
@@ -318,6 +322,7 @@ def hold(ids):
 )
 def reasons(ids):
     """Print the hold reasons for maps."""
+    _check_map_ids(ids)
     for map_id in ids:
         click.echo(_cli_load(map_id).hold_report())
 
@@ -407,10 +412,15 @@ def _cli_load(map_id: str) -> htmap.Map:
             return htmap.load(map_id)
         except Exception as e:
             spinner.fail(f'Error: could not find a map with map_id {map_id}')
-            click.echo(f'Your map ids are:')
-            click.echo(_id_list())
+            click.echo(f'Your map ids are:', err = True)
+            click.echo(_id_list(), err = True)
             sys.exit(1)
 
 
 def _id_list() -> str:
     return '\n'.join(htmap.map_ids())
+
+
+def _check_map_ids(map_ids):
+    if len(map_ids) == 0:
+        click.echo('Warning: no map ids were passed', err = True)
