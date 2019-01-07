@@ -121,6 +121,7 @@ def table(
     fill: str = '',
     header_fmt: Callable[[str], str] = None,
     row_fmt: Callable[[str], str] = None,
+    first_col_left = True,
 ) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
@@ -139,6 +140,14 @@ def table(
         which are filled using the ```fill`` value.
     fill
         The string to print in place of a missing value in a mapping-type row.
+    header_fmt
+        A function to be called on the header string.
+        The return value is what will go in the output.
+    row_fmt
+        A function to be called on each row string.
+        The return value is what will go in the output.
+    first_col_left
+        If ``True``, the first column will be left-aligned instead of centered.
 
     Returns
     -------
@@ -151,6 +160,11 @@ def table(
         row_fmt = lambda _: _
 
     lengths = [len(h) for h in headers]
+
+    align_methods = ['center'] * len(headers)
+    if first_col_left:
+        align_methods[0] = 'ljust'
+
     processed_rows = []
 
     for row in rows:
@@ -166,14 +180,14 @@ def table(
             continue
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
 
-    header = header_fmt('  '.join(h.center(l) for h, l in zip(headers, lengths)))
+    header = header_fmt('  '.join(getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)))
 
     lines = []
     for row in processed_rows:
         if row is None:
             lines.append('')
         else:
-            lines.append(row_fmt('  '.join(f.center(l) for f, l in zip(row, lengths))))
+            lines.append(row_fmt('  '.join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods))))
 
     output = '\n'.join((
         header,
