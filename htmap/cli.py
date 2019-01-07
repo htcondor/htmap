@@ -19,6 +19,7 @@ import sys
 import time
 import random
 import functools
+import itertools
 from pathlib import Path
 
 import htmap
@@ -415,10 +416,14 @@ def stderr(mapid, component):
     default = 0,
     help = "The maximum number of error reports to show (0 for no limit)."
 )
-def errors(mapid):
+def errors(mapid, limit):
     """Look at detailed error reports for a map."""
     m = _cli_load(mapid)
-    for report in m.error_reports():
+    reports = m.error_reports()
+    if limit > 0:
+        itertools.islice(reports, limit)
+
+    for report in reports:
         click.echo(report)
 
 
