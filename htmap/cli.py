@@ -94,6 +94,33 @@ def ids():
 _HEADER_FMT = functools.partial(click.style, bold = True)
 
 
+class _RowFmt:
+    """Stateful callback function for row formatting in status table."""
+
+    def __init__(self, maps):
+        self.maps = maps
+        self.idx = -1
+
+    def __call__(self, text):
+        self.idx += 1
+        return click.style(text, fg = _map_fg(self.maps[self.idx]))
+
+
+def _map_fg(map) -> Optional[str]:
+    sc = map.status_counts
+
+    if sc[htmap.ComponentStatus.HELD] > 0:
+        return 'red'
+    elif sc[htmap.ComponentStatus.COMPLETED] == len(map):
+        return 'green'
+    elif sc[htmap.ComponentStatus.RUNNING] > 0:
+        return 'cyan'
+    elif sc[htmap.ComponentStatus.IDLE] > 0:
+        return 'yellow'
+    else:
+        return None
+
+
 @cli.command()
 @click.option(
     '--no-state',
@@ -131,7 +158,13 @@ _HEADER_FMT = functools.partial(click.style, bold = True)
     default = False,
     help = 'Live reloading.',
 )
-def status(no_state, no_meta, json, jsonc, csv, live):
+@click.option(
+    '--no-color',
+    is_flag = True,
+    default = False,
+    help = 'Disable color.'
+)
+def status(no_state, no_meta, json, jsonc, csv, live, no_color):
     """Print the status of all maps."""
     if (json, jsonc, csv, live).count(True) > 1:
         click.echo('Error: no more than one of --json, --jsonc, --csv, or --live can be set.')
@@ -156,8 +189,8 @@ def status(no_state, no_meta, json, jsonc, csv, live):
         msg = _status(
             maps,
             **shared_kwargs,
-            header_fmt = _HEADER_FMT,
-            row_fmt = _RowFmt(maps),
+            header_fmt = _HEADER_FMT if not no_color else None,
+            row_fmt = _RowFmt(maps) if not no_color else None,
         )
 
     click.echo(msg)
@@ -168,8 +201,8 @@ def status(no_state, no_meta, json, jsonc, csv, live):
             msg = _status(
                 maps,
                 **shared_kwargs,
-                header_fmt = _HEADER_FMT,
-                row_fmt = _RowFmt(maps),
+                header_fmt = _HEADER_FMT if not no_color else None,
+                row_fmt = _RowFmt(maps) if not no_color else None,  # don't cache, must pass fresh each time
             )
 
             sys.stdout.write(f'\033[{num_lines}A\r')
@@ -177,31 +210,6 @@ def status(no_state, no_meta, json, jsonc, csv, live):
             time.sleep(1)
     except KeyboardInterrupt:  # bypass click's interrupt handling and let it exit quietly
         pass
-
-
-class _RowFmt:
-    def __init__(self, maps):
-        self.maps = maps
-        self.idx = -1
-
-    def __call__(self, text):
-        self.idx += 1
-        return click.style(text, fg = _map_fg(self.maps[self.idx]))
-
-
-def _map_fg(map) -> Optional[str]:
-    sc = map.status_counts
-
-    if sc[htmap.ComponentStatus.HELD] > 0:
-        return 'red'
-    elif sc[htmap.ComponentStatus.COMPLETED] == len(map):
-        return 'green'
-    elif sc[htmap.ComponentStatus.RUNNING] > 0:
-        return 'cyan'
-    elif sc[htmap.ComponentStatus.IDLE] > 0:
-        return 'yellow'
-    else:
-        return None
 
 
 @cli.command()
@@ -269,7 +277,7 @@ def _multi_id_args(func):
 def wait(mapids, all):
     """Wait for maps to complete."""
     if all:
-        ids = htmap.map_ids()
+        mapids = htmap.map_ids()
 
     _check_map_ids(mapids)
 
@@ -290,7 +298,7 @@ def wait(mapids, all):
 def remove(mapids, force, all):
     """Remove maps."""
     if all:
-        ids = htmap.map_ids()
+        mapids = htmap.map_ids()
 
     _check_map_ids(mapids)
 
@@ -309,7 +317,7 @@ def remove(mapids, force, all):
 def hold(mapids, all):
     """Hold maps."""
     if all:
-        ids = htmap.map_ids()
+        mapids = htmap.map_ids()
 
     _check_map_ids(mapids)
 
@@ -324,7 +332,7 @@ def hold(mapids, all):
 def release(mapids, all):
     """Release maps."""
     if all:
-        ids = htmap.map_ids()
+        mapids = htmap.map_ids()
 
     _check_map_ids(mapids)
 
@@ -339,7 +347,7 @@ def release(mapids, all):
 def pause(mapids, all):
     """Pause maps."""
     if all:
-        ids = htmap.map_ids()
+        mapids = htmap.map_ids()
 
     _check_map_ids(mapids)
 
@@ -354,7 +362,7 @@ def pause(mapids, all):
 def resume(mapids, all):
     """Resume maps."""
     if all:
-        ids = htmap.map_ids()
+        mapids = htmap.map_ids()
 
     _check_map_ids(mapids)
 
@@ -369,7 +377,7 @@ def resume(mapids, all):
 def vacate(mapids, all):
     """Force maps to give up their claimed resources."""
     if all:
-        ids = htmap.map_ids()
+        mapids = htmap.map_ids()
 
     _check_map_ids(mapids)
 
@@ -384,7 +392,7 @@ def vacate(mapids, all):
 def reasons(mapids, all):
     """Print the hold reasons for maps."""
     if all:
-        ids = htmap.map_ids()
+        mapids = htmap.map_ids()
 
     _check_map_ids(mapids)
 
@@ -454,11 +462,18 @@ def rerun(mapid, components, incomplete, all):
     m = _cli_load(mapid)
 
     if components:
-        m.rerun_components((int(c) for c in components.split()))
+        components = [int(c) for c in components.split()]
+        with make_spinner(f'Rerunning components {components} of map {mapid} ...') as spinner:
+            m.rerun_components(components)
+            spinner.succeed(f'Reran components {components} of map {mapid}')
     elif incomplete:
-        m.rerun_incomplete()
+        with make_spinner(f'Rerunning incomplete components of map {mapid} ...') as spinner:
+            m.rerun_incomplete()
+            spinner.succeed(f'Reran incomplete components {components} of map {mapid}')
     elif all:
-        m.rerun()
+        with make_spinner(f'Rerunning map {mapid} ...') as spinner:
+            m.rerun()
+            spinner.succeed(f'Reran map {mapid}')
 
 
 @cli.command()
