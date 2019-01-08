@@ -732,19 +732,19 @@ class Map:
                 continue
 
             if event.type is htcondor.JobEventType.SUBMIT:
-                self._clusterproc_to_component[(event.cluster, event.proc)] = int(event.LogNotes)
+                self._clusterproc_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
 
             # this lookup is safe because the SUBMIT event always comes first
             component = self._clusterproc_to_component[(event.cluster, event.proc)]
 
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                self._memory_usage[component] = int(event.MemoryUsage)
+                self._memory_usage[component] = max(int(event.get('MemoryUsage', 0)), self._memory_usage[component])
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
-                self._runtime[component] = parse_runtime(event.RunRemoteUsage)
+                self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
             elif event.type is htcondor.JobEventType.JOB_RELEASED:
                 self._holds.pop(component, None)
             elif event.type is htcondor.JobEventType.JOB_HELD:
-                h = Hold(code = event.HoldReasonCode, reason = event.HoldReason.strip())
+                h = Hold(code = int(event['HoldReasonCode']), reason = event['HoldReason'].strip())
                 self._holds[component] = h
 
             new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
