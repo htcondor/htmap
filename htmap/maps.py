@@ -286,6 +286,18 @@ class Map:
     def __repr__(self):
         return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
 
+    def __gt__(self, other):
+        return self.map_id > other.map_id
+
+    def __lt__(self, other):
+        return self.map_id < other.map_id
+
+    def __ge__(self, other):
+        return self.map_id >= other.map_id
+
+    def __le__(self, other):
+        return self.map_id <= other.map_id
+
     def __len__(self):
         """The length of a :class:`Map` is the number of components it contains."""
         return self._num_components
@@ -738,13 +750,18 @@ class Map:
             component = self._clusterproc_to_component[(event.cluster, event.proc)]
 
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                self._memory_usage[component] = max(int(event.get('MemoryUsage', 0)), self._memory_usage[component])
+                old = self._memory_usage[component]
+                new = int(event.get('MemoryUsage', 0))
+                self._memory_usage[component] = max(old, new)
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
                 self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
             elif event.type is htcondor.JobEventType.JOB_RELEASED:
                 self._holds.pop(component, None)
             elif event.type is htcondor.JobEventType.JOB_HELD:
-                h = Hold(code = int(event['HoldReasonCode']), reason = event['HoldReason'].strip())
+                h = Hold(
+                    code = int(event['HoldReasonCode']),
+                    reason = event['HoldReason'].strip(),
+                )
                 self._holds[component] = h
 
             new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
@@ -780,18 +797,20 @@ class Map:
 
     def hold_report(self) -> str:
         """Return a string containing a table describing any held components."""
-        top = 'Component │ Hold Reason'
-        under_top = ''.join('─' if char != '│' else '┼' for char in top)
-        bottom = ''.join('─' if char != '│' else '┴' for char in top)
+        headers = ['Component', 'Code', 'Hold Reason']
+        rows = [
+            (component, hold.code, hold.reason)
+            for component, hold in self.holds.items()
+        ]
 
-        lines = []
-        for component, hold in self.holds.items():
-            component_text = str(component).center(len('Component'))
-            hold_text = str(hold)
-
-            lines.append(f'{component_text} │ {hold_text}')
-
-        return '\n'.join([top, under_top, *lines, bottom])
+        return utils.table(
+            headers = headers,
+            rows = rows,
+            alignment = {
+                'Component': 'ljust',
+                'Hold Reason': 'ljust',
+            }
+        )
 
     @property
     def memory_usage(self) -> List[int]:
@@ -810,6 +829,11 @@ class Map:
         """Return the total runtime (user + system) of each component."""
         self._read_events()
         return self._runtime
+
+    @property
+    def local_data(self) -> int:
+        """Return the number of bytes stored on the local disk by the map."""
+        return utils.get_dir_size(self._map_dir)
 
     def _act(
         self,
@@ -851,10 +875,12 @@ class Map:
         logger.debug(f'released map {self.map_id}')
 
     def pause(self) -> None:
+        """Pause the map."""
         self._act(htcondor.JobAction.Suspend)
         logger.debug(f'paused map {self.map_id}')
 
     def resume(self) -> None:
+        """Resume the map from a paused state."""
         self._act(htcondor.JobAction.Continue)
         logger.debug(f'resumed map {self.map_id}')
 
@@ -972,9 +998,9 @@ class Map:
 
     def rerun_incomplete(self):
         """Rerun any incomplete parts of the map from scratch."""
-        self._rerun(components = self._missing_components)
+        self.rerun_components(components = self._missing_components)
 
-    def _rerun(self, components: Iterable[int]):
+    def rerun_components(self, components: Iterable[int]):
         component_set = set(components)
         itemdata = htio.load_itemdata(self._map_dir)
         new_itemdata = [item for item in itemdata if int(item['component']) in component_set]

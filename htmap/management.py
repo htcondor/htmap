@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterator, Iterable, Dict, Union, NamedTuple
+from typing import Tuple, Iterator, Iterable, Dict, Union, NamedTuple, Callable
 import logging
 
 from pathlib import Path
@@ -127,10 +127,33 @@ def force_clean() -> None:
     logger.debug('force-cleaned maps directory')
 
 
+def _extract_status_data(
+    map,
+    include_state = True,
+    include_meta = True,
+) -> dict:
+    sd = {}
+
+    sd['Map ID'] = map.map_id
+
+    if include_state:
+        sc = map.status_counts
+
+        sd.update({str(k): sc[k] for k in ComponentStatus.display_statuses()})
+
+    if include_meta:
+        sd['Local Data'] = utils.num_bytes_to_str(map.local_data)
+        sd['Max Memory'] = utils.num_bytes_to_str(max(map.memory_usage) * 1024 * 1024)
+        sd['Max Runtime'] = str(max(map.runtime))
+        sd['Total Runtime'] = str(sum(map.runtime, datetime.timedelta()))
+
+    return sd
+
+
 def status(
     maps: Iterable[Map] = None,
-    state: bool = True,
-    meta: bool = True,
+    include_state: bool = True,
+    include_meta: bool = True,
 ) -> str:
     """
     Return a formatted table containing information on the given maps.
@@ -140,9 +163,9 @@ def status(
     maps
         The maps to display information on.
         If ``None``, displays information on all existing maps.
-    state
+    include_state
         If ``True``, include information on the state of the map's components.
-    meta
+    include_meta
         If ``True``, include information about the map's memory usage, disk usage, and runtime.
 
     Returns
@@ -150,43 +173,47 @@ def status(
     table :
         A text table containing information on the given maps.
     """
-    if maps is None:
-        maps = load_maps()
+    return _status(
+        include_state = include_state,
+        include_meta = include_meta,
+    )
 
-    maps = sorted(maps, key = lambda m: m.map_id)
+
+def _status(
+    maps: Iterable[Map] = None,
+    include_state: bool = True,
+    include_meta: bool = True,
+    header_fmt: Callable[[str], str] = None,
+    row_fmt: Callable[[str], str] = None,
+) -> str:
+    if maps is None:
+        maps = sorted(load_maps())
 
     headers = ['Map ID']
-    if state:
+    if include_state:
         utils.read_events(maps)
         headers += [str(d) for d in ComponentStatus.display_statuses()]
-    if meta:
+    if include_meta:
         headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
 
-    rows = []
-    for map in maps:
-        row = [map.map_id]
-        if state:
-            row.extend(str(map.status_counts[d]) for d in ComponentStatus.display_statuses())
-        if meta:
-            row.extend([
-                utils.get_dir_size_as_str(mapping.map_dir_path(map.map_id)),
-                utils.num_bytes_to_str(max(map.memory_usage) * 1024 * 1024),  # memory usage is measured in MB
-                str(max(map.runtime)),
-                str(sum(map.runtime, datetime.timedelta())),
-            ])
-
-        rows.append(row)
+    rows = [
+        _extract_status_data(map, include_state = include_state, include_meta = include_meta)
+        for map in maps
+    ]
 
     return utils.table(
         headers = headers,
         rows = rows,
+        header_fmt = header_fmt,
+        row_fmt = row_fmt,
+        alignment = {'Map ID': 'ljust'},
     )
 
 
 def status_json(
     maps: Iterable[Map] = None,
-    state: bool = True,
-    meta: bool = True,
+    include_state: bool = True,
+    include_meta: bool = True,
     compact: bool = False,
 ) -> str:
     """
@@ -200,9 +227,9 @@ def status_json(
     maps
         The maps to display information on.
         If ``None``, displays information on all existing maps.
-    state
+    include_state
         If ``True``, include information on the state of the map's components.
-    meta
+    include_meta
         If ``True``, include information about the map's memory usage, disk usage, and runtime.
     compact
         If ``True``, the JSON will be formatted in the most compact possible representation.
@@ -217,18 +244,18 @@ def status_json(
 
     maps = sorted(maps, key = lambda m: m.map_id)
 
-    if state:
+    if include_state:
         utils.read_events(maps)
 
     j = {}
     for map in maps:
         d: Dict[str, Union[dict, str, int, float]] = {'map_id': map.map_id}
-        if state:
+        if include_state:
             status_to_count = {}
             for status in ComponentStatus.display_statuses():
                 status_to_count[status.value.lower()] = map.status_counts[status]
             d['component_status_counts'] = status_to_count
-        if meta:
+        if include_meta:
             d['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
             d['max_memory_usage'] = max(map.memory_usage) * 1024 * 1024
             d['max_runtime'] = max(map.runtime).total_seconds()
@@ -238,7 +265,7 @@ def status_json(
 
     if compact:
         separators = (',', ':')
-        indent = 0
+        indent = None
     else:
         separators = (', ', ': ')
         indent = 4
@@ -248,8 +275,8 @@ def status_json(
 
 def status_csv(
     maps: Iterable[Map] = None,
-    state: bool = True,
-    meta: bool = True,
+    include_state: bool = True,
+    include_meta: bool = True,
 ) -> str:
     """
     Return a CSV-formatted string containing information on the given maps.
@@ -262,9 +289,9 @@ def status_csv(
     maps
         The maps to display information on.
         If ``None``, displays information on all existing maps.
-    state
+    include_state
         If ``True``, include information on the state of the map's components.
-    meta
+    include_meta
         If ``True``, include information about the map's memory usage, disk usage, and runtime.
 
     Returns
@@ -277,16 +304,16 @@ def status_csv(
 
     maps = sorted(maps, key = lambda m: m.map_id)
 
-    if state:
+    if include_state:
         utils.read_events(maps)
 
     rows = []
     for map in maps:
         row: Dict[str, Union[str, int, float]] = {'map_id': map.map_id}
-        if state:
+        if include_state:
             for status in ComponentStatus.display_statuses():
                 row[status.value.lower()] = map.status_counts[status]
-        if meta:
+        if include_meta:
             row['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
             row['max_memory_usage'] = max(map.memory_usage) * 1024 * 1024
             row['max_runtime'] = max(map.runtime).total_seconds()
