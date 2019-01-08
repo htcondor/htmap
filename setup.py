@@ -67,7 +67,7 @@ setup(
         htmap=htmap.cli:cli
     ''',
     install_requires = [
-        'htcondor >= 8.7.10',
+        'htcondor >= 8.8.0',
         'cloudpickle',
         'toml',
         'tqdm',
