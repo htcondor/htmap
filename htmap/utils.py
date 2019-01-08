@@ -175,7 +175,7 @@ def table(
     for row in processed_rows:
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
 
-    header = header_fmt('  '.join(getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)))
+    header = header_fmt('  '.join(getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)).rstrip())
 
     lines = (
         row_fmt('  '.join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods)))
