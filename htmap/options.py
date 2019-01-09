@@ -170,7 +170,6 @@ def create_submit_object_and_itemdata(
     )
 
     itemdata = [{'component': str(idx)} for idx in range(num_components)]
-    descriptors['transfer_output_files'] = '$(component).out'
 
     input_files = descriptors.get('transfer_input_files', [])
     input_files += [
@@ -192,11 +191,6 @@ def create_submit_object_and_itemdata(
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
     descriptors['transfer_input_files'] = ','.join(input_files)
-
-    output_remaps = [
-        f'$(component).out={(map_dir / "outputs" / "$(component).out").as_posix()}',
-    ]
-    descriptors['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
@@ -244,6 +238,8 @@ def get_base_descriptors(
         'stdout': (map_dir / 'job_logs' / '$(component).stdout').as_posix(),
         'stderr': (map_dir / 'job_logs' / '$(component).stderr').as_posix(),
         'should_transfer_files': 'YES',
+        'transfer_output_files': 'htmap_transfer/',
+        'transfer_output_remaps': f'"$(component).out={(map_dir / "outputs" / "$(component).out").as_posix()}"',
         '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }

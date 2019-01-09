@@ -14,16 +14,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import functools
 import sys
 import socket
 import datetime
 import os
 import gzip
+import signal
 import textwrap
 import traceback
 import subprocess
 from pathlib import Path
+
+TRANSFER_DIR = Path('htmap_transfer').absolute()
 
 
 # import cloudpickle goes in the functions that need it directly
@@ -118,13 +121,13 @@ def pip_freeze() -> str:
 
 
 def get_working_dir_contents():
-    return [str(p) for p in Path.cwd().iterdir()]
+    return list(Path.cwd().iterdir())
 
 
 def print_working_dir_contents(contents):
     print('Working directory contents:')
     for path in contents:
-        print('  ' + path)
+        print('  ' + str(path))
 
 
 def print_run_info(component, func, args, kwargs):
@@ -147,11 +150,11 @@ def load_object(path):
 
 
 def load_func():
-    return load_object('func')
+    return load_object(Path('func'))
 
 
 def load_args_and_kwargs(component):
-    return load_object('{}.in'.format(component))
+    return load_object(Path('{}.in'.format(component)))
 
 
 def save_object(obj, path):
@@ -181,13 +184,32 @@ def build_frames(tb):
         yield summ
 
 
+def handle_evict(signum, frame, *, exclude):
+    exclude = set(exclude)
+    print('boom')
+    for path in Path.cwd().iterdir():
+        if path not in exclude and 'condor' not in path:
+            print(path)
+            path.rename(TRANSFER_DIR / path.name)
+
+
 def main(component):
     node_info = get_node_info()
     print_node_info(node_info)
     print()
+
     contents = get_working_dir_contents()
+    signal.signal(
+        signal.SIGTERM,
+        functools.partial(
+            handle_evict,
+            exclude = contents,
+        )
+    )
+    TRANSFER_DIR.mkdir(exist_ok = True)
     print_working_dir_contents(contents)
     print()
+
     try:
         python_info = get_python_info()
         print_python_info(python_info)
