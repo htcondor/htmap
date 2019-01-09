@@ -164,7 +164,7 @@ def save_object(obj, path):
 
 
 def save_result(component, result):
-    save_object(result, '{}.out'.format(component))
+    save_object(result, TRANSFER_DIR / '{}.out'.format(component))
 
 
 def build_frames(tb):
