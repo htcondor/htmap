@@ -19,6 +19,7 @@ from typing import Tuple as _Tuple
 import logging as _logging
 import logging.handlers as _handlers
 from pathlib import Path as _Path
+import shutil as _shutil
 
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 
@@ -35,6 +36,12 @@ if not _htmap_dir.exists():
         _logger.debug(f'created HTMap dir at {_htmap_dir}')
     except PermissionError as e:
         raise PermissionError(f'the HTMap directory ({_htmap_dir}) needs to be writable') from e
+
+_removed_maps = _htmap_dir / '.removed_maps'
+_removed_maps.mkdir(exist_ok = True)
+for _removed_map in _removed_maps.iterdir():
+    _shutil.rmtree(str(_removed_map.absolute()))
+    _logger.debug(f'found a removed map directory ({_removed_map}) during startup and deleted it')
 
 LOG_FILE = _Path(settings['HTMAP_DIR']) / 'htmap.log'
 # SET UP LOG FILE

@@ -19,6 +19,7 @@ import logging
 import datetime
 import shutil
 import time
+import uuid
 import textwrap
 import functools
 import inspect
@@ -341,19 +342,6 @@ class Map:
     def _output_file_paths(self):
         """The paths to the output files."""
         yield from (self._output_file_path(idx) for idx in self.component_indices)
-
-    def _remove_from_queue(self) -> classad.ClassAd:
-        return self._act(htcondor.JobAction.Remove)
-
-    def _rm_map_dir(self) -> None:
-        shutil.rmtree(str(self._map_dir.absolute()))
-        logger.debug(f'removed map directory for map {self.map_id}')
-
-    def _clean_outputs_dir(self) -> None:
-        def update_status(path: Path) -> None:
-            self.component_statuses[int(path.stem)] = ComponentStatus.REMOVED
-
-        utils.clean_dir(self._outputs_dir, on_file = update_status)
 
     @property
     def _missing_components(self) -> List[int]:
@@ -852,17 +840,40 @@ class Map:
         """
         Permanently remove the map and delete all associated input, output, and metadata files.
         """
+        print('called remove')
+        print(self._events)
         del self._events  # todo: this is a workaround for the file object not being exposed
         gc.collect()
 
         self._remove_from_queue()
         self._rm_map_dir()
         self._is_removed = True
-        try:
-            MAPS.pop(self.map_id)
-        except KeyError:  # may already be gone depending on when GC runs
-            pass
+        MAPS.pop(self.map_id, None)
         logger.info(f'removed map {self.map_id}')
+
+    def _remove_from_queue(self) -> classad.ClassAd:
+        return self._act(htcondor.JobAction.Remove)
+
+    def _rm_map_dir(self) -> None:
+        test = self._map_dir / 'test'
+        test.touch()
+        # tmp = Path(settings['HTMAP_DIR']) / '.removed_maps' / str(uuid.uuid4())
+        import tempfile
+        # tmp = Path(tempfile.gettempdir())
+        tmp = self._map_dir.parent / str(uuid.uuid4())
+        # tmp.mkdir(parents = True, exist_ok = True)
+        # test.rename(tmp / 'test')
+        # self._map_dir.rename(tmp)
+        import subprocess
+        subprocess.run(['cmd.exe', '/c', 'move', str(self._map_dir), str(tmp)])
+        shutil.rmtree(str(tmp.absolute()))
+        logger.debug(f'removed map directory for map {self.map_id}')
+
+    def _clean_outputs_dir(self) -> None:
+        def update_status(path: Path) -> None:
+            self.component_statuses[int(path.stem)] = ComponentStatus.REMOVED
+
+        utils.clean_dir(self._outputs_dir, on_file = update_status)
 
     def hold(self) -> None:
         """Temporarily remove the map from the queue, until it is released."""
