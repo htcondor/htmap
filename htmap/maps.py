@@ -753,9 +753,10 @@ class Map:
             component = self._clusterproc_to_component[(event.cluster, event.proc)]
 
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                old = self._memory_usage[component]
-                new = int(event.get('MemoryUsage', 0))
-                self._memory_usage[component] = max(old, new)
+                self._memory_usage[component] = max(
+                    self._memory_usage[component],
+                    int(event.get('MemoryUsage', 0)),
+                )
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
                 self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
             elif event.type is htcondor.JobEventType.JOB_RELEASED:
@@ -845,6 +846,7 @@ class Map:
         action: htcondor.JobAction,
         requirements: Optional[str] = None,
     ) -> classad.ClassAd:
+        """Perform an action on all of the jobs associated with this map."""
         schedd = mapping.get_schedd()
         req = self._requirements(requirements)
         a = schedd.act(action, req)
@@ -900,7 +902,7 @@ class Map:
 
         logger.debug(f'set attribute {attr} for map {self.map_id} to {value}')
 
-    def set_memory(self, memory: Union[str, int, float]) -> None:
+    def set_memory(self, memory: int) -> None:
         """
         Change the amount of memory (RAM) each map component needs.
 
@@ -912,14 +914,11 @@ class Map:
         Parameters
         ----------
         memory
-            The amount of memory (RAM) to request.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **MB**.
+            The amount of memory (RAM) to request, as an integer number of MB.
         """
-        if isinstance(memory, (int, float)):
-            memory = f'{memory}MB'
-        self._edit('RequestMemory', memory)
+        self._edit('RequestMemory', str(memory))
 
-    def set_disk(self, disk: Union[str, int, float]) -> None:
+    def set_disk(self, disk: int) -> None:
         """
         Change the amount of disk space each map component needs.
 
@@ -931,12 +930,9 @@ class Map:
         Parameters
         ----------
         disk
-            The amount of disk space to use.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **GB**.
+            The amount of disk space to request, as an integer number of KB.
         """
-        if isinstance(disk, (int, float)):
-            disk = f'{disk}MB'
-        self._edit('RequestDisk', disk)
+        self._edit('RequestDisk', str(disk))
 
     def stdout(
         self,
