@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-
 import pytest
 
 import htmap
@@ -22,7 +20,7 @@ import htmap
 
 def test_rename_new_name_in_map_ids(mapped_doubler):
     result = mapped_doubler.map('old', range(2))
-    result.wait()
+    result.wait(timeout = 180)
 
     result.rename('new')
 
@@ -31,7 +29,7 @@ def test_rename_new_name_in_map_ids(mapped_doubler):
 
 def test_rename_removes_old_map(mapped_doubler):
     result = mapped_doubler.map('old', range(2))
-    result.wait()
+    result.wait(timeout = 180)
 
     result.rename('new')
 
@@ -52,10 +50,12 @@ def test_rename_raises_if_jobs_held(mapped_doubler):
     with pytest.raises(htmap.exceptions.CannotRenameMap):
         result.rename('new')
 
+    result.remove()  # cleanup
+
 
 def test_rename_raises_if_new_map_id_already_exists(mapped_doubler):
     result = mapped_doubler.map('old', range(1))
-    result.wait()
+    result.wait(timeout = 180)
 
     mapped_doubler.map('target', range(1))
 
@@ -65,7 +65,7 @@ def test_rename_raises_if_new_map_id_already_exists(mapped_doubler):
 
 def test_complete_then_rename_then_rerun(mapped_doubler):
     result = mapped_doubler.map('old', range(1))
-    result.wait()
+    result.wait(timeout = 180)
 
     new_result = result.rename('new')
     new_result.rerun()
@@ -75,8 +75,8 @@ def test_complete_then_rename_then_rerun(mapped_doubler):
 
 def test_can_be_recovered_after_rename(mapped_doubler):
     result = mapped_doubler.map('old', range(1))
-    result.wait()
+    result.wait(timeout = 180)
 
     result.rename('new')
 
-    htmap.recover('new')
+    htmap.load('new')

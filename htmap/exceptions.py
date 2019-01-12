@@ -19,7 +19,7 @@ class HTMapException(Exception):
     pass
 
 
-class TimeoutError(TimeoutError, HTMapException):
+class TimeoutError(HTMapException):
     """An operation has timed out because it took too long."""
     pass
 
@@ -34,13 +34,13 @@ class OutputNotFound(HTMapException):
     pass
 
 
-class NoResultYet(HTMapException):
-    """The :class:`htmap.MapBuilder` does not have an associated :class:`htmap.MapResult` yet because it is still inside the ``with`` block."""
+class NoMapYet(HTMapException):
+    """The :class:`htmap.MapBuilder` does not have an associated :class:`htmap.Map` yet because it is still inside the ``with`` block."""
     pass
 
 
 class MapIdAlreadyExists(HTMapException):
-    """The requested ``map_id`` already exists (recover the :class:`MapResult`, then either use or delete it)."""
+    """The requested ``map_id`` already exists (recover the :class:`Map`, then either use or delete it)."""
     pass
 
 
@@ -74,9 +74,36 @@ class CannotRenameMap(HTMapException):
     pass
 
 
-class UnknownPythonDeliveryMechanism(HTMapException):
+class UnknownPythonDeliveryMethod(HTMapException):
     """The specified Python delivery mechanism has not been registered."""
     pass
 
+
 class MapWasRemoved(HTMapException):
+    """This map has been removed, and can no longer be interacted with."""
+    pass
+
+
+class InvalidOutputStatus(HTMapException):
+    """The output status of the map component was not recognized."""
+    pass
+
+
+class MapComponentError(HTMapException):
+    """A map component experienced an error during remote execution."""
+    pass
+
+
+class MapComponentHeld(HTMapException):
+    """A map component has been held by HTCondor."""
+    pass
+
+
+class ExpectedError(HTMapException):
+    """A map component that contained an OK result was unpacked as if it contained an error."""
+    pass
+
+
+class CannotTransplantPython(HTMapException):
+    """The Python interpreter you are using cannot be transplanted."""
     pass

@@ -10,43 +10,27 @@ HTMap provides several methods for ensuring that your dependencies are available
 
 HTMap requires that the execute location can execute a Python script using a Python install that has the module ``cloudpickle`` installed.
 
+The built-in delivery methods are
+
+* ``docker`` - runs in a user-supplied Docker container.
+* ``assume`` - assumes that the dependencies have already been installed at the execute location.
+* ``transplant`` - copy the user's Python installation to the execute node.
+
+More details on each of these methods can be found below.
+
+The default delivery method is ``docker``, with image ``continuumio/anaconda3:latest``.
+
 .. attention::
 
     HTMap can transfer inputs and outputs between different versions of Python 3, but it can't magically make features from later Python versions available.
     For example, if you run Python 3.6 submit-side you can use f-strings in your code.
     But if you use Python 3.5 execute-side, your code will hit syntax errors because f-strings were not added until Python 3.6.
 
-    Try to always use the latest version of Python everywhere.
-    Failing that, it's probably better to use a later version of Python execute-side than submit-side.
-
-
-Assume Dependencies are Present
--------------------------------
-
-In your ``~/.htmaprc`` file:
-
-.. code-block:: bash
-
-    DELIVERY_METHOD = "assume"
-
-At runtime:
-
-.. code-block:: python
-
-    htmap.settings['DELIVERY_METHOD'] = 'assume'
-
-In this mode, HTMap assumes that a Python installation with all Python dependencies is already present.
-This will almost surely require some additional setup by your HTCondor pool's administrators.
-
-Additional dependencies can still be delivered via :class:`MapOptions`.
-
-.. note::
-
-    When using this delivery method, HTMap will discover Python using this shebang as whatever user HTCondor runs your job as:
-
-    .. code-block:: bash
-
-        #!/usr/bin/env python3
+    HTMap **cannot** transfer inputs and outputs between different versions of ``cloudpickle``.
+    Ensure that you have the same version of ``cloudpickle`` installed locally that you're going to use remotely.
+    For example, if you're using Docker delivery, you could run your maps from the same Anaconda Python that is used in the Docker image.
+    If you see an exception on a component related to ``cloudpickle.load``, this is the most likely culprit.
+    Note that you may need to manually upgrade/downgrade your local or remote ``cloudpickle``.
 
 
 Run Inside a Docker Container
@@ -100,6 +84,35 @@ Of course, you could also add the ``pip install`` line to your own image.
         #!/usr/bin/env python3
 
 
+Assume Dependencies are Present
+-------------------------------
+
+In your ``~/.htmaprc`` file:
+
+.. code-block:: bash
+
+    DELIVERY_METHOD = "assume"
+
+At runtime:
+
+.. code-block:: python
+
+    htmap.settings['DELIVERY_METHOD'] = 'assume'
+
+In this mode, HTMap assumes that a Python installation with all Python dependencies is already present.
+This will almost surely require some additional setup by your HTCondor pool's administrators.
+
+Additional dependencies can still be delivered via :class:`MapOptions`.
+
+.. note::
+
+    When using this delivery method, HTMap will discover Python using this shebang as whatever user HTCondor runs your job as:
+
+    .. code-block:: bash
+
+        #!/usr/bin/env python3
+
+
 Transplant Existing Python Install
 ----------------------------------
 
@@ -115,8 +128,11 @@ At runtime:
 
     htmap.settings['DELIVERY_METHOD'] = 'transplant'
 
-If you are running HTMap from a standalone Python install (like an Anaconda installation), you can use this delivery mechanism to transfer a copy of your entire Python install.
-All locally-installed packages (including ``pip -e`` installs) will be available.
+If you are running HTMap from a standalone Python install (like an Anaconda installation),
+you can use this delivery mechanism to transfer a copy of your entire Python install.
+All locally-installed packages (including ``pip -e`` "editable" installs) will be available.
+
+For advanced transplant functionality, see :ref:`transplant-settings`.
 
 .. note::
 

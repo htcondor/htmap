@@ -51,6 +51,15 @@ If not given, defaults to ``~/.htmap``.
 
 ``DELIVERY_METHOD`` - the name of the delivery method to use.
 The different delivery methods are discussed in :ref:`dependency-management`.
+Defaults to ``docker``.
+Inherits the environment variable ``HTMAP_DELIVERY``.
+
+``WAIT_TIME`` - how long to wait between polling for component statuses, files existing, etc.
+Measured in seconds.
+Defaults to ``1`` (1 second).
+
+``CLI`` - set to ``True`` automatically when HTMap is being used from the CLI.
+Defaults to ``False``.
 
 
 MAP_OPTIONS
@@ -62,9 +71,15 @@ Any settings in this section are passed to every :class:`MapOption` as keyword a
 HTCONDOR
 ++++++++
 
-``SCHEDD`` - the address of the HTCondor scheduler (see :class:`htcondor.Schedd`).
+``SCHEDULER`` - the address of the HTCondor scheduler (see :class:`htcondor.Schedd`).
 If set to ``None``, HTMap discovers the local scheduler automatically.
+Defaults to ``None``.
+Inherits the environment variable ``HTMAP_CONDOR_SCHEDULER`.
 
+``COLLECTOR`` - the address of the HTCondor collector (see :class:`htcondor.Collector`).
+If set to ``None``, HTMap discovers the local collector automatically.
+Defaults to ``None``.
+Inherits the environment variable ``HTMAP_CONDOR_COLLECTOR`.
 
 DOCKER
 ++++++
@@ -73,14 +88,18 @@ These settings control how the ``docker`` delivery method works.
 
 ``IMAGE`` - the path to the Docker image to run components with.
 Defaults to ``'continuumio/anaconda3:latest'``.
+If the environment variable ``HTMAP_DOCKER_IMAGE`` is set, that will be used as the default instead.
 
+
+.. _transplant-settings:
 
 TRANSPLANT
 ++++++++++
 
 These settings control how the ``transplant`` delivery method works.
 
-``PATH`` - the path to the directory where the zipped Python install will be cached.
+``DIR`` - the path to the directory where the zipped Python install will be cached.
+Defaults to a subdirectory of ``HTMAP_DIR`` named ``transplants``.
 
 ``ALTERNATE_INPUT_PATH`` - a string that will be used in the HTCondor ``transfer_input_files`` option **instead of** the local file path.
 If set to ``None``, the local path will be used (the default).

@@ -13,32 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
+import pytest
+
 import htmap
 
 
-def test_decorator_without_parens():
-    @htmap.htmap
-    def foo(x):
-        return x
+@pytest.mark.usefixtures('delivery_methods')
+def test_stdout_sees_print():
+    m = htmap.map('stdout-sees-print', lambda x: print('foobar'), range(1))
 
-    assert isinstance(foo, htmap.MappedFunction)
-
-
-def test_decorator_with_parens():
-    @htmap.htmap()
-    def foo(x):
-        return x
-
-    assert isinstance(foo, htmap.MappedFunction)
+    assert 'foobar' in m.stdout(0)
 
 
-def test_decorator_with_map_options():
-    @htmap.htmap(map_options = htmap.MapOptions())
-    def foo(x):
-        return x
+@pytest.mark.usefixtures('delivery_methods')
+def test_stderr_sees_print():
+    m = htmap.map('stderr-sees-print', lambda x: print('foobar', file = sys.stderr), range(1))
 
-    assert isinstance(foo, htmap.MappedFunction)
-
-
-def test_can_still_call_function_as_normal(mapped_doubler):
-    assert mapped_doubler(5) == 10
+    assert 'foobar' in m.stderr(0)

@@ -13,16 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
 import pytest
 
-import htmap
+from htmap import utils
 
 
-def test_env_var_is_set_on_execute():
-    @htmap.htmap
-    def check(x):
-        return 'HTMAP_ON_EXECUTE' in os.environ
-
-    assert list(check.map('chk', [0]))[0]  # that's the return value of check
+@pytest.mark.parametrize(
+    'num_bytes, expected',
+    [
+        (100, '100.0 B'),
+        (1024, '1.0 KB'),
+        (2048, '2.0 KB'),
+        (2049, '2.0 KB'),
+        (1024 * 1024 * 1024 * .5, '512.0 MB'),
+        (1024 * 1024 * 1024, '1.0 GB'),
+        (1024 * 1024 * 1024 * 1024 * .25, '256.0 GB'),
+    ]
+)
+def test_num_bytes_to_str(num_bytes, expected):
+    assert expected == utils.num_bytes_to_str(num_bytes)

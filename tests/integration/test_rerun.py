@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-
 # Copyright 2018 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
@@ -16,24 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import pytest
-import coverage
-import os
 
-cov = coverage.coverage()
-cov.start()
+import htmap
 
-pytest.main()
 
-cov.stop()
-cov.save()
+def test_rerun(mapped_doubler):
+    result = mapped_doubler.map('map', [1, 2, 3])
 
-print('Coverage Report:')
-cov.report()
+    result.rerun()
 
-report_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'covreport')
-cov.html_report(directory = report_dir)
-print(f'HTML Report at {os.path.join(report_dir, "index.html")}')
+    assert list(result) == [2, 4, 6]
 
-cov.erase()
+
+def test_recover_then_rerun(mapped_doubler):
+    result = mapped_doubler.map('map', [1, 2, 3])
+
+    recovered = htmap.load('map')
+    recovered.rerun()
+
+    assert list(recovered) == [2, 4, 6]

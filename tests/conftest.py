@@ -16,69 +16,59 @@
 import functools
 import time
 import itertools
-import subprocess
+import gc
 from pathlib import Path
 
 import pytest
 
 import htmap
-from htmap.options import get_base_options_dict
+from htmap.options import get_base_descriptors
 from htmap.settings import BASE_SETTINGS
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
+htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for testing
 
 
 @pytest.fixture(scope = 'session', autouse = True)
 def set_transplant_dir(tmpdir_factory):
     path = Path(tmpdir_factory.mktemp('htmap_transplant_dir'))
-    htmap.settings['TRANSPLANT.PATH'] = path
+    htmap.settings['TRANSPLANT.DIR'] = path
 
 
-@pytest.fixture(
-    params = [
-        'assume',
-        # 'transplant',
-        # 'docker',
-    ],
-)
-def delivery_methods(request):
-    htmap.settings['DELIVERY_METHOD'] = request.param
+def pytest_addoption(parser):
+    parser.addoption(
+        "--delivery",
+        action = "store",
+        default = 'assume',
+    )
 
 
-def get_base_options_for_tests(map_id, map_dir, delivery, test_id = None):
-    opts = get_base_options_dict(map_id, map_dir, delivery)
-    opts['+htmap_test_id'] = str(test_id)
-
-    return opts
-
-
-ids = itertools.count()
+def pytest_generate_tests(metafunc):
+    if 'delivery_methods' in metafunc.fixturenames:
+        metafunc.parametrize(
+            'delivery_method',
+            metafunc.config.getoption('delivery').split(),
+        )
 
 
-# todo: break this into two fixtures, one for setting htmap_dir, one for test_id and cleanup
+@pytest.fixture()
+def delivery_methods(delivery_method):
+    htmap.settings['DELIVERY_METHOD'] = delivery_method
+
+
 @pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir_and_clean_after(tmpdir_factory, mocker):
-    """Use a fresh HTMAP_DIR for every test."""
+def set_htmap_dir_and_clean_after(tmpdir_factory):
+    """Use a fresh HTMAP_DIR for every test and clean it up when done."""
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
     htmap.settings['HTMAP_DIR'] = path
 
-    test_id = next(ids)
-    mocker.patch(
-        'htmap.options.get_base_options_dict',
-        functools.partial(get_base_options_for_tests, test_id = test_id),
-    )
-
     yield
 
-    subprocess.run(
-        [
-            'condor_rm',
-            f'--constraint htmap_test_id=={test_id}',
-        ],
-        stdout = subprocess.DEVNULL,
-        stderr = subprocess.DEVNULL,
-    )
+    try:
+        htmap.clean()
+    except (PermissionError, OSError, AttributeError):
+        pass
 
 
 @pytest.fixture(scope = 'session')
@@ -91,13 +81,13 @@ def doubler():
 
 @pytest.fixture(scope = 'session')
 def mapped_doubler(doubler):
-    mapper = htmap.htmap(doubler)
+    mapper = htmap.mapped(doubler)
     return mapper
 
 
 @pytest.fixture(scope = 'session')
 def power():
-    def power(x = 0, p = 0):
+    def power(x = 0, p = 2):
         return x ** p
 
     return power
@@ -105,14 +95,14 @@ def power():
 
 @pytest.fixture(scope = 'session')
 def mapped_power(power):
-    mapper = htmap.htmap(power)
+    mapper = htmap.mapped(power)
     return mapper
 
 
 @pytest.fixture(scope = 'session')
 def sleepy_double():
     def sleepy_double(x):
-        time.sleep(5)
+        time.sleep(30)
         return 2 * x
 
     return sleepy_double
@@ -120,13 +110,13 @@ def sleepy_double():
 
 @pytest.fixture(scope = 'session')
 def mapped_sleepy_double(sleepy_double):
-    mapper = htmap.htmap(sleepy_double)
+    mapper = htmap.mapped(sleepy_double)
     return mapper
 
 
 @pytest.fixture(scope = 'session')
 def mapped_exception():
-    @htmap.htmap
+    @htmap.mapped
     def fail(x):
         raise Exception(str(x))
 
@@ -135,3 +125,11 @@ def mapped_exception():
 
 def exception_msg(exc_info) -> str:
     return str(exc_info.value)
+
+
+class gc_disabled:
+    def __enter__(self):
+        gc.disable()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        gc.enable()

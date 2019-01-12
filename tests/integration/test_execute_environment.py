@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-
 # Copyright 2018 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
@@ -16,24 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import pytest
-import coverage
 import os
 
-cov = coverage.coverage()
-cov.start()
+import pytest
 
-pytest.main()
+import htmap
 
-cov.stop()
-cov.save()
 
-print('Coverage Report:')
-cov.report()
+@pytest.mark.usefixtures('delivery_methods')
+def test_env_var_is_set_on_execute():
+    @htmap.mapped
+    def check(x):
+        return 'HTMAP_ON_EXECUTE' in os.environ
 
-report_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'covreport')
-cov.html_report(directory = report_dir)
-print(f'HTML Report at {os.path.join(report_dir, "index.html")}')
-
-cov.erase()
+    assert list(check.map('chk', [0]))[0]  # that's the return value of check

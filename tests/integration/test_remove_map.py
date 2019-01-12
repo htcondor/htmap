@@ -56,7 +56,7 @@ def test_remove_shortcut_on_nonexistent_map_dir_fails_silently_if_not_exist_ok_s
     'method',
     [
         key
-        for key, val in inspect.getmembers(htmap.MapResult, predicate = inspect.isfunction)
+        for key, val in inspect.getmembers(htmap.Map, predicate = inspect.isfunction)
         if not key.startswith('_')
     ],
 )

@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-
 # Copyright 2018 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
@@ -16,24 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 
 import pytest
-import coverage
-import os
 
-cov = coverage.coverage()
-cov.start()
+import htmap
 
-pytest.main()
 
-cov.stop()
-cov.save()
+def test_memory_usage_is_nonzero_after_map_complete():
+    # need it run for at least 5 seconds for it generate an image size event
+    m = htmap.map('mem-usage-nonzero', lambda x: time.sleep(10), range(2))
 
-print('Coverage Report:')
-cov.report()
+    m.wait()
+    print(m.memory_usage)
 
-report_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'covreport')
-cov.html_report(directory = report_dir)
-print(f'HTML Report at {os.path.join(report_dir, "index.html")}')
-
-cov.erase()
+    assert all(x > 0 for x in m.memory_usage)

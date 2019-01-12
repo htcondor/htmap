@@ -13,12 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Iterable, Optional, Callable
+from typing import Union, Iterable, Optional, Callable, Dict, List, Tuple
 import logging
 
 import sys
 import shutil
 import collections
+import hashlib
 from pathlib import Path
 
 import htcondor
@@ -39,35 +40,32 @@ class MapOptions(collections.UserDict):
         'executable',
         'transfer_executable',
         'log',
-        'output',
-        'error',
+        'submit_event_notes',
+        'stdout',
+        'stderr',
         'transfer_output_files',
         'transfer_output_remaps',
         'transfer_input_files',
         'should_transfer_files',
-        'when_to_transfer_output',
-        'htmap',
-        '+htmap',
+        'component',
+        '+component',
+        'MY.component',
+        'IsHTMapJob',
+        '+IsHTMapJob',
+        'MY.IsHTMapJob',
     }
 
     def __init__(
         self,
         *,
-        request_memory: Union[int, str, float, Iterable[Union[int, str, float]]] = '100MB',
-        request_disk: Union[int, str, float, Iterable[Union[int, str, float]]] = '1GB',
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
         input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
-        **kwargs,
+        custom_options: Dict[str, str] = None,
+        **kwargs: Union[str, Iterable[str]],
     ):
         """
         Parameters
         ----------
-        request_memory
-            The amount of memory (RAM) to request.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **MB**.
-        request_disk
-            The amount of disk space to use.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **GB**.
         fixed_input_files
             A single file, or an iterable of files, to send to all components of the map.
             Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
@@ -76,41 +74,32 @@ class MapOptions(collections.UserDict):
             An iterable of single files or iterables of files to map over.
             Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
             You can also specify a file to fetch from an URL like ``http://www.full.url/path/to/filename``.
+        custom_options
+            A dictionary of submit descriptors that are *not* built-in HTCondor descriptors.
+            These are the descriptors that, if you were writing a submit file, would have a leading ``+`` or ``MY.``.
+            The leading characters are unnecessary here, but can be included if you'd like.
         kwargs
-            Additional keyword arguments are interpreted as HTCondor submit file descriptors.
+            Additional keyword arguments are interpreted as HTCondor submit descriptors.
             Values that are single strings are used for all components of the map.
             Providing an iterable for the value will map that option.
             Certain keywords are reserved for internal use (see the RESERVED_KEYS class attribute).
         """
         self._check_keyword_arguments(kwargs)
 
+        if custom_options is None:
+            custom_options = {}
+        cleaned_custom_options = {
+            key.lower().replace('+', '').replace('my.', ''): val
+            for key, val in custom_options.items()
+        }
+        self._check_keyword_arguments(cleaned_custom_options)
+        kwargs = {**kwargs, **{'+' + key: val for key, val in cleaned_custom_options.items()}}
+
         super().__init__(**kwargs)
-
-        if isinstance(request_memory, str):
-            self['request_memory'] = request_memory
-        elif isinstance(request_memory, (int, float)):
-            self['request_memory'] = f'{request_memory}MB'
-        else:  # implies it is iterable
-            self['request_memory'] = [
-                rm if isinstance(rm, str)
-                else f'{int(rm)}MB'
-                for rm in request_memory
-            ]
-
-        if isinstance(request_disk, str):
-            self['request_disk'] = request_disk
-        elif isinstance(request_disk, (int, float)):
-            self['request_disk'] = f'{request_disk}GB'
-        else:  # implies it is iterable
-            self['request_disk'] = [
-                rd if isinstance(rd, str)
-                else f'{int(rd)}GB'
-                for rd in request_disk
-            ]
 
         if fixed_input_files is None:
             fixed_input_files = []
-        if isinstance(fixed_input_files, str):
+        if isinstance(fixed_input_files, (str, Path)):
             fixed_input_files = [fixed_input_files]
         self.fixed_input_files = fixed_input_files
 
@@ -159,7 +148,12 @@ def normalize_path(path: Union[str, Path]) -> str:
     return normalize_path(Path(path))  # local file path, but as a string
 
 
-def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
+def create_submit_object_and_itemdata(
+    map_id: str,
+    map_dir: Path,
+    num_components: int,
+    map_options: Optional[MapOptions] = None,
+) -> Tuple[htcondor.Submit, List[Dict[str, str]]]:
     if map_options is None:
         map_options = MapOptions()
 
@@ -169,19 +163,19 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         settings['DELIVERY_METHOD'],
     )
 
-    options_dict = get_base_options_dict(
+    descriptors = get_base_descriptors(
         map_id,
         map_dir,
         settings['DELIVERY_METHOD'],
     )
 
-    itemdata = [{'hash': h} for h in hashes]
-    options_dict['transfer_output_files'] = '$(hash).out'
+    itemdata = [{'component': str(idx)} for idx in range(num_components)]
+    descriptors['transfer_output_files'] = '$(component).out'
 
-    input_files = options_dict.get('transfer_input_files', [])
+    input_files = descriptors.get('transfer_input_files', [])
     input_files += [
         (map_dir / 'func').as_posix(),
-        (map_dir / 'inputs' / '$(hash).in').as_posix(),
+        (map_dir / 'inputs' / '$(component).in').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
@@ -189,36 +183,34 @@ def create_submit_object_and_itemdata(map_id, map_dir, hashes, map_options):
         input_files.append('$(extra_input_files)')
 
         joined = [
-            normalize_path(files) if isinstance(files, str)
-            else ', '.join(normalize_path(f) for f in files)
+            normalize_path(files) if isinstance(files, (str, Path))  # single file
+            else ', '.join(normalize_path(f) for f in files)  # multiple files
             for files in map_options.input_files
         ]
-        if len(hashes) != len(joined):
-            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {len(hashes)})')
+        if len(joined) != num_components:
+            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
-
-    options_dict['transfer_input_files'] = ','.join(input_files)
+    descriptors['transfer_input_files'] = ','.join(input_files)
 
     output_remaps = [
-        f'$(hash).out={(map_dir / "outputs" / "$(hash).out").as_posix()}',
+        f'$(component).out={(map_dir / "outputs" / "$(component).out").as_posix()}',
     ]
-
-    options_dict['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
+    descriptors['transfer_output_remaps'] = f'"{";".join(output_remaps)}"'
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
             itemdata_key = f'itemdata_for_{opt_key}'
             opt_value = tuple(opt_value)
-            if len(opt_value) != len(hashes):
-                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {len(hashes)})')
+            if len(opt_value) != num_components:
+                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
             for dct, v in zip(itemdata, opt_value):
                 dct[itemdata_key] = v
-            options_dict[opt_key] = f'$({itemdata_key})'
+            descriptors[opt_key] = f'$({itemdata_key})'
         else:
-            options_dict[opt_key] = opt_value
+            descriptors[opt_key] = opt_value
 
-    sub = htcondor.Submit(options_dict)
+    sub = htcondor.Submit(descriptors)
 
     return sub, itemdata
 
@@ -227,7 +219,7 @@ def register_delivery_mechanism(
     name: str,
     options_func: Callable[[str, Path], dict],
     setup_func: Optional[Callable[[str, Path], None]] = None,
-):
+) -> None:
     if setup_func is None:
         setup_func = lambda *args: None
 
@@ -235,26 +227,31 @@ def register_delivery_mechanism(
     SETUP_FUNCTION_BY_DELIVERY[name] = setup_func
 
 
-def get_base_options_dict(
+def unregister_delivery_mechanism(name: str) -> None:
+    BASE_OPTIONS_FUNCTION_BY_DELIVERY.pop(name)
+    SETUP_FUNCTION_BY_DELIVERY.pop(name)
+
+
+def get_base_descriptors(
     map_id: str,
     map_dir: Path,
     delivery: str,
 ) -> dict:
     core = {
         'JobBatchName': map_id,
-        'arguments': '$(hash)',
-        'log': (map_dir / 'cluster_logs' / '$(ClusterId).log').as_posix(),
-        'output': (map_dir / 'job_logs' / '$(hash).output').as_posix(),
-        'error': (map_dir / 'job_logs' / '$(hash).error').as_posix(),
+        'log': (map_dir / 'event_log').as_posix(),
+        'submit_event_notes': '$(component)',
+        'stdout': (map_dir / 'job_logs' / '$(component).stdout').as_posix(),
+        'stderr': (map_dir / 'job_logs' / '$(component).stderr').as_posix(),
         'should_transfer_files': 'YES',
-        'when_to_transfer_output': 'ON_EXIT',
-        '+htmap': 'True',
+        '+component': '$(component)',
+        '+IsHTMapJob': 'True',
     }
 
     try:
         base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
-        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
+        raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
     return {
         **core,
@@ -263,64 +260,84 @@ def get_base_options_dict(
     }
 
 
+def _copy_run_scripts():
+    run_script_source_dir = Path(__file__).parent / 'run'
+    run_scripts = [
+        run_script_source_dir / 'run.py',
+        run_script_source_dir / 'run_with_transplant.sh',
+    ]
+    target_dir = Path(settings['HTMAP_DIR']) / 'run'
+    target_dir.mkdir(parents = True, exist_ok = True)
+    for src in run_scripts:
+        target = target_dir / src.name
+        shutil.copy2(src, target)
+
+
 def run_delivery_setup(
     map_id: str,
     map_dir: Path,
     delivery: str,
-):
+) -> None:
+    _copy_run_scripts()
+
     try:
         SETUP_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
     except KeyError:
-        raise exceptions.UnknownPythonDeliveryMechanism(f"'{delivery}' is not a known delivery mechanism")
+        raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
 
-def _get_base_options_dict_for_assume(
+def _get_base_descriptors_for_assume(
     map_id: str,
     map_dir: Path,
 ) -> dict:
     return {
         'universe': 'vanilla',
-        'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'executable': (Path(settings['HTMAP_DIR']) / 'run' / 'run.py').as_posix(),
+        'arguments': '$(component)',
     }
 
 
 register_delivery_mechanism(
     'assume',
-    options_func = _get_base_options_dict_for_assume,
+    options_func = _get_base_descriptors_for_assume,
 )
 
 
-def _get_base_options_dict_for_docker(
+def _get_base_descriptors_for_docker(
     map_id: str,
     map_dir: Path,
 ) -> dict:
     return {
         'universe': 'docker',
         'docker_image': settings['DOCKER.IMAGE'],
-        'executable': (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+        'executable': (Path(settings['HTMAP_DIR']) / 'run' / 'run.py').as_posix(),
+        'arguments': '$(component)',
         'transfer_executable': 'True',
     }
 
 
 register_delivery_mechanism(
     'docker',
-    options_func = _get_base_options_dict_for_docker,
+    options_func = _get_base_descriptors_for_docker,
 )
 
 
-def _get_base_options_dict_for_transplant(
+def _get_base_descriptors_for_transplant(
     map_id: str,
     map_dir: Path,
 ) -> dict:
-    tif_path = settings['TRANSPLANT.ALTERNATE_INPUT_PATH']
+    pip_freeze = _get_pip_freeze()
+    h = _get_transplant_hash(pip_freeze)
+    tif_path = settings.get('TRANSPLANT.ALTERNATE_INPUT_PATH')
     if tif_path is None:
-        tif_path = (Path(settings['TRANSPLANT.PATH']) / 'htmap_python.tar.gz').as_posix()
+        tif_path = (Path(settings['TRANSPLANT.DIR']) / h).as_posix()
 
     return {
         'universe': 'vanilla',
-        'executable': (Path(__file__).parent / 'run' / 'run_with_transplant.sh').as_posix(),
+        'executable': (Path(settings['HTMAP_DIR']) / 'run' / 'run_with_transplant.sh').as_posix(),
+        'arguments': f'$(component) {h}',
         'transfer_input_files': [
-            (Path(__file__).parent / 'run' / 'run.py').as_posix(),
+            (Path(settings['HTMAP_DIR']) / 'run' / 'run.py').as_posix(),
             tif_path,
         ],
     }
@@ -330,12 +347,23 @@ def _run_delivery_setup_for_transplant(
     map_id: str,
     map_dir: Path,
 ):
-    if not _cached_py_is_current() or settings['TRANSPLANT.ASSUME_EXISTS']:
-        transplant_path = Path(settings['TRANSPLANT.PATH'])
-        py_dir = Path(sys.executable).parent.parent
-        target = transplant_path / 'htmap_python'
+    if not settings.get('TRANSPLANT.ASSUME_EXISTS', False):
+        if 'usr' in sys.executable:
+            raise exceptions.CannotTransplantPython('system Python installations cannot be transplanted')
+        if sys.platform == 'win32':
+            raise exceptions.CannotTransplantPython('transplant delivery does not work from Windows')
 
-        logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent}...')
+        py_dir = Path(sys.executable).parent.parent
+        pip_freeze = _get_pip_freeze()
+
+        target = Path(settings['TRANSPLANT.DIR']) / _get_transplant_hash(pip_freeze)
+        zip_path = target.with_name(f'{target.stem}.tar.gz')
+
+        if zip_path.exists():  # cached version already exists
+            logger.debug(f'using cached zipped python install at {zip_path}')
+            return
+
+        logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
 
         try:
             shutil.make_archive(
@@ -344,38 +372,30 @@ def _run_delivery_setup_for_transplant(
                 root_dir = py_dir,
             )
         except BaseException as e:
-            target.with_name('htmap_python.tar.gz').unlink()
+            zip_path.unlink()
+            logger.debug(f'removed partial zipped Python install at {target}')
             raise e
 
-        logger.debug('created zipped Python install for transplant')
+        zip_path.rename(target)
 
-        cached_req_path = transplant_path / 'freeze'
-        cached_req_path.write_text(utils.pip_freeze(), encoding = 'utf-8')
+        pip_path = zip_path.with_name(f'{target.stem}.pip')
+        pip_path.write_bytes(pip_freeze)
 
-        logger.debug(f'saved transplant cache file to {cached_req_path}')
+        logger.debug(f'created zipped Python install for transplant, stored at {zip_path}')
 
 
-def _cached_py_is_current() -> bool:
-    logger.debug('checking if cached zipped Python install is current...')
-    transplant_path = Path(settings['TRANSPLANT.PATH'])
-    cached_req_path = transplant_path / 'freeze'
-    py_install_path = transplant_path / 'htmap_python.tar.gz'
-    if not cached_req_path.exists() or not py_install_path.exists():
-        logger.debug('did not find cached zipped Python install')
-        return False
+def _get_pip_freeze() -> bytes:
+    return utils.pip_freeze().encode('utf-8')
 
-    cached_reqs = cached_req_path.read_text(encoding = 'utf-8')
-    current_reqs = utils.pip_freeze()
 
-    reqs_match = (current_reqs == cached_reqs)
-
-    logger.debug(f'cached zipped Python install {"is" if reqs_match else "is not"} current')
-
-    return reqs_match
+def _get_transplant_hash(pip_freeze_output: bytes) -> str:
+    h = hashlib.md5()
+    h.update(pip_freeze_output)
+    return h.hexdigest()
 
 
 register_delivery_mechanism(
     'transplant',
-    options_func = _get_base_options_dict_for_transplant,
+    options_func = _get_base_descriptors_for_transplant,
     setup_func = _run_delivery_setup_for_transplant,
 )

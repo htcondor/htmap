@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-
 # Copyright 2018 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
@@ -16,24 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import pytest
-import coverage
-import os
 
-cov = coverage.coverage()
-cov.start()
+from pathlib import Path
 
-pytest.main()
+import htmap
+from htmap.options import run_delivery_setup
 
-cov.stop()
-cov.save()
 
-print('Coverage Report:')
-cov.report()
-
-report_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'covreport')
-cov.html_report(directory = report_dir)
-print(f'HTML Report at {os.path.join(report_dir, "index.html")}')
-
-cov.erase()
+def test_unknown_delivery_method_raises():
+    with pytest.raises(htmap.exceptions.UnknownPythonDeliveryMethod):
+        run_delivery_setup('foo', Path.cwd(), 'definitely-not-real')

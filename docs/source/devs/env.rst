@@ -86,3 +86,12 @@ Hopefully they all pass!
 The Python script ``covtest.py`` is also provided in the top level of the repository to facilitate quick coverage testing.
 Run it like ``python covtest.py`` to see a coverage report in the terminal.
 An HTML report is also written to a directory called ``covreport``, next to the script.
+
+Testing on Windows
+++++++++++++++++++
+
+At least for the moment, HTMap does run on Windows, with some caveats:
+
+* Only ``assume`` delivery works (assuming you're executing locally), because HTCondor can't use Docker on Windows hosts, and there's no batch script for transplant delivery.
+* Some tests will occasionally fail because Windows doesn't let HTMap delete files that are open.
+  For example, if the event log is open for writing or reading, removing the map will fail.

@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import datetime
-import time
 
 import pytest
 
@@ -26,43 +25,43 @@ def get_number_of_files_in_dir(dir):
 
 
 def test_map_creates_correct_number_of_input_files(mapped_doubler):
-    num_inputs = 3
-    result = mapped_doubler.map('map', range(num_inputs))
+    num_components = 3
+    result = mapped_doubler.map('map', range(num_components))
 
-    assert get_number_of_files_in_dir(result._inputs_dir) == num_inputs
+    assert get_number_of_files_in_dir(result._inputs_dir) == num_components
 
 
 def test_starmap_creates_correct_number_of_input_files(mapped_power):
-    num_inputs = 3
+    num_components = 3
     result = mapped_power.starmap(
         'map',
-        args = ((x,) for x in range(num_inputs)),
-        kwargs = ({'p': p} for p in range(num_inputs)),
+        args = ((x,) for x in range(num_components)),
+        kwargs = ({'p': p} for p in range(num_components)),
     )
 
-    assert get_number_of_files_in_dir(result._inputs_dir) == num_inputs
+    assert get_number_of_files_in_dir(result._inputs_dir) == num_components
 
 
 def test_map_creates_correct_number_of_outputs_files(mapped_doubler):
-    num_inputs = 3
-    result = mapped_doubler.map('map', range(num_inputs))
+    num_components = 3
+    result = mapped_doubler.map('map', range(num_components))
 
-    result.wait()
+    result.wait(timeout = 180)
 
-    assert get_number_of_files_in_dir(result._outputs_dir) == num_inputs
+    assert get_number_of_files_in_dir(result._outputs_dir) == num_components
 
 
 def test_starmap_creates_correct_number_of_output_files(mapped_power):
-    num_inputs = 3
+    num_components = 3
     result = mapped_power.starmap(
         'map',
-        args = ((x,) for x in range(num_inputs)),
-        kwargs = ({'p': p} for p in range(num_inputs)),
+        args = ((x,) for x in range(num_components)),
+        kwargs = ({'p': p} for p in range(num_components)),
     )
 
-    result.wait()
+    result.wait(timeout = 180)
 
-    assert get_number_of_files_in_dir(result._outputs_dir) == num_inputs
+    assert get_number_of_files_in_dir(result._outputs_dir) == num_components
 
 
 @pytest.mark.usefixtures('delivery_methods')
@@ -94,20 +93,12 @@ def test_starmap_produces_correct_output(mapped_power):
     assert list(result) == [x ** p for x, p in zip(range(n), range(n))]
 
 
-def test_getitem_with_index_with_timeout(mapped_doubler):
-    result = mapped_doubler.map('map', range(2))
-
-    result.wait()
-
-    assert result[1] == 2
-
-
 def test_getitem_too_soon_raises_output_not_found(mapped_sleepy_double):
     n = 3
     result = mapped_sleepy_double.map('map', range(n))
 
     with pytest.raises(htmap.exceptions.OutputNotFound):
-        print(result[n - 1])
+        print(result[0])
 
 
 @pytest.mark.parametrize(
@@ -138,16 +129,6 @@ def test_cannot_use_same_mapid_again(mapped_doubler):
         again = mapped_doubler.map('foo', range(1))
 
 
-def test_can_use_same_mapid_again_if_force_overwrite(mapped_doubler):
-    result = mapped_doubler.map('foo', range(1))
-
-    again = mapped_doubler.map('foo', range(1), force_overwrite = True)
-
-
-def test_force_overwrite_with_already_free_mapid(mapped_doubler):
-    again = mapped_doubler.map('foo', range(1), force_overwrite = True)
-
-
 def test_empty_map_raises_empty_map_exception(mapped_doubler):
     with pytest.raises(htmap.exceptions.EmptyMap):
         mapped_doubler.map('foo', [])
@@ -156,3 +137,9 @@ def test_empty_map_raises_empty_map_exception(mapped_doubler):
 def test_empty_starmap_raises_empty_map_exception(mapped_doubler):
     with pytest.raises(htmap.exceptions.EmptyMap):
         mapped_doubler.starmap('foo', [], [])
+
+
+def test_iter_inputs(mapped_doubler):
+    m = mapped_doubler.map('iter_inputs', range(3))
+
+    assert list(m.iter_inputs()) == [((0,), {}), ((1,), {}), ((2,), {})]

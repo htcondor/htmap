@@ -18,18 +18,34 @@ import pytest
 import htmap
 
 
-def test_rerun(mapped_doubler):
-    result = mapped_doubler.map('map', [1, 2, 3])
+def test_decorator_without_parens():
+    @htmap.mapped
+    def foo(x):
+        return x
 
-    result.rerun()
-
-    assert list(result) == [2, 4, 6]
+    assert isinstance(foo, htmap.MappedFunction)
 
 
-def test_recover_then_rerun(mapped_doubler):
-    result = mapped_doubler.map('map', [1, 2, 3])
+def test_decorator_with_parens():
+    @htmap.mapped()
+    def foo(x):
+        return x
 
-    recovered = htmap.recover('map')
-    recovered.rerun()
+    assert isinstance(foo, htmap.MappedFunction)
 
-    assert list(recovered) == [2, 4, 6]
+
+def test_decorator_with_map_options():
+    @htmap.mapped(map_options = htmap.MapOptions())
+    def foo(x):
+        return x
+
+    assert isinstance(foo, htmap.MappedFunction)
+
+
+def test_can_still_call_wrapped_function_as_normal(mapped_doubler):
+    assert mapped_doubler(5) == 10
+
+
+def test_bad_call_raises():
+    with pytest.raises(TypeError):
+        htmap.mapped('foo')

@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import shutil
-import time
 
 import pytest
 
@@ -34,7 +33,7 @@ def test_map_results(mapped_doubler):
     mapped_doubler.map('b', range(1))
     mapped_doubler.map('c', range(1))
 
-    results = htmap.map_results()
+    results = htmap.load_maps()
 
     assert len(results) == 3
 
@@ -53,7 +52,7 @@ def test_clean_removes_all_maps(mapped_doubler):
 
 def test_clean_without_maps_dir_doesnt_raise_exception():
     shutil.rmtree(
-        htmap.settings['HTMAP_DIR'] / htmap.settings['MAPS_DIR_NAME'],
+        str((htmap.settings['HTMAP_DIR'] / htmap.settings['MAPS_DIR_NAME']).absolute()),
         ignore_errors = True,
     )
 

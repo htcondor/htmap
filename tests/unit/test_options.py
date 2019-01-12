@@ -16,10 +16,10 @@
 from pathlib import Path
 
 import pytest
-from .conftest import exception_msg
+from tests.conftest import exception_msg
 
 import htmap
-from htmap.options import create_submit_object_and_itemdata, get_base_options_dict
+from htmap.options import create_submit_object_and_itemdata, get_base_descriptors
 
 
 def test_one_reserved_kwarg_raises():
@@ -48,28 +48,12 @@ def test_reserved_kwargs_are_case_insensitive():
         )
 
 
-def test_request_memory_for_int():
-    opts = htmap.MapOptions(
-        request_memory = 200
-    )
-
-    assert opts['request_memory'] == '200MB'
-
-
 def test_request_memory_for_str():
     opts = htmap.MapOptions(
         request_memory = '150MB'
     )
 
     assert opts['request_memory'] == '150MB'
-
-
-def test_request_disk_for_int():
-    opts = htmap.MapOptions(
-        request_disk = 20
-    )
-
-    assert opts['request_disk'] == '20GB'
 
 
 def test_request_disk_for_str():
@@ -83,7 +67,7 @@ def test_request_disk_for_str():
 def test_single_shared_input_file():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a', 'b', 'c']
+    num_components = 1
     map_options = htmap.MapOptions(
         fixed_input_files = ['foo.txt'],
     )
@@ -91,7 +75,7 @@ def test_single_shared_input_file():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
@@ -101,7 +85,7 @@ def test_single_shared_input_file():
 def test_single_shared_input_file_can_be_single_str():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a', 'b', 'c']
+    num_components = 1
     map_options = htmap.MapOptions(
         fixed_input_files = 'foo.txt',
     )
@@ -109,7 +93,7 @@ def test_single_shared_input_file_can_be_single_str():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
@@ -119,7 +103,7 @@ def test_single_shared_input_file_can_be_single_str():
 def test_two_shared_input_files():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a', 'b', 'c']
+    num_components = 1
     map_options = htmap.MapOptions(
         fixed_input_files = ['foo.txt', 'bar.txt'],
     )
@@ -127,7 +111,7 @@ def test_two_shared_input_files():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
@@ -138,7 +122,7 @@ def test_two_shared_input_files():
 def test_list_of_list_of_str_input_files():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a', 'b', 'c']
+    num_components = 3
     map_options = htmap.MapOptions(
         input_files = [['foo.txt'], ['bar.txt'], ['buz.txt']],
     )
@@ -146,14 +130,14 @@ def test_list_of_list_of_str_input_files():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
     expected = [
-        {'hash': 'a', 'extra_input_files': Path('foo.txt').absolute().as_posix()},
-        {'hash': 'b', 'extra_input_files': Path('bar.txt').absolute().as_posix()},
-        {'hash': 'c', 'extra_input_files': Path('buz.txt').absolute().as_posix()},
+        {'component': '0', 'extra_input_files': Path('foo.txt').absolute().as_posix()},
+        {'component': '1', 'extra_input_files': Path('bar.txt').absolute().as_posix()},
+        {'component': '2', 'extra_input_files': Path('buz.txt').absolute().as_posix()},
     ]
 
     assert itemdata == expected
@@ -162,7 +146,7 @@ def test_list_of_list_of_str_input_files():
 def test_list_of_str_input_files():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a', 'b', 'c']
+    num_components = 3
     map_options = htmap.MapOptions(
         input_files = ['foo.txt', 'bar.txt', 'buz.txt'],
     )
@@ -170,23 +154,75 @@ def test_list_of_str_input_files():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
     expected = [
-        {'hash': 'a', 'extra_input_files': Path('foo.txt').absolute().as_posix()},
-        {'hash': 'b', 'extra_input_files': Path('bar.txt').absolute().as_posix()},
-        {'hash': 'c', 'extra_input_files': Path('buz.txt').absolute().as_posix()},
+        {'component': '0', 'extra_input_files': Path('foo.txt').absolute().as_posix()},
+        {'component': '1', 'extra_input_files': Path('bar.txt').absolute().as_posix()},
+        {'component': '2', 'extra_input_files': Path('buz.txt').absolute().as_posix()},
     ]
 
     assert itemdata == expected
 
 
-def test_fewer_hashes_than_input_files():
+def test_list_of_path_input_files():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a']
+    num_components = 3
+    map_options = htmap.MapOptions(
+        input_files = [Path('foo.txt'), Path('bar.txt'), Path('buz.txt')],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        num_components,
+        map_options,
+    )
+
+    expected = [
+        {'component': '0', 'extra_input_files': Path('foo.txt').absolute().as_posix()},
+        {'component': '1', 'extra_input_files': Path('bar.txt').absolute().as_posix()},
+        {'component': '2', 'extra_input_files': Path('buz.txt').absolute().as_posix()},
+    ]
+
+    assert itemdata == expected
+
+
+def test_list_of_list_of_path_input_files():
+    map_id = 'foo'
+    map_dir = Path().cwd()
+    num_components = 3
+    map_options = htmap.MapOptions(
+        input_files = [
+            [Path('foo.txt'), Path('foo2.txt')],
+            [Path('bar.txt'), Path('bar2.txt')],
+            [Path('buz.txt'), Path('buz2.txt')],
+        ],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        num_components,
+        map_options,
+    )
+
+    expected = [
+        {'component': '0', 'extra_input_files': f"{Path('foo.txt').absolute().as_posix()}, {Path('foo2.txt').absolute().as_posix()}"},
+        {'component': '1', 'extra_input_files': f"{Path('bar.txt').absolute().as_posix()}, {Path('bar2.txt').absolute().as_posix()}"},
+        {'component': '2', 'extra_input_files': f"{Path('buz.txt').absolute().as_posix()}, {Path('buz2.txt').absolute().as_posix()}"},
+    ]
+
+    assert itemdata == expected
+
+
+def test_fewer_components_than_input_files():
+    map_id = 'foo'
+    map_dir = Path().cwd()
+    num_components = 1
     map_options = htmap.MapOptions(
         input_files = [['foo.txt'], ['bar.txt'], ['buz.txt']],
     )
@@ -195,17 +231,17 @@ def test_fewer_hashes_than_input_files():
         create_submit_object_and_itemdata(
             map_id,
             map_dir,
-            hashes,
+            num_components,
             map_options,
         )
 
     assert 'input_files' in exception_msg(exc_info)
 
 
-def test_fewer_input_files_than_hashes():
+def test_fewer_input_files_than_components():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a', 'b', 'c']
+    num_components = 5
     map_options = htmap.MapOptions(
         input_files = [['foo.txt']],
     )
@@ -214,7 +250,7 @@ def test_fewer_input_files_than_hashes():
         create_submit_object_and_itemdata(
             map_id,
             map_dir,
-            hashes,
+            num_components,
             map_options,
         )
 
@@ -225,14 +261,12 @@ def test_fewer_input_files_than_hashes():
     'rm',
     [
         ['239MB'],
-        [239],
-        [239.0],
     ]
 )
 def test_list_request_memory(rm):
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a']
+    num_components = 1
     map_options = htmap.MapOptions(
         request_memory = rm,
     )
@@ -240,12 +274,12 @@ def test_list_request_memory(rm):
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
     expected = [
-        {'hash': 'a', 'itemdata_for_request_memory': '239MB'},
+        {'component': '0', 'itemdata_for_request_memory': '239MB'},
     ]
 
     assert itemdata == expected
@@ -255,14 +289,12 @@ def test_list_request_memory(rm):
     'rd',
     [
         ['239GB'],
-        [239],
-        [239.0],
     ]
 )
 def test_list_request_disk(rd):
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a']
+    num_components = 1
     map_options = htmap.MapOptions(
         request_disk = rd,
     )
@@ -270,12 +302,12 @@ def test_list_request_disk(rd):
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
     expected = [
-        {'hash': 'a', 'itemdata_for_request_disk': '239GB'},
+        {'component': '0', 'itemdata_for_request_disk': '239GB'},
     ]
 
     assert itemdata == expected
@@ -284,7 +316,7 @@ def test_list_request_disk(rd):
 def test_generic_itemdata():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a', 'b', 'c']
+    num_components = 3
     map_options = htmap.MapOptions(
         stooge = ['larry', 'moe', 'curly'],
     )
@@ -292,14 +324,14 @@ def test_generic_itemdata():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
     expected = [
-        {'hash': 'a', 'itemdata_for_stooge': 'larry'},
-        {'hash': 'b', 'itemdata_for_stooge': 'moe'},
-        {'hash': 'c', 'itemdata_for_stooge': 'curly'},
+        {'component': '0', 'itemdata_for_stooge': 'larry'},
+        {'component': '1', 'itemdata_for_stooge': 'moe'},
+        {'component': '2', 'itemdata_for_stooge': 'curly'},
     ]
 
     assert itemdata == expected
@@ -308,7 +340,7 @@ def test_generic_itemdata():
 def test_generic_itemdata_too_few():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a', 'b', 'c']
+    num_components = 1
     map_options = htmap.MapOptions(
         stooge = ['larry', 'moe'],
     )
@@ -317,7 +349,7 @@ def test_generic_itemdata_too_few():
         create_submit_object_and_itemdata(
             map_id,
             map_dir,
-            hashes,
+            num_components,
             map_options,
         )
 
@@ -367,7 +399,7 @@ def test_merging_options_merges_fixed_input():
 def test_option_from_settings_is_visible_in_base_options():
     htmap.settings['MAP_OPTIONS.zing'] = 'hit'
 
-    opts = get_base_options_dict('foo', Path('bar'), delivery = 'assume')
+    opts = get_base_descriptors('foo', Path('bar'), delivery = 'assume')
 
     assert opts['zing'] == 'hit'
 
@@ -375,7 +407,7 @@ def test_option_from_settings_is_visible_in_base_options():
 def test_url_in_fixed_input_files():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a']
+    num_components = 1
     url = 'http://www.baz.test'
     map_options = htmap.MapOptions(
         fixed_input_files = [url],
@@ -384,7 +416,7 @@ def test_url_in_fixed_input_files():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
@@ -394,7 +426,7 @@ def test_url_in_fixed_input_files():
 def test_url_in_input_files():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a']
+    num_components = 1
     url = 'http://www.baz.test'
     map_options = htmap.MapOptions(
         input_files = [url],
@@ -403,7 +435,7 @@ def test_url_in_input_files():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
@@ -413,7 +445,7 @@ def test_url_in_input_files():
 def test_two_urls_in_input_files():
     map_id = 'foo'
     map_dir = Path().cwd()
-    hashes = ['a']
+    num_components = 1
     url_1 = 'http://www.baz.test'
     url_2 = 'http://www.bong.test'
     map_options = htmap.MapOptions(
@@ -423,7 +455,7 @@ def test_two_urls_in_input_files():
     sub, itemdata = create_submit_object_and_itemdata(
         map_id,
         map_dir,
-        hashes,
+        num_components,
         map_options,
     )
 
@@ -432,5 +464,33 @@ def test_two_urls_in_input_files():
 
 
 def test_unknown_delivery_mechanism():
-    with pytest.raises(htmap.exceptions.UnknownPythonDeliveryMechanism):
-        get_base_options_dict('foo', Path.cwd(), delivery = 'unknown')
+    with pytest.raises(htmap.exceptions.UnknownPythonDeliveryMethod):
+        get_base_descriptors('foo', Path.cwd(), delivery = 'unknown')
+
+
+@pytest.mark.parametrize(
+    'key',
+    [
+        'foo',
+        '+foo',
+        'my.foo',
+        'MY.foo',
+        'mY.foo',
+    ]
+)
+def test_custom_options(key):
+    map_id = 'test'
+    map_dir = Path().cwd()
+    num_components = 1
+    map_options = htmap.MapOptions(
+        custom_options = {key: 'bar'},
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        map_id,
+        map_dir,
+        num_components,
+        map_options,
+    )
+
+    assert '+foo' in sub.keys()

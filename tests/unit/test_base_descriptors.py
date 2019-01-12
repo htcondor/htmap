@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-
 # Copyright 2018 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
@@ -16,24 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import pytest
-import coverage
-import os
 
-cov = coverage.coverage()
-cov.start()
+from pathlib import Path
 
-pytest.main()
+import htmap
+from htmap.options import get_base_descriptors, register_delivery_mechanism, unregister_delivery_mechanism
 
-cov.stop()
-cov.save()
 
-print('Coverage Report:')
-cov.report()
+@pytest.fixture(scope = 'module', autouse = True)
+def add_null_delivery():
+    register_delivery_mechanism('null', lambda map_id, map_dir: {})
 
-report_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'covreport')
-cov.html_report(directory = report_dir)
-print(f'HTML Report at {os.path.join(report_dir, "index.html")}')
+    yield
 
-cov.erase()
+    unregister_delivery_mechanism('null')
+
+
+def test_job_batch_name_is_map_id():
+    descriptors = get_base_descriptors('foo', Path.cwd(), 'null')
+
+    assert descriptors['JobBatchName'] == 'foo'
