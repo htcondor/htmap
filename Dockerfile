@@ -58,7 +58,8 @@ RUN wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg
 ENV SUBMIT_USER=mapper
 ENV CONDA_DIR=/home/${SUBMIT_USER}/conda
 ENV PATH=${CONDA_DIR}/bin:${PATH}
-RUN useradd -m ${SUBMIT_USER}
+RUN groupadd ${SUBMIT_USER} \
+ && useradd -m -g ${SUBMIT_USER} ${SUBMIT_USER}
 USER ${SUBMIT_USER}
 
 # install miniconda version specified in config
@@ -66,15 +67,15 @@ RUN cd /tmp \
  && wget --quiet https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh \
  && bash Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -f -b -p $CONDA_DIR \
  && rm Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh \
- && conda install python=${PYTHON_VERSION} \
+ && conda install python=${PYTHON_VERSION} ipython \
  && conda update -y --all \
  && conda clean -y -all
 
 # install htmap dependencies early for caching
-WORKDIR /home/${SUBMIT_USER}/htmap
-COPY requirements.txt requirements.txt
-COPY requirements_dev.txt requirements_dev.txt
-RUN pip install --no-cache -r requirements_dev.txt
+COPY requirements.txt /home/${SUBMIT_USER}/requirements.txt
+COPY requirements_dev.txt /home/${SUBMIT_USER}/requirements_dev.txt
+RUN pip install --no-cache -r /home/${SUBMIT_USER}/requirements_dev.txt \
+ && rm /home/${SUBMIT_USER}/requirements*
 
 # set default command
 ENTRYPOINT ["docker/entrypoint.sh"]
@@ -84,7 +85,8 @@ CMD ["pytest"]
 COPY docker/condor_config.local /etc/condor/condor_config.local
 COPY docker/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 
-# copy htmap library into container and install it
+# copy htmap package into container and install it
 # this is the only part that can't be cached against editing the package
-COPY . .
+COPY --chown=mapper:mapper . /home/${SUBMIT_USER}/htmap
+WORKDIR /home/${SUBMIT_USER}/htmap
 RUN pip install --no-cache .
