@@ -13,28 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# this dockerfile builds a test environment for HTMap
+
 FROM ubuntu:bionic
 USER root
 
-# config
+# build config
 ARG HTCONDOR_VERSION=8.8
 ARG MINICONDA_VERSION=4.5.11
 ARG PYTHON_VERSION=3.6
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV CONDA_DIR=/opt/conda
-ENV PATH=$CONDA_DIR/bin:$PATH
+# environment setup
+ENV DEBIAN_FRONTEND=noninteractive \
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8
 
 # faster container builds
 RUN apt-get update \
  && apt-get -y install software-properties-common \
  && add-apt-repository ppa:apt-fast/stable \
  && apt-get update \
- && apt-get -y install apt-fast
+ && apt-get -y install apt-fast \
+ && apt-get -y clean \
+ && rm -rf /var/lib/apt/lists/*
 
 # install utils and dependendencies
 RUN apt-fast -y update \
- && apt-fast -y install --no-install-recommends vim less build-essential gnupg wget ca-certificates
+ && apt-fast -y install --no-install-recommends sudo vim less build-essential gnupg wget ca-certificates locales \
+ && apt-get -y clean \
+ && rm -rf /var/lib/apt/lists/* \
+ && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen
 
 # install HTCondor version specified in config
 RUN wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
@@ -43,6 +53,13 @@ RUN wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg
  && apt-fast -y install htcondor \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
+
+# create a user to be our submitter and set conda install location
+ENV SUBMIT_USER=mapper
+ENV CONDA_DIR=/home/${SUBMIT_USER}/conda
+ENV PATH=${CONDA_DIR}/bin:${PATH}
+RUN useradd -m ${SUBMIT_USER}
+USER ${SUBMIT_USER}
 
 # install miniconda version specified in config
 RUN cd /tmp \
@@ -53,11 +70,21 @@ RUN cd /tmp \
  && conda update -y --all \
  && conda clean -y -all
 
-# copy HTCondor config into correct location
+# install htmap dependencies early for caching
+WORKDIR /home/${SUBMIT_USER}/htmap
+COPY requirements.txt requirements.txt
+COPY requirements_dev.txt requirements_dev.txt
+RUN pip install --no-cache -r requirements_dev.txt
+
+# set default command
+ENTRYPOINT ["docker/entrypoint.sh"]
+CMD ["pytest"]
+
+# copy HTCondor and HTMap configs into place
 COPY docker/condor_config.local /etc/condor/condor_config.local
+COPY docker/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 
 # copy htmap library into container and install it
-WORKDIR $HOME/htmap
+# this is the only part that can't be cached against editing the package
 COPY . .
-RUN pip install --no-cache . \
- && pip install -r requirements_dev.txt
+RUN pip install --no-cache .
