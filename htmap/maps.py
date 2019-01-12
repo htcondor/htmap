@@ -240,6 +240,7 @@ class Map:
         self._holds: Dict[int, Hold] = {}
         self._memory_usage = [0 for _ in self.component_indices]
         self._runtime = [datetime.timedelta(0) for _ in self.component_indices]
+        self._local_data = None
 
         MAPS[self.map_id] = self
 
@@ -739,6 +740,8 @@ class Map:
         cluster_id_set = set(self._cluster_ids)
 
         for event in self._events:
+            self._local_data = None  # invalidate cache if any events were received
+
             # skip events that aren't part of this map (if any leak in)
             if event.cluster not in cluster_id_set:
                 continue
@@ -833,7 +836,9 @@ class Map:
     @property
     def local_data(self) -> int:
         """Return the number of bytes stored on the local disk by the map."""
-        return utils.get_dir_size(self._map_dir)
+        if self._local_data is None:
+            self._local_data = utils.get_dir_size(self._map_dir)
+        return self._local_data
 
     def _act(
         self,
