@@ -9,10 +9,11 @@ Also included is a bash script named ``dr`` (**d**\ ocker **r**\ un) that will l
 
 .. attention::
 
-    The Docker container is not linked to the host filesystem in real-time: if you make changes, you need to rebuild the Docker container (this is why the ``dr`` script is useful).
+    The Docker container is not linked to the host filesystem in real-time: if you make changes (either on the host or inside the container), you need to rebuild the Docker container!
     It should be fast because everything but the very last step can be cached by Docker.
 
 Anything you pass to ``dr`` will be executed inside the container.
+The initial working directory is the ``htmap`` repository inside the container, which has been editable-installed.
 If you pass nothing, it will run ``pytest`` with no arguments.
 Pass ``bash`` to get a shell.
 
