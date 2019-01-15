@@ -357,7 +357,7 @@ class Map:
         utils.clean_dir(self._outputs_dir, on_file = update_status)
 
     @property
-    def _missing_components(self) -> List[int]:
+    def incomplete_components(self) -> List[int]:
         """Return a list of component indices that are not complete."""
         return [
             idx
@@ -366,7 +366,7 @@ class Map:
         ]
 
     @property
-    def _completed_components(self) -> List[int]:
+    def completed_components(self) -> List[int]:
         """Return a list of component indices that are complete."""
         return [
             idx
@@ -377,7 +377,7 @@ class Map:
     @property
     def is_done(self) -> bool:
         """``True`` if all of the output is available for this map."""
-        return len(self._missing_components) == 0
+        return len(self.incomplete_components) == 0
 
     @property
     def is_running(self) -> bool:
@@ -425,7 +425,7 @@ class Map:
             expected_num_hashes = len(self)
 
             while True:
-                num_missing_components = len(self._missing_components)
+                num_missing_components = len(self.incomplete_components)
                 if show_progress_bar:
                     pbar_len = expected_num_hashes - num_missing_components
                     pbar.update(pbar_len - previous_pbar_len)
@@ -433,7 +433,7 @@ class Map:
                 if num_missing_components == 0:
                     break
 
-                missing_component_statuses = zip(self._missing_components, (self.component_statuses[idx] for idx in self._missing_components))
+                missing_component_statuses = zip(self.incomplete_components, (self.component_statuses[idx] for idx in self.incomplete_components))
                 for component, status in missing_component_statuses:
                     if status is ComponentStatus.HELD:
                         raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} was held')
@@ -997,18 +997,28 @@ class Map:
         self._clean_outputs_dir()
         self.rerun_incomplete()
 
-    def rerun_incomplete(self):
-        """Rerun any incomplete parts of the map from scratch."""
-        self.rerun_components(components = self._missing_components)
-
     def rerun_components(self, components: Iterable[int]):
+        """
+        Rerun part of a map from scratch.
+        The components must not be "active" (i.e., running or held).
+
+        Parameters
+        ----------
+        components
+            The components to rerun.
+        """
         component_set = set(components)
+        active_components = {
+            c for c, status in enumerate(self.component_statuses)
+            if status in (ComponentStatus.RUNNING, ComponentStatus.HELD)
+        }
+        intersection = component_set.intersection(active_components)
+        if len(intersection) != 0:
+            raise exceptions.CannotRerunComponents(f'cannot rerun components {intersection} of map {self.map_id} because they are active (running or held)')
         itemdata = htio.load_itemdata(self._map_dir)
         new_itemdata = [item for item in itemdata if int(item['component']) in component_set]
 
         submit_obj = htio.load_submit(self._map_dir)
-
-        self._remove_from_queue()
 
         new_cluster_id = mapping.execute_submit(
             submit_obj,
