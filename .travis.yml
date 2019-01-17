@@ -9,4 +9,4 @@ before_install:
   - docker build -t htmap .
 
 script:
-  - ./dr pytest --cov
+  - ./dr pytest
