@@ -20,6 +20,7 @@ import datetime
 import shutil
 import time
 import uuid
+import tempfile
 import textwrap
 import functools
 import inspect
@@ -840,8 +841,6 @@ class Map:
         """
         Permanently remove the map and delete all associated input, output, and metadata files.
         """
-        print('called remove')
-        print(self._events)
         del self._events  # todo: this is a workaround for the file object not being exposed
         gc.collect()
 
@@ -855,17 +854,12 @@ class Map:
         return self._act(htcondor.JobAction.Remove)
 
     def _rm_map_dir(self) -> None:
-        test = self._map_dir / 'test'
-        test.touch()
-        # tmp = Path(settings['HTMAP_DIR']) / '.removed_maps' / str(uuid.uuid4())
-        import tempfile
-        # tmp = Path(tempfile.gettempdir())
-        tmp = self._map_dir.parent / str(uuid.uuid4())
-        # tmp.mkdir(parents = True, exist_ok = True)
-        # test.rename(tmp / 'test')
-        # self._map_dir.rename(tmp)
-        import subprocess
-        subprocess.run(['cmd.exe', '/c', 'move', str(self._map_dir), str(tmp)])
+        # moving the map dir to a temp dir first
+        # helps avoid problems where condor writes
+        # to the directory while we're cleaning
+        tmp = Path(tempfile.gettempdir()) / str(uuid.uuid4())
+        tmp.mkdir(parents = True, exist_ok = True)
+        self._map_dir.rename(tmp)
         shutil.rmtree(str(tmp.absolute()))
         logger.debug(f'removed map directory for map {self.map_id}')
 

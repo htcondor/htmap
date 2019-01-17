@@ -37,12 +37,6 @@ if not _htmap_dir.exists():
     except PermissionError as e:
         raise PermissionError(f'the HTMap directory ({_htmap_dir}) needs to be writable') from e
 
-_removed_maps = _htmap_dir / '.removed_maps'
-_removed_maps.mkdir(exist_ok = True)
-for _removed_map in _removed_maps.iterdir():
-    _shutil.rmtree(str(_removed_map.absolute()))
-    _logger.debug(f'found a removed map directory ({_removed_map}) during startup and deleted it')
-
 LOG_FILE = _Path(settings['HTMAP_DIR']) / 'htmap.log'
 # SET UP LOG FILE
 _logfile_handler = _handlers.RotatingFileHandler(
