@@ -100,7 +100,7 @@ def force_remove(map_id: str) -> None:
     map_id
         The ``map_id`` to force-remove.
     """
-    shutil.rmtree(str(mapping.map_dir_path(map_id).absolute()), ignore_errors = True)
+    shutil.rmtree(str(mapping.map_dir_path(map_id).absolute()))
     logger.debug(f'force-removed map {map_id}')
 
 
@@ -174,6 +174,7 @@ def status(
         A text table containing information on the given maps.
     """
     return _status(
+        maps = maps,
         include_state = include_state,
         include_meta = include_meta,
     )
