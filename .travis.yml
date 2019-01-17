@@ -1,10 +1,12 @@
+sudo: required
+
 language: python
-python:
-  - "3.6"
-install:
-  - pip install -r requirements_dev.txt
-  - pip install -e .
+
+services:
+  - docker
+
+before_install:
+  - docker build -t htmap .
+
 script:
-  - pytest --cov
-after_success:
-  - codecov
+  - ./dr pytest --cov
