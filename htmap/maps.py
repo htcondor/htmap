@@ -753,7 +753,7 @@ class Map:
             elif event.type is htcondor.JobEventType.JOB_HELD:
                 h = Hold(
                     code = int(event['HoldReasonCode']),
-                    reason = event['HoldReason'].strip(),
+                    reason = event.get('HoldReason', 'UNKNOWN').strip(),
                 )
                 self._holds[component] = h
 
