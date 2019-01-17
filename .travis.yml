@@ -11,4 +11,5 @@ install:
   - docker build -q -t htmap .
 
 script:
-  - dr pytest
+  - ls
+  - bash -c "dr pytest"
