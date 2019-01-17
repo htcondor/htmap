@@ -40,7 +40,7 @@ RUN apt-get update \
 
 # install utils and dependendencies
 RUN apt-fast -y update \
- && apt-fast -y install --no-install-recommends sudo vim less build-essential gnupg wget ca-certificates locales \
+ && apt-fast -y install --no-install-recommends sudo vim less build-essential git gnupg wget ca-certificates locales \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/* \
  && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
