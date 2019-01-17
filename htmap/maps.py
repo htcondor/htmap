@@ -995,7 +995,7 @@ class Map:
     def rerun(self):
         """Reruns the entire map from scratch."""
         self._clean_outputs_dir()
-        self.rerun_incomplete()
+        self.rerun_components(self.component_indices)
 
     def rerun_components(self, components: Iterable[int]):
         """
