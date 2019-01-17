@@ -1,4 +1,4 @@
-htcondor >= 8.7.9
+htcondor >= 8.8.0
 cloudpickle
 toml
 tqdm

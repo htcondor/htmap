@@ -4,3 +4,5 @@ pytest
 pytest-mock
 pytest-xdist
 coverage
+pytest-cov
+codecov
