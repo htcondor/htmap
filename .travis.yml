@@ -11,4 +11,4 @@ install:
   - docker build -q -t htmap .
 
 script:
-  - docker run htmap pytest -n 10
+  - docker run htmap bash -c "pytest -n 10 --cov ; codecov"

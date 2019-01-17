@@ -16,4 +16,4 @@ do
   sleep .01
 done
 
-exec $@
+exec "$@"
