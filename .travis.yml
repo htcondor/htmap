@@ -1,12 +1,14 @@
 sudo: required
 
 language: python
+python:
+  - "3.6"
 
 services:
   - docker
 
-before_install:
-  - docker build -t htmap .
+install:
+  - docker build -q -t htmap .
 
 script:
-  - ./dr pytest
+  - dr pytest
