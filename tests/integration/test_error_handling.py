@@ -29,10 +29,6 @@ def mapped_div_by_x():
     return div_by_x
 
 
-def test_force_fail():
-    assert 0
-
-
 def test_iterating_over_errored_component_raises(mapped_div_by_x):
     m = mapped_div_by_x.map('iterating-over-errored-component', range(1))
 
