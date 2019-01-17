@@ -107,3 +107,8 @@ class ExpectedError(HTMapException):
 class CannotTransplantPython(HTMapException):
     """The Python interpreter you are using cannot be transplanted."""
     pass
+
+
+class CannotRerunComponents(HTMapException):
+    """The given components cannot be rerun because they are currently active."""
+    pass
