@@ -40,7 +40,7 @@ RUN apt-get update \
 
 # install utils and dependendencies
 RUN apt-fast -y update \
- && apt-fast -y install --no-install-recommends sudo vim less build-essential gnupg wget ca-certificates locales \
+ && apt-fast -y install --no-install-recommends sudo vim less build-essential git gnupg wget ca-certificates locales \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/* \
  && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
@@ -88,5 +88,6 @@ COPY docker/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 # copy htmap package into container and install it
 # this is the only part that can't be cached against editing the package
 COPY --chown=mapper:mapper . /home/${SUBMIT_USER}/htmap
+RUN chmod +x /home/${SUBMIT_USER}/htmap/docker/entrypoint.sh
 WORKDIR /home/${SUBMIT_USER}/htmap
 RUN pip install --no-cache -e .
