@@ -77,8 +77,7 @@ def remove(map_id: str, not_exist_ok: bool = True) -> None:
         If ``False``, raise :class:`htmap.exceptions.MapIdNotFound` if the ``map_id`` doesn't exist.
     """
     try:
-        r = load(map_id)
-        r.remove()
+        load(map_id).remove()
     except (exceptions.MapIdNotFound, FileNotFoundError) as e:
         if not not_exist_ok:
             if not isinstance(e, exceptions.MapIdNotFound):
@@ -192,7 +191,7 @@ def _status(
 
     headers = ['Map ID']
     if include_state:
-        utils.read_events(maps)
+        # utils.read_events(maps)
         headers += [str(d) for d in ComponentStatus.display_statuses()]
     if include_meta:
         headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
