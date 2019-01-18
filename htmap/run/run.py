@@ -14,20 +14,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import functools
+
+import shutil
 import sys
 import socket
 import datetime
 import os
 import gzip
-import signal
 import textwrap
+import time
 import traceback
 import subprocess
+import threading
 import getpass
 from pathlib import Path
-
-TRANSFER_DIR = Path('htmap_transfer').absolute()
 
 
 # import cloudpickle goes in the functions that need it directly
@@ -80,7 +80,7 @@ class ComponentError(ComponentResult):
 
         self.node_info = node_info
         self.python_info = python_info
-        self.working_dir_contents = working_dir_contents
+        self.working_dir_contents = [str(p.absolute()) for p in working_dir_contents]
         self.stack_summary = stack_summary
 
     def __repr__(self):
@@ -88,11 +88,16 @@ class ComponentError(ComponentResult):
 
 
 def get_node_info():
+    try:
+        user = getpass.getuser()
+    except:
+        user = None
+
     return (
         socket.getfqdn(),
         socket.gethostbyname(socket.gethostname()),
         datetime.datetime.utcnow(),
-        getpass.getuser(),
+        user,
     )
 
 
@@ -165,8 +170,8 @@ def save_object(obj, path):
         cloudpickle.dump(obj, file)
 
 
-def save_result(component, result):
-    save_object(result, TRANSFER_DIR / '{}.out'.format(component))
+def save_result(component, result, transfer_dir):
+    save_object(result, transfer_dir / '{}.out'.format(component))
 
 
 def build_frames(tb):
@@ -186,13 +191,16 @@ def build_frames(tb):
         yield summ
 
 
-def handle_evict(signum, frame, *, exclude):
-    exclude = set(exclude)
-    print('boom')
-    for path in Path.cwd().iterdir():
-        if path not in exclude and 'condor' not in path:
-            print(path)
-            path.rename(TRANSFER_DIR / path.name)
+def load_checkpoints(scratch_dir, transfer_dir):
+    curr_dir = transfer_dir / 'current_checkpoint'
+    old_dir = transfer_dir / 'old_checkpoint'
+
+    if curr_dir.exists():
+        for path in curr_dir.iterdir():
+            path.rename(scratch_dir / path.name)
+    elif old_dir.exists():
+        for path in old_dir.iterdir():
+            path.rename(scratch_dir / path.name)
 
 
 def main(component):
@@ -200,61 +208,66 @@ def main(component):
     print_node_info(node_info)
     print()
 
-    contents = get_working_dir_contents()
-    signal.signal(
-        signal.SIGTERM,
-        functools.partial(
-            handle_evict,
-            exclude = contents,
-        )
-    )
-    TRANSFER_DIR.mkdir(exist_ok = True)
-    print_working_dir_contents(contents)
-    print()
+    scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
+    transfer_dir = scratch_dir / '_htmap_transfer'
+    transfer_dir.mkdir(exist_ok = True)
 
     try:
-        python_info = get_python_info()
-        print_python_info(python_info)
-    except Exception as e:
-        python_info = None
-        print(e)
-    print()
+        load_checkpoints(scratch_dir, transfer_dir)
 
-    os.environ['HTMAP_ON_EXECUTE'] = "1"
+        contents = get_working_dir_contents()
+        print_working_dir_contents(contents)
+        print()
 
-    try:
-        func = load_func()
-        args, kwargs = load_args_and_kwargs(component)
+        try:
+            python_info = get_python_info()
+            print_python_info(python_info)
+        except Exception as e:
+            python_info = None
+            print(e)
+        print()
 
-        print_run_info(component, func, args, kwargs)
+        os.environ['HTMAP_ON_EXECUTE'] = "1"
 
-        print('\n----- MAP COMPONENT OUTPUT START -----\n')
-        output = func(*args, **kwargs)
-        print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
+        try:
+            func = load_func()
+            args, kwargs = load_args_and_kwargs(component)
 
-        result = ComponentOk(
-            component = component,
-            status = 'OK',
-            output = output,
-        )
-    except Exception as e:
-        print('\n-------  MAP COMPONENT ERROR  --------\n')
-        (type, value, trace) = sys.exc_info()
-        stack_summ = traceback.StackSummary.from_list(build_frames(trace))
+            print_run_info(component, func, args, kwargs)
 
-        result = ComponentError(
-            component = component,
-            status = 'ERR',
-            exception_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip(),
-            stack_summary = stack_summ,
-            node_info = node_info,
-            python_info = python_info,
-            working_dir_contents = contents,
-        )
+            print('\n----- MAP COMPONENT OUTPUT START -----\n')
+            output = func(*args, **kwargs)
+            print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
-    save_result(component, result)
+            result = ComponentOk(
+                component = component,
+                status = 'OK',
+                output = output,
+            )
+        except Exception as e:
+            print('\n-------  MAP COMPONENT ERROR  --------\n')
+            (type, value, trace) = sys.exc_info()
+            stack_summ = traceback.StackSummary.from_list(build_frames(trace))
 
-    print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
+            result = ComponentError(
+                component = component,
+                status = 'ERR',
+                exception_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip(),
+                stack_summary = stack_summ,
+                node_info = node_info,
+                python_info = python_info,
+                working_dir_contents = contents,
+            )
+
+        shutil.rmtree(transfer_dir)
+        transfer_dir.mkdir()
+
+        save_result(component, result, transfer_dir)
+
+        print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
+    except:  # todo: what happens when job fails mid-go?
+        shutil.rmtree(transfer_dir)
+        transfer_dir.mkdir()
 
 
 if __name__ == '__main__':

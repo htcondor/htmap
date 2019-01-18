@@ -238,8 +238,8 @@ def get_base_descriptors(
         'stdout': (map_dir / 'job_logs' / '$(component).stdout').as_posix(),
         'stderr': (map_dir / 'job_logs' / '$(component).stderr').as_posix(),
         'should_transfer_files': 'YES',
-        'transfer_output_files': 'htmap_transfer/',
-        'transfer_output_remaps': f'"$(component).out={(map_dir / "outputs" / "$(component).out").as_posix()}"',
+        'transfer_output_files': '_htmap_transfer',
+        'transfer_output_remaps': f'"_htmap_transfer/$(component).out={(map_dir / "outputs" / "$(component).out").as_posix()}"',
         '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }
