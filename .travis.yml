@@ -1,11 +1,14 @@
+sudo: required
+
 language: python
 python:
   - "3.6"
+
+services:
+  - docker
+
 install:
-  - pip install -r requirements_dev.txt
-  - pip install pytest-cov codecov
-  - pip install -e .
+  - docker build -q -t htmap .
+
 script:
-  - pytest --cov
-after_success:
-  - codecov
+  - docker run htmap bash -e -c "pytest -n 10 --cov ; codecov -t 492519e2-1bcf-4e8a-8a3e-e28be5d9de8d"

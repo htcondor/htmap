@@ -567,6 +567,33 @@ def remove(index):
 
 
 @cli.group()
+def edit():
+    """Edit a map's attributes."""
+
+
+@edit.command()
+@click.argument('mapid')
+@click.argument(
+    'memory',
+    type = int,
+)
+def memory(mapid, memory):
+    """Set a map's requested memory (in MB)."""
+    _cli_load(mapid).set_memory(memory)
+
+
+@edit.command()
+@click.argument('mapid')
+@click.argument(
+    'disk',
+    type = int,
+)
+def disk(mapid, disk):
+    """Set a map's requested disk (in KB)."""
+    _cli_load(mapid).set_disk(disk)
+
+
+@cli.group()
 def path():
     """Get paths to various things. Mostly for debugging."""
 

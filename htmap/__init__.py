@@ -19,6 +19,7 @@ from typing import Tuple as _Tuple
 import logging as _logging
 import logging.handlers as _handlers
 from pathlib import Path as _Path
+import shutil as _shutil
 
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 

@@ -24,6 +24,7 @@ import signal
 import textwrap
 import traceback
 import subprocess
+import getpass
 from pathlib import Path
 
 TRANSFER_DIR = Path('htmap_transfer').absolute()
@@ -91,11 +92,12 @@ def get_node_info():
         socket.getfqdn(),
         socket.gethostbyname(socket.gethostname()),
         datetime.datetime.utcnow(),
+        getpass.getuser(),
     )
 
 
 def print_node_info(node_info):
-    print('Landed on execute node {} ({}) at {}'.format(*node_info))
+    print('Landed on execute node {} ({}) at {} as {}'.format(*node_info))
 
 
 def get_python_info():

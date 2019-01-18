@@ -19,6 +19,8 @@ import logging
 import datetime
 import shutil
 import time
+import uuid
+import tempfile
 import textwrap
 import functools
 import inspect
@@ -240,6 +242,7 @@ class Map:
         self._holds: Dict[int, Hold] = {}
         self._memory_usage = [0 for _ in self.component_indices]
         self._runtime = [datetime.timedelta(0) for _ in self.component_indices]
+        self._local_data = None
 
         MAPS[self.map_id] = self
 
@@ -342,21 +345,8 @@ class Map:
         """The paths to the output files."""
         yield from (self._output_file_path(idx) for idx in self.component_indices)
 
-    def _remove_from_queue(self) -> classad.ClassAd:
-        return self._act(htcondor.JobAction.Remove)
-
-    def _rm_map_dir(self) -> None:
-        shutil.rmtree(str(self._map_dir.absolute()))
-        logger.debug(f'removed map directory for map {self.map_id}')
-
-    def _clean_outputs_dir(self) -> None:
-        def update_status(path: Path) -> None:
-            self.component_statuses[int(path.stem)] = ComponentStatus.REMOVED
-
-        utils.clean_dir(self._outputs_dir, on_file = update_status)
-
     @property
-    def _missing_components(self) -> List[int]:
+    def incomplete_components(self) -> List[int]:
         """Return a list of component indices that are not complete."""
         return [
             idx
@@ -365,7 +355,7 @@ class Map:
         ]
 
     @property
-    def _completed_components(self) -> List[int]:
+    def completed_components(self) -> List[int]:
         """Return a list of component indices that are complete."""
         return [
             idx
@@ -376,7 +366,7 @@ class Map:
     @property
     def is_done(self) -> bool:
         """``True`` if all of the output is available for this map."""
-        return len(self._missing_components) == 0
+        return len(self.incomplete_components) == 0
 
     @property
     def is_running(self) -> bool:
@@ -424,7 +414,7 @@ class Map:
             expected_num_hashes = len(self)
 
             while True:
-                num_missing_components = len(self._missing_components)
+                num_missing_components = len(self.incomplete_components)
                 if show_progress_bar:
                     pbar_len = expected_num_hashes - num_missing_components
                     pbar.update(pbar_len - previous_pbar_len)
@@ -432,7 +422,7 @@ class Map:
                 if num_missing_components == 0:
                     break
 
-                missing_component_statuses = zip(self._missing_components, (self.component_statuses[idx] for idx in self._missing_components))
+                missing_component_statuses = zip(self.incomplete_components, (self.component_statuses[idx] for idx in self.incomplete_components))
                 for component, status in missing_component_statuses:
                     if status is ComponentStatus.HELD:
                         raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} was held')
@@ -739,6 +729,8 @@ class Map:
         cluster_id_set = set(self._cluster_ids)
 
         for event in self._events:
+            self._local_data = None  # invalidate cache if any events were received
+
             # skip events that aren't part of this map (if any leak in)
             if event.cluster not in cluster_id_set:
                 continue
@@ -750,9 +742,10 @@ class Map:
             component = self._clusterproc_to_component[(event.cluster, event.proc)]
 
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                old = self._memory_usage[component]
-                new = int(event.get('MemoryUsage', 0))
-                self._memory_usage[component] = max(old, new)
+                self._memory_usage[component] = max(
+                    self._memory_usage[component],
+                    int(event.get('MemoryUsage', 0)),
+                )
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
                 self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
             elif event.type is htcondor.JobEventType.JOB_RELEASED:
@@ -760,7 +753,7 @@ class Map:
             elif event.type is htcondor.JobEventType.JOB_HELD:
                 h = Hold(
                     code = int(event['HoldReasonCode']),
-                    reason = event['HoldReason'].strip(),
+                    reason = event.get('HoldReason', 'UNKNOWN').strip(),
                 )
                 self._holds[component] = h
 
@@ -833,13 +826,16 @@ class Map:
     @property
     def local_data(self) -> int:
         """Return the number of bytes stored on the local disk by the map."""
-        return utils.get_dir_size(self._map_dir)
+        if self._local_data is None:
+            self._local_data = utils.get_dir_size(self._map_dir)
+        return self._local_data
 
     def _act(
         self,
         action: htcondor.JobAction,
         requirements: Optional[str] = None,
     ) -> classad.ClassAd:
+        """Perform an action on all of the jobs associated with this map."""
         schedd = mapping.get_schedd()
         req = self._requirements(requirements)
         a = schedd.act(action, req)
@@ -858,11 +854,27 @@ class Map:
         self._remove_from_queue()
         self._rm_map_dir()
         self._is_removed = True
-        try:
-            MAPS.pop(self.map_id)
-        except KeyError:  # may already be gone depending on when GC runs
-            pass
+        MAPS.pop(self.map_id, None)
         logger.info(f'removed map {self.map_id}')
+
+    def _remove_from_queue(self) -> classad.ClassAd:
+        return self._act(htcondor.JobAction.Remove)
+
+    def _rm_map_dir(self) -> None:
+        # moving the map dir to a temp dir first
+        # helps avoid problems where condor writes
+        # to the directory while we're cleaning
+        tmp = Path(tempfile.gettempdir()) / str(uuid.uuid4())
+        tmp.mkdir(parents = True, exist_ok = True)
+        self._map_dir.rename(tmp)
+        shutil.rmtree(str(tmp.absolute()))
+        logger.debug(f'removed map directory for map {self.map_id}')
+
+    def _clean_outputs_dir(self) -> None:
+        def update_status(path: Path) -> None:
+            self.component_statuses[int(path.stem)] = ComponentStatus.REMOVED
+
+        utils.clean_dir(self._outputs_dir, on_file = update_status)
 
     def hold(self) -> None:
         """Temporarily remove the map from the queue, until it is released."""
@@ -895,7 +907,7 @@ class Map:
 
         logger.debug(f'set attribute {attr} for map {self.map_id} to {value}')
 
-    def set_memory(self, memory: Union[str, int, float]) -> None:
+    def set_memory(self, memory: int) -> None:
         """
         Change the amount of memory (RAM) each map component needs.
 
@@ -907,14 +919,11 @@ class Map:
         Parameters
         ----------
         memory
-            The amount of memory (RAM) to request.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **MB**.
+            The amount of memory (RAM) to request, as an integer number of MB.
         """
-        if isinstance(memory, (int, float)):
-            memory = f'{memory}MB'
-        self._edit('RequestMemory', memory)
+        self._edit('RequestMemory', str(memory))
 
-    def set_disk(self, disk: Union[str, int, float]) -> None:
+    def set_disk(self, disk: int) -> None:
         """
         Change the amount of disk space each map component needs.
 
@@ -926,12 +935,9 @@ class Map:
         Parameters
         ----------
         disk
-            The amount of disk space to use.
-            Can either be a :class:`str` (``'100MB'``, ``'1GB'``, etc.), or a number, in which case it is interpreted as a number of **GB**.
+            The amount of disk space to request, as an integer number of KB.
         """
-        if isinstance(disk, (int, float)):
-            disk = f'{disk}MB'
-        self._edit('RequestDisk', disk)
+        self._edit('RequestDisk', str(disk))
 
     def stdout(
         self,
@@ -994,20 +1000,30 @@ class Map:
     def rerun(self):
         """Reruns the entire map from scratch."""
         self._clean_outputs_dir()
-        self.rerun_incomplete()
-
-    def rerun_incomplete(self):
-        """Rerun any incomplete parts of the map from scratch."""
-        self.rerun_components(components = self._missing_components)
+        self.rerun_components(self.component_indices)
 
     def rerun_components(self, components: Iterable[int]):
+        """
+        Rerun part of a map from scratch.
+        The components must not be "active" (i.e., running or held).
+
+        Parameters
+        ----------
+        components
+            The components to rerun.
+        """
         component_set = set(components)
+        active_components = {
+            c for c, status in enumerate(self.component_statuses)
+            if status in (ComponentStatus.RUNNING, ComponentStatus.HELD)
+        }
+        intersection = component_set.intersection(active_components)
+        if len(intersection) != 0:
+            raise exceptions.CannotRerunComponents(f'cannot rerun components {intersection} of map {self.map_id} because they are active (running or held)')
         itemdata = htio.load_itemdata(self._map_dir)
         new_itemdata = [item for item in itemdata if int(item['component']) in component_set]
 
         submit_obj = htio.load_submit(self._map_dir)
-
-        self._remove_from_queue()
 
         new_cluster_id = mapping.execute_submit(
             submit_obj,

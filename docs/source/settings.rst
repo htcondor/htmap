@@ -74,12 +74,12 @@ HTCONDOR
 ``SCHEDULER`` - the address of the HTCondor scheduler (see :class:`htcondor.Schedd`).
 If set to ``None``, HTMap discovers the local scheduler automatically.
 Defaults to ``None``.
-Inherits the environment variable ``HTMAP_CONDOR_SCHEDULER`.
+Inherits the environment variable ``HTMAP_CONDOR_SCHEDULER``.
 
 ``COLLECTOR`` - the address of the HTCondor collector (see :class:`htcondor.Collector`).
 If set to ``None``, HTMap discovers the local collector automatically.
 Defaults to ``None``.
-Inherits the environment variable ``HTMAP_CONDOR_COLLECTOR`.
+Inherits the environment variable ``HTMAP_CONDOR_COLLECTOR``.
 
 DOCKER
 ++++++
