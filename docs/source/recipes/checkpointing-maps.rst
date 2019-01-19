@@ -27,23 +27,31 @@ For example, a simulation that proceeds in 100 steps like this:
 
 .. code-block:: python
 
-    for step in range(100):
-        next_state = evolve(current_state)
+    def function(initial_state):
+        current_state = initial_state
+        for step in range(100):
+            current_state = evolve(current_state)
+
+        return current_state
 
 would need to become something like
 
 .. code-block:: python
 
-    try:
-        current_step, current_state = load_from_checkpoint(checkpoint_file)
-    except FileNotFoundError:
-        current_step, current_state = 0, initial_state
+    def function(initial_state):
+        try:
+            current_step, current_state = load_from_checkpoint(checkpoint_file)
+        except FileNotFoundError:
+            current_step, current_state = 0, initial_state
 
-    while current_step < 100:
-        next_state = evolve(current_state)
+        while current_step < 100:
+            current_state = evolve(current_state)
+            current_step += 1
 
-        if should_write_checkpoint:
-            write_checkpoint(current_step, current_state)
+            if should_write_checkpoint:
+                write_checkpoint(current_step, current_state)
+
+        return current_state
 
 
 Concrete Example
