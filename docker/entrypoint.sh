@@ -16,4 +16,11 @@ do
   sleep .01
 done
 
+if [[ -n $@ ]];
+then
+    echo "Executing command \"$@\" in container..."
+else
+    echo "Executing default test command in container..."
+fi
+
 exec "$@"

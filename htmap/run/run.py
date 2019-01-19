@@ -22,10 +22,8 @@ import datetime
 import os
 import gzip
 import textwrap
-import time
 import traceback
 import subprocess
-import threading
 import getpass
 from pathlib import Path
 
@@ -191,7 +189,7 @@ def build_frames(tb):
         yield summ
 
 
-def load_checkpoints(scratch_dir, transfer_dir):
+def load_checkpoint(scratch_dir, transfer_dir):
     curr_dir = transfer_dir / 'current_checkpoint'
     old_dir = transfer_dir / 'old_checkpoint'
 
@@ -203,6 +201,11 @@ def load_checkpoints(scratch_dir, transfer_dir):
             path.rename(scratch_dir / path.name)
 
 
+def clean_and_remake_dir(dir):
+    shutil.rmtree(dir, ignore_errors = True)
+    dir.mkdir()
+
+
 def main(component):
     node_info = get_node_info()
     print_node_info(node_info)
@@ -210,64 +213,60 @@ def main(component):
 
     scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
     transfer_dir = scratch_dir / '_htmap_transfer'
-    transfer_dir.mkdir(exist_ok = True)
+
+    load_checkpoint(scratch_dir, transfer_dir)
+    clean_and_remake_dir(transfer_dir)
+
+    contents = get_working_dir_contents()
+    print_working_dir_contents(contents)
+    print()
 
     try:
-        load_checkpoints(scratch_dir, transfer_dir)
+        python_info = get_python_info()
+        print_python_info(python_info)
+    except Exception as e:
+        python_info = None
+        print(e)
+    print()
 
-        contents = get_working_dir_contents()
-        print_working_dir_contents(contents)
-        print()
+    os.environ['HTMAP_ON_EXECUTE'] = "1"
 
-        try:
-            python_info = get_python_info()
-            print_python_info(python_info)
-        except Exception as e:
-            python_info = None
-            print(e)
-        print()
+    try:
+        func = load_func()
+        args, kwargs = load_args_and_kwargs(component)
 
-        os.environ['HTMAP_ON_EXECUTE'] = "1"
+        print_run_info(component, func, args, kwargs)
 
-        try:
-            func = load_func()
-            args, kwargs = load_args_and_kwargs(component)
+        print('\n----- MAP COMPONENT OUTPUT START -----\n')
+        output = func(*args, **kwargs)
+        print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
-            print_run_info(component, func, args, kwargs)
+        result = ComponentOk(
+            component = component,
+            status = 'OK',
+            output = output,
+        )
+    except Exception as e:
+        print('\n-------  MAP COMPONENT ERROR  --------\n')
 
-            print('\n----- MAP COMPONENT OUTPUT START -----\n')
-            output = func(*args, **kwargs)
-            print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
+        (type, value, trace) = sys.exc_info()
+        stack_summ = traceback.StackSummary.from_list(build_frames(trace))
+        exc_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip()
 
-            result = ComponentOk(
-                component = component,
-                status = 'OK',
-                output = output,
-            )
-        except Exception as e:
-            print('\n-------  MAP COMPONENT ERROR  --------\n')
-            (type, value, trace) = sys.exc_info()
-            stack_summ = traceback.StackSummary.from_list(build_frames(trace))
+        result = ComponentError(
+            component = component,
+            status = 'ERR',
+            exception_msg = exc_msg,
+            stack_summary = stack_summ,
+            node_info = node_info,
+            python_info = python_info,
+            working_dir_contents = contents,
+        )
 
-            result = ComponentError(
-                component = component,
-                status = 'ERR',
-                exception_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip(),
-                stack_summary = stack_summ,
-                node_info = node_info,
-                python_info = python_info,
-                working_dir_contents = contents,
-            )
+    clean_and_remake_dir(transfer_dir)
+    save_result(component, result, transfer_dir)
 
-        shutil.rmtree(transfer_dir)
-        transfer_dir.mkdir()
-
-        save_result(component, result, transfer_dir)
-
-        print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
-    except:  # todo: what happens when job fails mid-go?
-        shutil.rmtree(transfer_dir)
-        transfer_dir.mkdir()
+    print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 
 
 if __name__ == '__main__':
