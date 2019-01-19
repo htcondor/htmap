@@ -144,6 +144,12 @@ Additionally, default map options can be set globally via ``settings['MAP_OPTION
    :members:
 
 
+Checkpointing
+-------------
+
+.. autofunction:: htmap.checkpoint
+
+
 Management
 ----------
 

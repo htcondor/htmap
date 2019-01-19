@@ -27,6 +27,9 @@ For example, a simulation that proceeds in 100 steps like this:
 
 .. code-block:: python
 
+    import htmap
+
+    @htmap.mapped
     def function(initial_state):
         current_state = initial_state
         for step in range(100):
@@ -38,6 +41,9 @@ would need to become something like
 
 .. code-block:: python
 
+    import htmap
+
+    @htmap.mapped
     def function(initial_state):
         try:
             current_step, current_state = load_from_checkpoint(checkpoint_file)
@@ -50,11 +56,43 @@ would need to become something like
 
             if should_write_checkpoint:
                 write_checkpoint(current_step, current_state)
+                htmap.checkpoint(checkpoint_file)  # important!
 
         return current_state
 
+Note the call to :func:`htmap.checkpoint`.
+This function takes the paths to the checkpoint file(s) that you've written and does the necessary behind-the-scenes handling to make them available if the component needs to restart.
+If you don't call this function, the files will not be available, and your checkpoint won't work!
 
 Concrete Example
 ================
 
+Let's work with a more concrete example.
+
+Checkpointing Strategy
+======================
+
+You generally don't need to write checkpoints very often.
+Consider writing a checkpoint condition that writes a new checkpoint if a certain amount of time has elapsed, perhaps an hour.
+For example, using the ``datetime`` library:
+
+.. code-block:: python
+
+    import datetime
+    import htmap
+
+    @htmap.mapped
+    def function(inputs):
+        latest_checkpoint_at = datetime.datetime.now()
+
+        # load for checkpoint or initialize
+
+        while not_done:
+            # do a unit of work
+
+            if datedate.datetime.now() > latest_checkpoint_at + datetime.timedelta(hours = 1):
+                # write checkpoint
+                latest_checkpoint_at = datetime.datetime.now()
+
+        return result
 

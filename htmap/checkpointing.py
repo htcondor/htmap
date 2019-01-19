@@ -18,7 +18,20 @@ from pathlib import Path
 import shutil
 
 
-def checkpoint(*paths):
+def checkpoint(*paths: os.PathLike):
+    """
+    Informs HTMap about the existence of checkpoint files.
+
+    .. attention::
+
+        The files will be copied, so try not to make the checkpoint files too large.
+        On the other hand, if you can build up your checkpoint file incrementally, you may be able to use this to your advantage.
+
+    Parameters
+    ----------
+    paths
+        The paths to the checkpoint files.
+    """
     # no-op if not on execute node
     if os.getenv('HTMAP_ON_EXECUTE') != "1":
         return
@@ -36,7 +49,8 @@ def checkpoint(*paths):
         d.mkdir(parents = True, exist_ok = True)
 
     for path in paths:
-        path.rename(prep_dir / path.name)
+        path = Path(path)
+        shutil.copy2(path, prep_dir / path.name)
 
     curr_dir.rename(old_dir)
     prep_dir.rename(curr_dir)
