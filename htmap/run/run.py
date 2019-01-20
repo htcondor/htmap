@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import shutil
 import sys
 import socket
 import datetime
@@ -77,7 +78,7 @@ class ComponentError(ComponentResult):
 
         self.node_info = node_info
         self.python_info = python_info
-        self.working_dir_contents = working_dir_contents
+        self.working_dir_contents = [str(p.absolute()) for p in working_dir_contents]
         self.stack_summary = stack_summary
 
     def __repr__(self):
@@ -85,11 +86,16 @@ class ComponentError(ComponentResult):
 
 
 def get_node_info():
+    try:
+        user = getpass.getuser()
+    except:
+        user = None
+
     return (
         socket.getfqdn(),
         socket.gethostbyname(socket.gethostname()),
         datetime.datetime.utcnow(),
-        getpass.getuser(),
+        user,
     )
 
 
@@ -120,13 +126,13 @@ def pip_freeze() -> str:
 
 
 def get_working_dir_contents():
-    return [str(p) for p in Path.cwd().iterdir()]
+    return list(Path.cwd().iterdir())
 
 
 def print_working_dir_contents(contents):
     print('Working directory contents:')
     for path in contents:
-        print('  ' + path)
+        print('  ' + str(path))
 
 
 def print_run_info(component, func, args, kwargs):
@@ -149,11 +155,11 @@ def load_object(path):
 
 
 def load_func():
-    return load_object('func')
+    return load_object(Path('func'))
 
 
 def load_args_and_kwargs(component):
-    return load_object('{}.in'.format(component))
+    return load_object(Path('{}.in'.format(component)))
 
 
 def save_object(obj, path):
@@ -162,8 +168,8 @@ def save_object(obj, path):
         cloudpickle.dump(obj, file)
 
 
-def save_result(component, result):
-    save_object(result, '{}.out'.format(component))
+def save_result(component, result, transfer_dir):
+    save_object(result, transfer_dir / '{}.out'.format(component))
 
 
 def build_frames(tb):
@@ -183,13 +189,38 @@ def build_frames(tb):
         yield summ
 
 
+def load_checkpoint(scratch_dir, transfer_dir):
+    curr_dir = transfer_dir / 'current_checkpoint'
+    old_dir = transfer_dir / 'old_checkpoint'
+
+    if curr_dir.exists():
+        for path in curr_dir.iterdir():
+            path.rename(scratch_dir / path.name)
+    elif old_dir.exists():
+        for path in old_dir.iterdir():
+            path.rename(scratch_dir / path.name)
+
+
+def clean_and_remake_dir(dir):
+    shutil.rmtree(dir, ignore_errors = True)
+    dir.mkdir()
+
+
 def main(component):
     node_info = get_node_info()
     print_node_info(node_info)
     print()
+
+    scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
+    transfer_dir = scratch_dir / '_htmap_transfer'
+
+    load_checkpoint(scratch_dir, transfer_dir)
+    clean_and_remake_dir(transfer_dir)
+
     contents = get_working_dir_contents()
     print_working_dir_contents(contents)
     print()
+
     try:
         python_info = get_python_info()
         print_python_info(python_info)
@@ -217,20 +248,23 @@ def main(component):
         )
     except Exception as e:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
+
         (type, value, trace) = sys.exc_info()
         stack_summ = traceback.StackSummary.from_list(build_frames(trace))
+        exc_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip()
 
         result = ComponentError(
             component = component,
             status = 'ERR',
-            exception_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip(),
+            exception_msg = exc_msg,
             stack_summary = stack_summ,
             node_info = node_info,
             python_info = python_info,
             working_dir_contents = contents,
         )
 
-    save_result(component, result)
+    clean_and_remake_dir(transfer_dir)
+    save_result(component, result, transfer_dir)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 

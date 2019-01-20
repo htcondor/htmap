@@ -5,10 +5,4 @@ CONTAINER_TAG=htmap-tests
 set -e
 echo "Building HTMap testing container..."
 docker build --quiet -t ${CONTAINER_TAG} .
-if [[ -n $@ ]];
-then
-    echo "Executing command \"$@\" in container..."
-else
-    echo "Executing default test command in container..."
-fi
 docker run -it --rm ${CONTAINER_TAG} $@
