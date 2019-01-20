@@ -15,11 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import os
+
+os.environ['HTMAP_ON_EXECUTE'] = "1"
+
 import shutil
 import sys
 import socket
 import datetime
-import os
 import gzip
 import textwrap
 import traceback
@@ -228,8 +232,6 @@ def main(component):
         python_info = None
         print(e)
     print()
-
-    os.environ['HTMAP_ON_EXECUTE'] = "1"
 
     try:
         func = load_func()

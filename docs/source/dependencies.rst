@@ -33,6 +33,10 @@ The default delivery method is ``docker``, with image ``continuumio/anaconda3:la
     Note that you may need to manually upgrade/downgrade your local or remote ``cloudpickle``.
 
 
+.. attention::
+
+    To use checkpointing, ``htmap`` itself must be installed in the execute environment.
+
 Run Inside a Docker Container
 -----------------------------
 
