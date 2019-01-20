@@ -14,10 +14,6 @@
 # limitations under the License.
 
 import os
-from pathlib import Path
-import shutil
-
-from . import names
 
 
 def checkpoint(*paths: os.PathLike):
@@ -38,26 +34,5 @@ def checkpoint(*paths: os.PathLike):
     paths
         The paths to the checkpoint files.
     """
-    # no-op if not on execute node
-    if os.getenv('HTMAP_ON_EXECUTE') != "1":
-        return
-
-    transfer_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR')) / names.TRANSFER_DIR
-
-    # this is not the absolute safest method
-    # but it's good enough for government work
-
-    prep_dir = transfer_dir / names.CHECKPOINT_PREP
-    curr_dir = transfer_dir / names.CHECKPOINT_CURRENT
-    old_dir = transfer_dir / names.CHECKPOINT_OLD
-
-    for d in (prep_dir, curr_dir, old_dir):
-        d.mkdir(parents = True, exist_ok = True)
-
-    for path in paths:
-        path = Path(path)
-        shutil.copy2(path, prep_dir / path.name)
-
-    curr_dir.rename(old_dir)
-    prep_dir.rename(curr_dir)
-    shutil.rmtree(old_dir)
+    pass
+    # the real implementation of this function is in the run.py script
