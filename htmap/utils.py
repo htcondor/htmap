@@ -226,4 +226,4 @@ def pip_freeze() -> str:
 def read_events(maps):
     """Read the events logs of the given maps in parallel."""
     with ThreadPoolExecutor() as pool:
-        pool.map(lambda map: map._read_events(), maps)
+        pool.map(lambda map: map._state._read_events(), maps)
