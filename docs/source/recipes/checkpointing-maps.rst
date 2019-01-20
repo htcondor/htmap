@@ -73,7 +73,7 @@ Checkpointing Strategy
 ======================
 
 You generally don't need to write checkpoints very often.
-Consider writing a checkpoint condition that writes a new checkpoint if a certain amount of time has elapsed, perhaps an hour.
+We recommend writing a new checkpoint if a certain amount of time has elapsed, perhaps an hour.
 For example, using the ``datetime`` library:
 
 .. code-block:: python
