@@ -240,7 +240,7 @@ def get_base_descriptors(
         'stderr': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDERR_EXT}').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
-        'transfer_output_files': '_htmap_transfer',
+        'transfer_output_files': names.TRANSFER_DIR,
         'transfer_output_remaps': f'"{names.TRANSFER_DIR}/$(component).out={(map_dir / names.OUTPUTS_DIR / "$(component).out").as_posix()}"',
         '+component': '$(component)',
         '+IsHTMapJob': 'True',

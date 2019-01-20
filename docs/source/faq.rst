@@ -29,29 +29,3 @@ I'm getting a weird error from ``cloudpickle.load``?
 
 You probably have a version mismatch between the submit and execute locations.
 See the "Attention" box near the top of :doc:`dependencies`.
-
-
-What's a good minimal custom Docker image for using HTMap?
-----------------------------------------------------------
-
-I'm glad you asked!
-Here's the Dockerfile template that Josh uses:
-
-.. code-block:: docker
-
-    FROM continuumio/miniconda3
-
-    # update & upgrade
-    RUN apt-get -y update && \
-        apt-get -y upgrade
-
-    # install python dependencies
-    RUN conda install -y python=<your preferred python version> \
-                         cloudpickle=<the same version you have locally> \
-        && \
-        conda update -y --all && \
-        conda clean -y --all
-
-    # my custom packages
-    RUN <conda/pip> install <your dependencies, however you'd like>
-
