@@ -33,3 +33,5 @@ TRANSFER_DIR = '_htmap_transfer'
 CHECKPOINT_PREP = 'prep_checkpoint'
 CHECKPOINT_CURRENT = 'current_checkpoint'
 CHECKPOINT_OLD = 'old_checkpoint'
+
+REMOVED_MAPS_DIR = 'removed_maps'

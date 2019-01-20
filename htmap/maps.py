@@ -632,10 +632,10 @@ class Map:
         # moving the map dir to a temp dir first
         # helps avoid problems where condor writes
         # to the directory while we're cleaning
-        tmp = Path(tempfile.gettempdir()) / str(uuid.uuid4())
-        tmp.mkdir(parents = True, exist_ok = True)
+        tmp = Path(settings['HTMAP_DIR']) / names.REMOVED_MAPS_DIR / str(uuid.uuid4())
+        tmp.parent.mkdir(parents = True, exist_ok = True)
         self._map_dir.rename(tmp)
-        shutil.rmtree(str(tmp.absolute()))
+        shutil.rmtree(tmp.absolute())
         logger.debug(f'removed map directory for map {self.map_id}')
 
     def _clean_outputs_dir(self) -> None:

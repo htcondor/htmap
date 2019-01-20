@@ -19,7 +19,6 @@ from typing import Tuple as _Tuple
 import logging as _logging
 import logging.handlers as _handlers
 from pathlib import Path as _Path
-import shutil as _shutil
 
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 
@@ -49,6 +48,11 @@ _fmt = _logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 _logfile_handler.setFormatter(_fmt)
 _logfile_handler.setLevel(_logging.DEBUG)
 _logger.addHandler(_logfile_handler)
+
+import shutil as _shutil
+from . import names as _names
+
+_shutil.rmtree(_htmap_dir / _names.REMOVED_MAPS_DIR, ignore_errors = True)
 
 from .mapping import (
     map, starmap, build_map,
