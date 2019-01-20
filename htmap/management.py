@@ -19,6 +19,7 @@ import logging
 from pathlib import Path
 import shutil
 import datetime
+import collections
 import json
 import csv
 import io
@@ -138,7 +139,7 @@ def _extract_status_data(
     sd['Map ID'] = map.map_id
 
     if include_state:
-        sc = map.status_counts
+        sc = collections.Counter(map.component_statuses)
 
         sd.update({str(k): sc[k] for k in ComponentStatus.display_statuses()})
 
@@ -251,11 +252,12 @@ def status_json(
 
     j = {}
     for map in maps:
+        sc = collections.Counter(map.component_statuses)
         d: Dict[str, Union[dict, str, int, float]] = {'map_id': map.map_id}
         if include_state:
             status_to_count = {}
             for status in ComponentStatus.display_statuses():
-                status_to_count[status.value.lower()] = map.status_counts[status]
+                status_to_count[status.value.lower()] = sc[status]
             d['component_status_counts'] = status_to_count
         if include_meta:
             d['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
@@ -311,10 +313,11 @@ def status_csv(
 
     rows = []
     for map in maps:
+        sc = collections.Counter(map.component_statuses)
         row: Dict[str, Union[str, int, float]] = {'map_id': map.map_id}
         if include_state:
             for status in ComponentStatus.display_statuses():
-                row[status.value.lower()] = map.status_counts[status]
+                row[status.value.lower()] = sc[status]
         if include_meta:
             row['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
             row['max_memory_usage'] = max(map.memory_usage) * 1024 * 1024
