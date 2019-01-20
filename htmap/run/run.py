@@ -30,8 +30,8 @@ from pathlib import Path
 # we need to fake the checkpoint function's location so that the references work out right
 from types import ModuleType
 
-checkpoint_module = ModuleType('htmap')
-sys.modules[checkpoint_module.__name__] = checkpoint_module
+fake_htmap = ModuleType('htmap')
+sys.modules[fake_htmap.__name__] = fake_htmap
 
 TRANSFER_DIR = '_htmap_transfer'
 CHECKPOINT_PREP = 'prep_checkpoint'
@@ -82,7 +82,8 @@ def checkpoint(*paths: os.PathLike):
     shutil.rmtree(old_dir)
 
 
-checkpoint_module.checkpoint = checkpoint
+fake_htmap.checkpoint = checkpoint
+fake_htmap.mapped = lambda *args, **kwargs: None
 
 
 # import cloudpickle goes in the functions that need it directly
