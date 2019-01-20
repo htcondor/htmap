@@ -66,6 +66,7 @@ from .management import (
     remove, force_remove,
     Transplant, transplants, transplant_info,
 )
+from .checkpointing import checkpoint
 from . import exceptions
 
 
