@@ -56,7 +56,7 @@ def test_held_component_shows_up_in_hold_reasons(mapped_doubler):
 
     time.sleep(1)  # wait for it to propagate
 
-    assert isinstance(m.holds[0], htmap.Hold)
+    assert isinstance(m.holds[0], htmap.ComponentHold)
 
 
 def test_held_then_released_component_not_in_hold_reasons(mapped_doubler):
@@ -65,7 +65,7 @@ def test_held_then_released_component_not_in_hold_reasons(mapped_doubler):
 
     time.sleep(1)  # wait for it to propagate
 
-    assert isinstance(m.holds[0], htmap.Hold)
+    assert isinstance(m.holds[0], htmap.ComponentHold)
 
     m.release()
 

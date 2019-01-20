@@ -1,4 +1,4 @@
-# Copyright 2018 HTCondor Team, Computer Sciences Department,
+# Copyright 2019 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,25 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-import htmap
+from typing import NamedTuple
 
 
-def test_rerun(mapped_doubler):
-    result = mapped_doubler.map('map', [1, 2, 3])
-    result.wait()
+class ComponentHold(NamedTuple):
+    """Represents an HTCondor hold on a map component."""
 
-    result.rerun()
+    code: int
+    reason: str
 
-    assert list(result) == [2, 4, 6]
+    def __str__(self):
+        return f'[{self.code}] {self.reason}'
 
-
-def test_recover_then_rerun(mapped_doubler):
-    result = mapped_doubler.map('map', [1, 2, 3])
-    result.wait()
-
-    recovered = htmap.load('map')
-    recovered.rerun()
-
-    assert list(recovered) == [2, 4, 6]
+    def __repr__(self):
+        return f'<{self.__class__.__name__}(code = {self.code}, reason = {self.reason}>'

@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from typing import Any, List, Tuple, Iterator, Dict, Callable
 import logging
 
@@ -24,7 +23,7 @@ from pathlib import Path
 import cloudpickle
 import htcondor
 
-from htmap import exceptions
+from htmap import names, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,7 @@ def load_object(path: Path) -> Any:
 
 def save_func(map_dir: Path, func: Callable) -> None:
     """Save the mapped function to the map directory."""
-    path = map_dir / 'func'
+    path = map_dir / names.FUNC
     save_object(func, path)
 
     logger.debug(f'saved function to {path}')
@@ -83,7 +82,7 @@ def load_num_components(map_dir: Path) -> int:
 
 
 def _num_components_path(map_dir: Path) -> Path:
-    return map_dir / 'num_components'
+    return map_dir / names.NUM_COMPONENTS
 
 
 def save_submit(map_dir: Path, submit: htcondor.Submit) -> None:
@@ -107,7 +106,7 @@ def load_submit(map_dir: Path) -> htcondor.Submit:
 
 
 def _submit_path(map_dir: Path) -> Path:
-    return map_dir / 'submit'
+    return map_dir / names.SUBMIT
 
 
 def save_itemdata(map_dir: Path, itemdata: List[dict]) -> None:
@@ -131,4 +130,4 @@ def load_itemdata(map_dir: Path) -> List[dict]:
 
 
 def _itemdata_path(map_dir: Path) -> Path:
-    return map_dir / 'itemdata'
+    return map_dir / names.ITEMDATA

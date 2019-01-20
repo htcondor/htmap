@@ -56,7 +56,10 @@ from .mapping import (
     MapBuilder,
 )
 from .mapped import mapped, MappedFunction
-from .maps import Map, TransientMap, ComponentStatus, Hold, ComponentError
+from .maps import Map, TransientMap
+from .holds import ComponentHold
+from .errors import ComponentError
+from .state import ComponentStatus
 from .options import MapOptions, register_delivery_mechanism
 from .management import (
     status, status_json, status_csv,
@@ -65,6 +68,7 @@ from .management import (
     clean, force_clean,
     remove, force_remove,
     Transplant, transplants, transplant_info,
+    enable_stdout_debug_logging,
 )
 from .checkpointing import checkpoint
 from . import exceptions

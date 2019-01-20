@@ -1,4 +1,4 @@
-# Copyright 2018 HTCondor Team, Computer Sciences Department,
+# Copyright 2019 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,25 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
+# this file sets the names of non-configurable files and directories
+# basically, it's a list of magic strings
 
-import htmap
+RUN_DIR = 'run'
 
+FUNC = 'func'
+OUTPUTS_DIR = 'outputs'
+INPUTS_DIR = 'inputs'
+EVENT_LOG = 'event_log'
+JOB_LOGS_DIR = 'job_logs'
+STDOUT_EXT = 'stdout'
+STDERR_EXT = 'stderr'
+NUM_COMPONENTS = 'num_components'
+SUBMIT = 'submit'
+ITEMDATA = 'itemdata'
 
-def test_rerun(mapped_doubler):
-    result = mapped_doubler.map('map', [1, 2, 3])
-    result.wait()
-
-    result.rerun()
-
-    assert list(result) == [2, 4, 6]
-
-
-def test_recover_then_rerun(mapped_doubler):
-    result = mapped_doubler.map('map', [1, 2, 3])
-    result.wait()
-
-    recovered = htmap.load('map')
-    recovered.rerun()
-
-    assert list(recovered) == [2, 4, 6]
+TRANSFER_DIR = '_htmap_transfer'
+CHECKPOINT_PREP = 'prep_checkpoint'
+CHECKPOINT_CURRENT = 'current_checkpoint'
+CHECKPOINT_OLD = 'old_checkpoint'

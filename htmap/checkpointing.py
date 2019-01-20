@@ -17,6 +17,8 @@ import os
 from pathlib import Path
 import shutil
 
+from . import names
+
 
 def checkpoint(*paths: os.PathLike):
     """
@@ -40,14 +42,14 @@ def checkpoint(*paths: os.PathLike):
     if os.getenv('HTMAP_ON_EXECUTE') != "1":
         return
 
-    transfer_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR')) / '_htmap_transfer'
+    transfer_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR')) / names.TRANSFER_DIR
 
     # this is not the absolute safest method
     # but it's good enough for government work
 
-    prep_dir = transfer_dir / 'prep_checkpoint'
-    curr_dir = transfer_dir / 'current_checkpoint'
-    old_dir = transfer_dir / 'old_checkpoint'
+    prep_dir = transfer_dir / names.CHECKPOINT_PREP
+    curr_dir = transfer_dir / names.CHECKPOINT_CURRENT
+    old_dir = transfer_dir / names.CHECKPOINT_OLD
 
     for d in (prep_dir, curr_dir, old_dir):
         d.mkdir(parents = True, exist_ok = True)

@@ -23,9 +23,11 @@ import json
 import csv
 import io
 import textwrap
+import sys
 
 from . import mapping, utils, settings, exceptions
-from .maps import Map, ComponentStatus
+from .maps import Map
+from htmap import ComponentStatus
 
 logger = logging.getLogger(__name__)
 
@@ -392,3 +394,14 @@ def transplant_info() -> str:
         entries.append(entry)
 
     return utils.rstr('\n\n'.join(entries))
+
+
+def enable_stdout_debug_logging():
+    logger = logging.getLogger('htmap')
+    logger.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(stream = sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+    logger.addHandler(handler)

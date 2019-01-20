@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import NamedTuple, Tuple, List, Iterable, Any, Optional, Union, Callable, Iterator, Dict, MutableMapping
+from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, MutableMapping
 import logging
 
 import datetime
@@ -21,170 +21,21 @@ import shutil
 import time
 import uuid
 import tempfile
-import textwrap
 import functools
 import inspect
 import collections
 import weakref
 from copy import copy
 from pathlib import Path
-import gc
 
 from tqdm import tqdm
 
 import htcondor
 import classad
 
-from . import htio, exceptions, utils, mapping, settings
+from . import htio, state, errors, holds, mapping, settings, utils, names, exceptions
 
 logger = logging.getLogger(__name__)
-
-
-class ComponentStatus(utils.StrEnum):
-    """
-    An enumeration of the possible statuses that a map component can be in.
-    These are mostly identical to the HTCondor job statuses of the same name.
-    """
-    IDLE = 'IDLE'
-    RUNNING = 'RUNNING'
-    REMOVED = 'REMOVED'
-    COMPLETED = 'COMPLETED'
-    HELD = 'HELD'
-    SUSPENDED = 'SUSPENDED'
-
-    @classmethod
-    def display_statuses(cls) -> Tuple['ComponentStatus', ...]:
-        return (
-            cls.HELD,
-            cls.IDLE,
-            cls.RUNNING,
-            cls.COMPLETED,
-        )
-
-
-class ComponentError:
-    def __init__(
-        self,
-        *,
-        map,
-        component,
-        exception_msg,
-        node_info,
-        python_info,
-        working_dir_contents,
-        stack_summary,
-    ):
-        self.map = map
-        self.component = component
-        self.exception_msg = exception_msg
-        self.node_info = node_info
-        self.python_info = python_info
-        self.working_dir_contents = working_dir_contents
-        self.stack_summary = stack_summary
-
-    def __repr__(self):
-        return f'<ComponentError(map = {self.map}, component = {self.component})>'
-
-    @classmethod
-    def _from_error(cls, map, error):
-        """Construct a :class:`ComponentError` from a raw component result."""
-        return cls(
-            map = map,
-            component = error.component,
-            exception_msg = error.exception_msg,
-            node_info = error.node_info,
-            python_info = error.python_info,
-            working_dir_contents = error.working_dir_contents,
-            stack_summary = error.stack_summary,
-        )
-
-    def _indent(self, text, multiple = 1):
-        return textwrap.indent(text, ' ' * 2 * multiple)
-
-    def _format_stack_trace(self):
-        # modified from https://github.com/python/cpython/blob/3.7/Lib/traceback.py
-        _RECURSIVE_CUTOFF = 3
-        result = []
-        last_file = None
-        last_line = None
-        last_name = None
-        count = 0
-        for frame in self.stack_summary:
-            if (
-                last_file is None or last_file != frame.filename or
-                last_line is None or last_line != frame.lineno or
-                last_name is None or last_name != frame.name
-            ):
-                if count > _RECURSIVE_CUTOFF:
-                    count -= _RECURSIVE_CUTOFF
-                    result.append(
-                        self._indent(f'  [Previous line repeated {count} more time{"s" if count > 1 else ""}]\n')
-                    )
-                last_file = frame.filename
-                last_line = frame.lineno
-                last_name = frame.name
-                count = 0
-            count += 1
-            if count > _RECURSIVE_CUTOFF:
-                continue
-            row = []
-            row.append(self._indent(f'File "{frame.filename}", line {frame.lineno}, in {frame.name}\n'))
-            if frame.line:
-                row.append(self._indent(f'{frame.line.strip()}\n', multiple = 2))
-            row.append(self._indent('\nLocal variables:\n', multiple = 2))
-            if frame.locals:
-                for name, value in sorted(frame.locals.items()):
-                    row.append(self._indent(f'{name} = {value}\n', multiple = 3))
-            result.append(''.join(row))
-        if count > _RECURSIVE_CUTOFF:
-            count -= _RECURSIVE_CUTOFF
-            result.append(
-                self._indent(f'[Previous line repeated {count} more time{"s" if count > 1 else ""}]\n')
-            )
-        return result
-
-    def report(self) -> str:
-        """
-        Return a formatted error report.
-        """
-        lines = [
-            f'  Start error report for component {self.component} of map {self.map.map_id}  '.center(80, '='),
-            'Landed on execute node {} ({}) at {}'.format(*self.node_info),
-        ]
-
-        if self.python_info is not None:
-            executable, version, packages = self.python_info
-            lines.append(f'\nPython executable is {executable} (version {version})')
-            lines.append(f'with installed packages')
-            lines.append(self._indent(packages))
-        else:
-            lines.append('\nPython executable information not available')
-
-        lines.append('\nWorking directory contents are')
-        for path in self.working_dir_contents:
-            lines.append(self._indent(path))
-
-        lines.append('\nException and traceback (most recent call last):')
-        lines.extend(self._format_stack_trace())
-        lines.append(self._indent(self.exception_msg, multiple = 1))
-
-        lines.append('')
-        lines.append(f'  End error report for component {self.component} of map {self.map.map_id}  '.center(80, '='))
-
-        return '\n'.join(lines)
-
-
-class Hold(NamedTuple):
-    """Represents an HTCondor hold."""
-
-    code: int
-    reason: str
-
-    def __str__(self):
-        return f'[{self.code}] {self.reason}'
-
-    def __repr__(self):
-        return f'<{self.__class__.__name__}(code = {self.code}, reason = {self.reason}>'
 
 
 def _protector(method):
@@ -236,12 +87,7 @@ class Map:
 
         self._is_removed = False
 
-        self._events = None  # delayed until _read_events is called
-        self._clusterproc_to_component: Dict[Tuple[int, int], int] = {}
-        self._component_statuses = [ComponentStatus.IDLE for _ in self.component_indices]
-        self._holds: Dict[int, Hold] = {}
-        self._memory_usage = [0 for _ in self.component_indices]
-        self._runtime = [datetime.timedelta(0) for _ in self.component_indices]
+        self._state = state.MapState(self)
         self._local_data = None
 
         MAPS[self.map_id] = self
@@ -306,28 +152,19 @@ class Map:
         return self._num_components
 
     @property
-    def component_indices(self) -> Iterable[int]:
-        """Return an iterator over the component indices for the :class:`htmap.Map`."""
-        return range(self._num_components)
-
-    @property
     def _map_dir(self) -> Path:
         """The path to the map directory."""
         return mapping.map_dir_path(self.map_id)
 
     @property
-    def _event_log_path(self) -> Path:
-        return self._map_dir / 'event_log'
-
-    @property
     def _inputs_dir(self) -> Path:
         """The path to the inputs directory, inside the map directory."""
-        return self._map_dir / 'inputs'
+        return self._map_dir / names.INPUTS_DIR
 
     @property
     def _outputs_dir(self) -> Path:
         """The path to the outputs directory, inside the map directory."""
-        return self._map_dir / 'outputs'
+        return self._map_dir / names.OUTPUTS_DIR
 
     def _input_file_path(self, component):
         return self._inputs_dir / f'{component}.in'
@@ -338,47 +175,22 @@ class Map:
     @property
     def _input_file_paths(self):
         """The paths to the input files."""
-        yield from (self._input_file_path(idx) for idx in self.component_indices)
+        yield from (self._input_file_path(idx) for idx in self.components)
 
     @property
     def _output_file_paths(self):
         """The paths to the output files."""
-        yield from (self._output_file_path(idx) for idx in self.component_indices)
+        yield from (self._output_file_path(idx) for idx in self.components)
 
     @property
-    def incomplete_components(self) -> List[int]:
-        """Return a list of component indices that are not complete."""
-        return [
-            idx
-            for idx in self.component_indices
-            if self.component_statuses[idx] != ComponentStatus.COMPLETED
-        ]
-
-    @property
-    def completed_components(self) -> List[int]:
-        """Return a list of component indices that are complete."""
-        return [
-            idx
-            for idx in self.component_indices
-            if self.component_statuses[idx] == ComponentStatus.COMPLETED
-        ]
+    def components(self) -> List[int]:
+        """Return an iterator over the component indices for the :class:`htmap.Map`."""
+        return list(range(self._num_components))
 
     @property
     def is_done(self) -> bool:
         """``True`` if all of the output is available for this map."""
-        return len(self.incomplete_components) == 0
-
-    @property
-    def is_running(self) -> bool:
-        """
-        ``True`` if any of the map's components are in a non-completed status.
-        That means that this doesn't literally mean "running" - instead, it means that components could be running, idle, held, completed according to HTCondor but ran into an error internally and didn't produce output, etc.
-        """
-        return any(
-            v != 0
-            for k, v in self.status_counts.items()
-            if k != ComponentStatus.COMPLETED
-        )
+        return all(cs is state.ComponentStatus.COMPLETED for cs in self.component_statuses)
 
     def wait(
         self,
@@ -396,7 +208,6 @@ class Map:
         show_progress_bar
             If ``True``, a progress bar will be displayed.
         """
-        t = datetime.datetime.now()
         start_time = time.time()
         timeout = utils.timeout_to_seconds(timeout)
 
@@ -411,21 +222,21 @@ class Map:
 
                 previous_pbar_len = 0
 
-            expected_num_hashes = len(self)
-
             while True:
-                num_missing_components = len(self.incomplete_components)
+                num_incomplete = sum(
+                    cs is not state.ComponentStatus.COMPLETED
+                    for cs in self.component_statuses
+                )
                 if show_progress_bar:
-                    pbar_len = expected_num_hashes - num_missing_components
+                    pbar_len = self._num_components - num_incomplete
                     pbar.update(pbar_len - previous_pbar_len)
                     previous_pbar_len = pbar_len
-                if num_missing_components == 0:
+                if num_incomplete == 0:
                     break
 
-                missing_component_statuses = zip(self.incomplete_components, (self.component_statuses[idx] for idx in self.incomplete_components))
-                for component, status in missing_component_statuses:
-                    if status is ComponentStatus.HELD:
-                        raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} was held')
+                for component, status in enumerate(self.component_statuses):
+                    if status is state.ComponentStatus.HELD:
+                        raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} was held: {self.holds[component]}')
 
                 if timeout is not None and time.time() - timeout > start_time:
                     raise exceptions.TimeoutError(f'timeout while waiting for {self}')
@@ -439,17 +250,11 @@ class Map:
         timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
         while True:
-            status = self.component_statuses[component]
-            if status == ComponentStatus.COMPLETED:
+            component_state = self.component_statuses[component]
+            if component_state is state.ComponentStatus.COMPLETED:
                 break
-            elif status == ComponentStatus.HELD:
-                reason = "\n".join(
-                    textwrap.wrap(
-                        str(self.holds[component]),
-                        break_long_words = False,
-                    )
-                )
-                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held. Reason:\n{reason}')
+            elif component_state is state.ComponentStatus.HELD:
+                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held: {self.holds[component]}')
 
             if timeout is not None and (time.time() >= start_time + timeout):
                 if timeout <= 0:
@@ -458,11 +263,6 @@ class Map:
                     raise exceptions.TimeoutError(f'timed out while waiting for component {component} of map {self.map_id}')
 
             time.sleep(settings['WAIT_TIME'])
-
-    def _load_result(self, component: int, timeout: utils.Timeout = None):
-        self._wait_for_component(component, timeout)
-
-        return htio.load_object(self._output_file_path(component))
 
     def _load_input(self, component: int) -> Tuple[Tuple[Any], Dict[str, Any]]:
         return htio.load_object(self._input_file_path(component))
@@ -485,15 +285,23 @@ class Map:
         self,
         component: int,
         timeout: utils.Timeout = None,
-    ) -> ComponentError:
+    ) -> errors.ComponentError:
         result = self._load_result(component, timeout)
 
         if result.status == 'OK':
             raise exceptions.ExpectedError
         elif result.status == 'ERR':
-            return ComponentError._from_error(map = self, error = result)
+            return errors.ComponentError._from_error(map = self, error = result)
         else:
             raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
+
+    def _load_result(self, component: int, timeout: utils.Timeout = None):
+        self._wait_for_component(component, timeout)
+
+        try:
+            return htio.load_object(self._output_file_path(component))
+        except FileNotFoundError:
+            raise exceptions.OutputNotFound(f'Output not found for component {component} of map {self.map_id}. Component stderr:\n{self.stderr(component)}')
 
     def get(
         self,
@@ -521,7 +329,7 @@ class Map:
         self,
         component: int,
         timeout: utils.Timeout = None,
-    ) -> ComponentError:
+    ) -> errors.ComponentError:
         return self._load_error(component, timeout = timeout)
 
     def __iter__(self) -> Iterable[Any]:
@@ -551,7 +359,7 @@ class Map:
         if callback is None:
             callback = lambda o: o
 
-        for component in self.component_indices:
+        for component in self.components:
             output = self._load_output(component, timeout = timeout)
             callback(output)
             yield output
@@ -576,7 +384,7 @@ class Map:
         if callback is None:
             callback = lambda i, o: (i, o)
 
-        for component in self.component_indices:
+        for component in self.components:
             output = self._load_output(component, timeout = timeout)
             input = self._load_input(component)
             callback(input, output)
@@ -607,7 +415,7 @@ class Map:
         if callback is None:
             callback = lambda o: o
 
-        remaining_indices = set(self.component_indices)
+        remaining_indices = set(self.components)
         while len(remaining_indices) > 0:
             for component in copy(remaining_indices):
                 try:
@@ -648,7 +456,7 @@ class Map:
         if callback is None:
             callback = lambda i, o: (i, o)
 
-        remaining_indices = set(self.component_indices)
+        remaining_indices = set(self.components)
         while len(remaining_indices) > 0:
             for component in copy(remaining_indices):
                 try:
@@ -667,15 +475,7 @@ class Map:
 
     def iter_inputs(self) -> Iterator[Any]:
         """Returns an iterator over the inputs of the :class:`htmap.Map`."""
-        return (self._load_input(idx) for idx in self.component_indices)
-
-    def error_reports(self) -> Iterator[str]:
-        """Yields the error reports for any components that experienced an error during execution."""
-        for idx in self.component_indices:
-            try:
-                yield self.get_err(idx).report()
-            except (exceptions.OutputNotFound, exceptions.ExpectedError) as e:
-                pass
+        return (self._load_input(idx) for idx in self.components)
 
     def _requirements(self, requirements: Optional[str] = None) -> str:
         """Build an HTCondor requirements expression that captures all of the ``cluster_id`` for this map."""
@@ -722,71 +522,25 @@ class Map:
 
         yield from q
 
-    def _read_events(self):
-        if self._events is None:
-            self._events = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
-
-        cluster_id_set = set(self._cluster_ids)
-
-        for event in self._events:
-            self._local_data = None  # invalidate cache if any events were received
-
-            # skip events that aren't part of this map (if any leak in)
-            if event.cluster not in cluster_id_set:
-                continue
-
-            if event.type is htcondor.JobEventType.SUBMIT:
-                self._clusterproc_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
-
-            # this lookup is safe because the SUBMIT event always comes first
-            component = self._clusterproc_to_component[(event.cluster, event.proc)]
-
-            if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                self._memory_usage[component] = max(
-                    self._memory_usage[component],
-                    int(event.get('MemoryUsage', 0)),
-                )
-            elif event.type is htcondor.JobEventType.JOB_TERMINATED:
-                self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
-            elif event.type is htcondor.JobEventType.JOB_RELEASED:
-                self._holds.pop(component, None)
-            elif event.type is htcondor.JobEventType.JOB_HELD:
-                h = Hold(
-                    code = int(event['HoldReasonCode']),
-                    reason = event.get('HoldReason', 'UNKNOWN').strip(),
-                )
-                self._holds[component] = h
-
-            new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
-            if new_status is not None:
-                self._component_statuses[component] = new_status
-
     @property
-    def component_statuses(self) -> List[ComponentStatus]:
+    def component_statuses(self) -> List[state.ComponentStatus]:
         """
-        Return the current :class:`ComponentStatus` of each component in the map.
+        Return the current :class:`state.ComponentStatus` of each component in the map.
         """
-        self._read_events()
-        return self._component_statuses
-
-    @property
-    def status_counts(self) -> collections.Counter:
-        """Return a dictionary that describes how many map components are in each status."""
-        return collections.Counter(self.component_statuses)
+        return self._state.component_statuses
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
-        counts = self.status_counts
-        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in ComponentStatus.display_statuses())
+        counts = collections.Counter(self.component_statuses)
+        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in state.ComponentStatus.display_statuses())
         msg = f'{self.__class__.__name__} {self.map_id} ({len(self)} components): {stat}'
 
         return utils.rstr(msg)
 
     @property
-    def holds(self) -> Dict[int, Hold]:
+    def holds(self) -> Dict[int, holds.ComponentHold]:
         """Return a dictionary that maps component indices to their :class:`Hold` (if they are held)."""
-        self._read_events()
-        return self._holds
+        return self._state.holds
 
     def hold_report(self) -> str:
         """Return a string containing a table describing any held components."""
@@ -806,6 +560,25 @@ class Map:
         )
 
     @property
+    def errors(self) -> Dict[int, errors.ComponentError]:
+        err = {}
+        for idx in self.components:
+            try:
+                err[idx] = self.get_err(idx)
+            except (exceptions.OutputNotFound, exceptions.ExpectedError) as e:
+                pass
+
+        return err
+
+    def error_report(self) -> Iterator[str]:
+        """Yields the error reports for any components that experienced an error during execution."""
+        for idx in self.components:
+            try:
+                yield self.get_err(idx).report()
+            except (exceptions.OutputNotFound, exceptions.ExpectedError) as e:
+                pass
+
+    @property
     def memory_usage(self) -> List[int]:
         """
         Return the latest peak memory usage of each map component, measured in MB.
@@ -814,14 +587,12 @@ class Map:
         .. warning::
             Due to current limitations in the HTCondor Python bindings, memory use for very short-lived components (<5 seconds) will not be accurate.
         """
-        self._read_events()
-        return self._memory_usage
+        return self._state.memory_usage
 
     @property
     def runtime(self) -> List[datetime.timedelta]:
         """Return the total runtime (user + system) of each component."""
-        self._read_events()
-        return self._runtime
+        return self._state.runtime
 
     @property
     def local_data(self) -> int:
@@ -848,9 +619,6 @@ class Map:
         """
         Permanently remove the map and delete all associated input, output, and metadata files.
         """
-        del self._events  # todo: this is a workaround for the file object not being exposed
-        gc.collect()
-
         self._remove_from_queue()
         self._rm_map_dir()
         self._is_removed = True
@@ -872,7 +640,7 @@ class Map:
 
     def _clean_outputs_dir(self) -> None:
         def update_status(path: Path) -> None:
-            self.component_statuses[int(path.stem)] = ComponentStatus.REMOVED
+            self.component_statuses[int(path.stem)] = state.ComponentStatus.REMOVED
 
         utils.clean_dir(self._outputs_dir, on_file = update_status)
 
@@ -997,29 +765,34 @@ class Map:
         )
         return utils.rstr(path.read_text())
 
-    def rerun(self):
-        """Reruns the entire map from scratch."""
-        self._clean_outputs_dir()
-        self.rerun_components(self.component_indices)
-
-    def rerun_components(self, components: Iterable[int]):
+    def rerun(self, components: Optional[Iterable[int]] = None):
         """
-        Rerun part of a map from scratch.
-        The components must not be "active" (i.e., running or held).
+        Re-run part of a map from scratch.
+        The components must be completed.
+        Their existing output will be deleted before the re-run is executed.
 
         Parameters
         ----------
         components
             The components to rerun.
+            If ``None``, the entire map will be re-run.
         """
+        if components is None:
+            components = self.components
+
         component_set = set(components)
-        active_components = {
+        incomplete_components = {
             c for c, status in enumerate(self.component_statuses)
-            if status in (ComponentStatus.RUNNING, ComponentStatus.HELD)
+            if status is not state.ComponentStatus.COMPLETED
         }
-        intersection = component_set.intersection(active_components)
+        intersection = component_set.intersection(incomplete_components)
         if len(intersection) != 0:
-            raise exceptions.CannotRerunComponents(f'cannot rerun components {intersection} of map {self.map_id} because they are active (running or held)')
+            raise exceptions.CannotRerunComponents(f'cannot rerun components {sorted(intersection)} of map {self.map_id} because they are not complete')
+
+        for path in (self._output_file_path(c) for c in components):
+            if path.exists():
+                path.unlink()
+
         itemdata = htio.load_itemdata(self._map_dir)
         new_itemdata = [item for item in itemdata if int(item['component']) in component_set]
 
@@ -1098,41 +871,6 @@ class Map:
             cluster_ids = self._cluster_ids,
             num_components = self._num_components,
         )
-
-
-JOB_EVENT_STATUS_TRANSITIONS = {
-    htcondor.JobEventType.SUBMIT: ComponentStatus.IDLE,
-    htcondor.JobEventType.JOB_EVICTED: ComponentStatus.IDLE,
-    htcondor.JobEventType.JOB_UNSUSPENDED: ComponentStatus.IDLE,
-    htcondor.JobEventType.JOB_RELEASED: ComponentStatus.IDLE,
-    htcondor.JobEventType.JOB_TERMINATED: ComponentStatus.COMPLETED,
-    htcondor.JobEventType.EXECUTE: ComponentStatus.RUNNING,
-    htcondor.JobEventType.JOB_HELD: ComponentStatus.HELD,
-    htcondor.JobEventType.JOB_SUSPENDED: ComponentStatus.SUSPENDED,
-    htcondor.JobEventType.JOB_ABORTED: ComponentStatus.REMOVED,
-}
-
-
-def parse_runtime(runtime_string: str) -> datetime.timedelta:
-    (_, usr_days, usr_hms), (_, sys_days, sys_hms) = [s.split() for s in runtime_string.split(',')]
-
-    usr_h, usr_m, usr_s = usr_hms.split(':')
-    sys_h, sys_m, sys_s = sys_hms.split(':')
-
-    usr_time = datetime.timedelta(
-        days = int(usr_days),
-        hours = int(usr_h),
-        minutes = int(usr_m),
-        seconds = int(usr_s),
-    )
-    sys_time = datetime.timedelta(
-        days = int(sys_days),
-        hours = int(sys_h),
-        minutes = int(sys_m),
-        seconds = int(sys_s),
-    )
-
-    return usr_time + sys_time
 
 
 class TransientMap(Map):
