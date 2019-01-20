@@ -105,7 +105,6 @@ venv.bak/
 
 .idea/
 docs/
-examples/
 
 Dockerfile
 dr

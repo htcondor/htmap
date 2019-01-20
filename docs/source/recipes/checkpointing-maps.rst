@@ -68,6 +68,117 @@ Concrete Example
 ================
 
 Let's work with a more concrete example.
+Here's the function, along with some code to run it and prove that it checkpointed:
+
+.. code-block:: python
+
+    from pathlib import Path
+    import time
+
+    import htmap
+
+
+    @htmap.mapped
+    def counter(num_steps):
+        checkpoint_path = Path('checkpoint')
+        try:
+            step = int(checkpoint_path.read_text())
+            print('loaded checkpoint!')
+        except FileNotFoundError:
+            step = 0
+            print('starting from scratch')
+
+        while True:
+            time.sleep(1)
+            step += 1
+            print(f'completed step {step}')
+
+            if step >= num_steps:
+                break
+
+            checkpoint_path.write_text(str(step))
+            htmap.checkpoint(checkpoint_path)
+
+        return True
+
+
+    map = counter.map('chk', [30])
+
+    while map.component_statuses[0] is not htmap.ComponentStatus.RUNNING:
+        print(map.component_statuses[0])
+        time.sleep(1)
+
+    print('component has started, letting it run...')
+    time.sleep(10)
+    map.vacate()
+    print('vacated map')
+
+    while map.component_statuses[0] is not htmap.ComponentStatus.COMPLETED:
+        print(map.component_statuses[0])
+        time.sleep(1)
+
+    print(map[0])
+    print(map.stdout(0))
+
+
+The function itself just sleeps for the given amount of time, but it does it in incremental steps so that we can checkpoint its progress.
+We write checkpoints to a file named ``checkpoint`` in the current working directory of the script when it executes.
+We try to load the current step number (stored as text, so we need to convert it to an integer) from that file when we start, and if that fails we start from the beginning.
+We write a checkpoint after each step, which is overkill (see the next section), but easy to implement for this short example.
+
+The rest of the code (after the function definition) is just there to prove that the example works.
+If we run this script, we should see something like this:
+
+.. code-block:: none
+
+    IDLE
+    # many IDLE messages
+    IDLE
+    component has started, letting it run...
+    vacated map
+    RUNNING
+    IDLE
+    # more IDLE messages
+    IDLE
+    RUNNING
+    # many RUNNING messages
+    RUNNING
+    True  # this is map[0]: it's True, not None, so the function finished successfully
+
+    # a bunch of debug information from the stdout of the component
+
+    ----- MAP COMPONENT OUTPUT START -----
+
+    loaded checkpoint!  # we did it!
+    completed step 10
+    completed step 11
+    completed step 12
+    completed step 13
+    completed step 14
+    completed step 15
+    completed step 16
+    completed step 17
+    completed step 18
+    completed step 19
+    completed step 20
+    completed step 21
+    completed step 22
+    completed step 23
+    completed step 24
+    completed step 25
+    completed step 26
+    completed step 27
+    completed step 28
+    completed step 29
+    completed step 30
+
+    -----  MAP COMPONENT OUTPUT END  -----
+
+    Finished executing component at 2019-01-20 08:34:31.130818
+
+We successfully started from step 10!
+For a long-running computation, this could represent a significant amount of work.
+Long-running components on opportunistic resources might be evicted several times during their life, and without checkpointing, may never finish.
 
 Checkpointing Strategy
 ======================
@@ -79,6 +190,7 @@ For example, using the ``datetime`` library:
 .. code-block:: python
 
     import datetime
+
     import htmap
 
     @htmap.mapped
@@ -96,3 +208,11 @@ For example, using the ``datetime`` library:
 
         return result
 
+
+Checkpointing Caveats
+=====================
+
+Checkpointing does introduce some complications with HTMap's metadata tracking system.
+In particular, HTMap only tracks the runtime, stdout, and stderr of the **last execution** of each component.
+If your components are vacated and start again from a checkpoint, you'll only see the execution time, standard output, and standard error from the second run.
+If you need that information, you should track it yourself inside your checkpoint files.
