@@ -27,64 +27,6 @@ import subprocess
 import getpass
 from pathlib import Path
 
-# we need to fake the checkpoint function's location so that the references work out right
-from types import ModuleType
-
-fake_htmap = ModuleType('htmap')
-sys.modules[fake_htmap.__name__] = fake_htmap
-
-TRANSFER_DIR = '_htmap_transfer'
-CHECKPOINT_PREP = 'prep_checkpoint'
-CHECKPOINT_CURRENT = 'current_checkpoint'
-CHECKPOINT_OLD = 'old_checkpoint'
-
-
-def checkpoint(*paths: os.PathLike):
-    """
-    Informs HTMap about the existence of checkpoint files.
-    This function should be called every time the checkpoint files are changed, even if they have the same names as before.
-
-    .. attention::
-
-        This function is a no-op when executing locally, so you if you're testing your function it won't do anything.
-
-    .. attention::
-
-        The files will be copied, so try not to make the checkpoint files too large.
-
-    Parameters
-    ----------
-    paths
-        The paths to the checkpoint files.
-    """
-    # no-op if not on execute node
-    if os.getenv('HTMAP_ON_EXECUTE') != "1":
-        return
-
-    transfer_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR')) / TRANSFER_DIR
-
-    # this is not the absolute safest method
-    # but it's good enough for government work
-
-    prep_dir = transfer_dir / CHECKPOINT_PREP
-    curr_dir = transfer_dir / CHECKPOINT_CURRENT
-    old_dir = transfer_dir / CHECKPOINT_OLD
-
-    for d in (prep_dir, curr_dir, old_dir):
-        d.mkdir(parents = True, exist_ok = True)
-
-    for path in paths:
-        path = Path(path)
-        shutil.copy2(path, prep_dir / path.name)
-
-    curr_dir.rename(old_dir)
-    prep_dir.rename(curr_dir)
-    shutil.rmtree(old_dir)
-
-
-fake_htmap.checkpoint = checkpoint
-fake_htmap.mapped = lambda *args, **kwargs: None
-
 
 # import cloudpickle goes in the functions that need it directly
 # so that errors are raised later
@@ -248,8 +190,8 @@ def build_frames(tb):
 
 
 def load_checkpoint(scratch_dir, transfer_dir):
-    curr_dir = transfer_dir / CHECKPOINT_CURRENT
-    old_dir = transfer_dir / CHECKPOINT_OLD
+    curr_dir = transfer_dir / 'current_checkpoint'
+    old_dir = transfer_dir / 'old_checkpoint'
 
     if curr_dir.exists():
         for path in curr_dir.iterdir():
@@ -270,7 +212,7 @@ def main(component):
     print()
 
     scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
-    transfer_dir = scratch_dir / TRANSFER_DIR
+    transfer_dir = scratch_dir / '_htmap_transfer'
 
     load_checkpoint(scratch_dir, transfer_dir)
     clean_and_remake_dir(transfer_dir)
