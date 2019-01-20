@@ -23,6 +23,7 @@ import itertools
 from pathlib import Path
 
 import htmap
+import htmap.state
 from htmap.management import _status
 from htmap.utils import read_events
 
@@ -109,16 +110,16 @@ class _RowFmt:
 def _map_fg(map) -> Optional[str]:
     sc = map.status_counts
 
-    if sc[htmap.ComponentStatus.HELD] > 0:
+    if sc[htmap.state.ComponentStatus.HELD] > 0:
         return 'red'
-    elif sc[htmap.ComponentStatus.COMPLETED] == len(map):
+    elif sc[htmap.state.ComponentStatus.COMPLETED] == len(map):
         return 'green'
-    elif sc[htmap.ComponentStatus.RUNNING] > 0:
+    elif sc[htmap.state.ComponentStatus.RUNNING] > 0:
         return 'cyan'
-    elif sc[htmap.ComponentStatus.IDLE] > 0:
+    elif sc[htmap.state.ComponentStatus.IDLE] > 0:
         return 'yellow'
     else:
-        return None
+        return 'white'
 
 
 @cli.command()
@@ -438,7 +439,7 @@ def stderr(mapid, component):
 def errors(mapid, limit):
     """Look at detailed error reports for a map."""
     m = _cli_load(mapid)
-    reports = m.error_reports()
+    reports = m.error_report()
     if limit > 0:
         itertools.islice(reports, limit)
 

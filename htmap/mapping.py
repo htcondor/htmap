@@ -23,7 +23,7 @@ import itertools
 
 import htcondor
 
-from . import htio, exceptions, maps, options, settings
+from . import htio, exceptions, maps, options, settings, names
 
 logger = logging.getLogger(__name__)
 
@@ -407,9 +407,9 @@ def raise_if_map_id_is_invalid(map_id: str) -> None:
 
 
 MAP_SUBDIR_NAMES = (
-    'inputs',
-    'outputs',
-    'job_logs',
+    names.INPUTS_DIR,
+    names.OUTPUTS_DIR,
+    names.JOB_LOGS_DIR,
 )
 
 

@@ -74,10 +74,10 @@ def test_error_report_includes_input_files():
     assert 'test_error_handling.py' in err.report()
 
 
-def test_correct_number_of_error_reports():
+def test_correct_number_of_errors():
     def dummy(x):
         raise Exception
 
     m = htmap.map('dummy', dummy, range(3))
 
-    assert len(list(m.error_reports())) == 3
+    assert len(list(m.errors)) == 3

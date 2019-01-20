@@ -24,7 +24,7 @@ from pathlib import Path
 
 import htcondor
 
-from . import utils, exceptions, settings
+from . import utils, exceptions, names, settings
 
 logger = logging.getLogger(__name__)
 
@@ -174,8 +174,8 @@ def create_submit_object_and_itemdata(
 
     input_files = descriptors.get('transfer_input_files', [])
     input_files += [
-        (map_dir / 'func').as_posix(),
-        (map_dir / 'inputs' / '$(component).in').as_posix(),
+        (map_dir / names.FUNC).as_posix(),
+        (map_dir / names.INPUTS_DIR / '$(component).in').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
@@ -234,14 +234,14 @@ def get_base_descriptors(
 ) -> dict:
     core = {
         'JobBatchName': map_id,
-        'log': (map_dir / 'event_log').as_posix(),
+        'log': (map_dir / names.EVENT_LOG).as_posix(),
         'submit_event_notes': '$(component)',
-        'stdout': (map_dir / 'job_logs' / '$(component).stdout').as_posix(),
-        'stderr': (map_dir / 'job_logs' / '$(component).stderr').as_posix(),
+        'stdout': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDOUT_EXT}').as_posix(),
+        'stderr': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDERR_EXT}').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
         'transfer_output_files': '_htmap_transfer',
-        'transfer_output_remaps': f'"_htmap_transfer/$(component).out={(map_dir / "outputs" / "$(component).out").as_posix()}"',
+        'transfer_output_remaps': f'"{names.TRANSFER_DIR}/$(component).out={(map_dir / names.OUTPUTS_DIR / "$(component).out").as_posix()}"',
         '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }
@@ -259,7 +259,7 @@ def get_base_descriptors(
 
 
 def _copy_run_scripts():
-    run_script_source_dir = Path(__file__).parent / 'run'
+    run_script_source_dir = Path(__file__).parent / names.RUN_DIR
     run_scripts = [
         run_script_source_dir / 'run.py',
         run_script_source_dir / 'run_with_transplant.sh',
@@ -290,7 +290,7 @@ def _get_base_descriptors_for_assume(
 ) -> dict:
     return {
         'universe': 'vanilla',
-        'executable': (Path(settings['HTMAP_DIR']) / 'run' / 'run.py').as_posix(),
+        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
         'arguments': '$(component)',
     }
 
@@ -308,7 +308,7 @@ def _get_base_descriptors_for_docker(
     return {
         'universe': 'docker',
         'docker_image': settings['DOCKER.IMAGE'],
-        'executable': (Path(settings['HTMAP_DIR']) / 'run' / 'run.py').as_posix(),
+        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
         'arguments': '$(component)',
         'transfer_executable': 'True',
     }
@@ -332,10 +332,10 @@ def _get_base_descriptors_for_transplant(
 
     return {
         'universe': 'vanilla',
-        'executable': (Path(settings['HTMAP_DIR']) / 'run' / 'run_with_transplant.sh').as_posix(),
+        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run_with_transplant.sh').as_posix(),
         'arguments': f'$(component) {h}',
         'transfer_input_files': [
-            (Path(settings['HTMAP_DIR']) / 'run' / 'run.py').as_posix(),
+            (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
             tif_path,
         ],
     }
