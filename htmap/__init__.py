@@ -33,14 +33,15 @@ if _os.getenv('HTMAP_ON_EXECUTE') != '1':
     from . import names as _names
 
     _htmap_dir = _Path(settings['HTMAP_DIR'])
-    if not _htmap_dir.exists():
-        try:
-            _htmap_dir.mkdir(parents = True, exist_ok = True)
-            (_htmap_dir / _names.MAPS_DIR).mkdir(parents = True, exist_ok = True)
-            (_htmap_dir / _names.TAGS_DIR).mkdir(parents = True, exist_ok = True)
+    try:
+        did_not_exist = not _htmap_dir.exists()
+        _htmap_dir.mkdir(parents = True, exist_ok = True)
+        (_htmap_dir / _names.MAPS_DIR).mkdir(parents = True, exist_ok = True)
+        (_htmap_dir / _names.TAGS_DIR).mkdir(parents = True, exist_ok = True)
+        if did_not_exist:
             _logger.debug(f'created HTMap dir at {_htmap_dir}')
-        except PermissionError as e:
-            raise PermissionError(f'the HTMap directory ({_htmap_dir}) needs to be writable') from e
+    except PermissionError as e:
+        raise PermissionError(f'the HTMap directory ({_htmap_dir}) needs to be writable') from e
 
     LOG_FILE = _Path(settings['HTMAP_DIR']) / 'htmap.log'
     # SET UP LOG FILE
