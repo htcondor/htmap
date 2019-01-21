@@ -462,9 +462,9 @@ def rerun(tag, components, all):
 
 @cli.command()
 @click.argument('tag')
-@click.argument('newid')
+@click.argument('new')
 def retag(tag, new):
-    """Rename a map."""
+    """Retag a map."""
     with make_spinner(f'Retagging map {tag} to {new} ...') as spinner:
         _cli_load(tag).retag(new)
         spinner.succeed(f'Retagging map {tag} to {new}')

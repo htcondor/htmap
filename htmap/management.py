@@ -87,7 +87,7 @@ def _extract_status_data(
 ) -> dict:
     sd = {}
 
-    sd['Map ID'] = map.tag
+    sd['Tag'] = map.tag
 
     if include_state:
         sc = collections.Counter(map.component_statuses)
@@ -143,7 +143,7 @@ def _status(
     if maps is None:
         maps = sorted(load_maps())
 
-    headers = ['Map ID']
+    headers = ['Tag']
     if include_state:
         # utils.read_events(maps)
         headers += [str(d) for d in state.ComponentStatus.display_statuses()]
@@ -160,7 +160,7 @@ def _status(
         rows = rows,
         header_fmt = header_fmt,
         row_fmt = row_fmt,
-        alignment = {'Map ID': 'ljust'},
+        alignment = {'Tag': 'ljust'},
     )
 
 
