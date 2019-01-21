@@ -2,11 +2,11 @@ import random
 from pathlib import Path
 from typing import Tuple
 
-from htmap import settings, exceptions
+from htmap import names, settings, exceptions
 
 
 def tags_dir_path() -> Path:
-    return Path(settings['HTMAP_DIR']) / 'tags'
+    return Path(settings['HTMAP_DIR']) / names.TAGS_DIR
 
 
 def get_tags() -> Tuple[str, ...]:

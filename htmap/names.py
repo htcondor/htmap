@@ -16,9 +16,12 @@
 # this file sets the names of non-configurable files and directories
 # basically, it's a list of magic strings
 
+MAPS_DIR = 'maps'
+TAGS_DIR = 'tags'
 RUN_DIR = 'run'
 
 FUNC = 'func'
+CLUSTER_IDS = 'cluster_ids'
 OUTPUTS_DIR = 'outputs'
 INPUTS_DIR = 'inputs'
 EVENT_LOG = 'event_log'

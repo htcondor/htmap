@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def maps_dir_path() -> Path:
     """The path to the directory where map directories are stored."""
-    return Path(settings['HTMAP_DIR']) / 'maps'
+    return Path(settings['HTMAP_DIR']) / names.MAPS_DIR
 
 
 def map_dir_path(uid: Union[uuid.UUID, str]) -> Path:
@@ -303,20 +303,15 @@ def create_map(
 
         logger.debug(f'map {tag} was assigned clusterid {cluster_id}')
 
-        with (map_dir / 'cluster_ids').open(mode = 'a') as file:
+        with (map_dir / names.CLUSTER_IDS).open(mode = 'a') as file:
             file.write(str(cluster_id) + '\n')
 
-        with (map_dir / 'cluster_ids').open() as file:
-            cluster_ids = [int(cid.strip()) for cid in file]
-
-        tag_file = tags.tag_file_path(tag)
-        tag_file.parent.mkdir(exist_ok = True)
-        tag_file.write_text(str(uid))
+        tags.tag_file_path(tag).write_text(str(uid))
 
         m = maps.Map(
             tag = tag,
             map_dir = map_dir,
-            cluster_ids = cluster_ids,
+            cluster_ids = [cluster_id],
             submit = submit_obj,
             num_components = num_components,
         )
