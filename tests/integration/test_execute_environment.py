@@ -24,6 +24,6 @@ import htmap
 def test_env_var_is_set_on_execute():
     @htmap.mapped
     def check(x):
-        return 'HTMAP_ON_EXECUTE' in os.environ
+        return os.getenv('HTMAP_ON_EXECUTE') == "1"
 
     assert list(check.map([0]))[0]  # that's the return value of check

@@ -168,12 +168,15 @@ def _map_fg(map) -> Optional[str]:
     help = 'Disable color.'
 )
 def status(no_state, no_meta, json, jsonc, csv, live, no_color):
-    """Print the status of all maps."""
+    """
+    Print the status of all maps.
+    Transient maps are prefixed with a *
+    """
     if (json, jsonc, csv, live).count(True) > 1:
         click.echo('Error: no more than one of --json, --jsonc, --csv, or --live can be set.')
         sys.exit(1)
 
-    maps = sorted(htmap.load_maps())
+    maps = sorted(htmap.load_maps(), key = lambda m: (m.is_transient, m.tag))
     with make_spinner(text = 'Reading map component statuses...'):
         read_events(maps)
 
@@ -217,30 +220,16 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
 
 @cli.command()
 @click.option(
-    '--yes',
+    '--all',
     is_flag = True,
     default = False,
-    help = 'Do not ask for confirmation.',
+    help = 'Remove non-transient maps as well.',
 )
-def clean(yes):
-    """Remove all maps, with more options than the remove command."""
-    if not yes:
-        click.secho(
-            'Are you sure you want to delete all of your maps permanently?'
-            '\nThis action cannot be undone!'
-            '\nType YES to delete all of your maps: ',
-            fg = 'red',
-        )
-        answer = input('> ')
-    else:
-        answer = 'YES'
-
-    if answer == 'YES':
-        with make_spinner('Cleaning maps...') as spinner:
-            htmap.clean()
-            spinner.succeed('Cleaned maps')
-    else:
-        click.echo('Answer was not YES, maps have not been deleted.')
+def clean(all):
+    """Clean up maps."""
+    with make_spinner('Cleaning maps...') as spinner:
+        cleaned_tags = htmap.clean(all = all)
+        spinner.succeed(f'Cleaned maps {", ".join(cleaned_tags)}')
 
 
 def _multi_tag_args(func):
@@ -468,7 +457,7 @@ def retag(tag, new):
     """Retag a map."""
     with make_spinner(f'Retagging map {tag} to {new} ...') as spinner:
         _cli_load(tag).retag(new)
-        spinner.succeed(f'Retagging map {tag} to {new}')
+        spinner.succeed(f'Retagged map {tag} to {new}')
 
 
 @cli.command()
@@ -606,7 +595,7 @@ def path(tag):
         'logs': map_dir / names.JOB_LOGS_DIR,
     }
 
-    click.echo(paths[target])
+    click.echo(str(paths[target]))
 
 
 def _cli_load(tag: str) -> htmap.Map:

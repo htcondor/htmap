@@ -18,7 +18,6 @@ import shutil
 import pytest
 
 import htmap
-import htmap.tags
 
 
 def test_tags(mapped_doubler):
@@ -39,12 +38,10 @@ def test_load_maps_finds_all_maps(mapped_doubler):
     assert len(results) == 3
 
 
-def test_clean_removes_all_maps(mapped_doubler):
-    maps = [
-        mapped_doubler.map(range(1)),
-        mapped_doubler.map(range(1)),
-        mapped_doubler.map(range(1)),
-    ]
+def test_clean_removes_all_transient_maps(mapped_doubler):
+    mapped_doubler.map(range(1))
+    mapped_doubler.map(range(1))
+    mapped_doubler.map(range(1))
 
     htmap.clean()
 
@@ -58,3 +55,21 @@ def test_clean_without_maps_dir_doesnt_raise_exception():
     )
 
     htmap.clean()
+
+
+def test_clean_only_removes_transient_maps(mapped_doubler):
+    mapped_doubler.map(range(1), tag = 'not-me')
+    mapped_doubler.map(range(1))
+
+    htmap.clean()
+
+    assert htmap.get_tags() == ('not-me',)
+
+
+def test_clean_all_cleans_all_maps(mapped_doubler):
+    mapped_doubler.map(range(1), tag = 'yes-me')
+    mapped_doubler.map(range(1))
+
+    htmap.clean(all = True)
+
+    assert len(htmap.get_tags()) == 0

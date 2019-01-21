@@ -120,7 +120,7 @@ class Map:
                 raise exceptions.TagNotFound(f'the tag {tag} could not be found')
 
             map_dir = mapping.map_dir_path(uid)
-            with (map_dir / 'cluster_ids').open() as file:
+            with (map_dir / names.CLUSTER_IDS).open() as file:
                 cluster_ids = [int(cid.strip()) for cid in file]
 
             num_components = htio.load_num_components(map_dir)
@@ -732,7 +732,7 @@ class Map:
         stdout :
             The standard output of the map component.
         """
-        path = self._map_dir / 'job_logs' / f'{component}.stdout'
+        path = self._map_dir / names.JOB_LOGS_DIR / f'{component}.{names.STDOUT_EXT}'
         utils.wait_for_path_to_exist(
             path,
             timeout = timeout,
@@ -761,7 +761,7 @@ class Map:
         stderr :
             The standard error of the map component.
         """
-        path = self._map_dir / 'job_logs' / f'{component}.stderr'
+        path = self._map_dir / names.JOB_LOGS_DIR / f'{component}.{names.STDERR_EXT}'
         utils.wait_for_path_to_exist(
             path,
             timeout = timeout,
@@ -808,7 +808,7 @@ class Map:
         )
 
         self._cluster_ids.append(new_cluster_id)
-        with (self._map_dir / 'cluster_ids').open(mode = 'a') as f:
+        with (self._map_dir / names.CLUSTER_IDS).open(mode = 'a') as f:
             f.write(str(new_cluster_id) + '\n')
 
         logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.tag}')
@@ -816,7 +816,9 @@ class Map:
     def retag(self, tag: str):
         """
         Give this map a new ``tag``.
-        The old ``tag`` will be available for re-use.
+        The old ``tag`` will be available for re-use immediately.
+
+        Retagging a map makes it not transient.
 
         Parameters
         ----------
@@ -839,4 +841,22 @@ class Map:
 
         self._tag_file_path.rename(tags.tag_file_path(tag))
 
+        self.is_transient = False
+
         return self
+
+    @property
+    def _transient_marker(self):
+        return self._map_dir / names.TRANSIENT_MARKER
+
+    @property
+    def is_transient(self) -> bool:
+        return self._transient_marker.exists()
+
+    @is_transient.setter
+    def is_transient(self, state: bool):
+        if state:
+            self._transient_marker.touch(exist_ok = True)
+        else:
+            if self._transient_marker.exists():
+                self._transient_marker.unlink()

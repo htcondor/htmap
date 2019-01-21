@@ -22,18 +22,16 @@ from htmap import Map
 def test_len_of_map_builder(mapped_doubler):
     with mapped_doubler.build_map() as jb:
         jb(5)
-        jb(3)
 
-    assert len(jb) == 2
+    assert len(jb) == 1
 
 
 @pytest.mark.usefixtures('delivery_methods')
 def test_map_builder_produces_correct_results(mapped_doubler):
     with mapped_doubler.build_map() as jb:
         jb(5)
-        jb(3)
 
-    assert list(jb.map) == [10, 6]
+    assert list(jb.map) == [10]
 
 
 def test_getting_result_before_ending_with_raises_no_result_yet(mapped_doubler):

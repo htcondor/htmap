@@ -13,16 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import time
-import itertools
-import gc
 from pathlib import Path
 
 import pytest
 
 import htmap
-from htmap.options import get_base_descriptors
 from htmap.settings import BASE_SETTINGS
 
 # start with base settings (ignore user settings for tests)
@@ -66,10 +62,7 @@ def set_htmap_dir_and_clean_after(tmpdir_factory):
 
     yield
 
-    try:
-        htmap.clean()
-    except (PermissionError, OSError, AttributeError):
-        pass
+    htmap.clean(all = True)
 
 
 @pytest.fixture(scope = 'session')
@@ -126,11 +119,3 @@ def mapped_exception():
 
 def exception_msg(exc_info) -> str:
     return str(exc_info.value)
-
-
-class gc_disabled:
-    def __enter__(self):
-        gc.disable()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        gc.enable()

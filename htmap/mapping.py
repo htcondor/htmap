@@ -271,6 +271,9 @@ def create_map(
     """
     if tag is None:
         tag = tags.random_tag()
+        transient = True
+    else:
+        transient = False
 
     tags.raise_if_tag_is_invalid(tag)
     tags.raise_if_tag_already_exists(tag)
@@ -315,6 +318,8 @@ def create_map(
             submit = submit_obj,
             num_components = num_components,
         )
+
+        m.is_transient = transient
 
         logger.info(f'submitted map {tag}')
 

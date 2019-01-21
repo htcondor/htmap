@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterable, Dict, Union, NamedTuple, Callable
+from typing import Tuple, Iterable, Dict, Union, NamedTuple, Callable, List
 import logging
 
 from pathlib import Path
@@ -72,12 +72,31 @@ def remove(tag: str, not_exist_ok: bool = True) -> None:
             raise e
 
 
-def clean() -> None:
-    """Remove all existing maps."""
-    logger.debug('cleaning maps directory...')
-    for map_result in load_maps():
-        map_result.remove()
-    logger.debug('cleaned maps directory')
+def clean(all: bool = False) -> List[str]:
+    """
+    Remove maps.
+    By default, only removes transient maps.
+    If ``all`` is ``True``, remove **all** maps, including non-transient ones.
+
+    Parameters
+    ----------
+    all
+        If ``True``, remove all maps, not just transient ones.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    cleaned_tags
+        A list of the tags of the maps that were removed.
+    """
+    logger.debug('cleaning maps...')
+    cleaned_tags = []
+    for map in load_maps():
+        if map.is_transient or all:
+            cleaned_tags.append(map.tag)
+            map.remove()
+    logger.debug(f'cleaned maps {cleaned_tags}')
+    return cleaned_tags
 
 
 def _extract_status_data(
@@ -87,7 +106,7 @@ def _extract_status_data(
 ) -> dict:
     sd = {}
 
-    sd['Tag'] = map.tag
+    sd['Tag'] = f'{"* " if map.is_transient else ""}{map.tag}'
 
     if include_state:
         sc = collections.Counter(map.component_statuses)
