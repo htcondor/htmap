@@ -101,14 +101,8 @@ class MapState:
             logger.debug(f'created event log reader for map {self.map.tag}')
             self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
-        cluster_id_set = set(self.map._cluster_ids)
-
         for event in self._event_reader:
             self.map._local_data = None  # invalidate cache if any events were received
-
-            # skip events that aren't part of this map (if any leak in)
-            if event.cluster not in cluster_id_set:
-                continue
 
             if event.type is htcondor.JobEventType.SUBMIT:
                 self._clusterproc_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])

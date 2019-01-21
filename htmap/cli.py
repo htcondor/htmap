@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from typing import Optional
 
 import logging
@@ -24,7 +25,7 @@ import itertools
 from pathlib import Path
 
 import htmap
-import htmap.tags
+from htmap import names
 from htmap.management import _status
 from htmap.utils import read_events
 
@@ -525,13 +526,13 @@ def remove(index):
     try:
         index = int(index)
     except ValueError:
-        click.echo(f'Error: index was not an integer (was {index}).')
+        click.echo(f'ERROR: index was not an integer (was {index})', err = True)
         sys.exit(1)
 
     try:
         transplant = htmap.transplants()[index]
     except IndexError:
-        click.echo(f'Error: could not find a transplant install with index {index}.')
+        click.echo(f'ERROR: could not find a transplant install with index {index}', err = True)
         click.echo(f'Your transplant installs are:')
         click.echo(htmap.transplant_info())
         sys.exit(1)
@@ -571,24 +572,41 @@ def disk(tag, disk):
         map.set_disk(disk)
         spinner.succeed(f'Setting memory request for map {tag} to {disk} KB')
 
-@path.command()
-def logs():
-    """Echo the path to the HTMap log file."""
-    click.echo(str(htmap.LOG_FILE))
 
-
-@path.command()
+@cli.command()
 @click.argument('tag')
-def map(tag):
-    """Echo the path to the map's directory."""
-    click.echo(str(_cli_load(tag)._map_dir))
+def path(tag):
+    """
+    Get paths to various things.
+    Mostly for debugging.
+    The tag argument is a map tag, optionally followed by a colon (:) and a target.
 
+    For example, if you have a map tagged "foo",
+    these commands would give the following paths (command -> path):
 
-@path.command()
-@click.argument('tag')
-def events(tag):
-    """Echo the path to the map's job event log."""
-    click.echo(str(_cli_load(tag)._event_log_path))
+    \b
+    htmap path foo -> the path to the map directory
+    htmap path foo:map -> also the path to the map directory
+    htmap path foo:events -> the map's event log
+    htmap path foo:logs -> the directory containing component stdout and stderr
+    """
+    if tag.count(':') == 0:
+        tag, target = tag, None
+    elif tag.count(':') == 1:
+        tag, target = tag.split(':')
+    else:
+        click.echo('ERROR: can only have one ":" in tag', err = True)
+        sys.exit(1)
+
+    map_dir = _cli_load(tag)._map_dir
+    paths = {
+        None: map_dir,
+        'map': map_dir,
+        'events': map_dir / names.EVENT_LOG,
+        'logs': map_dir / names.JOB_LOGS_DIR,
+    }
+
+    click.echo(paths[target])
 
 
 def _cli_load(tag: str) -> htmap.Map:
@@ -596,7 +614,7 @@ def _cli_load(tag: str) -> htmap.Map:
         try:
             return htmap.load(tag)
         except Exception as e:
-            spinner.fail(f'Error: could not find a map with tag {tag}')
+            spinner.fail(f'ERROR: could not find a map with tag {tag}')
             click.echo(f'Your map tags are:', err = True)
             click.echo(_tag_list(), err = True)
             sys.exit(1)

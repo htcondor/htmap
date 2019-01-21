@@ -835,7 +835,7 @@ class Map:
         self._submit['JobBatchName'] = tag
         htio.save_submit(self._map_dir, self._submit)
 
-        # self._edit('JobBatchName', tag)
+        # self._edit('JobBatchName', tag)  # todo: this doesn't seem to work as expected
 
         self._tag_file_path.rename(tags.tag_file_path(tag))
 
