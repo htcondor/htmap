@@ -552,7 +552,10 @@ def edit():
 )
 def memory(tag, memory):
     """Set a map's requested memory (in MB)."""
-    _cli_load(tag).set_memory(memory)
+    map = _cli_load(tag)
+    with make_spinner(text = f'Setting memory request for map {tag} to {memory} MB') as spinner:
+        map.set_memory(memory)
+        spinner.succeed(f'Setting memory request for map {tag} to {memory} MB')
 
 
 @edit.command()
@@ -563,13 +566,10 @@ def memory(tag, memory):
 )
 def disk(tag, disk):
     """Set a map's requested disk (in KB)."""
-    _cli_load(tag).set_disk(disk)
-
-
-@cli.group()
-def path():
-    """Get paths to various things. Mostly for debugging."""
-
+    map = _cli_load(tag)
+    with make_spinner(text = f'Setting memory request for map {tag} to {disk} KB') as spinner:
+        map.set_disk(disk)
+        spinner.succeed(f'Setting memory request for map {tag} to {disk} KB')
 
 @path.command()
 def logs():
