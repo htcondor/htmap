@@ -7,9 +7,9 @@ API Reference
 Map IDs
 -------
 
-The ``map_id`` is the central organizing piece of data in HTMap.
-Every map that you run produces a :class:`Map` which is connected to a unique ``map_id``, a string that you must provide when you run the map.
-A ``map_id`` cannot be re-used until the associated map has been deleted.
+The ``tag`` is the central organizing piece of data in HTMap.
+Every map that you run produces a :class:`Map` which is connected to a unique ``tag``, a string that you must provide when you run the map.
+A ``tag`` cannot be re-used until the associated map has been deleted.
 
 
 Transient Mapping Functions
@@ -157,7 +157,7 @@ These functions help you manage your maps.
 
 .. autofunction:: htmap.status
 
-.. autofunction:: htmap.map_ids
+.. autofunction:: htmap.tags
 
 .. autofunction:: htmap.load
 

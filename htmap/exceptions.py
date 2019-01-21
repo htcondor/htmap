@@ -39,18 +39,18 @@ class NoMapYet(HTMapException):
     pass
 
 
-class MapIdAlreadyExists(HTMapException):
-    """The requested ``map_id`` already exists (recover the :class:`Map`, then either use or delete it)."""
+class TagAlreadyExists(HTMapException):
+    """The requested ``tag`` already exists (recover the :class:`Map`, then either use or delete it)."""
     pass
 
 
-class InvalidMapId(HTMapException):
-    """The ``map_id`` has an invalid character in it."""
+class InvalidTag(HTMapException):
+    """The ``tag`` has an invalid character in it."""
     pass
 
 
-class MapIdNotFound(HTMapException):
-    """The requested ``map_id`` does not exist."""
+class TagNotFound(HTMapException):
+    """The requested ``tag`` does not exist."""
     pass
 
 
@@ -69,7 +69,7 @@ class MisalignedInputData(HTMapException):
     pass
 
 
-class CannotRenameMap(HTMapException):
+class CannotRetagMap(HTMapException):
     """The map cannot be renamed right now."""
     pass
 

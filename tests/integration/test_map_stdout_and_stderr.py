@@ -22,13 +22,13 @@ import htmap
 
 @pytest.mark.usefixtures('delivery_methods')
 def test_stdout_sees_print():
-    m = htmap.map('stdout-sees-print', lambda x: print('foobar'), range(1))
+    m = htmap.map(lambda x: print('foobar'), range(1))
 
     assert 'foobar' in m.stdout(0)
 
 
 @pytest.mark.usefixtures('delivery_methods')
 def test_stderr_sees_print():
-    m = htmap.map('stderr-sees-print', lambda x: print('foobar', file = sys.stderr), range(1))
+    m = htmap.map(lambda x: print('foobar', file = sys.stderr), range(1))
 
     assert 'foobar' in m.stderr(0)

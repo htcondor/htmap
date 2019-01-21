@@ -16,11 +16,10 @@
 import pytest
 
 import htmap
-import htcondor
 
 
 def test_loaded_map_is_same_object_as_previously_created_map():
-    map = htmap.map('singleton', lambda x: x, range(1))
+    map = htmap.map(lambda x: x, range(1), tag = 'singleton')
 
     recovered = htmap.load('singleton')
 

@@ -24,6 +24,7 @@ import itertools
 from pathlib import Path
 
 import htmap
+import htmap.tags
 from htmap.management import _status
 from htmap.utils import read_events
 
@@ -278,12 +279,12 @@ def _multi_id_args(func):
 def wait(mapids, all):
     """Wait for maps to complete."""
     if all:
-        mapids = htmap.map_ids()
+        mapids = htmap.get_tags.tags()
 
-    _check_map_ids(mapids)
+    _check_tags(mapids)
 
-    for map_id in mapids:
-        m = _cli_load(map_id)
+    for tag in mapids:
+        m = _cli_load(tag)
         if not m.is_done:
             m.wait(show_progress_bar = True)
 
@@ -299,18 +300,18 @@ def wait(mapids, all):
 def remove(mapids, force, all):
     """Remove maps."""
     if all:
-        mapids = htmap.map_ids()
+        mapids = htmap.get_tags.tags()
 
-    _check_map_ids(mapids)
+    _check_tags(mapids)
 
-    for map_id in mapids:
-        with make_spinner(f'Removing map {map_id} ...') as spinner:
+    for tag in mapids:
+        with make_spinner(f'Removing map {tag} ...') as spinner:
             if not force:
-                _cli_load(map_id).remove()
+                _cli_load(tag).remove()
             else:
-                htmap.force_remove(map_id)
+                htmap.force_remove(tag)
 
-            spinner.succeed(f'Removed map {map_id}')
+            spinner.succeed(f'Removed map {tag}')
 
 
 @cli.command()
@@ -318,14 +319,14 @@ def remove(mapids, force, all):
 def hold(mapids, all):
     """Hold maps."""
     if all:
-        mapids = htmap.map_ids()
+        mapids = htmap.get_tags.tags()
 
-    _check_map_ids(mapids)
+    _check_tags(mapids)
 
-    for map_id in mapids:
-        with make_spinner(f'Holding map {map_id} ...') as spinner:
-            _cli_load(map_id).hold()
-            spinner.succeed(f'Held map {map_id}')
+    for tag in mapids:
+        with make_spinner(f'Holding map {tag} ...') as spinner:
+            _cli_load(tag).hold()
+            spinner.succeed(f'Held map {tag}')
 
 
 @cli.command()
@@ -333,14 +334,14 @@ def hold(mapids, all):
 def release(mapids, all):
     """Release maps."""
     if all:
-        mapids = htmap.map_ids()
+        mapids = htmap.get_tags.tags()
 
-    _check_map_ids(mapids)
+    _check_tags(mapids)
 
-    for map_id in mapids:
-        with make_spinner(f'Releasing map {map_id} ...') as spinner:
-            _cli_load(map_id).release()
-            spinner.succeed(f'Released map {map_id}')
+    for tag in mapids:
+        with make_spinner(f'Releasing map {tag} ...') as spinner:
+            _cli_load(tag).release()
+            spinner.succeed(f'Released map {tag}')
 
 
 @cli.command()
@@ -348,14 +349,14 @@ def release(mapids, all):
 def pause(mapids, all):
     """Pause maps."""
     if all:
-        mapids = htmap.map_ids()
+        mapids = htmap.get_tags.tags()
 
-    _check_map_ids(mapids)
+    _check_tags(mapids)
 
-    for map_id in mapids:
-        with make_spinner(f'Pausing map {map_id} ...') as spinner:
-            _cli_load(map_id).pause()
-            spinner.succeed(f'Paused map {map_id}')
+    for tag in mapids:
+        with make_spinner(f'Pausing map {tag} ...') as spinner:
+            _cli_load(tag).pause()
+            spinner.succeed(f'Paused map {tag}')
 
 
 @cli.command()
@@ -363,14 +364,14 @@ def pause(mapids, all):
 def resume(mapids, all):
     """Resume maps."""
     if all:
-        mapids = htmap.map_ids()
+        mapids = htmap.get_tags.tags()
 
-    _check_map_ids(mapids)
+    _check_tags(mapids)
 
-    for map_id in mapids:
-        with make_spinner(f'Resuming map {map_id} ...') as spinner:
-            _cli_load(map_id).resume()
-            spinner.succeed(f'Resumed map {map_id}')
+    for tag in mapids:
+        with make_spinner(f'Resuming map {tag} ...') as spinner:
+            _cli_load(tag).resume()
+            spinner.succeed(f'Resumed map {tag}')
 
 
 @cli.command()
@@ -378,14 +379,14 @@ def resume(mapids, all):
 def vacate(mapids, all):
     """Force maps to give up their claimed resources."""
     if all:
-        mapids = htmap.map_ids()
+        mapids = htmap.get_tags.tags()
 
-    _check_map_ids(mapids)
+    _check_tags(mapids)
 
-    for map_id in mapids:
-        with make_spinner(f'Vacating map {map_id} ...') as spinner:
-            _cli_load(map_id).vacate()
-            spinner.succeed(f'Vacated map {map_id}')
+    for tag in mapids:
+        with make_spinner(f'Vacating map {tag} ...') as spinner:
+            _cli_load(tag).vacate()
+            spinner.succeed(f'Vacated map {tag}')
 
 
 @cli.command()
@@ -393,18 +394,18 @@ def vacate(mapids, all):
 def reasons(mapids, all):
     """Print the hold reasons for maps."""
     if all:
-        mapids = htmap.map_ids()
+        mapids = htmap.get_tags.tags()
 
-    _check_map_ids(mapids)
+    _check_tags(mapids)
 
     reps = []
-    for map_id in mapids:
-        m = _cli_load(map_id)
+    for tag in mapids:
+        m = _cli_load(tag)
 
         if len(m.holds) == 0:
             continue
         name = click.style(
-            f'Map {m.map_id} ({len(m.holds)} hold{"s" if len(m.holds) > 1 else ""})',
+            f'Map {m.tag} ({len(m.holds)} hold{"s" if len(m.holds) > 1 else ""})',
             bold = True,
         )
         reps.append(f'{name}\n{m.hold_report()}')
@@ -494,7 +495,7 @@ def rerun(mapid, components, incomplete, all):
 def rename(mapid, newid):
     """Rename a map."""
     with make_spinner(f'Renaming map {mapid} to {newid} ...') as spinner:
-        _cli_load(mapid).rename(newid)
+        _cli_load(mapid).retag(newid)
         spinner.succeed(f'Renamed map {mapid} to {newid}')
 
 
@@ -619,21 +620,21 @@ def events(mapid):
     click.echo(str(_cli_load(mapid)._event_log_path))
 
 
-def _cli_load(map_id: str) -> htmap.Map:
-    with make_spinner(text = f'Loading map {map_id}...') as spinner:
+def _cli_load(tag: str) -> htmap.Map:
+    with make_spinner(text = f'Loading map {tag}...') as spinner:
         try:
-            return htmap.load(map_id)
+            return htmap.load(tag)
         except Exception as e:
-            spinner.fail(f'Error: could not find a map with map_id {map_id}')
+            spinner.fail(f'Error: could not find a map with tag {tag}')
             click.echo(f'Your map ids are:', err = True)
             click.echo(_id_list(), err = True)
             sys.exit(1)
 
 
 def _id_list() -> str:
-    return '\n'.join(htmap.map_ids())
+    return '\n'.join(htmap.get_tags.tags())
 
 
-def _check_map_ids(map_ids):
-    if len(map_ids) == 0:
+def _check_tags(tags):
+    if len(tags) == 0:
         click.echo('Warning: no map ids were passed', err = True)

@@ -98,7 +98,7 @@ class MapState:
 
     def _read_events(self):
         if self._event_reader is None:
-            logger.debug(f'created event log reader for map {self.map.map_id}')
+            logger.debug(f'created event log reader for map {self.map.tag}')
             self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
         cluster_id_set = set(self.map._cluster_ids)

@@ -7,7 +7,7 @@ HTMap Innards
 Guiding Principles
 ------------------
 
-* The only identifying piece of information about a map a **user** should ever need is a ``map_id``.
+* The only identifying piece of information about a map a **user** should ever need is a ``tag``.
 * Users should never have to directly interact with the filesystem to look at output or logs.
 * We should store as little state as possible in memory.
 * Any state we do store should be duplicated on disk immediately.

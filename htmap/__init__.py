@@ -57,25 +57,30 @@ if _os.getenv('HTMAP_ON_EXECUTE') != '1':
     _shutil.rmtree(_htmap_dir / _names.REMOVED_MAPS_DIR, ignore_errors = True)
 
 from .mapping import (
-    map, starmap, build_map,
-    transient_map, transient_starmap,
+    map,
+    starmap,
+    build_map,
     MapBuilder,
 )
 from .mapped import mapped, MappedFunction
-from .maps import Map, TransientMap
+from .maps import Map
 from .holds import ComponentHold
 from .errors import ComponentError
 from .state import ComponentStatus
 from .options import MapOptions, register_delivery_mechanism
 from .management import (
-    status, status_json, status_csv,
-    map_ids,
-    load, load_maps,
-    clean, force_clean,
-    remove, force_remove,
-    Transplant, transplants, transplant_info,
-    enable_stdout_debug_logging,
+    status,
+    status_json,
+    status_csv,
+    load,
+    load_maps,
+    remove,
+    clean,
+    Transplant,
+    transplants,
+    transplant_info,
 )
+from .tags import get_tags
 from .checkpointing import checkpoint
 from . import exceptions
 

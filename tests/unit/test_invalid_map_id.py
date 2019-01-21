@@ -16,25 +16,25 @@
 import pytest
 
 import htmap
-from htmap.mapping import raise_if_map_id_is_invalid, INVALID_FILENAME_CHARACTERS
+from htmap.tags import INVALID_TAG_CHARACTERS, raise_if_tag_is_invalid
 
 
 @pytest.mark.parametrize(
-    'map_id',
-    sorted(list(INVALID_FILENAME_CHARACTERS)) + [
+    'tag',
+    sorted(list(INVALID_TAG_CHARACTERS)) + [
         '/abc',
         '/def.',
         'def/',
         '\\\\',
     ]
 )
-def test_bad_map_ids(map_id):
-    with pytest.raises(htmap.exceptions.InvalidMapId):
-        raise_if_map_id_is_invalid(map_id)
+def test_bad_tags(tag):
+    with pytest.raises(htmap.exceptions.InvalidTag):
+        raise_if_tag_is_invalid(tag)
 
 
 @pytest.mark.parametrize(
-    'map_id',
+    'tag',
     [
         'joe',
         'bob',
@@ -45,5 +45,5 @@ def test_bad_map_ids(map_id):
         'test__01__underscores',
     ]
 )
-def test_good_map_ids(map_id):
-    raise_if_map_id_is_invalid(map_id)
+def test_good_tags(tag):
+    raise_if_tag_is_invalid(tag)

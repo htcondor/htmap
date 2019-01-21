@@ -61,6 +61,7 @@ def delivery_methods(delivery_method):
 def set_htmap_dir_and_clean_after(tmpdir_factory):
     """Use a fresh HTMAP_DIR for every test and clean it up when done."""
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
+    (path / 'tags').mkdir()
     htmap.settings['HTMAP_DIR'] = path
 
     yield

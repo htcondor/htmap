@@ -36,7 +36,7 @@ def test_checkpoint_file_exists_after_restart():
 
         return False
 
-    m = test.map('test_checkpoint_file_exists_after_restart', [None])
+    m = test.map([None])
 
     while m.component_statuses[0] is not htmap.ComponentStatus.RUNNING:
         time.sleep(.1)
@@ -65,7 +65,7 @@ def test_checkpoint_file_has_expected_contents_after_restart():
 
         return False
 
-    m = test.map('test_checkpoint_file_has_expected_contents_after_restart', [None])
+    m = test.map([None])
 
     while m.component_statuses[0] is not htmap.ComponentStatus.RUNNING:
         time.sleep(.1)

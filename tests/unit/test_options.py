@@ -65,7 +65,7 @@ def test_request_disk_for_str():
 
 
 def test_single_shared_input_file():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     map_options = htmap.MapOptions(
@@ -73,7 +73,7 @@ def test_single_shared_input_file():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -83,7 +83,7 @@ def test_single_shared_input_file():
 
 
 def test_single_shared_input_file_can_be_single_str():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     map_options = htmap.MapOptions(
@@ -91,7 +91,7 @@ def test_single_shared_input_file_can_be_single_str():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -101,7 +101,7 @@ def test_single_shared_input_file_can_be_single_str():
 
 
 def test_two_shared_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     map_options = htmap.MapOptions(
@@ -109,7 +109,7 @@ def test_two_shared_input_files():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -120,7 +120,7 @@ def test_two_shared_input_files():
 
 
 def test_list_of_list_of_str_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 3
     map_options = htmap.MapOptions(
@@ -128,7 +128,7 @@ def test_list_of_list_of_str_input_files():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -144,7 +144,7 @@ def test_list_of_list_of_str_input_files():
 
 
 def test_list_of_str_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 3
     map_options = htmap.MapOptions(
@@ -152,7 +152,7 @@ def test_list_of_str_input_files():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -168,7 +168,7 @@ def test_list_of_str_input_files():
 
 
 def test_list_of_path_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 3
     map_options = htmap.MapOptions(
@@ -176,7 +176,7 @@ def test_list_of_path_input_files():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -192,7 +192,7 @@ def test_list_of_path_input_files():
 
 
 def test_list_of_list_of_path_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 3
     map_options = htmap.MapOptions(
@@ -204,7 +204,7 @@ def test_list_of_list_of_path_input_files():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -220,7 +220,7 @@ def test_list_of_list_of_path_input_files():
 
 
 def test_fewer_components_than_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     map_options = htmap.MapOptions(
@@ -229,7 +229,7 @@ def test_fewer_components_than_input_files():
 
     with pytest.raises(htmap.exceptions.MisalignedInputData) as exc_info:
         create_submit_object_and_itemdata(
-            map_id,
+            tag,
             map_dir,
             num_components,
             map_options,
@@ -239,7 +239,7 @@ def test_fewer_components_than_input_files():
 
 
 def test_fewer_input_files_than_components():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 5
     map_options = htmap.MapOptions(
@@ -248,7 +248,7 @@ def test_fewer_input_files_than_components():
 
     with pytest.raises(htmap.exceptions.MisalignedInputData) as exc_info:
         create_submit_object_and_itemdata(
-            map_id,
+            tag,
             map_dir,
             num_components,
             map_options,
@@ -264,7 +264,7 @@ def test_fewer_input_files_than_components():
     ]
 )
 def test_list_request_memory(rm):
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     map_options = htmap.MapOptions(
@@ -272,7 +272,7 @@ def test_list_request_memory(rm):
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -292,7 +292,7 @@ def test_list_request_memory(rm):
     ]
 )
 def test_list_request_disk(rd):
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     map_options = htmap.MapOptions(
@@ -300,7 +300,7 @@ def test_list_request_disk(rd):
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -314,7 +314,7 @@ def test_list_request_disk(rd):
 
 
 def test_generic_itemdata():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 3
     map_options = htmap.MapOptions(
@@ -322,7 +322,7 @@ def test_generic_itemdata():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -338,7 +338,7 @@ def test_generic_itemdata():
 
 
 def test_generic_itemdata_too_few():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     map_options = htmap.MapOptions(
@@ -347,7 +347,7 @@ def test_generic_itemdata_too_few():
 
     with pytest.raises(htmap.exceptions.MisalignedInputData) as exc_info:
         create_submit_object_and_itemdata(
-            map_id,
+            tag,
             map_dir,
             num_components,
             map_options,
@@ -405,7 +405,7 @@ def test_option_from_settings_is_visible_in_base_options():
 
 
 def test_url_in_fixed_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     url = 'http://www.baz.test'
@@ -414,7 +414,7 @@ def test_url_in_fixed_input_files():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -424,7 +424,7 @@ def test_url_in_fixed_input_files():
 
 
 def test_url_in_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     url = 'http://www.baz.test'
@@ -433,7 +433,7 @@ def test_url_in_input_files():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -443,7 +443,7 @@ def test_url_in_input_files():
 
 
 def test_two_urls_in_input_files():
-    map_id = 'foo'
+    tag = 'foo'
     map_dir = Path().cwd()
     num_components = 1
     url_1 = 'http://www.baz.test'
@@ -453,7 +453,7 @@ def test_two_urls_in_input_files():
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,
@@ -479,7 +479,7 @@ def test_unknown_delivery_mechanism():
     ]
 )
 def test_custom_options(key):
-    map_id = 'test'
+    tag = 'test'
     map_dir = Path().cwd()
     num_components = 1
     map_options = htmap.MapOptions(
@@ -487,7 +487,7 @@ def test_custom_options(key):
     )
 
     sub, itemdata = create_submit_object_and_itemdata(
-        map_id,
+        tag,
         map_dir,
         num_components,
         map_options,

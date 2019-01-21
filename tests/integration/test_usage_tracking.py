@@ -22,7 +22,7 @@ import htmap
 
 def test_memory_usage_is_nonzero_after_map_complete():
     # need it run for at least 5 seconds for it generate an image size event
-    m = htmap.map('mem-usage-nonzero', lambda x: time.sleep(10), range(2))
+    m = htmap.map(lambda x: time.sleep(10), [None])
 
     m.wait()
     print(m.memory_usage)

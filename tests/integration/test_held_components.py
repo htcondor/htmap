@@ -21,7 +21,7 @@ import htmap
 
 
 def test_waiting_on_held_component_raises(mapped_doubler):
-    m = mapped_doubler.map('waiting-on-held-raises', range(1))
+    m = mapped_doubler.map(range(1))
     m.hold()
 
     time.sleep(1)  # wait for it to propagate
@@ -31,7 +31,7 @@ def test_waiting_on_held_component_raises(mapped_doubler):
 
 
 def test_getting_held_component_raises(mapped_doubler):
-    m = mapped_doubler.map('getting-on-held-raises', range(1))
+    m = mapped_doubler.map(range(1))
     m.hold()
 
     time.sleep(1)  # wait for it to propagate
@@ -41,7 +41,7 @@ def test_getting_held_component_raises(mapped_doubler):
 
 
 def test_iterating_over_held_component_raises(mapped_doubler):
-    m = mapped_doubler.map('getting-on-held-raises', range(1))
+    m = mapped_doubler.map(range(1))
     m.hold()
 
     time.sleep(1)  # wait for it to propagate
@@ -51,7 +51,7 @@ def test_iterating_over_held_component_raises(mapped_doubler):
 
 
 def test_held_component_shows_up_in_hold_reasons(mapped_doubler):
-    m = mapped_doubler.map('hold-reasons', range(1))
+    m = mapped_doubler.map(range(1))
     m.hold()
 
     time.sleep(1)  # wait for it to propagate
@@ -60,7 +60,7 @@ def test_held_component_shows_up_in_hold_reasons(mapped_doubler):
 
 
 def test_held_then_released_component_not_in_hold_reasons(mapped_doubler):
-    m = mapped_doubler.map('hold-reasons', range(1))
+    m = mapped_doubler.map(range(1))
     m.hold()
 
     time.sleep(1)  # wait for it to propagate
