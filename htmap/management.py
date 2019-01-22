@@ -160,11 +160,11 @@ def _status(
     row_fmt: Callable[[str], str] = None,
 ) -> str:
     if maps is None:
-        maps = sorted(load_maps(), key = lambda m: (m.is_transient, m.map_id))
+        maps = sorted(load_maps(), key = lambda m: (m.is_transient, m.tag))
 
     headers = ['Tag']
     if include_state:
-        # utils.read_events(maps)
+        utils.read_events(maps)
         headers += [str(d) for d in state.ComponentStatus.display_statuses()]
     if include_meta:
         headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
