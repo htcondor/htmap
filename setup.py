@@ -41,7 +41,7 @@ setup(
     author = 'Josh Karpel',
     author_email = 'josh.karpel@gmail.com',
     description = 'High-Throughput Computing in Python, powered by HTCondor',
-    long_description = open('README.md').read(),
+    long_description = Path('README.md').read_text(),
     long_description_content_type = "text/markdown",
     url = 'https://github.com/htcondor/htmap',
     classifiers = [
@@ -66,13 +66,5 @@ setup(
         [console_scripts]
         htmap=htmap.cli:cli
     ''',
-    install_requires = [
-        'htcondor >= 8.8.0',
-        'cloudpickle',
-        'toml',
-        'tqdm',
-        'click',
-        'click-didyoumean',
-        'halo',
-    ],
+    install_requires = Path('requirements.txt').read_text().splitlines(),
 )

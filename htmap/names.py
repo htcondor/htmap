@@ -36,8 +36,8 @@ SUBMIT = 'submit'
 ITEMDATA = 'itemdata'
 
 TRANSFER_DIR = '_htmap_transfer'
-CHECKPOINT_PREP = 'prep_checkpoint'
-CHECKPOINT_CURRENT = 'current_checkpoint'
-CHECKPOINT_OLD = 'old_checkpoint'
+CHECKPOINT_PREP = '_htmap_prep_checkpoint'
+CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
+CHECKPOINT_OLD = '_htmap_old_checkpoint'
 
 REMOVED_MAPS_DIR = 'removed_maps'
