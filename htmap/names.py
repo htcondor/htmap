@@ -18,6 +18,7 @@
 
 MAPS_DIR = 'maps'
 TAGS_DIR = 'tags'
+REMOVED_TAGS_DIR = '.removed_tags'
 RUN_DIR = 'run'
 
 FUNC = 'func'
@@ -26,7 +27,6 @@ OUTPUTS_DIR = 'outputs'
 INPUTS_DIR = 'inputs'
 EVENT_LOG = 'events'
 JOB_LOGS_DIR = 'logs'
-TRANSIENT_MARKER = 'transient'
 INPUT_EXT = 'in'
 OUTPUT_EXT = 'out'
 STDOUT_EXT = 'stdout'
@@ -34,10 +34,9 @@ STDERR_EXT = 'stderr'
 NUM_COMPONENTS = 'num_components'
 SUBMIT = 'submit'
 ITEMDATA = 'itemdata'
+TRANSIENT_MARKER = 'transient'
 
 TRANSFER_DIR = '_htmap_transfer'
 CHECKPOINT_PREP = '_htmap_prep_checkpoint'
 CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
 CHECKPOINT_OLD = '_htmap_old_checkpoint'
-
-REMOVED_MAPS_DIR = 'removed_maps'

@@ -5,17 +5,17 @@ from typing import Tuple
 from htmap import names, settings, exceptions
 
 
-def tags_dir_path() -> Path:
+def tags_dir() -> Path:
     return Path(settings['HTMAP_DIR']) / names.TAGS_DIR
 
 
 def get_tags() -> Tuple[str, ...]:
     """Return a tuple containing the ``tag`` for all existing maps."""
-    return tuple(path.name for path in tags_dir_path().iterdir())
+    return tuple(path.name for path in tags_dir().iterdir())
 
 
 def tag_file_path(tag: str) -> Path:
-    return tags_dir_path() / tag
+    return tags_dir() / tag
 
 
 def raise_if_tag_already_exists(tag: str) -> None:
@@ -120,7 +120,7 @@ NOUNS = (
 
 
 def random_tag() -> str:
-    existing_tags = set(path.name for path in tags_dir_path().iterdir())
+    existing_tags = set(path.name for path in tags_dir().iterdir())
 
     for attempt in range(50):
         adj1, adj2 = random.sample(ADJECTIVES, k = 2)

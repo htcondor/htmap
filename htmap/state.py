@@ -17,6 +17,7 @@ from typing import Dict, Tuple, List
 import logging
 
 import datetime
+import threading
 
 import htcondor
 
@@ -72,6 +73,8 @@ class MapState:
         self._memory_usage = [0 for _ in self.map.components]
         self._runtime = [datetime.timedelta(0) for _ in self.map.components]
 
+        self._event_reader_lock = threading.Lock()
+
     @property
     def component_statuses(self) -> List[ComponentStatus]:
         self._read_events()
@@ -97,38 +100,39 @@ class MapState:
         return self.map._map_dir / names.EVENT_LOG
 
     def _read_events(self):
-        if self._event_reader is None:
-            logger.debug(f'created event log reader for map {self.map.tag}')
-            self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
+        with self._event_reader_lock:  # no thread can be in here at the same time as another
+            if self._event_reader is None:
+                logger.debug(f'created event log reader for map {self.map.tag}')
+                self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
-        for event in self._event_reader:
-            self.map._local_data = None  # invalidate cache if any events were received
+            for event in self._event_reader:
+                self.map._local_data = None  # invalidate cache if any events were received
 
-            if event.type is htcondor.JobEventType.SUBMIT:
-                self._clusterproc_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
+                if event.type is htcondor.JobEventType.SUBMIT:
+                    self._clusterproc_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
 
-            # this lookup is safe because the SUBMIT event always comes first
-            component = self._clusterproc_to_component[(event.cluster, event.proc)]
+                # this lookup is safe because the SUBMIT event always comes first
+                component = self._clusterproc_to_component[(event.cluster, event.proc)]
 
-            if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                self._memory_usage[component] = max(
-                    self._memory_usage[component],
-                    int(event.get('MemoryUsage', 0)),
-                )
-            elif event.type is htcondor.JobEventType.JOB_TERMINATED:
-                self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
-            elif event.type is htcondor.JobEventType.JOB_RELEASED:
-                self._holds.pop(component, None)
-            elif event.type is htcondor.JobEventType.JOB_HELD:
-                h = holds.ComponentHold(
-                    code = int(event['HoldReasonCode']),
-                    reason = event.get('HoldReason', 'UNKNOWN').strip(),
-                )
-                self._holds[component] = h
+                if event.type is htcondor.JobEventType.IMAGE_SIZE:
+                    self._memory_usage[component] = max(
+                        self._memory_usage[component],
+                        int(event.get('MemoryUsage', 0)),
+                    )
+                elif event.type is htcondor.JobEventType.JOB_TERMINATED:
+                    self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
+                elif event.type is htcondor.JobEventType.JOB_RELEASED:
+                    self._holds.pop(component, None)
+                elif event.type is htcondor.JobEventType.JOB_HELD:
+                    h = holds.ComponentHold(
+                        code = int(event['HoldReasonCode']),
+                        reason = event.get('HoldReason', 'UNKNOWN').strip(),
+                    )
+                    self._holds[component] = h
 
-            new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
-            if new_status is not None:
-                self._component_statuses[component] = new_status
+                new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
+                if new_status is not None:
+                    self._component_statuses[component] = new_status
 
 
 def parse_runtime(runtime_string: str) -> datetime.timedelta:

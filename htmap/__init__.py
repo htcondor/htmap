@@ -17,48 +17,13 @@ __version__ = '0.2.0'
 
 from typing import Tuple as _Tuple
 import logging as _logging
-import logging.handlers as _handlers
-from pathlib import Path as _Path
-import os as _os
 
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 
 # SET UP NULL LOG HANDLER
-_logger = _logging.getLogger(__name__)
-_logger.setLevel(_logging.DEBUG)
-_logger.addHandler(_logging.NullHandler())
-
-if _os.getenv('HTMAP_ON_EXECUTE') != '1':
-    # ENSURE HTMAP DIR EXISTS
-    from . import names as _names
-
-    _htmap_dir = _Path(settings['HTMAP_DIR'])
-    try:
-        did_not_exist = not _htmap_dir.exists()
-        _htmap_dir.mkdir(parents = True, exist_ok = True)
-        (_htmap_dir / _names.MAPS_DIR).mkdir(parents = True, exist_ok = True)
-        (_htmap_dir / _names.TAGS_DIR).mkdir(parents = True, exist_ok = True)
-        if did_not_exist:
-            _logger.debug(f'created HTMap dir at {_htmap_dir}')
-    except PermissionError as e:
-        raise PermissionError(f'the HTMap directory ({_htmap_dir}) needs to be writable') from e
-
-    LOG_FILE = _Path(settings['HTMAP_DIR']) / 'htmap.log'
-    # SET UP LOG FILE
-    _logfile_handler = _handlers.RotatingFileHandler(
-        filename = LOG_FILE,
-        mode = 'a',
-        maxBytes = 10 * 1024 * 1024,  # 10 MB
-        backupCount = 4,
-    )
-    _fmt = _logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    _logfile_handler.setFormatter(_fmt)
-    _logfile_handler.setLevel(_logging.DEBUG)
-    _logger.addHandler(_logfile_handler)
-
-    import shutil as _shutil
-
-    _shutil.rmtree(_htmap_dir / _names.REMOVED_MAPS_DIR, ignore_errors = True)
+logger = _logging.getLogger(__name__)
+logger.setLevel(_logging.DEBUG)
+logger.addHandler(_logging.NullHandler())
 
 from .mapping import (
     map,
@@ -87,6 +52,8 @@ from .management import (
 from .tags import get_tags
 from .checkpointing import checkpoint
 from . import exceptions
+
+from . import _startup
 
 
 def version() -> str:

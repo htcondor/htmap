@@ -21,6 +21,8 @@ import pytest
 import htmap
 from htmap.settings import BASE_SETTINGS
 
+from htmap._startup import ensure_htmap_dir_exists
+
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
 htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for testing
@@ -53,13 +55,15 @@ def delivery_methods(delivery_method):
     htmap.settings['DELIVERY_METHOD'] = delivery_method
 
 
-@pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir_and_clean_after(tmpdir_factory):
-    """Use a fresh HTMAP_DIR for every test and clean it up when done."""
+@pytest.fixture(scope = 'session', autouse = True)
+def set_htmap_dir(tmpdir_factory):
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
-    (path / 'tags').mkdir()
     htmap.settings['HTMAP_DIR'] = path
+    ensure_htmap_dir_exists()
 
+
+@pytest.fixture(scope = 'function', autouse = True)
+def clean_after_test():
     yield
 
     htmap.clean(all = True)

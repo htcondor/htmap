@@ -315,11 +315,11 @@ def create_map(
             tag = tag,
             map_dir = map_dir,
             cluster_ids = [cluster_id],
-            submit = submit_obj,
             num_components = num_components,
         )
 
-        m.is_transient = transient
+        if transient:
+            m._make_transient()
 
         logger.info(f'submitted map {tag}')
 

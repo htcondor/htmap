@@ -18,7 +18,6 @@ import inspect
 import pytest
 
 import htmap
-from htmap.mapping import map_dir_path
 
 
 def test_map_dir_does_not_exist_after_remove(mapped_doubler):
@@ -50,6 +49,14 @@ def test_remove_shortcut_on_nonexistent_map_dir_raises():
 
 def test_remove_shortcut_on_nonexistent_map_dir_fails_silently_if_not_exist_ok_set():
     htmap.remove('no-such-tag', not_exist_ok = True)
+
+
+def test_map_is_marked_as_removed_after_calling_remove(mapped_doubler):
+    m = mapped_doubler.map(range(1))
+
+    m.remove()
+
+    assert m.is_removed
 
 
 @pytest.mark.parametrize(

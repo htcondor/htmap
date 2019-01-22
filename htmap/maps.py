@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 def _protector(method):
     @functools.wraps(method)
     def _protect(self, *args, **kwargs):
-        if self._is_removed:
+        if self.is_removed:
             raise exceptions.MapWasRemoved(f'cannot call {method} for map {self.tag} because it has been removed')
         return method(self, *args, **kwargs)
 
@@ -78,15 +78,12 @@ class Map:
         map_dir: Path,
         cluster_ids: Iterable[int],
         num_components: int,
-        submit: htcondor.Submit,
     ):
         self.tag = tag
 
         self._map_dir = map_dir
         self._cluster_ids = list(cluster_ids)
         self._num_components = num_components
-
-        self._is_removed = False
 
         self._state = state.MapState(self)
         self._local_data = None
@@ -123,7 +120,6 @@ class Map:
                 cluster_ids = [int(cid.strip()) for cid in file]
 
             num_components = htio.load_num_components(map_dir)
-            submit = htio.load_submit(map_dir)
 
             logger.debug(f'recovered map result for map {tag} from {map_dir}')
 
@@ -132,7 +128,6 @@ class Map:
                 map_dir = map_dir,
                 cluster_ids = cluster_ids,
                 num_components = num_components,
-                submit = submit,
             )
 
     def __repr__(self):
@@ -622,30 +617,35 @@ class Map:
         Permanently remove the map and delete all associated input, output, and metadata files.
         """
         self._remove_from_queue()
-        self._rm_map_dir()
-        self._tag_file_path.unlink()
-        self._is_removed = True
+        self._cleanup_local_data()
         MAPS.pop(self.tag, None)
+
         logger.info(f'removed map {self.tag}')
 
     def _remove_from_queue(self) -> classad.ClassAd:
         return self._act(htcondor.JobAction.Remove)
 
-    def _rm_map_dir(self) -> None:
-        # moving the map dir to a temp dir first
-        # helps avoid problems where condor writes
-        # to the directory while we're cleaning
-        tmp = Path(settings['HTMAP_DIR']) / names.REMOVED_MAPS_DIR / str(uuid.uuid4())
-        tmp.parent.mkdir(parents = True, exist_ok = True)
-        self._map_dir.rename(tmp)
-        shutil.rmtree(tmp.absolute())
+    def _cleanup_local_data(self) -> None:
+        # todo: can this be asynchronous?
+        while not all(cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED)
+                      for cs in self.component_statuses):
+            time.sleep(.1)
+
+        shutil.rmtree(self._map_dir)
         logger.debug(f'removed map directory for map {self.tag}')
+
+        self._tag_file_path.unlink()
+        logger.debug(f'removed tag file for map {self.tag}')
 
     def _clean_outputs_dir(self) -> None:
         def update_status(path: Path) -> None:
             self.component_statuses[int(path.stem)] = state.ComponentStatus.REMOVED
 
         utils.clean_dir(self._outputs_dir, on_file = update_status)
+
+    @property
+    def is_removed(self) -> bool:
+        return not self._map_dir.exists()
 
     def hold(self) -> None:
         """Temporarily remove the map from the queue, until it is released."""
@@ -842,7 +842,7 @@ class Map:
         self._tag_file_path.rename(tags.tag_file_path(tag))
 
         self.tag = tag
-        self.is_transient = False
+        self._make_persistent()
 
         return self
 
@@ -854,10 +854,9 @@ class Map:
     def is_transient(self) -> bool:
         return self._transient_marker.exists()
 
-    @is_transient.setter
-    def is_transient(self, state: bool):
-        if state:
-            self._transient_marker.touch(exist_ok = True)
-        else:
-            if self._transient_marker.exists():
-                self._transient_marker.unlink()
+    def _make_transient(self):
+        self._transient_marker.touch(exist_ok = True)
+
+    def _make_persistent(self):
+        if self.is_transient:
+            self._transient_marker.unlink()
