@@ -155,7 +155,7 @@ These functions help you manage your maps.
 
 .. autofunction:: htmap.status
 
-.. autofunction:: htmap.tags
+.. autofunction:: htmap.get_tags
 
 .. autofunction:: htmap.load
 

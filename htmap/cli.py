@@ -413,7 +413,7 @@ def stderr(tag, component):
 def errors(tag, limit):
     """Look at detailed error reports for a map."""
     m = _cli_load(tag)
-    reports = m.error_report()
+    reports = m.error_reports()
     if limit > 0:
         itertools.islice(reports, limit)
 

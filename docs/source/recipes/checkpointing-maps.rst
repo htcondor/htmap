@@ -3,6 +3,10 @@
 Checkpointing Maps
 ------------------
 
+.. attention::
+
+    To use this feature, HTMap itself must be installed in your execute environment (not just ``cloudpickle``).
+
 When running on opportunistic resources, HTCondor might "evict" your map components from the execute locations.
 Evicted components return to the queue and, without your intervention, restart from scratch.
 However, HTMap can preserve files across an eviction and make them available in the next run.
@@ -102,7 +106,7 @@ Here's the function, along with some code to run it and prove that it checkpoint
         return True
 
 
-    map = counter.map('chk', [30])
+    map = counter.map([30])
 
     while map.component_statuses[0] is not htmap.ComponentStatus.RUNNING:
         print(map.component_statuses[0])

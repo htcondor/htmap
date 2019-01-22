@@ -23,7 +23,7 @@ Here's a brief example: checking whether integers are even.
     def is_even(x: int) -> bool:
         return x % 2 == 0
 
-    result = is_even.map('is_even', range(10))
+    result = is_even.map(range(10))
 
     filtered = [input for input, output in result.iter_with_inputs() if output]
 
@@ -58,23 +58,13 @@ Here's a brief example: grouping integer by whether they are even or not.
 
         return groups
 
-    result = is_even.map('is_even', range(10))
+    result = is_even.map(range(10))
 
     for group, elements in groupby(result).items():
         print(group, elements)
 
     # True [((0,), {}), ((2,), {}), ((4,), {}), ((6,), {}), ((8,), {})]
     # False [((1,), {}), ((3,), {}), ((5,), {}), ((7,), {}), ((9,), {})]
-
-
-.. _cleanup-after-force-removal:
-
-Cleanup After Force Removal
----------------------------
-
-If you use :func:`htmap.force_remove` or :func:`htmap.force_clean` you may end up with dangling map jobs.
-These maps jobs are in the cluster's queue, but since you force-removed your map, you don't have a way to reconnect to them from inside HTMap.
-You'll need to use the command line HTCondor tools ``condor_q`` and ``condor_rm`` to clean them up.
 
 
 Conditional Execution on Cluster vs. Submit

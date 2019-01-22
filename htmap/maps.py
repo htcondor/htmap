@@ -84,7 +84,6 @@ class Map:
 
         self._map_dir = map_dir
         self._cluster_ids = list(cluster_ids)
-        self._submit = submit
         self._num_components = num_components
 
         self._is_removed = False
@@ -573,7 +572,7 @@ class Map:
 
         return err
 
-    def error_report(self) -> Iterator[str]:
+    def error_reports(self) -> Iterator[str]:
         """Yields the error reports for any components that experienced an error during execution."""
         for idx in self.components:
             try:
@@ -834,8 +833,9 @@ class Map:
         except (exceptions.InvalidTag, exceptions.TagAlreadyExists) as e:
             raise exceptions.CannotRetagMap(f'cannot retag map because of previous exception: {e}') from e
 
-        self._submit['JobBatchName'] = tag
-        htio.save_submit(self._map_dir, self._submit)
+        submit_obj = htio.load_submit(self._map_dir)
+        submit_obj['JobBatchName'] = tag
+        htio.save_submit(self._map_dir, submit_obj)
 
         # self._edit('JobBatchName', tag)  # todo: this doesn't seem to work as expected
 

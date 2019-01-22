@@ -17,6 +17,7 @@
 import pytest
 
 import htmap
+from htmap import htio
 
 
 def test_option_set_on_mapped_function_is_inherited():
@@ -30,7 +31,9 @@ def test_option_set_on_mapped_function_is_inherited():
 
     m = double.map(range(1))
 
-    assert m._submit['request_memory'] == '123MB'
+    sub = htio.load_submit(m._map_dir)
+
+    assert sub['request_memory'] == '123MB'
 
 
 def test_option_set_on_mapped_function_is_overridden():
@@ -49,4 +52,6 @@ def test_option_set_on_mapped_function_is_overridden():
         )
     )
 
-    assert m._submit['request_memory'] == '456MB'
+    sub = htio.load_submit(m._map_dir)
+
+    assert sub['request_memory'] == '456MB'
