@@ -72,7 +72,7 @@ def remove(tag: str, not_exist_ok: bool = True) -> None:
             raise e
 
 
-def clean(all: bool = False) -> List[str]:
+def clean(*, all: bool = False) -> List[str]:
     """
     Remove maps.
     By default, only removes transient maps.
@@ -160,7 +160,7 @@ def _status(
     row_fmt: Callable[[str], str] = None,
 ) -> str:
     if maps is None:
-        maps = sorted(load_maps())
+        maps = sorted(load_maps(), key = lambda m: (m.is_transient, m.map_id))
 
     headers = ['Tag']
     if include_state:

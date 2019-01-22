@@ -89,8 +89,8 @@ def _start_htmap_logger():
 
 
 @cli.command()
-def ids():
-    """Print map ids. Can be piped to other commands."""
+def tags():
+    """Print tags. Can be piped to other commands."""
     click.echo(_tag_list())
 
 
