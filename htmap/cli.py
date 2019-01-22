@@ -203,7 +203,9 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
 
     try:
         while live:
-            num_lines = len(msg.splitlines())
+            prev_num_lines = len(msg.splitlines())
+
+            maps = sorted(htmap.load_maps(), key = lambda m: (m.is_transient, m.tag))
             msg = _status(
                 maps,
                 **shared_kwargs,
@@ -211,7 +213,7 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
                 row_fmt = _RowFmt(maps) if not no_color else None,  # don't cache, must pass fresh each time
             )
 
-            sys.stdout.write(f'\033[{num_lines}A\r')
+            sys.stdout.write(f'\033[{prev_num_lines}A\r')
             click.echo(msg)
             time.sleep(1)
     except KeyboardInterrupt:  # bypass click's interrupt handling and let it exit quietly
