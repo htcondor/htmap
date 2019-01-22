@@ -4,7 +4,7 @@ Tutorials
 :doc:`tutorials/first-steps`
    If this is your first time using HTMap, start here!
 
-:doc:`tutorials/persistent-maps`
+:doc:`tutorials/basic-mapping`
    An introduction to the basics of HTMap.
 
 :doc:`tutorials/working-with-files`
@@ -25,7 +25,7 @@ Tutorials
    :hidden:
 
    tutorials/first-steps
-   tutorials/persistent-maps
+   tutorials/basic-mapping
    tutorials/working-with-files
    tutorials/map-options
    tutorials/advanced-mapping
