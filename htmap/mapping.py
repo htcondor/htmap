@@ -285,7 +285,7 @@ def create_map(
     try:
         make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
-        num_components = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
+        num_components = htio.save_inputs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
             tag,

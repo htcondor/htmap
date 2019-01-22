@@ -175,7 +175,7 @@ def create_submit_object_and_itemdata(
     input_files = descriptors.get('transfer_input_files', [])
     input_files += [
         (map_dir / names.FUNC).as_posix(),
-        (map_dir / names.INPUTS_DIR / '$(component).in').as_posix(),
+        (map_dir / names.INPUTS_DIR / f'$(component).{names.INPUT_EXT}').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
@@ -241,7 +241,7 @@ def get_base_descriptors(
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
         'transfer_output_files': names.TRANSFER_DIR,
-        'transfer_output_remaps': f'"{names.TRANSFER_DIR}/$(component).out={(map_dir / names.OUTPUTS_DIR / "$(component).out").as_posix()}"',
+        'transfer_output_remaps': f'"{names.TRANSFER_DIR}/$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}"',
         '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }
