@@ -826,13 +826,13 @@ class Map:
             The ``tag`` to assign to this map.
         """
         if tag == self.tag:
-            raise exceptions.CannotRetagMap('cannot rename a map to the same tag it already has')
+            raise exceptions.CannotRetagMap('cannot retag a map to the same tag it already has')
 
         try:
             tags.raise_if_tag_is_invalid(tag)
             tags.raise_if_tag_already_exists(tag)
         except (exceptions.InvalidTag, exceptions.TagAlreadyExists) as e:
-            raise exceptions.CannotRetagMap(f'cannot rename map because of previous exception: {e}') from e
+            raise exceptions.CannotRetagMap(f'cannot retag map because of previous exception: {e}') from e
 
         self._submit['JobBatchName'] = tag
         htio.save_submit(self._map_dir, self._submit)
@@ -841,6 +841,7 @@ class Map:
 
         self._tag_file_path.rename(tags.tag_file_path(tag))
 
+        self.tag = tag
         self.is_transient = False
 
         return self
