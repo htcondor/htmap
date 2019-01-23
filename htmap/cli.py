@@ -54,13 +54,6 @@ def make_spinner(*args, **kwargs):
 CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
 
 
-def _read_tags_from_stdin(ctx, param, value):
-    if not value and not click.get_text_stream('stdin').isatty():
-        return click.get_text_stream('stdin').read().split()
-    else:
-        return value
-
-
 @click.group(context_settings = CONTEXT_SETTINGS, cls = DYMGroup)
 @click.option(
     '--verbose', '-v',
@@ -179,7 +172,7 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
         click.echo('Error: no more than one of --json, --jsonc, --csv, or --live can be set.')
         sys.exit(1)
 
-    maps = sorted(htmap.load_maps(), key = lambda m: (m.is_transient, m.tag))
+    maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
     with make_spinner(text = 'Reading map component statuses...'):
         read_events(maps)
 
@@ -217,14 +210,14 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
             )
 
             move = f'\033[{len(prev_len_lines)}A\r'
-            clear = '\n'.join(' ' * l for l in prev_len_lines)
+            clear = '\n'.join(' ' * l for l in prev_len_lines) + '\n'
 
             sys.stdout.write(move + clear + move)
             click.echo(msg)
 
             time.sleep(1)
     except KeyboardInterrupt:  # bypass click's interrupt handling and let it exit quietly
-        pass
+        return
 
 
 @cli.command()
@@ -247,6 +240,7 @@ def _multi_tag_args(func):
             'tags',
             nargs = -1,
             callback = _read_tags_from_stdin,
+            autocompletion = _autocomplete_tag,
             required = False,
         ),
         click.option(
@@ -261,6 +255,17 @@ def _multi_tag_args(func):
         func = a(func)
 
     return func
+
+
+def _read_tags_from_stdin(ctx, param, value):
+    if not value and not click.get_text_stream('stdin').isatty():
+        return click.get_text_stream('stdin').read().split()
+    else:
+        return value
+
+
+def _autocomplete_tag(ctx, args, incomplete):
+    return [tag for tag in htmap.get_tags() if incomplete in tag]
 
 
 TOTAL_WIDTH = 80
@@ -294,36 +299,42 @@ def wait(tags, all):
     if len(tags) == 0:
         return
 
-    maps = sorted((htmap.load(tag) for tag in tags), key = lambda m: (m.is_transient, m.tag))
-    longest_tag_len = max(len(tag) for tag in tags)
-    bar_width = min(shutil.get_terminal_size().columns, TOTAL_WIDTH - (longest_tag_len + 1))
+    maps = sorted((_cli_load(tag) for tag in tags), key = lambda m: (m.is_transient, m.tag))
+    with make_spinner(text = 'Reading map component statuses...'):
+        read_events(maps)
 
-    click.echo('\n' * (len(maps) - 1))
-    while any(not map.is_done for map in maps):
-        bars = []
-        for map in maps:
-            sc = collections.Counter(map.component_statuses)
+    try:
+        longest_tag_len = max(len(tag) for tag in tags)
+        bar_width = min(shutil.get_terminal_size().columns, TOTAL_WIDTH - (longest_tag_len + 1))
 
-            bar_lens = {
-                status: _calculate_bar_component_len(sc[status], len(map), bar_width)
-                for status, _ in STATUS_AND_COLOR
-            }
-            bar_lens[htmap.ComponentStatus.IDLE] += bar_width - sum(bar_lens.values())
+        click.echo('\n' * (len(maps) - 1))
+        while any(not map.is_done for map in maps):
+            bars = []
+            for map in maps:
+                sc = collections.Counter(map.component_statuses)
 
-            bar = ''.join([
-                click.style('█' * bar_lens[status], fg = color)
-                for status, color in STATUS_AND_COLOR
-            ])
+                bar_lens = {
+                    status: _calculate_bar_component_len(sc[status], len(map), bar_width)
+                    for status, _ in STATUS_AND_COLOR
+                }
+                bar_lens[htmap.ComponentStatus.IDLE] += bar_width - sum(bar_lens.values())
 
-            bars.append(f'{map.tag.ljust(longest_tag_len)} {bar}')
+                bar = ''.join([
+                    click.style('█' * bar_lens[status], fg = color)
+                    for status, color in STATUS_AND_COLOR
+                ])
 
-        msg = '\n'.join(bars)
-        move = f'\033[{len(maps)}A\r'
+                bars.append(f'{map.tag.ljust(longest_tag_len)} {bar}')
 
-        sys.stdout.write(move)
-        click.echo(msg)
+            msg = '\n'.join(bars)
+            move = f'\033[{len(maps)}A\r'
 
-        time.sleep(1)
+            sys.stdout.write(move)
+            click.echo(msg)
+
+            time.sleep(1)
+    except KeyboardInterrupt:  # bypass click's interrupt handling and let it exit quietly
+        return
 
 
 @cli.command()
@@ -442,7 +453,7 @@ def reasons(tags, all):
 
 
 @cli.command()
-@click.argument('tag')
+@click.argument('tag', autocompletion = _autocomplete_tag)
 @click.argument('component', type = int)
 def stdout(tag, component):
     """Look at the stdout for a map component."""
@@ -450,7 +461,7 @@ def stdout(tag, component):
 
 
 @cli.command()
-@click.argument('tag')
+@click.argument('tag', autocompletion = _autocomplete_tag)
 @click.argument('component', type = int)
 def stderr(tag, component):
     """Look at the stderr for a map component."""
@@ -458,7 +469,7 @@ def stderr(tag, component):
 
 
 @cli.command()
-@click.argument('tag')
+@click.argument('tag', autocompletion = _autocomplete_tag)
 @click.option(
     '--limit',
     type = int,
@@ -477,7 +488,7 @@ def errors(tag, limit):
 
 
 @cli.command()
-@click.argument('tag')
+@click.argument('tag', autocompletion = _autocomplete_tag)
 @click.option(
     '--components',
     help = 'Rerun the given components',
@@ -508,7 +519,7 @@ def rerun(tag, components, all):
 
 
 @cli.command()
-@click.argument('tag')
+@click.argument('tag', autocompletion = _autocomplete_tag)
 @click.argument('new')
 def retag(tag, new):
     """Retag a map."""
@@ -592,7 +603,7 @@ def edit():
 
 
 @edit.command()
-@click.argument('tag')
+@click.argument('tag', autocompletion = _autocomplete_tag)
 @click.argument(
     'memory',
     type = int,
@@ -606,7 +617,7 @@ def memory(tag, memory):
 
 
 @edit.command()
-@click.argument('tag')
+@click.argument('tag', autocompletion = _autocomplete_tag)
 @click.argument(
     'disk',
     type = int,
@@ -620,21 +631,24 @@ def disk(tag, disk):
 
 
 @cli.command()
-@click.argument('tag')
+@click.argument('tag', autocompletion = _autocomplete_tag)
 def path(tag):
     """
     Get paths to various things.
     Mostly for debugging.
     The tag argument is a map tag, optionally followed by a colon (:) and a target.
 
-    For example, if you have a map tagged "foo",
+    If you have a map tagged "foo",
     these commands would give the following paths (command -> path):
 
     \b
     htmap path foo -> the path to the map directory
     htmap path foo:map -> also the path to the map directory
+    htmap path foo:tag -> the path to the map's tag file
     htmap path foo:events -> the map's event log
-    htmap path foo:logs -> the directory containing component stdout and stderr
+    htmap path foo:logs -> directory containing component stdout and stderr
+    htmap path foo:inputs -> directory containing component inputs
+    htmap path foo:outputs -> directory containing component outputs
     """
     if tag.count(':') == 0:
         tag, target = tag, None
@@ -644,12 +658,16 @@ def path(tag):
         click.echo('ERROR: can only have one ":" in tag', err = True)
         sys.exit(1)
 
-    map_dir = _cli_load(tag)._map_dir
+    map = _cli_load(tag)
+    map_dir = map._map_dir
     paths = {
         None: map_dir,
         'map': map_dir,
         'events': map_dir / names.EVENT_LOG,
         'logs': map_dir / names.JOB_LOGS_DIR,
+        'inputs': map_dir / names.INPUTS_DIR,
+        'outputs': map_dir / names.OUTPUTS_DIR,
+        'tag': Path(htmap.settings('HTMAP_DIR')) / names.TAGS_DIR / map.tag,
     }
 
     click.echo(str(paths[target]))
