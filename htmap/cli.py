@@ -112,7 +112,9 @@ class _RowFmt:
 def _map_fg(map) -> Optional[str]:
     sc = collections.Counter(map.component_statuses)
 
-    if sc[htmap.state.ComponentStatus.HELD] > 0:
+    if sc[htmap.state.ComponentStatus.REMOVED] > 0:
+        return 'magenta'
+    elif sc[htmap.state.ComponentStatus.HELD] > 0:
         return 'red'
     elif sc[htmap.state.ComponentStatus.COMPLETED] == len(map):
         return 'green'
@@ -203,7 +205,7 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
 
     try:
         while live:
-            prev_num_lines = len(msg.splitlines())
+            prev_len_lines = [len(line) for line in msg.splitlines()]
 
             maps = sorted(htmap.load_maps(), key = lambda m: (m.is_transient, m.tag))
             msg = _status(
@@ -213,8 +215,12 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
                 row_fmt = _RowFmt(maps) if not no_color else None,  # don't cache, must pass fresh each time
             )
 
-            sys.stdout.write(f'\033[{prev_num_lines}A\r')
+            move = f'\033[{len(prev_len_lines)}A\r'
+            clear = '\n'.join(' ' * l for l in prev_len_lines)
+
+            sys.stdout.write(move + clear + move)
             click.echo(msg)
+
             time.sleep(1)
     except KeyboardInterrupt:  # bypass click's interrupt handling and let it exit quietly
         pass

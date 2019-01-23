@@ -52,8 +52,8 @@ def get_schedd():
 def map(
     func: Callable,
     args: Iterable[Any],
-    tag: Optional[str] = None,
     map_options: Optional[options.MapOptions] = None,
+    tag: Optional[str] = None,
     **kwargs: Any,
 ) -> maps.Map:
     """
@@ -64,8 +64,6 @@ def map(
 
     Parameters
     ----------
-    tag
-        The ``tag`` to assign to this map.
     func
         The function to map the arguments over.
     args
@@ -74,6 +72,8 @@ def map(
         Any additional keyword arguments are passed as keyword arguments to the mapped function.
     map_options
         An instance of :class:`htmap.MapOptions`.
+    tag
+        The ``tag`` to assign to this map.
 
     Returns
     -------
@@ -94,8 +94,8 @@ def starmap(
     func: Callable,
     args: Optional[Iterable[tuple]] = None,
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-    tag: Optional[str] = None,
     map_options: options.MapOptions = None,
+    tag: Optional[str] = None,
 ) -> maps.Map:
     """
     Map a function call over aligned iterables of arguments and keyword arguments.
@@ -104,8 +104,6 @@ def starmap(
 
     Parameters
     ----------
-    tag
-        The ``tag`` to assign to this map.
     func
         The function to map the arguments over.
     args
@@ -114,6 +112,8 @@ def starmap(
         An iterable of dictionaries of keyword arguments to unpack into the mapped function.
     map_options
         An instance of :class:`htmap.MapOptions`.
+    tag
+        The ``tag`` to assign to this map.
 
     Returns
     -------
@@ -154,12 +154,12 @@ class MapBuilder:
     def __init__(
         self,
         func: Callable,
-        tag: Optional[str] = None,
         map_options: options.MapOptions = None,
+        tag: Optional[str] = None,
     ):
         self.func = func
-        self.tag = tag
         self.map_options = map_options
+        self.tag = tag
 
         self.args: List[Tuple[Any, ...]] = []
         self.kwargs: List[Dict[str, Any]] = []
@@ -212,20 +212,20 @@ class MapBuilder:
 
 def build_map(
     func: Callable,
-    tag: Optional[str] = None,
     map_options: options.MapOptions = None,
+    tag: Optional[str] = None,
 ) -> MapBuilder:
     """
     Return a :class:`MapBuilder` for the given function.
 
     Parameters
     ----------
-    tag
-        The ``tag`` to assign to this map.
     func
         The function to map over.
     map_options
         An instance of :class:`htmap.MapOptions`.
+    tag
+        The ``tag`` to assign to this map.
 
     Returns
     -------
@@ -233,9 +233,9 @@ def build_map(
         A :class:`MapBuilder` for the given function.
     """
     return MapBuilder(
-        tag = tag,
         func = func,
         map_options = map_options,
+        tag = tag,
     )
 
 
