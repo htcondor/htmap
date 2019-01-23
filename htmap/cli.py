@@ -22,6 +22,7 @@ import collections
 import random
 import functools
 import itertools
+import shutil
 from pathlib import Path
 
 import htmap
@@ -262,6 +263,25 @@ def _multi_tag_args(func):
     return func
 
 
+TOTAL_WIDTH = 80
+
+STATUS_AND_COLOR = [
+    (htmap.ComponentStatus.COMPLETED, 'green'),
+    (htmap.ComponentStatus.RUNNING, 'cyan'),
+    (htmap.ComponentStatus.IDLE, 'yellow'),
+    (htmap.ComponentStatus.SUSPENDED, 'red'),
+    (htmap.ComponentStatus.HELD, 'red'),
+    (htmap.ComponentStatus.REMOVED, 'magenta'),
+]
+
+
+def _calculate_bar_component_len(count, total, bar_width):
+    if count == 0:
+        return 0
+
+    return max(int((count / total) * bar_width), 1)
+
+
 @cli.command()
 @_multi_tag_args
 def wait(tags, all):
@@ -271,10 +291,39 @@ def wait(tags, all):
 
     _check_tags(tags)
 
-    for tag in tags:
-        m = _cli_load(tag)
-        if not m.is_done:
-            m.wait(show_progress_bar = True)
+    if len(tags) == 0:
+        return
+
+    maps = sorted((htmap.load(tag) for tag in tags), key = lambda m: (m.is_transient, m.tag))
+    longest_tag_len = max(len(tag) for tag in tags)
+    bar_width = min(shutil.get_terminal_size().columns, TOTAL_WIDTH - (longest_tag_len + 1))
+
+    click.echo('\n' * (len(maps) - 1))
+    while any(not map.is_done for map in maps):
+        bars = []
+        for map in maps:
+            sc = collections.Counter(map.component_statuses)
+
+            bar_lens = {
+                status: _calculate_bar_component_len(sc[status], len(map), bar_width)
+                for status, _ in STATUS_AND_COLOR
+            }
+            bar_lens[htmap.ComponentStatus.IDLE] += bar_width - sum(bar_lens.values())
+
+            bar = ''.join([
+                click.style('█' * bar_lens[status], fg = color)
+                for status, color in STATUS_AND_COLOR
+            ])
+
+            bars.append(f'{map.tag.ljust(longest_tag_len)} {bar}')
+
+        msg = '\n'.join(bars)
+        move = f'\033[{len(maps)}A\r'
+
+        sys.stdout.write(move)
+        click.echo(msg)
+
+        time.sleep(1)
 
 
 @cli.command()
