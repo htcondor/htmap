@@ -62,9 +62,10 @@ setup(
     package_data = {
         '': ['*.sh'],
     },
-    entry_points = '''
-        [console_scripts]
-        htmap=htmap.cli:cli
-    ''',
+    entry_points = {
+        'console_scripts': [
+            'htmap = htmap.cli:cli',
+        ],
+    },
     install_requires = Path('requirements.txt').read_text().splitlines(),
 )
