@@ -16,26 +16,26 @@
 from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any, List, Generator, Union
 import logging
 
-import time
+import uuid
 import shutil
 from pathlib import Path
 import itertools
 
 import htcondor
 
-from . import htio, exceptions, maps, options, settings, names
+from . import htio, tags, exceptions, maps, options, settings, names
 
 logger = logging.getLogger(__name__)
 
 
 def maps_dir_path() -> Path:
     """The path to the directory where map directories are stored."""
-    return Path(settings['HTMAP_DIR']) / settings['MAPS_DIR_NAME']
+    return Path(settings['HTMAP_DIR']) / names.MAPS_DIR
 
 
-def map_dir_path(map_id: str) -> Path:
-    """The path to the directory for the given ``map_id``."""
-    return maps_dir_path() / map_id
+def map_dir_path(uid: Union[uuid.UUID, str]) -> Path:
+    """The path to the directory for the given ``uid``."""
+    return maps_dir_path() / str(uid)
 
 
 def get_schedd():
@@ -50,10 +50,10 @@ def get_schedd():
 
 
 def map(
-    map_id: str,
     func: Callable,
     args: Iterable[Any],
     map_options: Optional[options.MapOptions] = None,
+    tag: Optional[str] = None,
     **kwargs: Any,
 ) -> maps.Map:
     """
@@ -64,8 +64,6 @@ def map(
 
     Parameters
     ----------
-    map_id
-        The ``map_id`` to assign to this map.
     func
         The function to map the arguments over.
     args
@@ -74,6 +72,8 @@ def map(
         Any additional keyword arguments are passed as keyword arguments to the mapped function.
     map_options
         An instance of :class:`htmap.MapOptions`.
+    tag
+        The ``tag`` to assign to this map.
 
     Returns
     -------
@@ -83,7 +83,7 @@ def map(
     args = ((arg,) for arg in args)
     args_and_kwargs = zip(args, itertools.repeat(kwargs))
     return create_map(
-        map_id,
+        tag,
         func,
         args_and_kwargs,
         map_options = map_options,
@@ -91,11 +91,11 @@ def map(
 
 
 def starmap(
-    map_id: str,
     func: Callable,
     args: Optional[Iterable[tuple]] = None,
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
     map_options: options.MapOptions = None,
+    tag: Optional[str] = None,
 ) -> maps.Map:
     """
     Map a function call over aligned iterables of arguments and keyword arguments.
@@ -104,8 +104,6 @@ def starmap(
 
     Parameters
     ----------
-    map_id
-        The ``map_id`` to assign to this map.
     func
         The function to map the arguments over.
     args
@@ -114,6 +112,8 @@ def starmap(
         An iterable of dictionaries of keyword arguments to unpack into the mapped function.
     map_options
         An instance of :class:`htmap.MapOptions`.
+    tag
+        The ``tag`` to assign to this map.
 
     Returns
     -------
@@ -127,61 +127,10 @@ def starmap(
 
     args_and_kwargs = zip_args_and_kwargs(args, kwargs)
     return create_map(
-        map_id,
+        tag,
         func,
         args_and_kwargs,
         map_options = map_options,
-    )
-
-
-id_gen = itertools.count()
-
-
-def get_transient_map_id() -> str:
-    return f'tmp-{int(time.time())}-{next(id_gen)}'
-
-
-def transient_map(
-    func: Callable,
-    args: Iterable[Any],
-    map_options: Optional[options.MapOptions] = None,
-    **kwargs: Any,
-) -> maps.TransientMap:
-    """
-    As :func:`htmap.map`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
-    """
-    args = ((arg,) for arg in args)
-    args_and_kwargs = zip(args, itertools.repeat(kwargs))
-    return create_map(
-        get_transient_map_id(),
-        func,
-        args_and_kwargs,
-        map_options = map_options,
-        map_type = maps.TransientMap,
-    )
-
-
-def transient_starmap(
-    func: Callable,
-    args: Optional[Iterable[tuple]] = None,
-    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-    map_options: Optional[options.MapOptions] = None,
-) -> maps.TransientMap:
-    """
-    As :func:`htmap.starmap`, except that it doesn't need a ``map_id``, it returns an iterator over the outputs, and the map is immediately removed after use.
-    """
-    if args is None:
-        args = ()
-    if kwargs is None:
-        kwargs = ()
-
-    args_and_kwargs = zip_args_and_kwargs(args, kwargs)
-    return create_map(
-        get_transient_map_id(),
-        func,
-        args_and_kwargs,
-        map_options = map_options,
-        map_type = maps.TransientMap,
     )
 
 
@@ -194,7 +143,7 @@ class MapBuilder:
 
     .. code-block:: python
 
-        with htmap.build_map(map_id = 'pow', func = lambda x, p: x ** p) as builder:
+        with htmap.build_map(tag = 'pow', func = lambda x, p: x ** p) as builder:
             for x in range(1, 4):
                 builder(x, x)
 
@@ -204,20 +153,20 @@ class MapBuilder:
 
     def __init__(
         self,
-        map_id: str,
         func: Callable,
         map_options: options.MapOptions = None,
+        tag: Optional[str] = None,
     ):
         self.func = func
-        self.map_id = map_id
         self.map_options = map_options
+        self.tag = tag
 
         self.args: List[Tuple[Any, ...]] = []
         self.kwargs: List[Dict[str, Any]] = []
 
         self._map = None
 
-        logger.debug(f'initialized map builder for map {map_id} for {self.func}')
+        logger.debug(f'initialized map builder for map {tag} for {self.func}')
 
     def __repr__(self):
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
@@ -228,18 +177,18 @@ class MapBuilder:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # if an exception is raised in the with, re-raise without submitting jobs
         if exc_type is not None:
-            logger.exception(f'map builder for map {self.map_id} aborted due to')
+            logger.exception(f'map builder for map {self.tag} aborted due to')
             return False
 
         self._map = starmap(
-            map_id = self.map_id,
+            tag = self.tag,
             func = self.func,
             args = self.args,
             kwargs = self.kwargs,
             map_options = self.map_options
         )
 
-        logger.debug(f'finished executing map builder for map {self.map_id}')
+        logger.debug(f'finished executing map builder for map {self.tag}')
 
     def __call__(self, *args: Any, **kwargs: Any) -> None:
         """Adds the given inputs to the map."""
@@ -262,21 +211,21 @@ class MapBuilder:
 
 
 def build_map(
-    map_id: str,
     func: Callable,
     map_options: options.MapOptions = None,
+    tag: Optional[str] = None,
 ) -> MapBuilder:
     """
     Return a :class:`MapBuilder` for the given function.
 
     Parameters
     ----------
-    map_id
-        The ``map_id`` to assign to this map.
     func
         The function to map over.
     map_options
         An instance of :class:`htmap.MapOptions`.
+    tag
+        The ``tag`` to assign to this map.
 
     Returns
     -------
@@ -284,22 +233,21 @@ def build_map(
         A :class:`MapBuilder` for the given function.
     """
     return MapBuilder(
-        map_id = map_id,
         func = func,
         map_options = map_options,
+        tag = tag,
     )
 
 
 def create_map(
-    map_id: str,
+    tag: Optional[str],
     func: Callable,
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
     map_options: Optional[options.MapOptions] = None,
-    map_type: Any = maps.Map,
-) -> Union[maps.Map, maps.TransientMap]:
+) -> maps.Map:
     """
     All map calls lead here.
-    This function performs various checks on the ``map_id``,
+    This function performs various checks on the ``tag``,
     constructs a submit object that represents the map for HTCondor,
     saves all of the map's definitional data to the map directory,
     and submits the map job,
@@ -307,8 +255,8 @@ def create_map(
 
     Parameters
     ----------
-    map_id
-        The ``map_id`` to assign to this map.
+    tag
+        The ``tag`` to assign to this map.
     func
         The function to map the arguments over.
     args_and_kwargs
@@ -321,19 +269,26 @@ def create_map(
     result :
         A :class:`htmap.Map` representing the map.
     """
-    raise_if_map_id_is_invalid(map_id)
-    raise_if_map_id_already_exists(map_id)
+    if tag is None:
+        tag = tags.random_tag()
+        transient = True
+    else:
+        transient = False
 
-    logger.debug(f'creating map {map_id}...')
+    tags.raise_if_tag_is_invalid(tag)
+    tags.raise_if_tag_already_exists(tag)
 
-    map_dir = map_dir_path(map_id)
+    logger.debug(f'creating map {tag}...')
+
+    uid = uuid.uuid4()
+    map_dir = map_dir_path(uid)
     try:
         make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
-        num_components = htio.save_args_and_kwargs(map_dir, args_and_kwargs)
+        num_components = htio.save_inputs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
-            map_id,
+            tag,
             map_dir,
             num_components,
             map_options,
@@ -343,67 +298,40 @@ def create_map(
         htio.save_submit(map_dir, submit_obj)
         htio.save_itemdata(map_dir, itemdata)
 
-        logger.debug(f'submitting map {map_id}...')
+        logger.debug(f'submitting map {tag}...')
         cluster_id = execute_submit(
             submit_object = submit_obj,
             itemdata = itemdata,
         )
 
-        logger.debug(f'map {map_id} was assigned clusterid {cluster_id}')
+        logger.debug(f'map {tag} was assigned clusterid {cluster_id}')
 
-        with (map_dir / 'cluster_ids').open(mode = 'a') as file:
+        with (map_dir / names.CLUSTER_IDS).open(mode = 'a') as file:
             file.write(str(cluster_id) + '\n')
 
-        with (map_dir / 'cluster_ids').open() as file:
-            cluster_ids = [int(cid.strip()) for cid in file]
+        tags.tag_file_path(tag).write_text(str(uid))
 
-        m = map_type(
-            map_id = map_id,
-            cluster_ids = cluster_ids,
-            submit = submit_obj,
+        m = maps.Map(
+            tag = tag,
+            map_dir = map_dir,
+            cluster_ids = [cluster_id],
             num_components = num_components,
         )
 
-        logger.info(f'submitted map {map_id}')
+        if transient:
+            m._make_transient()
+
+        logger.info(f'submitted map {tag}')
 
         return m
     except BaseException as e:
         # something went wrong during submission, and the job is malformed
         # so delete the entire map directory
         # the condor bindings should prevent any jobs from being submitted
-        logger.exception(f'map submission for map {map_id} aborted due to')
+        logger.exception(f'map submission for map {tag} aborted due to')
         shutil.rmtree(str(map_dir.absolute()))
         logger.debug(f'removed malformed map directory {map_dir}')
         raise e
-
-
-def raise_if_map_id_already_exists(map_id: str) -> None:
-    """Raise a :class:`htmap.exceptions.MapIdAlreadyExists` if the ``map_id`` already exists."""
-    if map_dir_path(map_id).exists():
-        raise exceptions.MapIdAlreadyExists(f'the requested map_id {map_id} already exists (recover the Map, then either use or delete it).')
-
-
-INVALID_FILENAME_CHARACTERS = {
-    '/',
-    '\\',  # backslash
-    '<',
-    '>',
-    ':',
-    '"',
-    '|',
-    '?',
-    '*',
-    ' ',
-}
-
-
-def raise_if_map_id_is_invalid(map_id: str) -> None:
-    """Raise a :class:`htmap.exceptions.InvalidMapId` if the ``map_id`` contains any invalid characters."""
-    if len(map_id) < 1:
-        raise exceptions.InvalidMapId("The map_id must be a non-empty string")
-    invalid_chars = set(map_id).intersection(INVALID_FILENAME_CHARACTERS)
-    if len(invalid_chars) != 0:
-        raise exceptions.InvalidMapId(f'These characters in map_id {map_id} are not valid: {invalid_chars}')
 
 
 MAP_SUBDIR_NAMES = (

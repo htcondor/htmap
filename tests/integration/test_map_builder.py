@@ -20,31 +20,29 @@ from htmap import Map
 
 
 def test_len_of_map_builder(mapped_doubler):
-    with mapped_doubler.build_map('map') as jb:
+    with mapped_doubler.build_map() as jb:
         jb(5)
-        jb(3)
 
-    assert len(jb) == 2
+    assert len(jb) == 1
 
 
 @pytest.mark.usefixtures('delivery_methods')
 def test_map_builder_produces_correct_results(mapped_doubler):
-    with mapped_doubler.build_map('map') as jb:
+    with mapped_doubler.build_map() as jb:
         jb(5)
-        jb(3)
 
-    assert list(jb.map) == [10, 6]
+    assert list(jb.map) == [10]
 
 
 def test_getting_result_before_ending_with_raises_no_result_yet(mapped_doubler):
-    with mapped_doubler.build_map('map') as jb:
+    with mapped_doubler.build_map() as jb:
         jb(5)
         with pytest.raises(htmap.exceptions.NoMapYet):
             jb.map
 
 
 def test_getting_result_after_ending_with_is_a_result(mapped_doubler):
-    with mapped_doubler.build_map('map') as jb:
+    with mapped_doubler.build_map() as jb:
         jb(5)
 
     assert isinstance(jb.map, Map)
@@ -52,11 +50,11 @@ def test_getting_result_after_ending_with_is_a_result(mapped_doubler):
 
 def test_raising_exception_inside_with_reraises(mapped_doubler):
     with pytest.raises(htmap.exceptions.HTMapException):
-        with mapped_doubler.build_map('foo') as jb:
+        with mapped_doubler.build_map() as jb:
             raise htmap.exceptions.HTMapException('foobar')
 
 
 def test_empty_map_builder_raises_empty_map(mapped_doubler):
     with pytest.raises(htmap.exceptions.EmptyMap):
-        with mapped_doubler.build_map('foo') as jb:
+        with mapped_doubler.build_map() as jb:
             pass

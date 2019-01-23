@@ -13,11 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterator, Iterable, Dict, Union, NamedTuple, Callable
+from typing import Tuple, Iterable, Dict, Union, NamedTuple, Callable, List
 import logging
 
 from pathlib import Path
-import shutil
 import datetime
 import collections
 import json
@@ -26,107 +25,78 @@ import io
 import textwrap
 import sys
 
-from . import mapping, utils, settings, exceptions
-from .maps import Map
-from htmap import ComponentStatus
+from . import maps, tags, mapping, utils, state, settings, exceptions
 
 logger = logging.getLogger(__name__)
 
 
-def load(map_id: str) -> Map:
+def load(tag: str) -> maps.Map:
     """
-    Reconstruct a :class:`Map` from its ``map_id``.
+    Reconstruct a :class:`Map` from its ``tag``.
 
     Parameters
     ----------
-    map_id
-        The ``map_id`` to search for.
+    tag
+        The ``tag`` to search for.
 
     Returns
     -------
     map
-        The result with the given ``map_id``.
+        The result with the given ``tag``.
     """
-    return Map.load(map_id)
+    return maps.Map.load(tag)
 
 
-def _map_paths() -> Iterator[Path]:
-    """Yield the paths to all existing map directories."""
-    try:
-        yield from mapping.maps_dir_path().iterdir()
-    except FileNotFoundError:  # maps dir doesn't exist for some reason, which means we have no maps
-        return
-
-
-def map_ids() -> Tuple[str, ...]:
-    """Return a tuple containing the ``map_id`` for all existing maps."""
-    return tuple(path.name for path in _map_paths())
-
-
-def load_maps() -> Tuple[Map, ...]:
+def load_maps() -> Tuple[maps.Map, ...]:
     """Return a :class:`tuple` containing the :class:`Map` for all existing maps."""
-    return tuple(load(map_id) for map_id in map_ids())
+    return tuple(load(tag) for tag in tags.get_tags())
 
 
-def remove(map_id: str, not_exist_ok: bool = True) -> None:
+def remove(tag: str, not_exist_ok: bool = True) -> None:
     """
-    Remove the map with the given ``map_id``.
+    Remove the map with the given ``tag``.
 
     Parameters
     ----------
-    map_id
-        The ``map_id`` to search for and remove.
+    tag
+        The ``tag`` to search for and remove.
     not_exist_ok
-        If ``False``, raise :class:`htmap.exceptions.MapIdNotFound` if the ``map_id`` doesn't exist.
+        If ``False``, raise :class:`htmap.exceptions.MapIdNotFound` if the ``tag`` doesn't exist.
     """
     try:
-        load(map_id).remove()
-    except (exceptions.MapIdNotFound, FileNotFoundError) as e:
+        load(tag).remove()
+    except (exceptions.TagNotFound, FileNotFoundError) as e:
         if not not_exist_ok:
-            if not isinstance(e, exceptions.MapIdNotFound):
-                raise exceptions.MapIdNotFound(f'map {map_id} not found') from e
+            if not isinstance(e, exceptions.TagNotFound):
+                raise exceptions.TagNotFound(f'map {tag} not found') from e
             raise e
 
 
-def force_remove(map_id: str) -> None:
+def clean(*, all: bool = False) -> List[str]:
     """
-    Force-remove a map by trying to delete its map directory directly.
-
-    .. warning::
-
-        This operation is **not safe**, but might be necessary if your map directory has somehow become corrupted.
-        See :ref:`cleanup-after-force-removal`.
+    Remove maps.
+    By default, only removes transient maps.
+    If ``all`` is ``True``, remove **all** maps, including non-transient ones.
 
     Parameters
     ----------
-    map_id
-        The ``map_id`` to force-remove.
+    all
+        If ``True``, remove all maps, not just transient ones.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    cleaned_tags
+        A list of the tags of the maps that were removed.
     """
-    shutil.rmtree(str(mapping.map_dir_path(map_id).absolute()))
-    logger.debug(f'force-removed map {map_id}')
-
-
-def clean() -> None:
-    """Remove all existing maps."""
-    logger.debug('cleaning maps directory...')
-    for map_result in load_maps():
-        map_result.remove()
-    logger.debug('cleaned maps directory')
-
-
-def force_clean() -> None:
-    """
-    Force-remove all existing maps by trying to delete their map directories directly.
-
-    .. warning::
-
-        This operation is **not safe**, but might be necessary if your map directory has somehow become corrupted.
-        See :ref:`cleanup-after-force-removal`.
-    """
-    for map_dir in _map_paths():
-        shutil.rmtree(str(map_dir.absolute()))
-
-    logger.debug('force-cleaned maps directory')
+    logger.debug('cleaning maps...')
+    cleaned_tags = []
+    for map in load_maps():
+        if map.is_transient or all:
+            cleaned_tags.append(map.tag)
+            map.remove()
+    logger.debug(f'cleaned maps {cleaned_tags}')
+    return cleaned_tags
 
 
 def _extract_status_data(
@@ -136,12 +106,12 @@ def _extract_status_data(
 ) -> dict:
     sd = {}
 
-    sd['Map ID'] = map.map_id
+    sd['Tag'] = f'{"* " if map.is_transient else ""}{map.tag}'
 
     if include_state:
         sc = collections.Counter(map.component_statuses)
 
-        sd.update({str(k): sc[k] for k in ComponentStatus.display_statuses()})
+        sd.update({str(k): sc[k] for k in state.ComponentStatus.display_statuses()})
 
     if include_meta:
         sd['Local Data'] = utils.num_bytes_to_str(map.local_data)
@@ -153,7 +123,7 @@ def _extract_status_data(
 
 
 def status(
-    maps: Iterable[Map] = None,
+    maps: Iterable[maps.Map] = None,
     include_state: bool = True,
     include_meta: bool = True,
 ) -> str:
@@ -183,19 +153,19 @@ def status(
 
 
 def _status(
-    maps: Iterable[Map] = None,
+    maps: Iterable[maps.Map] = None,
     include_state: bool = True,
     include_meta: bool = True,
     header_fmt: Callable[[str], str] = None,
     row_fmt: Callable[[str], str] = None,
 ) -> str:
     if maps is None:
-        maps = sorted(load_maps())
+        maps = sorted(load_maps(), key = lambda m: (m.is_transient, m.tag))
 
-    headers = ['Map ID']
+    headers = ['Tag']
     if include_state:
-        # utils.read_events(maps)
-        headers += [str(d) for d in ComponentStatus.display_statuses()]
+        utils.read_events(maps)
+        headers += [str(d) for d in state.ComponentStatus.display_statuses()]
     if include_meta:
         headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
 
@@ -209,12 +179,12 @@ def _status(
         rows = rows,
         header_fmt = header_fmt,
         row_fmt = row_fmt,
-        alignment = {'Map ID': 'ljust'},
+        alignment = {'Tag': 'ljust'},
     )
 
 
 def status_json(
-    maps: Iterable[Map] = None,
+    maps: Iterable[maps.Map] = None,
     include_state: bool = True,
     include_meta: bool = True,
     compact: bool = False,
@@ -245,7 +215,7 @@ def status_json(
     if maps is None:
         maps = load_maps()
 
-    maps = sorted(maps, key = lambda m: m.map_id)
+    maps = sorted(maps, key = lambda m: m.tag)
 
     if include_state:
         utils.read_events(maps)
@@ -253,19 +223,19 @@ def status_json(
     j = {}
     for map in maps:
         sc = collections.Counter(map.component_statuses)
-        d: Dict[str, Union[dict, str, int, float]] = {'map_id': map.map_id}
+        d: Dict[str, Union[dict, str, int, float]] = {'tag': map.tag}
         if include_state:
             status_to_count = {}
-            for status in ComponentStatus.display_statuses():
+            for status in state.ComponentStatus.display_statuses():
                 status_to_count[status.value.lower()] = sc[status]
             d['component_status_counts'] = status_to_count
         if include_meta:
-            d['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
+            d['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.tag))
             d['max_memory_usage'] = max(map.memory_usage) * 1024 * 1024
             d['max_runtime'] = max(map.runtime).total_seconds()
             d['total_runtime'] = sum(map.runtime, datetime.timedelta()).total_seconds()
 
-        j[map.map_id] = d
+        j[map.tag] = d
 
     if compact:
         separators = (',', ':')
@@ -278,7 +248,7 @@ def status_json(
 
 
 def status_csv(
-    maps: Iterable[Map] = None,
+    maps: Iterable[maps.Map] = None,
     include_state: bool = True,
     include_meta: bool = True,
 ) -> str:
@@ -306,7 +276,7 @@ def status_csv(
     if maps is None:
         maps = load_maps()
 
-    maps = sorted(maps, key = lambda m: m.map_id)
+    maps = sorted(maps, key = lambda m: m.tag)
 
     if include_state:
         utils.read_events(maps)
@@ -314,12 +284,12 @@ def status_csv(
     rows = []
     for map in maps:
         sc = collections.Counter(map.component_statuses)
-        row: Dict[str, Union[str, int, float]] = {'map_id': map.map_id}
+        row: Dict[str, Union[str, int, float]] = {'tag': map.tag}
         if include_state:
-            for status in ComponentStatus.display_statuses():
+            for status in state.ComponentStatus.display_statuses():
                 row[status.value.lower()] = sc[status]
         if include_meta:
-            row['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.map_id))
+            row['local_disk_usage'] = utils.get_dir_size(mapping.map_dir_path(map.tag))
             row['max_memory_usage'] = max(map.memory_usage) * 1024 * 1024
             row['max_runtime'] = max(map.runtime).total_seconds()
             row['total_runtime'] = sum(map.runtime, datetime.timedelta()).total_seconds()

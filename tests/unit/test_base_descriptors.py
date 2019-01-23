@@ -23,14 +23,14 @@ from htmap.options import get_base_descriptors, register_delivery_mechanism, unr
 
 @pytest.fixture(scope = 'module', autouse = True)
 def add_null_delivery():
-    register_delivery_mechanism('null', lambda map_id, map_dir: {})
+    register_delivery_mechanism('null', lambda tag, map_dir: {})
 
     yield
 
     unregister_delivery_mechanism('null')
 
 
-def test_job_batch_name_is_map_id():
+def test_job_batch_name_is_tag():
     descriptors = get_base_descriptors('foo', Path.cwd(), 'null')
 
     assert descriptors['JobBatchName'] == 'foo'

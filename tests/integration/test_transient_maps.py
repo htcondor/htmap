@@ -1,4 +1,4 @@
-# Copyright 2018 HTCondor Team, Computer Sciences Department,
+# Copyright 2019 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,98 +13,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import shutil
 
 import pytest
 
-import gc
 
-import htmap
+def untagged_map_is_transient(mapped_doubler):
+    m = mapped_doubler.map(range(1))
 
-
-def test_htmap_map_is_cleaned_up_after_iter(doubler):
-    m = htmap.transient_map(doubler, range(2))
-
-    list(m)
-
-    assert len(htmap.map_ids()) == 0
+    assert m.is_transient
 
 
-def test_htmap_map_gets_right_results(doubler):
-    m = htmap.transient_map(doubler, range(2))
+def tagged_map_is_not_transient(mapped_doubler):
+    m = mapped_doubler.map(range(1), tag = 'tagged')
 
-    assert list(m) == [0, 2]
-
-
-def test_htstarmap_map_is_cleaned_up_after_iter(power):
-    m = htmap.transient_starmap(power, args = [(1, 2), ])
-
-    list(m)
-
-    assert len(htmap.map_ids()) == 0
+    assert not m.is_transient
 
 
-def test_htstarmap_map_gets_right_results(power):
-    m = htmap.transient_starmap(power, args = [(1,), (2,)])
+def retagged_map_becomes_not_transient(mapped_doubler):
+    m = mapped_doubler.map(range(1))
 
-    assert [1, 4] == list(m)
+    assert m.is_transient
 
+    m.retag('new-tag')
 
-def test_transient_map_is_cleaned_up_after_iter_if_single_error_during_execute():
-    m = htmap.transient_map(lambda x: 1 / 0, range(1))
-
-    try:
-        list(m)
-    except htmap.exceptions.MapComponentError:
-        pass
-
-    assert len(htmap.map_ids()) == 0
+    assert not m.is_transient
 
 
-def test_transient_map_is_cleaned_up_after_iter_if_multiple_error_during_execute():
-    m = htmap.transient_map(lambda x: 1 / 0, range(2))
+def can_set_transient_false(mapped_doubler):
+    m = mapped_doubler.map(range(1))
 
-    try:
-        list(m)
-    except htmap.exceptions.MapComponentError:
-        pass
+    assert m.is_transient
 
-    assert len(htmap.map_ids()) == 0
+    m.is_transient = False
 
-
-class DummyException(Exception):
-    pass
+    assert not m.is_transient
 
 
-def test_transient_map_is_cleaned_up_after_iter_if_error_during_iter():
-    # relies on the try/finally in __iter__
-    m = htmap.transient_map(lambda x: x, range(2))
+def can_set_transient_true(mapped_doubler):
+    m = mapped_doubler.map(range(1), tag = 'tagged')
 
-    try:
-        for out in m:
-            raise DummyException
-    except DummyException:
-        pass
+    assert not m.is_transient
 
-    assert len(htmap.map_ids()) == 0
+    m.is_transient = True
 
-
-def test_transient_map_is_cleaned_up_after_iter_if_error_during_iter_inside_with():
-    try:
-        with htmap.transient_map(lambda x: x, range(1)) as m:
-            for out in m:
-                raise DummyException
-    except DummyException:
-        pass
-
-    assert len(htmap.map_ids()) == 0
-
-
-def test_transient_map_is_cleaned_up_by_gc():
-    m = htmap.transient_map(lambda x: x, range(1))
-
-    assert len(htmap.map_ids()) == 1
-
-    del m
-    gc.collect()  # force a GC cycle
-
-    assert len(htmap.map_ids()) == 0
+    assert m.is_transient

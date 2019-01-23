@@ -19,13 +19,12 @@ Running a map over a Python function is as easy as
     def double(x):
         return 2 * x
 
-    doubled = list(htmap.transient_map(double, range(10)))
+    doubled = list(htmap.map(double, range(10)))
     print(doubled)
     # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
 
 
-If you're just getting started, first check out :ref:`install`,
-then jump into the first tutorial: :doc:`tutorials/first-steps`.
+If you're just getting started, jump into the first tutorial: :doc:`tutorials/first-steps`.
 
 Happy mapping!
 

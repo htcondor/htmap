@@ -172,7 +172,7 @@ def save_object(obj, path):
         cloudpickle.dump(obj, file)
 
 
-def save_result(component, result, transfer_dir):
+def save_output(component, result, transfer_dir):
     save_object(result, transfer_dir / '{}.out'.format(component))
 
 
@@ -194,15 +194,17 @@ def build_frames(tb):
 
 
 def load_checkpoint(scratch_dir, transfer_dir):
-    curr_dir = transfer_dir / 'current_checkpoint'
-    old_dir = transfer_dir / 'old_checkpoint'
+    curr_dir = scratch_dir / '_htmap_current_checkpoint'
+    old_dir = scratch_dir / '_htmap_old_checkpoint'
 
     if curr_dir.exists():
         for path in curr_dir.iterdir():
             path.rename(scratch_dir / path.name)
+        curr_dir.rename(transfer_dir / curr_dir.name)
     elif old_dir.exists():
         for path in old_dir.iterdir():
             path.rename(scratch_dir / path.name)
+        old_dir.rename(transfer_dir / curr_dir.name)
 
 
 def clean_and_remake_dir(dir):
@@ -217,9 +219,9 @@ def main(component):
 
     scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
     transfer_dir = scratch_dir / '_htmap_transfer'
+    transfer_dir.mkdir(exist_ok = True)
 
     load_checkpoint(scratch_dir, transfer_dir)
-    clean_and_remake_dir(transfer_dir)
 
     contents = get_working_dir_contents()
     print_working_dir_contents(contents)
@@ -266,7 +268,7 @@ def main(component):
         )
 
     clean_and_remake_dir(transfer_dir)
-    save_result(component, result, transfer_dir)
+    save_output(component, result, transfer_dir)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 

@@ -4,24 +4,22 @@ API Reference
 .. py:currentmodule:: htmap
 
 
-Map IDs
--------
+Tags and Map Persistence
+------------------------
 
-The ``map_id`` is the central organizing piece of data in HTMap.
-Every map that you run produces a :class:`Map` which is connected to a unique ``map_id``, a string that you must provide when you run the map.
-A ``map_id`` cannot be re-used until the associated map has been deleted.
+The ``tag`` is the central organizing piece of data in HTMap.
+Every map that you run produces a :class:`Map` which is connected to a unique ``tag``.
+A ``tag`` cannot be re-used until the associated map has been deleted or retagged.
+You can either provide a tag or let HTMap generate one automatically.
 
-
-Transient Mapping Functions
----------------------------
-
-.. autofunction:: htmap.transient_map
-
-.. autofunction:: htmap.transient_starmap
+If you do not provide a tag, the map will be marked as **transient**.
+Transient maps will be removed by the :func:`htmap.clean` function without passing ``all = True``,
+while non-transient (i.e., persistent) maps will not.
+If you provide a tag during map creation or :meth:`htmap.Map.retag` a map, it will be marked as persistent.
 
 
-Persistent Mapping Functions
-----------------------------
+Mapping Functions
+-----------------
 
 .. autofunction:: htmap.map
 
@@ -98,15 +96,15 @@ The :meth:`htmap.ComponentError.report()` method returns a formatted error repor
 If you want to access the error programmatically, you can grab it using :meth:`htmap.get_err`.
 
 The second kind of error doesn't provide as much information.
-The method :meth:`htmap.Map.holds` will give you a dictionary mapping components to their :class:`Hold`, if they have one.
+The method :meth:`htmap.Map.holds` will give you a dictionary mapping components to their :class:`htmap.ComponentHold`, if they have one.
 :meth:`htmap.Map.hold_report` will return a formatted table showing any holds in your map.
 The hold's ``reason`` attribute will tell you a lot about what HTCondor doesn't like about your component.
 
 .. autoclass:: htmap.ComponentError
    :members:
 
-.. autoclass:: htmap.Hold
-
+.. autoclass:: htmap.ComponentHold
+   :members:
 
 MapOptions
 ----------
@@ -157,7 +155,7 @@ These functions help you manage your maps.
 
 .. autofunction:: htmap.status
 
-.. autofunction:: htmap.map_ids
+.. autofunction:: htmap.get_tags
 
 .. autofunction:: htmap.load
 
@@ -166,10 +164,6 @@ These functions help you manage your maps.
 .. autofunction:: htmap.remove
 
 .. autofunction:: htmap.clean
-
-.. autofunction:: htmap.force_remove
-
-.. autofunction:: htmap.force_clean
 
 
 Programmatic Status Messages
@@ -180,6 +174,7 @@ These functions are useful for generating machine-readable status information.
 .. autofunction:: htmap.status_json
 
 .. autofunction:: htmap.status_csv
+
 
 Transplant Installs
 +++++++++++++++++++
@@ -192,6 +187,7 @@ These functions help you manage your transplant installs.
    :members:
 
 .. autofunction:: htmap.transplant_info
+
 
 Settings
 --------

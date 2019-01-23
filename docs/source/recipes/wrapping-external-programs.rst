@@ -46,7 +46,7 @@ If we do a map, we'll end up with the expected result:
 
 .. code-block:: python
 
-    result = dbl.map('dbl', range(10))
+    result = dbl.map(range(10))
 
     print(list(result))  # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
 

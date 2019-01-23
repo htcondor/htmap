@@ -53,8 +53,8 @@ class MappedFunction:
 
     def map(
         self,
-        map_id: str,
         args: Iterable[Any],
+        tag: Optional[str] = None,
         map_options: Optional[options.MapOptions] = None,
         **kwargs: Any,
     ) -> maps.Map:
@@ -63,18 +63,18 @@ class MappedFunction:
             map_options = options.MapOptions()
 
         return mapping.map(
-            map_id = map_id,
             func = self.func,
             args = args,
+            tag = tag,
             map_options = options.MapOptions.merge(map_options, self.map_options),
             **kwargs,
         )
 
     def starmap(
         self,
-        map_id: str,
         args: Optional[Iterable[tuple]] = None,
         kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+        tag: Optional[str] = None,
         map_options: Optional[options.MapOptions] = None,
     ) -> maps.Map:
         """As :func:`htmap.starmap`, but the ``func`` argument is the mapped function."""
@@ -82,16 +82,16 @@ class MappedFunction:
             map_options = options.MapOptions()
 
         return mapping.starmap(
-            map_id = map_id,
             func = self.func,
             args = args,
             kwargs = kwargs,
+            tag = tag,
             map_options = options.MapOptions.merge(map_options, self.map_options),
         )
 
     def build_map(
         self,
-        map_id: str,
+        tag: Optional[str] = None,
         map_options: Optional[options.MapOptions] = None,
     ) -> mapping.MapBuilder:
         """As :func:`htmap.build_map`, but the ``func`` argument is the mapped function."""
@@ -99,42 +99,8 @@ class MappedFunction:
             map_options = options.MapOptions()
 
         return mapping.build_map(
-            map_id = map_id,
             func = self.func,
-            map_options = options.MapOptions.merge(map_options, self.map_options),
-        )
-
-    def transient_map(
-        self,
-        args: Iterable[Any],
-        map_options: Optional[options.MapOptions] = None,
-        **kwargs: Any,
-    ) -> maps.TransientMap:
-        """As :func:`htmap.htmap`, but the ``func`` argument is the mapped function."""
-        if map_options is None:
-            map_options = options.MapOptions()
-
-        return mapping.transient_map(
-            func = self.func,
-            args = args,
-            map_options = options.MapOptions.merge(map_options, self.map_options),
-            **kwargs
-        )
-
-    def transient_starmap(
-        self,
-        args: Optional[Iterable[tuple]] = None,
-        kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-        map_options: Optional[options.MapOptions] = None,
-    ) -> maps.TransientMap:
-        """As :func:`htmap.htstarmap`, but the ``func`` argument is the mapped function."""
-        if map_options is None:
-            map_options = options.MapOptions()
-
-        return mapping.transient_starmap(
-            func = self.func,
-            args = args,
-            kwargs = kwargs,
+            tag = tag,
             map_options = options.MapOptions.merge(map_options, self.map_options),
         )
 

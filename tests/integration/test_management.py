@@ -20,40 +20,56 @@ import pytest
 import htmap
 
 
-def test_map_ids(mapped_doubler):
-    mapped_doubler.map('a', range(1))
-    mapped_doubler.map('b', range(1))
-    mapped_doubler.map('c', range(1))
+def test_tags(mapped_doubler):
+    mapped_doubler.map(range(1), tag = 'a')
+    mapped_doubler.map(range(1), tag = 'b')
+    mapped_doubler.map(range(1), tag = 'c')
 
-    assert set(htmap.map_ids()) == {'a', 'b', 'c'}
+    assert set(htmap.get_tags()) == {'a', 'b', 'c'}
 
 
-def test_map_results(mapped_doubler):
-    mapped_doubler.map('a', range(1))
-    mapped_doubler.map('b', range(1))
-    mapped_doubler.map('c', range(1))
+def test_load_maps_finds_all_maps(mapped_doubler):
+    mapped_doubler.map(range(1))
+    mapped_doubler.map(range(1))
+    mapped_doubler.map(range(1))
 
     results = htmap.load_maps()
 
     assert len(results) == 3
 
 
-def test_clean_removes_all_maps(mapped_doubler):
-    results = [
-        mapped_doubler.map('a', range(1)),
-        mapped_doubler.map('b', range(1)),
-        mapped_doubler.map('c', range(1)),
-    ]
+def test_clean_removes_all_transient_maps(mapped_doubler):
+    mapped_doubler.map(range(1))
+    mapped_doubler.map(range(1))
+    mapped_doubler.map(range(1))
 
     htmap.clean()
 
-    assert len(htmap.map_ids()) == 0
+    assert len(htmap.get_tags()) == 0
 
 
 def test_clean_without_maps_dir_doesnt_raise_exception():
     shutil.rmtree(
-        str((htmap.settings['HTMAP_DIR'] / htmap.settings['MAPS_DIR_NAME']).absolute()),
+        str((htmap.settings['HTMAP_DIR'] / 'maps').absolute()),
         ignore_errors = True,
     )
 
     htmap.clean()
+
+
+def test_clean_only_removes_transient_maps(mapped_doubler):
+    mapped_doubler.map(range(1), tag = 'not-me')
+    mapped_doubler.map(range(1))
+
+    htmap.clean()
+
+    assert htmap.get_tags() == ('not-me',)
+
+
+def test_clean_all_cleans_all_maps(mapped_doubler):
+    mapped_doubler.map(range(1), tag = 'yes-me')
+    mapped_doubler.map(range(1))
+
+    htmap.clean(all = True)
+
+    assert len(htmap.get_tags()) == 0

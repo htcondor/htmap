@@ -13,17 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import time
-import itertools
-import gc
 from pathlib import Path
 
 import pytest
 
 import htmap
-from htmap.options import get_base_descriptors
 from htmap.settings import BASE_SETTINGS
+
+from htmap._startup import ensure_htmap_dir_exists
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
@@ -57,18 +55,18 @@ def delivery_methods(delivery_method):
     htmap.settings['DELIVERY_METHOD'] = delivery_method
 
 
-@pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir_and_clean_after(tmpdir_factory):
-    """Use a fresh HTMAP_DIR for every test and clean it up when done."""
+@pytest.fixture(scope = 'session', autouse = True)
+def set_htmap_dir(tmpdir_factory):
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
     htmap.settings['HTMAP_DIR'] = path
+    ensure_htmap_dir_exists()
 
+
+@pytest.fixture(scope = 'function', autouse = True)
+def clean_after_test():
     yield
 
-    try:
-        htmap.clean()
-    except (PermissionError, OSError, AttributeError):
-        pass
+    htmap.clean(all = True)
 
 
 @pytest.fixture(scope = 'session')
@@ -125,11 +123,3 @@ def mapped_exception():
 
 def exception_msg(exc_info) -> str:
     return str(exc_info.value)
-
-
-class gc_disabled:
-    def __enter__(self):
-        gc.disable()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        gc.enable()

@@ -20,7 +20,6 @@ import datetime
 import shutil
 import time
 import uuid
-import tempfile
 import functools
 import inspect
 import collections
@@ -33,7 +32,7 @@ from tqdm import tqdm
 import htcondor
 import classad
 
-from . import htio, state, errors, holds, mapping, settings, utils, names, exceptions
+from . import htio, state, tags, errors, holds, mapping, settings, utils, names, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +40,8 @@ logger = logging.getLogger(__name__)
 def _protector(method):
     @functools.wraps(method)
     def _protect(self, *args, **kwargs):
-        if self._is_removed:
-            raise exceptions.MapWasRemoved(f'cannot call {method} for map {self.map_id} because it has been removed')
+        if self.is_removed:
+            raise exceptions.MapWasRemoved(f'cannot call {method} for map {self.tag} because it has been removed')
         return method(self, *args, **kwargs)
 
     return _protect
@@ -75,86 +74,84 @@ class Map:
 
     def __init__(
         self,
-        map_id: str,
+        tag: str,
+        map_dir: Path,
         cluster_ids: Iterable[int],
         num_components: int,
-        submit: htcondor.Submit,
     ):
-        self.map_id = map_id
-        self._cluster_ids = list(cluster_ids)
-        self._submit = submit
-        self._num_components = num_components
+        self.tag = tag
 
-        self._is_removed = False
+        self._map_dir = map_dir
+        self._cluster_ids = list(cluster_ids)
+        self._num_components = num_components
 
         self._state = state.MapState(self)
         self._local_data = None
 
-        MAPS[self.map_id] = self
+        MAPS[self.tag] = self
 
     @classmethod
-    def load(cls, map_id: str) -> 'Map':
+    def load(cls, tag: str) -> 'Map':
         """
-        Load a :class:`Map` by looking up its ``map_id``.
+        Load a :class:`Map` by looking up its ``tag``.
 
-        Raises :class:`htmap.exceptions.MapIdNotFound` if the ``map_id`` does not exist.
+        Raises :class:`htmap.exceptions.TagNotFound` if the ``tag`` does not exist.
 
         Parameters
         ----------
-        map_id
-            The ``map_id`` to search for.
+        tag
+            The ``tag`` to search for.
 
         Returns
         -------
         map
-            The map with the given ``map_id``.
+            The map with the given ``tag``.
         """
         try:
-            return MAPS[map_id]
+            return MAPS[tag]
         except KeyError:
-            map_dir = mapping.map_dir_path(map_id)
             try:
-                with (map_dir / 'cluster_ids').open() as file:
-                    cluster_ids = [int(cid.strip()) for cid in file]
-
-                num_components = htio.load_num_components(map_dir)
-                submit = htio.load_submit(map_dir)
-
+                uid = uuid.UUID(tags.tag_file_path(tag).read_text())
             except FileNotFoundError:
-                raise exceptions.MapIdNotFound(f'the map_id {map_id} could not be found')
+                raise exceptions.TagNotFound(f'the tag {tag} could not be found')
 
-            logger.debug(f'recovered map result for map {map_id} from {map_dir}')
+            map_dir = mapping.map_dir_path(uid)
+            with (map_dir / names.CLUSTER_IDS).open() as file:
+                cluster_ids = [int(cid.strip()) for cid in file]
+
+            num_components = htio.load_num_components(map_dir)
+
+            logger.debug(f'recovered map result for map {tag} from {map_dir}')
 
             return cls(
-                map_id = map_id,
+                tag = tag,
+                map_dir = map_dir,
                 cluster_ids = cluster_ids,
                 num_components = num_components,
-                submit = submit,
             )
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}(map_id = {self.map_id})>'
+        return f'<{self.__class__.__name__}(tag = {self.tag})>'
 
     def __gt__(self, other):
-        return self.map_id > other.map_id
+        return self.tag > other.tag
 
     def __lt__(self, other):
-        return self.map_id < other.map_id
+        return self.tag < other.tag
 
     def __ge__(self, other):
-        return self.map_id >= other.map_id
+        return self.tag >= other.tag
 
     def __le__(self, other):
-        return self.map_id <= other.map_id
+        return self.tag <= other.tag
 
     def __len__(self):
         """The length of a :class:`Map` is the number of components it contains."""
         return self._num_components
 
     @property
-    def _map_dir(self) -> Path:
-        """The path to the map directory."""
-        return mapping.map_dir_path(self.map_id)
+    def _tag_file_path(self) -> Path:
+        return tags.tag_file_path(self.tag)
 
     @property
     def _inputs_dir(self) -> Path:
@@ -214,7 +211,7 @@ class Map:
         try:
             if show_progress_bar:
                 pbar = tqdm(
-                    desc = self.map_id,
+                    desc = self.tag,
                     total = len(self),
                     unit = 'component',
                     ascii = True,
@@ -236,7 +233,7 @@ class Map:
 
                 for component, status in enumerate(self.component_statuses):
                     if status is state.ComponentStatus.HELD:
-                        raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} was held: {self.holds[component]}')
+                        raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} was held: {self.holds[component]}')
 
                 if timeout is not None and time.time() - timeout > start_time:
                     raise exceptions.TimeoutError(f'timeout while waiting for {self}')
@@ -254,13 +251,13 @@ class Map:
             if component_state is state.ComponentStatus.COMPLETED:
                 break
             elif component_state is state.ComponentStatus.HELD:
-                raise exceptions.MapComponentHeld(f'component {component} of map {self.map_id} is held: {self.holds[component]}')
+                raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} is held: {self.holds[component]}')
 
             if timeout is not None and (time.time() >= start_time + timeout):
                 if timeout <= 0:
-                    raise exceptions.OutputNotFound(f'output for component {component} of map {self.map_id} not found')
+                    raise exceptions.OutputNotFound(f'output for component {component} of map {self.tag} not found')
                 else:
-                    raise exceptions.TimeoutError(f'timed out while waiting for component {component} of map {self.map_id}')
+                    raise exceptions.TimeoutError(f'timed out while waiting for component {component} of map {self.tag}')
 
             time.sleep(settings['WAIT_TIME'])
 
@@ -277,7 +274,7 @@ class Map:
         if result.status == 'OK':
             return result.output
         elif result.status == 'ERR':
-            raise exceptions.MapComponentError(f'component {component} of map {self.map_id} encountered error while executing. Error report:\n{self._load_error(component).report()}')
+            raise exceptions.MapComponentError(f'component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}')
         else:
             raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
 
@@ -301,7 +298,7 @@ class Map:
         try:
             return htio.load_object(self._output_file_path(component))
         except FileNotFoundError:
-            raise exceptions.OutputNotFound(f'Output not found for component {component} of map {self.map_id}. Component stderr:\n{self.stderr(component)}')
+            raise exceptions.OutputNotFound(f'Output not found for component {component} of map {self.tag}. Component stderr:\n{self.stderr(component)}')
 
     def get(
         self,
@@ -518,7 +515,7 @@ class Map:
             projection = projection,
         )
 
-        logger.debug(f'queried for map {self.map_id} (requirements = "{req}") with projection {projection}')
+        logger.debug(f'queried for map {self.tag} (requirements = "{req}") with projection {projection}')
 
         yield from q
 
@@ -533,7 +530,7 @@ class Map:
         """Return a string containing the number of jobs in each status."""
         counts = collections.Counter(self.component_statuses)
         stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in state.ComponentStatus.display_statuses())
-        msg = f'{self.__class__.__name__} {self.map_id} ({len(self)} components): {stat}'
+        msg = f'{self.__class__.__name__} {self.tag} ({len(self)} components): {stat}'
 
         return utils.rstr(msg)
 
@@ -570,7 +567,7 @@ class Map:
 
         return err
 
-    def error_report(self) -> Iterator[str]:
+    def error_reports(self) -> Iterator[str]:
         """Yields the error reports for any components that experienced an error during execution."""
         for idx in self.components:
             try:
@@ -611,7 +608,7 @@ class Map:
         req = self._requirements(requirements)
         a = schedd.act(action, req)
 
-        logger.debug(f'acted on map {self.map_id} (requirements = "{req}") with action {action}')
+        logger.debug(f'acted on map {self.tag} (requirements = "{req}") with action {action}')
 
         return a
 
@@ -620,23 +617,25 @@ class Map:
         Permanently remove the map and delete all associated input, output, and metadata files.
         """
         self._remove_from_queue()
-        self._rm_map_dir()
-        self._is_removed = True
-        MAPS.pop(self.map_id, None)
-        logger.info(f'removed map {self.map_id}')
+        self._cleanup_local_data()
+        MAPS.pop(self.tag, None)
+
+        logger.info(f'removed map {self.tag}')
 
     def _remove_from_queue(self) -> classad.ClassAd:
         return self._act(htcondor.JobAction.Remove)
 
-    def _rm_map_dir(self) -> None:
-        # moving the map dir to a temp dir first
-        # helps avoid problems where condor writes
-        # to the directory while we're cleaning
-        tmp = Path(settings['HTMAP_DIR']) / names.REMOVED_MAPS_DIR / str(uuid.uuid4())
-        tmp.parent.mkdir(parents = True, exist_ok = True)
-        self._map_dir.rename(tmp)
-        shutil.rmtree(tmp.absolute())
-        logger.debug(f'removed map directory for map {self.map_id}')
+    def _cleanup_local_data(self) -> None:
+        # todo: can this be asynchronous?
+        while not all(cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED)
+                      for cs in self.component_statuses):
+            time.sleep(.1)
+
+        shutil.rmtree(self._map_dir)
+        logger.debug(f'removed map directory for map {self.tag}')
+
+        self._tag_file_path.unlink()
+        logger.debug(f'removed tag file for map {self.tag}')
 
     def _clean_outputs_dir(self) -> None:
         def update_status(path: Path) -> None:
@@ -644,36 +643,40 @@ class Map:
 
         utils.clean_dir(self._outputs_dir, on_file = update_status)
 
+    @property
+    def is_removed(self) -> bool:
+        return not self._map_dir.exists()
+
     def hold(self) -> None:
         """Temporarily remove the map from the queue, until it is released."""
         self._act(htcondor.JobAction.Hold)
-        logger.debug(f'held map {self.map_id}')
+        logger.debug(f'held map {self.tag}')
 
     def release(self) -> None:
         """Releases a held map back into the queue."""
         self._act(htcondor.JobAction.Release)
-        logger.debug(f'released map {self.map_id}')
+        logger.debug(f'released map {self.tag}')
 
     def pause(self) -> None:
         """Pause the map."""
         self._act(htcondor.JobAction.Suspend)
-        logger.debug(f'paused map {self.map_id}')
+        logger.debug(f'paused map {self.tag}')
 
     def resume(self) -> None:
         """Resume the map from a paused state."""
         self._act(htcondor.JobAction.Continue)
-        logger.debug(f'resumed map {self.map_id}')
+        logger.debug(f'resumed map {self.tag}')
 
     def vacate(self) -> None:
         """Force the map to give up any claimed resources."""
         self._act(htcondor.JobAction.Vacate)
-        logger.debug(f'vacated map {self.map_id}')
+        logger.debug(f'vacated map {self.tag}')
 
     def _edit(self, attr: str, value: str, requirements: Optional[str] = None) -> None:
         schedd = mapping.get_schedd()
         schedd.edit(self._requirements(requirements), attr, value)
 
-        logger.debug(f'set attribute {attr} for map {self.map_id} to {value}')
+        logger.debug(f'set attribute {attr} for map {self.tag} to {value}')
 
     def set_memory(self, memory: int) -> None:
         """
@@ -728,7 +731,7 @@ class Map:
         stdout :
             The standard output of the map component.
         """
-        path = self._map_dir / 'job_logs' / f'{component}.stdout'
+        path = self._map_dir / names.JOB_LOGS_DIR / f'{component}.{names.STDOUT_EXT}'
         utils.wait_for_path_to_exist(
             path,
             timeout = timeout,
@@ -757,7 +760,7 @@ class Map:
         stderr :
             The standard error of the map component.
         """
-        path = self._map_dir / 'job_logs' / f'{component}.stderr'
+        path = self._map_dir / names.JOB_LOGS_DIR / f'{component}.{names.STDERR_EXT}'
         utils.wait_for_path_to_exist(
             path,
             timeout = timeout,
@@ -787,7 +790,7 @@ class Map:
         }
         intersection = component_set.intersection(incomplete_components)
         if len(intersection) != 0:
-            raise exceptions.CannotRerunComponents(f'cannot rerun components {sorted(intersection)} of map {self.map_id} because they are not complete')
+            raise exceptions.CannotRerunComponents(f'cannot rerun components {sorted(intersection)} of map {self.tag} because they are not complete')
 
         for path in (self._output_file_path(c) for c in components):
             if path.exists():
@@ -804,95 +807,56 @@ class Map:
         )
 
         self._cluster_ids.append(new_cluster_id)
-        with (self._map_dir / 'cluster_ids').open(mode = 'a') as f:
+        with (self._map_dir / names.CLUSTER_IDS).open(mode = 'a') as f:
             f.write(str(new_cluster_id) + '\n')
 
-        logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.map_id}')
+        logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.tag}')
 
-    def rename(self, map_id: str) -> 'Map':
+    def retag(self, tag: str):
         """
-        Give this map a new ``map_id``.
-        This function returns a **new** :class:`Map` for the renamed map.
-        The :class:`Map` you call this on will not be connected to the new ``map_id``!
-        The old ``map_id`` will be available for re-use.
+        Give this map a new ``tag``.
+        The old ``tag`` will be available for re-use immediately.
 
-        .. note::
-
-            Only completed maps can be renamed (i.e., ``result.is_done == True``).
-
-        .. warning::
-
-            The old :class:`Map` will not be connected to the new ``map_id``!
-            This function returns a **new** result for the renamed map.
+        Retagging a map makes it not transient.
 
         Parameters
         ----------
-        map_id
-            The ``map_id`` to assign to this map.
-
-        Returns
-        -------
-        map_result :
-            A new :class:`Map` for the renamed map.
+        tag
+            The ``tag`` to assign to this map.
         """
-        if map_id == self.map_id:
-            raise exceptions.CannotRenameMap('cannot rename a map to the same map_id it already has')
-        if not self.is_done:
-            raise exceptions.CannotRenameMap(f'cannot rename a map that is not complete (map status: {self.status()})')
+        if tag == self.tag:
+            raise exceptions.CannotRetagMap('cannot retag a map to the same tag it already has')
 
         try:
-            mapping.raise_if_map_id_is_invalid(map_id)
-            mapping.raise_if_map_id_already_exists(map_id)
-        except (exceptions.InvalidMapId, exceptions.MapIdAlreadyExists) as e:
-            raise exceptions.CannotRenameMap(f'cannot rename map because of previous exception: {e}') from e
+            tags.raise_if_tag_is_invalid(tag)
+            tags.raise_if_tag_already_exists(tag)
+        except (exceptions.InvalidTag, exceptions.TagAlreadyExists) as e:
+            raise exceptions.CannotRetagMap(f'cannot retag map because of previous exception: {e}') from e
 
-        new_map_dir = mapping.map_dir_path(map_id)
-        shutil.copytree(
-            src = str(self._map_dir),
-            dst = str(new_map_dir),
-        )
+        submit_obj = htio.load_submit(self._map_dir)
+        submit_obj['JobBatchName'] = tag
+        htio.save_submit(self._map_dir, submit_obj)
 
-        submit = htcondor.Submit(dict(self._submit))
-        submit['JobBatchName'] = map_id
+        # self._edit('JobBatchName', tag)  # todo: this doesn't seem to work as expected
 
-        # fix paths
-        target = mapping.map_dir_path(self.map_id).as_posix()
-        replace_with = mapping.map_dir_path(map_id).as_posix()
-        for k, v in submit.items():
-            submit[k] = v.replace(target, replace_with)
+        self._tag_file_path.rename(tags.tag_file_path(tag))
 
-        htio.save_submit(new_map_dir, submit)
+        self.tag = tag
+        self._make_persistent()
 
-        self.remove()
-
-        return Map(
-            map_id = map_id,
-            submit = submit,
-            cluster_ids = self._cluster_ids,
-            num_components = self._num_components,
-        )
-
-
-class TransientMap(Map):
-    def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._cleanup()
+    @property
+    def _transient_marker(self):
+        return self._map_dir / names.TRANSIENT_MARKER
 
-        return False  # re-raise exceptions
+    @property
+    def is_transient(self) -> bool:
+        return self._transient_marker.exists()
 
-    def __iter__(self):
-        try:
-            yield from super().__iter__()
-        finally:
-            self._cleanup()
+    def _make_transient(self):
+        self._transient_marker.touch(exist_ok = True)
 
-    def __del__(self):
-        self._cleanup()
-
-    def _cleanup(self):
-        try:
-            self.remove()
-        except exceptions.MapWasRemoved:
-            pass
+    def _make_persistent(self):
+        if self.is_transient:
+            self._transient_marker.unlink()

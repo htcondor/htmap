@@ -28,7 +28,7 @@ def counter(num_steps):
     return True
 
 
-map = counter.map('chk', [30])
+map = counter.map([30])
 
 while map.component_statuses[0] is not htmap.ComponentStatus.RUNNING:
     print(map.component_statuses[0])

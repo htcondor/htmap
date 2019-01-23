@@ -102,7 +102,7 @@ class ComponentError:
         Return a formatted error report.
         """
         lines = [
-            f'  Start error report for component {self.component} of map {self.map.map_id}  '.center(80, '='),
+            f'  Start error report for component {self.component} of map {self.map.tag}  '.center(80, '='),
             'Landed on execute node {} ({}) at {}'.format(*self.node_info),
         ]
 
@@ -123,6 +123,6 @@ class ComponentError:
         lines.append(self._indent(self.exception_msg, multiple = 1))
 
         lines.append('')
-        lines.append(f'  End error report for component {self.component} of map {self.map.map_id}  '.center(80, '='))
+        lines.append(f'  End error report for component {self.component} of map {self.map.tag}  '.center(80, '='))
 
         return '\n'.join(lines)

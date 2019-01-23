@@ -150,7 +150,7 @@ def normalize_path(path: Union[str, Path]) -> str:
 
 
 def create_submit_object_and_itemdata(
-    map_id: str,
+    tag: str,
     map_dir: Path,
     num_components: int,
     map_options: Optional[MapOptions] = None,
@@ -159,13 +159,13 @@ def create_submit_object_and_itemdata(
         map_options = MapOptions()
 
     run_delivery_setup(
-        map_id,
+        tag,
         map_dir,
         settings['DELIVERY_METHOD'],
     )
 
     descriptors = get_base_descriptors(
-        map_id,
+        tag,
         map_dir,
         settings['DELIVERY_METHOD'],
     )
@@ -175,7 +175,7 @@ def create_submit_object_and_itemdata(
     input_files = descriptors.get('transfer_input_files', [])
     input_files += [
         (map_dir / names.FUNC).as_posix(),
-        (map_dir / names.INPUTS_DIR / '$(component).in').as_posix(),
+        (map_dir / names.INPUTS_DIR / f'$(component).{names.INPUT_EXT}').as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
@@ -228,26 +228,26 @@ def unregister_delivery_mechanism(name: str) -> None:
 
 
 def get_base_descriptors(
-    map_id: str,
+    tag: str,
     map_dir: Path,
     delivery: str,
 ) -> dict:
     core = {
-        'JobBatchName': map_id,
+        'JobBatchName': tag,
         'log': (map_dir / names.EVENT_LOG).as_posix(),
         'submit_event_notes': '$(component)',
         'stdout': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDOUT_EXT}').as_posix(),
         'stderr': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDERR_EXT}').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
-        'transfer_output_files': names.TRANSFER_DIR,
-        'transfer_output_remaps': f'"{names.TRANSFER_DIR}/$(component).out={(map_dir / names.OUTPUTS_DIR / "$(component).out").as_posix()}"',
+        'transfer_output_files': f'{names.TRANSFER_DIR}/',
+        'transfer_output_remaps': f'"$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}"',
         '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }
 
     try:
-        base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
+        base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
@@ -272,20 +272,20 @@ def _copy_run_scripts():
 
 
 def run_delivery_setup(
-    map_id: str,
+    tag: str,
     map_dir: Path,
     delivery: str,
 ) -> None:
     _copy_run_scripts()
 
     try:
-        SETUP_FUNCTION_BY_DELIVERY[delivery](map_id, map_dir)
+        SETUP_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
 
 def _get_base_descriptors_for_assume(
-    map_id: str,
+    tag: str,
     map_dir: Path,
 ) -> dict:
     return {
@@ -302,7 +302,7 @@ register_delivery_mechanism(
 
 
 def _get_base_descriptors_for_docker(
-    map_id: str,
+    tag: str,
     map_dir: Path,
 ) -> dict:
     return {
@@ -321,7 +321,7 @@ register_delivery_mechanism(
 
 
 def _get_base_descriptors_for_transplant(
-    map_id: str,
+    tag: str,
     map_dir: Path,
 ) -> dict:
     pip_freeze = _get_pip_freeze()
@@ -342,7 +342,7 @@ def _get_base_descriptors_for_transplant(
 
 
 def _run_delivery_setup_for_transplant(
-    map_id: str,
+    tag: str,
     map_dir: Path,
 ):
     if not settings.get('TRANSPLANT.ASSUME_EXISTS', False):

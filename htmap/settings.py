@@ -150,7 +150,6 @@ class Settings:
 htmap_dir = Path(os.getenv('HTMAP_DIR', Path.home() / '.htmap'))
 BASE_SETTINGS = Settings(dict(
     HTMAP_DIR = htmap_dir.as_posix(),
-    MAPS_DIR_NAME = 'maps',
     DELIVERY_METHOD = os.getenv('HTMAP_DELIVERY_METHOD', 'docker'),
     WAIT_TIME = 1,
     CLI = False,
@@ -183,4 +182,3 @@ except FileNotFoundError:
 settings = Settings.from_settings(Settings(), USER_SETTINGS, BASE_SETTINGS)
 
 logger.debug(f'htmap directory is {settings["HTMAP_DIR"]}')
-logger.debug(f'maps directory name is {settings["MAPS_DIR_NAME"]}')

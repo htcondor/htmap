@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from typing import Optional
 
 import logging
@@ -21,9 +22,11 @@ import collections
 import random
 import functools
 import itertools
+import shutil
 from pathlib import Path
 
 import htmap
+from htmap import names
 from htmap.management import _status
 from htmap.utils import read_events
 
@@ -51,7 +54,7 @@ def make_spinner(*args, **kwargs):
 CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
 
 
-def _read_ids_from_stdin(ctx, param, value):
+def _read_tags_from_stdin(ctx, param, value):
     if not value and not click.get_text_stream('stdin').isatty():
         return click.get_text_stream('stdin').read().split()
     else:
@@ -87,9 +90,9 @@ def _start_htmap_logger():
 
 
 @cli.command()
-def ids():
-    """Print map ids. Can be piped to other commands."""
-    click.echo(_id_list())
+def tags():
+    """Print tags. Can be piped to other commands."""
+    click.echo(_tag_list())
 
 
 _HEADER_FMT = functools.partial(click.style, bold = True)
@@ -110,7 +113,9 @@ class _RowFmt:
 def _map_fg(map) -> Optional[str]:
     sc = collections.Counter(map.component_statuses)
 
-    if sc[htmap.state.ComponentStatus.HELD] > 0:
+    if sc[htmap.state.ComponentStatus.REMOVED] > 0:
+        return 'magenta'
+    elif sc[htmap.state.ComponentStatus.HELD] > 0:
         return 'red'
     elif sc[htmap.state.ComponentStatus.COMPLETED] == len(map):
         return 'green'
@@ -166,12 +171,15 @@ def _map_fg(map) -> Optional[str]:
     help = 'Disable color.'
 )
 def status(no_state, no_meta, json, jsonc, csv, live, no_color):
-    """Print the status of all maps."""
+    """
+    Print the status of all maps.
+    Transient maps are prefixed with a *
+    """
     if (json, jsonc, csv, live).count(True) > 1:
         click.echo('Error: no more than one of --json, --jsonc, --csv, or --live can be set.')
         sys.exit(1)
 
-    maps = sorted(htmap.load_maps())
+    maps = sorted(htmap.load_maps(), key = lambda m: (m.is_transient, m.tag))
     with make_spinner(text = 'Reading map component statuses...'):
         read_events(maps)
 
@@ -198,7 +206,9 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
 
     try:
         while live:
-            num_lines = len(msg.splitlines())
+            prev_len_lines = [len(line) for line in msg.splitlines()]
+
+            maps = sorted(htmap.load_maps(), key = lambda m: (m.is_transient, m.tag))
             msg = _status(
                 maps,
                 **shared_kwargs,
@@ -206,8 +216,12 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
                 row_fmt = _RowFmt(maps) if not no_color else None,  # don't cache, must pass fresh each time
             )
 
-            sys.stdout.write(f'\033[{num_lines}A\r')
+            move = f'\033[{len(prev_len_lines)}A\r'
+            clear = '\n'.join(' ' * l for l in prev_len_lines)
+
+            sys.stdout.write(move + clear + move)
             click.echo(msg)
+
             time.sleep(1)
     except KeyboardInterrupt:  # bypass click's interrupt handling and let it exit quietly
         pass
@@ -215,48 +229,24 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
 
 @cli.command()
 @click.option(
-    '--yes',
+    '--all',
     is_flag = True,
     default = False,
-    help = 'Do not ask for confirmation.',
+    help = 'Remove non-transient maps as well.',
 )
-@click.option(
-    '--force',
-    is_flag = True,
-    default = False,
-    help = 'Do a force-clean instead of a normal clean.',
-)
-def clean(yes, force):
-    """Remove all maps, with more options than the remove command."""
-    if not yes:
-        click.secho(
-            'Are you sure you want to delete all of your maps permanently?'
-            '\nThis action cannot be undone!'
-            '\nType YES to delete all of your maps: ',
-            fg = 'red',
-        )
-        answer = input('> ')
-    else:
-        answer = 'YES'
-
-    if answer == 'YES':
-        with make_spinner('Cleaning maps...') as spinner:
-            if not force:
-                htmap.clean()
-            else:
-                htmap.force_clean()
-
-            spinner.succeed('Cleaned maps')
-    else:
-        click.echo('Answer was not YES, maps have not been deleted.')
+def clean(all):
+    """Clean up maps."""
+    with make_spinner('Cleaning maps...') as spinner:
+        cleaned_tags = htmap.clean(all = all)
+        spinner.succeed(f'Cleaned maps {", ".join(cleaned_tags)}')
 
 
-def _multi_id_args(func):
+def _multi_tag_args(func):
     apply = [
         click.argument(
-            'mapids',
+            'tags',
             nargs = -1,
-            callback = _read_ids_from_stdin,
+            callback = _read_tags_from_stdin,
             required = False,
         ),
         click.option(
@@ -273,138 +263,177 @@ def _multi_id_args(func):
     return func
 
 
+TOTAL_WIDTH = 80
+
+STATUS_AND_COLOR = [
+    (htmap.ComponentStatus.COMPLETED, 'green'),
+    (htmap.ComponentStatus.RUNNING, 'cyan'),
+    (htmap.ComponentStatus.IDLE, 'yellow'),
+    (htmap.ComponentStatus.SUSPENDED, 'red'),
+    (htmap.ComponentStatus.HELD, 'red'),
+    (htmap.ComponentStatus.REMOVED, 'magenta'),
+]
+
+
+def _calculate_bar_component_len(count, total, bar_width):
+    if count == 0:
+        return 0
+
+    return max(int((count / total) * bar_width), 1)
+
+
 @cli.command()
-@_multi_id_args
-def wait(mapids, all):
+@_multi_tag_args
+def wait(tags, all):
     """Wait for maps to complete."""
     if all:
-        mapids = htmap.map_ids()
+        tags = htmap.get_tags()
 
-    _check_map_ids(mapids)
+    _check_tags(tags)
 
-    for map_id in mapids:
-        m = _cli_load(map_id)
-        if not m.is_done:
-            m.wait(show_progress_bar = True)
+    if len(tags) == 0:
+        return
+
+    maps = sorted((htmap.load(tag) for tag in tags), key = lambda m: (m.is_transient, m.tag))
+    longest_tag_len = max(len(tag) for tag in tags)
+    bar_width = min(shutil.get_terminal_size().columns, TOTAL_WIDTH - (longest_tag_len + 1))
+
+    click.echo('\n' * (len(maps) - 1))
+    while any(not map.is_done for map in maps):
+        bars = []
+        for map in maps:
+            sc = collections.Counter(map.component_statuses)
+
+            bar_lens = {
+                status: _calculate_bar_component_len(sc[status], len(map), bar_width)
+                for status, _ in STATUS_AND_COLOR
+            }
+            bar_lens[htmap.ComponentStatus.IDLE] += bar_width - sum(bar_lens.values())
+
+            bar = ''.join([
+                click.style('█' * bar_lens[status], fg = color)
+                for status, color in STATUS_AND_COLOR
+            ])
+
+            bars.append(f'{map.tag.ljust(longest_tag_len)} {bar}')
+
+        msg = '\n'.join(bars)
+        move = f'\033[{len(maps)}A\r'
+
+        sys.stdout.write(move)
+        click.echo(msg)
+
+        time.sleep(1)
 
 
 @cli.command()
-@_multi_id_args
-@click.option(
-    '--force',
-    is_flag = True,
-    default = False,
-    help = 'Do a force-remove instead of a normal remove.',
-)
-def remove(mapids, force, all):
+@_multi_tag_args
+def remove(tags, all):
     """Remove maps."""
     if all:
-        mapids = htmap.map_ids()
+        tags = htmap.get_tags()
 
-    _check_map_ids(mapids)
+    _check_tags(tags)
 
-    for map_id in mapids:
-        with make_spinner(f'Removing map {map_id} ...') as spinner:
-            if not force:
-                _cli_load(map_id).remove()
-            else:
-                htmap.force_remove(map_id)
+    for tag in tags:
+        with make_spinner(f'Removing map {tag} ...') as spinner:
+            _cli_load(tag).remove()
 
-            spinner.succeed(f'Removed map {map_id}')
+            spinner.succeed(f'Removed map {tag}')
 
 
 @cli.command()
-@_multi_id_args
-def hold(mapids, all):
+@_multi_tag_args
+def hold(tags, all):
     """Hold maps."""
     if all:
-        mapids = htmap.map_ids()
+        tags = htmap.get_tags()
 
-    _check_map_ids(mapids)
+    _check_tags(tags)
 
-    for map_id in mapids:
-        with make_spinner(f'Holding map {map_id} ...') as spinner:
-            _cli_load(map_id).hold()
-            spinner.succeed(f'Held map {map_id}')
+    for tag in tags:
+        with make_spinner(f'Holding map {tag} ...') as spinner:
+            _cli_load(tag).hold()
+            spinner.succeed(f'Held map {tag}')
 
 
 @cli.command()
-@_multi_id_args
-def release(mapids, all):
+@_multi_tag_args
+def release(tags, all):
     """Release maps."""
     if all:
-        mapids = htmap.map_ids()
+        tags = htmap.get_tags()
 
-    _check_map_ids(mapids)
+    _check_tags(tags)
 
-    for map_id in mapids:
-        with make_spinner(f'Releasing map {map_id} ...') as spinner:
-            _cli_load(map_id).release()
-            spinner.succeed(f'Released map {map_id}')
+    for tag in tags:
+        with make_spinner(f'Releasing map {tag} ...') as spinner:
+            _cli_load(tag).release()
+            spinner.succeed(f'Released map {tag}')
 
 
 @cli.command()
-@_multi_id_args
-def pause(mapids, all):
+@_multi_tag_args
+def pause(tags, all):
     """Pause maps."""
     if all:
-        mapids = htmap.map_ids()
+        tags = htmap.get_tags()
 
-    _check_map_ids(mapids)
+    _check_tags(tags)
 
-    for map_id in mapids:
-        with make_spinner(f'Pausing map {map_id} ...') as spinner:
-            _cli_load(map_id).pause()
-            spinner.succeed(f'Paused map {map_id}')
+    for tag in tags:
+        with make_spinner(f'Pausing map {tag} ...') as spinner:
+            _cli_load(tag).pause()
+            spinner.succeed(f'Paused map {tag}')
 
 
 @cli.command()
-@_multi_id_args
-def resume(mapids, all):
+@_multi_tag_args
+def resume(tags, all):
     """Resume maps."""
     if all:
-        mapids = htmap.map_ids()
+        tags = htmap.get_tags()
 
-    _check_map_ids(mapids)
+    _check_tags(tags)
 
-    for map_id in mapids:
-        with make_spinner(f'Resuming map {map_id} ...') as spinner:
-            _cli_load(map_id).resume()
-            spinner.succeed(f'Resumed map {map_id}')
+    for tag in tags:
+        with make_spinner(f'Resuming map {tag} ...') as spinner:
+            _cli_load(tag).resume()
+            spinner.succeed(f'Resumed map {tag}')
 
 
 @cli.command()
-@_multi_id_args
-def vacate(mapids, all):
+@_multi_tag_args
+def vacate(tags, all):
     """Force maps to give up their claimed resources."""
     if all:
-        mapids = htmap.map_ids()
+        tags = htmap.get_tags()
 
-    _check_map_ids(mapids)
+    _check_tags(tags)
 
-    for map_id in mapids:
-        with make_spinner(f'Vacating map {map_id} ...') as spinner:
-            _cli_load(map_id).vacate()
-            spinner.succeed(f'Vacated map {map_id}')
+    for tag in tags:
+        with make_spinner(f'Vacating map {tag} ...') as spinner:
+            _cli_load(tag).vacate()
+            spinner.succeed(f'Vacated map {tag}')
 
 
 @cli.command()
-@_multi_id_args
-def reasons(mapids, all):
+@_multi_tag_args
+def reasons(tags, all):
     """Print the hold reasons for maps."""
     if all:
-        mapids = htmap.map_ids()
+        tags = htmap.get_tags()
 
-    _check_map_ids(mapids)
+    _check_tags(tags)
 
     reps = []
-    for map_id in mapids:
-        m = _cli_load(map_id)
+    for tag in tags:
+        m = _cli_load(tag)
 
         if len(m.holds) == 0:
             continue
         name = click.style(
-            f'Map {m.map_id} ({len(m.holds)} hold{"s" if len(m.holds) > 1 else ""})',
+            f'Map {m.tag} ({len(m.holds)} hold{"s" if len(m.holds) > 1 else ""})',
             bold = True,
         )
         reps.append(f'{name}\n{m.hold_report()}')
@@ -413,33 +442,33 @@ def reasons(mapids, all):
 
 
 @cli.command()
-@click.argument('mapid')
+@click.argument('tag')
 @click.argument('component', type = int)
-def stdout(mapid, component):
+def stdout(tag, component):
     """Look at the stdout for a map component."""
-    click.echo(_cli_load(mapid).stdout(component))
+    click.echo(_cli_load(tag).stdout(component))
 
 
 @cli.command()
-@click.argument('mapid')
+@click.argument('tag')
 @click.argument('component', type = int)
-def stderr(mapid, component):
+def stderr(tag, component):
     """Look at the stderr for a map component."""
-    click.echo(_cli_load(mapid).stderr(component))
+    click.echo(_cli_load(tag).stderr(component))
 
 
 @cli.command()
-@click.argument('mapid')
+@click.argument('tag')
 @click.option(
     '--limit',
     type = int,
     default = 0,
     help = 'The maximum number of error reports to show (0 for no limit).',
 )
-def errors(mapid, limit):
+def errors(tag, limit):
     """Look at detailed error reports for a map."""
-    m = _cli_load(mapid)
-    reports = m.error_report()
+    m = _cli_load(tag)
+    reports = m.error_reports()
     if limit > 0:
         itertools.islice(reports, limit)
 
@@ -448,16 +477,10 @@ def errors(mapid, limit):
 
 
 @cli.command()
-@click.argument('mapid')
+@click.argument('tag')
 @click.option(
     '--components',
     help = 'Rerun the given components',
-)
-@click.option(
-    '--incomplete',
-    is_flag = True,
-    default = False,
-    help = 'Rerun only the incomplete components of the map.'
 )
 @click.option(
     '--all',
@@ -465,37 +488,33 @@ def errors(mapid, limit):
     default = False,
     help = 'Rerun the entire map',
 )
-def rerun(mapid, components, incomplete, all):
+def rerun(tag, components, all):
     """Rerun part or all of a map."""
-    if tuple(map(bool, (components, incomplete, all))).count(True) != 1:
+    if tuple(map(bool, (components, all))).count(True) != 1:
         click.echo('Error: exactly one of --components, --incomplete, and --all can be used.')
         sys.exit(1)
 
-    m = _cli_load(mapid)
+    m = _cli_load(tag)
 
     if components:
         components = [int(c) for c in components.split()]
-        with make_spinner(f'Rerunning components {components} of map {mapid} ...') as spinner:
+        with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
             m.rerun_components(components)
-            spinner.succeed(f'Reran components {components} of map {mapid}')
-    elif incomplete:
-        with make_spinner(f'Rerunning incomplete components of map {mapid} ...') as spinner:
-            m.rerun_incomplete()
-            spinner.succeed(f'Reran incomplete components {components} of map {mapid}')
+            spinner.succeed(f'Reran components {components} of map {tag}')
     elif all:
-        with make_spinner(f'Rerunning map {mapid} ...') as spinner:
+        with make_spinner(f'Rerunning map {tag} ...') as spinner:
             m.rerun()
-            spinner.succeed(f'Reran map {mapid}')
+            spinner.succeed(f'Reran map {tag}')
 
 
 @cli.command()
-@click.argument('mapid')
-@click.argument('newid')
-def rename(mapid, newid):
-    """Rename a map."""
-    with make_spinner(f'Renaming map {mapid} to {newid} ...') as spinner:
-        _cli_load(mapid).rename(newid)
-        spinner.succeed(f'Renamed map {mapid} to {newid}')
+@click.argument('tag')
+@click.argument('new')
+def retag(tag, new):
+    """Retag a map."""
+    with make_spinner(f'Retagging map {tag} to {new} ...') as spinner:
+        _cli_load(tag).retag(new)
+        spinner.succeed(f'Retagged map {tag} to {new}')
 
 
 @cli.command()
@@ -553,13 +572,13 @@ def remove(index):
     try:
         index = int(index)
     except ValueError:
-        click.echo(f'Error: index was not an integer (was {index}).')
+        click.echo(f'ERROR: index was not an integer (was {index})', err = True)
         sys.exit(1)
 
     try:
         transplant = htmap.transplants()[index]
     except IndexError:
-        click.echo(f'Error: could not find a transplant install with index {index}.')
+        click.echo(f'ERROR: could not find a transplant install with index {index}', err = True)
         click.echo(f'Your transplant installs are:')
         click.echo(htmap.transplant_info())
         sys.exit(1)
@@ -573,67 +592,84 @@ def edit():
 
 
 @edit.command()
-@click.argument('mapid')
+@click.argument('tag')
 @click.argument(
     'memory',
     type = int,
 )
-def memory(mapid, memory):
+def memory(tag, memory):
     """Set a map's requested memory (in MB)."""
-    _cli_load(mapid).set_memory(memory)
+    map = _cli_load(tag)
+    with make_spinner(text = f'Setting memory request for map {tag} to {memory} MB') as spinner:
+        map.set_memory(memory)
+        spinner.succeed(f'Setting memory request for map {tag} to {memory} MB')
 
 
 @edit.command()
-@click.argument('mapid')
+@click.argument('tag')
 @click.argument(
     'disk',
     type = int,
 )
-def disk(mapid, disk):
+def disk(tag, disk):
     """Set a map's requested disk (in KB)."""
-    _cli_load(mapid).set_disk(disk)
+    map = _cli_load(tag)
+    with make_spinner(text = f'Setting memory request for map {tag} to {disk} KB') as spinner:
+        map.set_disk(disk)
+        spinner.succeed(f'Setting memory request for map {tag} to {disk} KB')
 
 
-@cli.group()
-def path():
-    """Get paths to various things. Mostly for debugging."""
+@cli.command()
+@click.argument('tag')
+def path(tag):
+    """
+    Get paths to various things.
+    Mostly for debugging.
+    The tag argument is a map tag, optionally followed by a colon (:) and a target.
+
+    For example, if you have a map tagged "foo",
+    these commands would give the following paths (command -> path):
+
+    \b
+    htmap path foo -> the path to the map directory
+    htmap path foo:map -> also the path to the map directory
+    htmap path foo:events -> the map's event log
+    htmap path foo:logs -> the directory containing component stdout and stderr
+    """
+    if tag.count(':') == 0:
+        tag, target = tag, None
+    elif tag.count(':') == 1:
+        tag, target = tag.split(':')
+    else:
+        click.echo('ERROR: can only have one ":" in tag', err = True)
+        sys.exit(1)
+
+    map_dir = _cli_load(tag)._map_dir
+    paths = {
+        None: map_dir,
+        'map': map_dir,
+        'events': map_dir / names.EVENT_LOG,
+        'logs': map_dir / names.JOB_LOGS_DIR,
+    }
+
+    click.echo(str(paths[target]))
 
 
-@path.command()
-def logs():
-    """Echo the path to the HTMap log file."""
-    click.echo(str(htmap.LOG_FILE))
-
-
-@path.command()
-@click.argument('mapid')
-def map(mapid):
-    """Echo the path to the map's directory."""
-    click.echo(str(_cli_load(mapid)._map_dir))
-
-
-@path.command()
-@click.argument('mapid')
-def events(mapid):
-    """Echo the path to the map's job event log."""
-    click.echo(str(_cli_load(mapid)._event_log_path))
-
-
-def _cli_load(map_id: str) -> htmap.Map:
-    with make_spinner(text = f'Loading map {map_id}...') as spinner:
+def _cli_load(tag: str) -> htmap.Map:
+    with make_spinner(text = f'Loading map {tag}...') as spinner:
         try:
-            return htmap.load(map_id)
+            return htmap.load(tag)
         except Exception as e:
-            spinner.fail(f'Error: could not find a map with map_id {map_id}')
-            click.echo(f'Your map ids are:', err = True)
-            click.echo(_id_list(), err = True)
+            spinner.fail(f'ERROR: could not find a map with tag {tag}')
+            click.echo(f'Your map tags are:', err = True)
+            click.echo(_tag_list(), err = True)
             sys.exit(1)
 
 
-def _id_list() -> str:
-    return '\n'.join(htmap.map_ids())
+def _tag_list() -> str:
+    return '\n'.join(htmap.get_tags())
 
 
-def _check_map_ids(map_ids):
-    if len(map_ids) == 0:
-        click.echo('Warning: no map ids were passed', err = True)
+def _check_tags(tags):
+    if len(tags) == 0:
+        click.echo('Warning: no tags were passed', err = True)
