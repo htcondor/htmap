@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an improvement
+about: Suggest an improvement to HTMap
 title: ''
 labels: enhancement
 assignees: ''
