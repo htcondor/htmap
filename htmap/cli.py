@@ -691,3 +691,7 @@ def _tag_list() -> str:
 def _check_tags(tags):
     if len(tags) == 0:
         click.echo('Warning: no tags were passed', err = True)
+
+
+if __name__ == '__main__':
+    cli()

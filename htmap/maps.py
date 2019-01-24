@@ -420,11 +420,11 @@ class Map:
                     remaining_indices.remove(component)
                     callback(output)
                     yield output
-                except exceptions.TimeoutError:
+                except exceptions.OutputNotFound:
                     pass
 
             if timeout is not None and time.time() > start_time + timeout:
-                break
+                raise exceptions.TimeoutError('timed out while waiting for more output')
 
             time.sleep(settings['WAIT_TIME'])
 
@@ -462,11 +462,11 @@ class Map:
                     remaining_indices.remove(component)
                     callback(input, output)
                     yield input, output
-                except exceptions.TimeoutError:
+                except exceptions.OutputNotFound:
                     pass
 
             if timeout is not None and time.time() > start_time + timeout:
-                break
+                raise exceptions.TimeoutError('timed out while waiting for more output')
 
             time.sleep(settings['WAIT_TIME'])
 

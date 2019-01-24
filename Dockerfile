@@ -68,7 +68,6 @@ RUN cd /tmp \
  && bash Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -f -b -p $CONDA_DIR \
  && rm Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh \
  && conda install python=${PYTHON_VERSION} ipython \
- && conda update -y --all \
  && conda clean -y -all
 
 # install htmap dependencies early for caching
