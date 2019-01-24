@@ -1,6 +1,6 @@
 ---
-name: Bug report
-about: Report a bug
+name: Bug Report
+about: Report a problem with HTMap
 title: ''
 labels: bug
 assignees: ''
