@@ -561,7 +561,7 @@ def settings(user):
 def set(setting, value):
     """Change a setting in your ~/.htmaprc file."""
     htmap.USER_SETTINGS[setting] = value
-    htmap.USER_SETTINGS.save(Path.cwd() / '.htmaprc')
+    htmap.USER_SETTINGS.save(Path.home() / '.htmaprc')
     click.echo(f'changed setting {setting} to {value}')
 
 

@@ -47,7 +47,7 @@ class Settings:
             settings = [{}]
         self.maps = list(settings)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         for map in self.maps:
             path = key.split('.')
             r = map
@@ -69,7 +69,7 @@ class Settings:
         except exceptions.MissingSetting:
             return default
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value):
         old = self.get(key)  # for log message below
 
         *path, final = key.split('.')
