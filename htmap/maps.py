@@ -841,8 +841,8 @@ class Map:
 
         self._tag_file_path.rename(tags.tag_file_path(tag))
 
+        MAPS.pop(self.tag, None)
         self.tag = tag
-        MAPS.pop(self.tag)
         MAPS[self.tag] = self
         self._make_persistent()
 
