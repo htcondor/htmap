@@ -629,19 +629,13 @@ class Map:
         # todo: can this be asynchronous?
         while not all(cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED)
                       for cs in self.component_statuses):
-            time.sleep(.1)
+            time.sleep(.01)
 
         shutil.rmtree(self._map_dir)
         logger.debug(f'removed map directory for map {self.tag}')
 
         self._tag_file_path.unlink()
         logger.debug(f'removed tag file for map {self.tag}')
-
-    def _clean_outputs_dir(self) -> None:
-        def update_status(path: Path) -> None:
-            self.component_statuses[int(path.stem)] = state.ComponentStatus.REMOVED
-
-        utils.clean_dir(self._outputs_dir, on_file = update_status)
 
     @property
     def is_removed(self) -> bool:
@@ -849,7 +843,7 @@ class Map:
         return self
 
     @property
-    def _transient_marker(self):
+    def _transient_marker(self) -> Path:
         return self._map_dir / names.TRANSIENT_MARKER
 
     @property

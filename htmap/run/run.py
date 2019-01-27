@@ -31,6 +31,10 @@ import subprocess
 import getpass
 from pathlib import Path
 
+TRANSFER_DIR = '_htmap_transfer'
+CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
+CHECKPOINT_OLD = '_htmap_old_checkpoint'
+
 
 # import cloudpickle goes in the functions that need it directly
 # so that errors are raised later
@@ -194,8 +198,8 @@ def build_frames(tb):
 
 
 def load_checkpoint(scratch_dir, transfer_dir):
-    curr_dir = scratch_dir / '_htmap_current_checkpoint'
-    old_dir = scratch_dir / '_htmap_old_checkpoint'
+    curr_dir = scratch_dir / CHECKPOINT_CURRENT
+    old_dir = scratch_dir / CHECKPOINT_OLD
 
     if curr_dir.exists():
         for path in curr_dir.iterdir():
@@ -218,7 +222,7 @@ def main(component):
     print()
 
     scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
-    transfer_dir = scratch_dir / '_htmap_transfer'
+    transfer_dir = scratch_dir / TRANSFER_DIR
     transfer_dir.mkdir(exist_ok = True)
 
     load_checkpoint(scratch_dir, transfer_dir)
