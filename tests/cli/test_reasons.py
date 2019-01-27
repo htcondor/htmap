@@ -12,3 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import pytest
+
+import htmap
+
+
+def test_retag(cli):
+    m = htmap.map(str, range(1), tag = 'old')
+
+    result = cli(['retag', 'old', 'new'])
+
+    assert m.tag == 'new'

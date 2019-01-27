@@ -12,3 +12,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import pytest
+
+import htmap
+
+
+def test_map_is_done_after_wait(cli):
+    m = htmap.map(str, range(1))
+
+    result = cli(['wait', m.tag])
+
+    assert m.is_done
+
+
+def test_maps_are_done_after_wait(cli):
+    maps = [
+        htmap.map(str, range(1)),
+        htmap.map(str, range(1)),
+    ]
+
+    result = cli(['wait', *(m.tag for m in maps)])
+
+    assert all(m.is_done for m in maps)
+
+
+def test_maps_are_done_after_wait_using_all(cli):
+    maps = [
+        htmap.map(str, range(1)),
+        htmap.map(str, range(1)),
+    ]
+
+    result = cli(['wait', '--all'])
+
+    assert all(m.is_done for m in maps)

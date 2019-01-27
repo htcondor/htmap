@@ -12,3 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import functools
+
+import pytest
+
+from click.testing import CliRunner
+
+from htmap.cli import cli as htmap_cli
+
+
+@pytest.fixture(scope = 'session')
+def cli():
+    runner = CliRunner()
+
+    return functools.partial(runner.invoke, htmap_cli)
