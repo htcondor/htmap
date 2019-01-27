@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, MutableMapping
+from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, Set
 import logging
 
 import datetime
@@ -56,7 +56,8 @@ def _protect_map_after_remove(result_class):
     return result_class
 
 
-MAPS: MutableMapping[str, 'Map'] = weakref.WeakValueDictionary()
+# this set is used in Map.load to make Maps singletons
+MAPS: Set['Map'] = weakref.WeakSet()
 
 
 @_protect_map_after_remove
@@ -88,7 +89,7 @@ class Map:
         self._state = state.MapState(self)
         self._local_data = None
 
-        MAPS[self.tag] = self
+        MAPS.add(self)
 
     @classmethod
     def load(cls, tag: str) -> 'Map':
@@ -108,7 +109,10 @@ class Map:
             The map with the given ``tag``.
         """
         try:
-            return MAPS[tag]
+            # build the tag -> map dict from MAPS every time because
+            # we don't want to have to maintain it's state during retag
+            existing_maps_by_tag = {map.tag: map for map in MAPS}
+            return existing_maps_by_tag[tag]
         except KeyError:
             try:
                 uid = uuid.UUID(tags.tag_file_path(tag).read_text())
@@ -618,7 +622,7 @@ class Map:
         """
         self._remove_from_queue()
         self._cleanup_local_data()
-        MAPS.pop(self.tag, None)
+        MAPS.remove(self)
 
         logger.info(f'removed map {self.tag}')
 
@@ -840,10 +844,6 @@ class Map:
         # self._edit('JobBatchName', tag)  # todo: this doesn't seem to work as expected
 
         self._tag_file_path.rename(tags.tag_file_path(tag))
-
-        MAPS.pop(self.tag, None)
-        self.tag = tag
-        MAPS[self.tag] = self
         self._make_persistent()
 
         return self
