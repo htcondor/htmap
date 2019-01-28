@@ -108,19 +108,25 @@ Here's the function, along with some code to run it and prove that it checkpoint
 
     map = counter.map([30])
 
+    # wait for the component to start
     while map.component_statuses[0] is not htmap.ComponentStatus.RUNNING:
         print(map.component_statuses[0])
         time.sleep(1)
 
+    # let it run for 10 seconds
     print('component has started, letting it run...')
     time.sleep(10)
+
+    # vacate it (force it off current execute resource
     map.vacate()
     print('vacated map')
 
+    # wait until it starts up again and finishes
     while map.component_statuses[0] is not htmap.ComponentStatus.COMPLETED:
         print(map.component_statuses[0])
         time.sleep(1)
 
+    # look at the function output and the stdout from execution
     print(map[0])
     print(map.stdout(0))
 
@@ -201,7 +207,7 @@ For example, using the ``datetime`` library:
     def function(inputs):
         latest_checkpoint_at = datetime.datetime.now()
 
-        # load for checkpoint or initialize
+        # load from checkpoint or initialize
 
         while not_done:
             # do a unit of work
@@ -213,8 +219,8 @@ For example, using the ``datetime`` library:
         return result
 
 
-Checkpointing Caveats
-=====================
+Caveats
+=======
 
 Checkpointing does introduce some complications with HTMap's metadata tracking system.
 In particular, HTMap only tracks the runtime, stdout, and stderr of the **last execution** of each component.
