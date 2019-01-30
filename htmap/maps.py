@@ -847,7 +847,9 @@ class Map:
         self._tag_file_path.rename(tags.tag_file_path(tag))
         self._make_persistent()
 
-        return self
+        # must do this after everything else, because some of the things above
+        # reference paths based on the tag
+        self.tag = tag
 
     @property
     def _transient_marker(self) -> Path:
