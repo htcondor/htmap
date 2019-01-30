@@ -19,6 +19,14 @@ import htmap
 import htmap.tags
 
 
+def test_tag_changes_on_same_map_object():
+    m = htmap.map(str, range(1), tag = 'old')
+
+    m.retag('new')
+
+    assert m.tag == 'new'
+
+
 def test_new_tag_in_tags(mapped_doubler):
     m = mapped_doubler.map(range(2), tag = 'old')
     m.wait(timeout = 180)
@@ -51,15 +59,14 @@ def test_complete_then_retag_then_rerun(mapped_doubler):
     m = mapped_doubler.map(range(1), tag = 'old')
     m.wait(timeout = 180)
 
-    new_m = m.retag('new')
-    new_m.rerun()
+    m.retag('new')
+    m.rerun()
 
-    assert list(new_m) == [0]
+    assert list(m) == [0]
 
 
 def test_can_be_recovered_after_retag(mapped_doubler):
     m = mapped_doubler.map(range(1), tag = 'old')
-    m.wait(timeout = 180)
 
     m.retag('new')
 
