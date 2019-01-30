@@ -77,7 +77,7 @@ def map(
 
     Returns
     -------
-    result :
+    map :
         A :class:`htmap.Map` representing the map.
     """
     args = ((arg,) for arg in args)
@@ -117,7 +117,7 @@ def starmap(
 
     Returns
     -------
-    result :
+    map :
         A :class:`htmap.Map` representing the map.
     """
     if args is None:
@@ -266,7 +266,7 @@ def create_map(
 
     Returns
     -------
-    result :
+    map :
         A :class:`htmap.Map` representing the map.
     """
     if tag is None:

@@ -74,7 +74,7 @@ language = None
 exclude_patterns = ['**/.ipynb_checkpoints']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'colorful'
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -89,8 +89,11 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#
-# html_theme_options = {}
+
+html_theme_options = {
+    'logo_only': False,
+}
+html_logo = "htmap-logo.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -116,29 +119,19 @@ htmlhelp_basename = 'htmapdoc'
 # -- Options for LaTeX output ------------------------------------------------
 
 latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #
-    # 'papersize': 'letterpaper',
-
-    # The font size ('10pt', '11pt' or '12pt').
-    #
-    # 'pointsize': '10pt',
-
+    'papersize': 'letterpaper',
+    'pointsize': '11pt',
+    'figure_align': 'htbp',
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
-
-    # Latex figure (float) alignment
-    #
-    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'htmap.tex', 'htmap Documentation',
-     'Josh Karpel', 'manual'),
+    (master_doc, 'htmap.tex', 'htmap Documentation', 'CHTC', 'manual'),
 ]
 
 # -- Options for manual page output ------------------------------------------
@@ -146,8 +139,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'htmap', 'htmap Documentation',
-     [author], 1)
+    (master_doc, 'htmap', 'HTMap Documentation', [author], 1)
 ]
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -156,9 +148,15 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'htmap', 'htmap Documentation',
-     author, 'htmap', 'One line description of project.',
-     'Miscellaneous'),
+    (
+        master_doc,
+        'htmap',
+        'HTMap Documentation',
+        author,
+        'htmap',
+        'One line description of project.',
+        'Miscellaneous',
+    ),
 ]
 
 # -- Extension configuration -------------------------------------------------
@@ -175,3 +173,7 @@ autoclass_content = 'both'
 autodoc_default_flags = ['undoc-members']
 
 napoleon_use_rtype = False
+
+
+def setup(app):
+    app.add_stylesheet('css/custom.css')
