@@ -39,30 +39,6 @@ class StrEnum(enum.Enum):
         return self.value
 
 
-def clean_dir(
-    target_dir: Path,
-    on_file: Optional[Callable[[Path], None]] = None,
-) -> None:
-    """
-    Remove all files in the given directory `target_dir`.
-
-    Parameters
-    ----------
-    target_dir
-        The directory to clean up.
-    on_file
-        A function to call on each file before deleting it.
-    """
-    if on_file is None:
-        on_file = lambda p: None
-
-    logger.debug(f'removing all files in {target_dir}...')
-    for path in (p for p in target_dir.iterdir() if p.is_file()):
-        on_file(path)
-        path.unlink()
-        logger.debug(f'removed file {path}')
-
-
 def wait_for_path_to_exist(
     path: Path,
     timeout: Optional[Union[int, float, datetime.timedelta]] = None,
@@ -107,8 +83,8 @@ def timeout_to_seconds(timeout: Optional[Union[int, float, datetime.timedelta]])
 
 class rstr(str):
     """
-    Identical to a normal Python string, except that it's ``__repr__`` is its ``__str__``,
-    to make it work nicer in notebooks.
+    Identical to a normal Python string, except that it's ``__repr__``
+    is its ``__str__``, to make it work nicer in notebooks.
     """
 
     def __repr__(self):
@@ -210,11 +186,6 @@ def num_bytes_to_str(num_bytes: Union[int, float]) -> str:
     return f'{num_bytes:.1f} TB'
 
 
-def get_dir_size_as_str(path: Path) -> str:
-    """Return the size of a directory (including all contents recursively) as a human-readable string."""
-    return num_bytes_to_str(get_dir_size(path))
-
-
 def pip_freeze() -> str:
     """Return the text of a ``pip --freeze`` call."""
     return subprocess.run(
@@ -224,6 +195,6 @@ def pip_freeze() -> str:
 
 
 def read_events(maps):
-    """Read the events logs of the given maps in parallel."""
+    """Read the events logs of the given maps using a thread pool."""
     with ThreadPoolExecutor() as pool:
         pool.map(lambda map: map._state._read_events(), maps)

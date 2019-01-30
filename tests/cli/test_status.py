@@ -12,3 +12,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import pytest
+
+import htmap
+
+
+def test_status_has_tag(cli):
+    m = htmap.map(str, range(1))
+
+    result = cli(['status'])
+
+    assert m.tag in result.output
+
+
+def test_status_has_num_jobs_somewhere(cli):
+    htmap.map(str, range(1))
+
+    result = cli(['status'])
+
+    assert ' 1 ' in result.output
+
+
+def test_status_with_no_state_gives_no_num_jobs(cli):
+    htmap.map(str, range(1))
+
+    result = cli(['status', '--no-state'])
+
+    assert ' 1 ' not in result.output

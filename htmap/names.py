@@ -16,11 +16,13 @@
 # this file sets the names of non-configurable files and directories
 # basically, it's a list of magic strings
 
+# names of directors in the HTMAP_DIR
 MAPS_DIR = 'maps'
 TAGS_DIR = 'tags'
 REMOVED_TAGS_DIR = '.removed_tags'
 RUN_DIR = 'run'
 
+# names of files and sub-directories of individual map dirs
 FUNC = 'func'
 CLUSTER_IDS = 'cluster_ids'
 OUTPUTS_DIR = 'outputs'
@@ -36,6 +38,9 @@ SUBMIT = 'submit'
 ITEMDATA = 'itemdata'
 TRANSIENT_MARKER = 'transient'
 
+# execute-side directory names
+# these are NOT referenced by the run script, so you need to change the names
+# there as well if you change them here
 TRANSFER_DIR = '_htmap_transfer'
 CHECKPOINT_PREP = '_htmap_prep_checkpoint'
 CHECKPOINT_CURRENT = '_htmap_current_checkpoint'

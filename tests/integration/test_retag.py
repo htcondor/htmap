@@ -71,3 +71,10 @@ def test_retag_while_running(mapped_doubler):
     m.retag('new')
 
     assert list(m) == [0, 2, 4, 6, 8]
+
+
+def cannot_retag_to_same_tag():
+    m = htmap.map(str, range(1), tag = 'same-tag')
+
+    with pytest.raises(htmap.exceptions.CannotRetagMap):
+        m.retag('same-tag')
