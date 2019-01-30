@@ -117,7 +117,7 @@ Here's the function, along with some code to run it and prove that it checkpoint
     print('component has started, letting it run...')
     time.sleep(10)
 
-    # vacate it (force it off current execute resource
+    # vacate it (force it off current execute resource)
     map.vacate()
     print('vacated map')
 
