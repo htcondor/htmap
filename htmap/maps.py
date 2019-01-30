@@ -60,6 +60,15 @@ def _protect_map_after_remove(result_class):
 MAPS: Set['Map'] = weakref.WeakSet()
 
 
+def maps_by_tag() -> Dict[str, 'Map']:
+    """
+    Get the current mapping of tags to map objects.
+
+    Don't try to cache the results of this function; always get it fresh.
+    """
+    return {map.tag: map for map in MAPS}
+
+
 @_protect_map_after_remove
 class Map:
     """
@@ -109,10 +118,8 @@ class Map:
             The map with the given ``tag``.
         """
         try:
-            # build the tag -> map dict from MAPS every time because
-            # we don't want to have to maintain it's state during retag
-            existing_maps_by_tag = {map.tag: map for map in MAPS}
-            return existing_maps_by_tag[tag]
+            # if we already have this map in memory, return that object instead
+            return maps_by_tag()[tag]
         except KeyError:
             try:
                 uid = uuid.UUID(tags.tag_file_path(tag).read_text())
