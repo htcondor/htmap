@@ -46,3 +46,25 @@ def test_maps_are_done_after_wait_using_all(cli):
     result = cli(['wait', '--all'])
 
     assert all(m.is_done for m in maps)
+
+
+def test_maps_wait_message_has_all_tags(cli):
+    maps = [
+        htmap.map(str, range(1)),
+        htmap.map(str, range(1)),
+    ]
+
+    result = cli(['wait', *(m.tag for m in maps)])
+
+    assert all(m.tag in result.output for m in maps)
+
+
+def test_maps_wait_message_has_all_tags_using_all(cli):
+    maps = [
+        htmap.map(str, range(1)),
+        htmap.map(str, range(1)),
+    ]
+
+    result = cli(['wait', '--all'])
+
+    assert all(m.tag in result.output for m in maps)

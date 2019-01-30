@@ -46,3 +46,25 @@ def test_remove_all(cli):
     result = cli(['remove', '--all'])
 
     assert all(m.is_removed for m in maps)
+
+
+def test_remove_multiple_maps_message_has_tags(cli):
+    maps = [
+        htmap.map(str, range(1)),
+        htmap.map(str, range(1)),
+    ]
+
+    result = cli(['remove', *(m.tag for m in maps)])
+
+    assert all(m.tag in result.output for m in maps)
+
+
+def test_remove_all_message_has_tags(cli):
+    maps = [
+        htmap.map(str, range(1)),
+        htmap.map(str, range(1)),
+    ]
+
+    result = cli(['remove', '--all'])
+
+    assert all(m.tag in result.output for m in maps)
