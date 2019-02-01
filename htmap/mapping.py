@@ -280,11 +280,21 @@ def create_map(
 
     logger.debug(f'creating map {tag}...')
 
+    if map_options is None:
+        map_options = options.MapOptions()
+
     uid = uuid.uuid4()
     map_dir = map_dir_path(uid)
     try:
         make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
+        args_and_kwargs, extra_input_files = process_args_and_kwargs(args_and_kwargs)
+
+        if map_options.input_files is None and len(extra_input_files) > 0:
+            map_options.input_files = [[] for _ in range(len(extra_input_files))]
+        for tif, extra in zip(map_options.input_files, extra_input_files):
+            tif.extend(extra)
+
         num_components = htio.save_inputs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
@@ -403,3 +413,23 @@ def zip_args_and_kwargs(
                 iterators[i] = itertools.repeat(fills[i])  # replace the iterator
                 values.append(fills[i])  # for this iteration, insert fills[i] manually
         yield tuple(values)
+
+
+def process_args_and_kwargs(args_and_kwargs):
+    processed = []
+    extra_input_files = []
+    for args, kwargs in args_and_kwargs:
+        accumulator = []
+        args = tuple(_check_for_input_files(arg, accumulator) for arg in args)
+
+        processed.append((args, kwargs))
+        extra_input_files.append(accumulator)
+
+    return processed, extra_input_files
+
+
+def _check_for_input_files(maybe_path, accumulator):
+    if isinstance(maybe_path, Path):
+        accumulator.append(maybe_path)
+        return Path('.') / maybe_path.name
+    return maybe_path
