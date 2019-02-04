@@ -23,7 +23,7 @@ import itertools
 
 import htcondor
 
-from . import htio, tags, exceptions, maps, options, settings, names
+from . import htio, tags, exceptions, maps, transfer, options, settings, names
 
 logger = logging.getLogger(__name__)
 
@@ -397,6 +397,8 @@ def zip_args_and_kwargs(
 
     Returns
     -------
+    args_and_kwargs
+        A zipped iterator of tuples (positional arguments) and dictionaries (keyword arguments).
     """
     iterators: List[Iterator] = [iter(args), iter(kwargs)]
     fills = {0: (), 1: {}}
@@ -416,20 +418,38 @@ def zip_args_and_kwargs(
 
 
 def process_args_and_kwargs(args_and_kwargs):
+    """
+    Perform any pre-processing on the positional and keyword arguments.
+
+    Currently checks for files that should be transferred along with the component input.
+    """
     processed = []
     extra_input_files = []
     for args, kwargs in args_and_kwargs:
         accumulator = []
         args = tuple(_check_for_input_files(arg, accumulator) for arg in args)
+        kwargs = {k: _check_for_input_files(v, accumulator) for k, v in kwargs.items()}
 
         processed.append((args, kwargs))
-        extra_input_files.append(accumulator)
+        extra_input_files.append(sorted(set(accumulator)))
 
     return processed, extra_input_files
 
 
-def _check_for_input_files(maybe_path, accumulator):
-    if isinstance(maybe_path, Path):
-        accumulator.append(maybe_path)
-        return Path('.') / maybe_path.name
-    return maybe_path
+def _check_for_input_files(check, accumulator):
+    def normalize(path):
+        accumulator.append(path)
+        return Path('.') / path.name
+
+    if isinstance(check, transfer.TransferPath):
+        return normalize(check)
+    elif isinstance(check, tuple):
+        return tuple(_check_for_input_files(c, accumulator) for c in check)
+    elif isinstance(check, list):
+        return [_check_for_input_files(c, accumulator) for c in check]
+    elif isinstance(check, set):
+        return {_check_for_input_files(c, accumulator) for c in check}
+    elif isinstance(check, dict):
+        return {k: _check_for_input_files(v, accumulator) for k, v in check.items()}
+
+    return check

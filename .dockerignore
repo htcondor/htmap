@@ -8,7 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-docs/build/
+docs/
 develop-eggs/
 dist/
 downloads/
@@ -104,7 +104,9 @@ venv.bak/
 .mypy_cache/
 
 .idea/
-docs/
 
 Dockerfile
 dr
+
+.github/
+.git/

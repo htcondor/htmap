@@ -51,6 +51,7 @@ from .management import (
 )
 from .tags import get_tags
 from .checkpointing import checkpoint
+from .transfer import TransferPath, TransferWindowsPath, TransferPosixPath
 from . import exceptions
 
 from . import _startup
