@@ -288,14 +288,16 @@ def create_map(
     try:
         make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
-        args_and_kwargs, extra_input_files = process_args_and_kwargs(args_and_kwargs)
 
+        args_and_kwargs, extra_input_files = process_args_and_kwargs(args_and_kwargs)
+        num_components = len(args_and_kwargs)
+        if num_components == 0:
+            raise exceptions.EmptyMap()
         if map_options.input_files is None and len(extra_input_files) > 0:
             map_options.input_files = [[] for _ in range(len(extra_input_files))]
         for tif, extra in zip(map_options.input_files, extra_input_files):
             tif.extend(extra)
-
-        num_components = htio.save_inputs(map_dir, args_and_kwargs)
+        htio.save_inputs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
             tag,
