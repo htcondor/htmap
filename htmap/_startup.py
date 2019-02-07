@@ -3,13 +3,16 @@ import logging
 from logging import handlers
 from pathlib import Path
 
-from . import settings
+from . import settings, names
 
 logger = logging.getLogger('htmap')
 
+LOGS_DIR_PATH = Path(settings['HTMAP_DIR']) / names.LOGS_DIR
+
 
 def setup_internal_file_logger():
-    LOG_FILE = Path(settings['HTMAP_DIR']) / 'htmap.log'
+    LOGS_DIR_PATH.mkdir(parents = True, exist_ok = True)
+    LOG_FILE = LOGS_DIR_PATH / 'htmap.log'
     _logfile_handler = handlers.RotatingFileHandler(
         filename = LOG_FILE,
         mode = 'a',

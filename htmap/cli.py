@@ -63,6 +63,7 @@ CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
 )
 def cli(verbose):
     """HTMap command line tools."""
+    logger.debug(f'CLI called with arguments "{" ".join(sys.argv[1:])}"')
     htmap.settings['CLI'] = True
     if verbose:
         _start_htmap_logger()
@@ -510,7 +511,7 @@ def rerun(tag, components, all):
     if components:
         components = [int(c) for c in components.split()]
         with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
-            m.rerun_components(components)
+            m.rerun(components)
             spinner.succeed(f'Reran components {components} of map {tag}')
     elif all:
         with make_spinner(f'Rerunning map {tag} ...') as spinner:
@@ -671,6 +672,17 @@ def path(tag):
     }
 
     click.echo(str(paths[target]))
+
+
+@cli.command()
+def logs():
+    """
+    Echo the path to HTMap's current log file.
+
+    The log file rotates, so if you need to go further back in time,
+    look at the rotated log files (stored next to the current log file).
+    """
+    click.echo(Path(htmap.settings['HTMAP_DIR']) / names.LOGS_DIR / 'htmap.log')
 
 
 def _cli_load(tag: str) -> htmap.Map:

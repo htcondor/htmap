@@ -29,15 +29,6 @@ def test_map_produces_correct_output(mapped_doubler):
 
 
 @pytest.mark.usefixtures('delivery_methods')
-def test_map_with_kwargs_produces_correct_output(mapped_power):
-    n = 3
-    p = 2
-    m = mapped_power.map(range(n), p = p)
-
-    assert list(m) == [x ** p for x in range(n)]
-
-
-@pytest.mark.usefixtures('delivery_methods')
 def test_starmap_produces_correct_output(mapped_power):
     n = 3
     m = mapped_power.starmap(
