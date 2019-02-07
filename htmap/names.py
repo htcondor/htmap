@@ -19,6 +19,7 @@
 # names of directors in the HTMAP_DIR
 MAPS_DIR = 'maps'
 TAGS_DIR = 'tags'
+LOGS_DIR = 'logs'
 REMOVED_TAGS_DIR = '.removed_tags'
 RUN_DIR = 'run'
 
