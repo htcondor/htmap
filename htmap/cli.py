@@ -511,7 +511,7 @@ def rerun(tag, components, all):
     if components:
         components = [int(c) for c in components.split()]
         with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
-            m.rerun_components(components)
+            m.rerun(components)
             spinner.succeed(f'Reran components {components} of map {tag}')
     elif all:
         with make_spinner(f'Rerunning map {tag} ...') as spinner:
