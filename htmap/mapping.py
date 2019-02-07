@@ -54,13 +54,10 @@ def map(
     args: Iterable[Any],
     map_options: Optional[options.MapOptions] = None,
     tag: Optional[str] = None,
-    **kwargs: Any,
 ) -> maps.Map:
     """
     Map a function call over a one-dimensional iterable of arguments.
-    The function must take a single positional argument and any number of keyword arguments.
-
-    The same keyword arguments are passed to *each call*, not mapped over.
+    The function must take exactly one positional argument and no keyword arguments.
 
     Parameters
     ----------
@@ -68,8 +65,6 @@ def map(
         The function to map the arguments over.
     args
         An iterable of arguments to pass to the mapped function.
-    kwargs
-        Any additional keyword arguments are passed as keyword arguments to the mapped function.
     map_options
         An instance of :class:`htmap.MapOptions`.
     tag
@@ -81,7 +76,7 @@ def map(
         A :class:`htmap.Map` representing the map.
     """
     args = ((arg,) for arg in args)
-    args_and_kwargs = zip(args, itertools.repeat(kwargs))
+    args_and_kwargs = zip(args, itertools.repeat({}))
     return create_map(
         tag,
         func,

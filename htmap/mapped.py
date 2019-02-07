@@ -56,7 +56,6 @@ class MappedFunction:
         args: Iterable[Any],
         tag: Optional[str] = None,
         map_options: Optional[options.MapOptions] = None,
-        **kwargs: Any,
     ) -> maps.Map:
         """As :func:`htmap.map`, but the ``func`` argument is the mapped function."""
         if map_options is None:
@@ -67,7 +66,6 @@ class MappedFunction:
             args = args,
             tag = tag,
             map_options = options.MapOptions.merge(map_options, self.map_options),
-            **kwargs,
         )
 
     def starmap(
