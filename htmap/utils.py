@@ -198,3 +198,22 @@ def read_events(maps):
     """Read the events logs of the given maps using a thread pool."""
     with ThreadPoolExecutor() as pool:
         pool.map(lambda map: map._state._read_events(), maps)
+
+
+def is_interactive_session():
+    import __main__ as main
+    return any((
+        bool(getattr(sys, 'ps1', sys.flags.interactive)),  # console sessions
+        not hasattr(main, '__file__'),  # jupyter-like notebooks
+    ))
+
+
+def enable_debug_logging():
+    logger = logging.getLogger('htmap')
+    logger.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(stream = sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+    logger.addHandler(handler)
