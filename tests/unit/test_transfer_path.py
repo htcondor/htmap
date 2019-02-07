@@ -19,12 +19,24 @@ import htmap
 
 
 def test_path_to_transfer_path():
-    Path(htmap.TransferPath('foobar'))
+    assert isinstance(Path(htmap.TransferPath('foobar')), Path)
 
 
 def test_transfer_path_to_path():
-    assert htmap.TransferPath(Path('foobar'))
+    assert isinstance(htmap.TransferPath(Path('foobar')), htmap.TransferPath)
 
 
 def test_transfer_path_isinstance_path():
     assert isinstance(htmap.TransferPath.cwd(), Path)
+
+
+def test_path_is_not_instance_of_transfer_path():
+    assert not isinstance(Path.cwd(), htmap.TransferPath)
+
+
+def test_transfer_path_is_subclass_of_path():
+    assert issubclass(htmap.TransferPath, Path)
+
+
+def path_is_not_subclass_of_transfer_path():
+    assert not issubclass(Path, htmap.TransferPath)

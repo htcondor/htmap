@@ -114,3 +114,51 @@ def test_duplicate_paths(transfer_path):
     m.wait(180)
 
     assert m[0]
+
+
+# NOTE: not all of the possible recursive combinations are tested here
+# (since there are infinitely many of them...)
+# so I've just tested the most obvious ones
+
+def test_path_in_nested_list(tmp_path):
+    @htmap.mapped
+    def func(list_of_list_of_paths):
+        return all(
+            all(p.name in cwd_names() for p in list_of_paths)
+            for list_of_paths in list_of_list_of_paths
+        )
+
+    paths = [
+        htmap.TransferPath(tmp_path / "test-1.txt"),
+        htmap.TransferPath(tmp_path / "test-2.txt"),
+        htmap.TransferPath(tmp_path / "test-3.txt"),
+    ]
+    for p in paths:
+        p.touch()
+
+    m = func.map(args = [[paths]])
+    m.wait(180)
+
+    assert m[0]
+
+
+def test_path_in_nested_dict(tmp_path):
+    @htmap.mapped
+    def func(dict_of_dict_of_paths):
+        return all(
+            all(p.name in cwd_names() for p in dict_of_paths.values())
+            for dict_of_paths in dict_of_dict_of_paths.values()
+        )
+
+    paths = [
+        htmap.TransferPath(tmp_path / "test-1.txt"),
+        htmap.TransferPath(tmp_path / "test-2.txt"),
+        htmap.TransferPath(tmp_path / "test-3.txt"),
+    ]
+    for p in paths:
+        p.touch()
+
+    m = func.map(args = [{'paths': dict(zip(range(len(paths)), paths))}])
+    m.wait(180)
+
+    assert m[0]
