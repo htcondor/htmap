@@ -23,7 +23,7 @@ import itertools
 
 import htcondor
 
-from . import htio, tags, exceptions, maps, transfer, options, settings, names
+from . import htio, tags, exceptions, maps, transfer, options, settings, names, utils
 
 logger = logging.getLogger(__name__)
 
@@ -333,7 +333,9 @@ def create_map(
         if transient:
             m._make_transient()
 
-        logger.info(f'submitted map {tag}')
+        logger.info(f'submitted map {m.tag}')
+        if utils.is_interactive_session():
+            print(f'created map {m.tag} with {len(m)} components')
 
         return m
     except BaseException as e:
