@@ -51,24 +51,15 @@ def save_func(map_dir: Path, func: Callable) -> None:
 def save_inputs(
     map_dir: Path,
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
-) -> int:
+):
     """
     Save the arguments to the mapped function to the map's input directory.
-    Returns the number of inputs to the map.
     """
     base_path = map_dir / names.INPUTS_DIR
-    num_components = 0
     for component, a_and_k in enumerate(args_and_kwargs):
         save_object(a_and_k, base_path / f'{component}.{names.INPUT_EXT}')
 
-        num_components += 1
-
-    if num_components == 0:
-        raise exceptions.EmptyMap()
-
     logger.debug(f'saved args and kwargs in {base_path}')
-
-    return num_components
 
 
 def save_num_components(map_dir: Path, num_components: int) -> None:

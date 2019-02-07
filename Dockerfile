@@ -87,6 +87,6 @@ COPY docker/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 # copy htmap package into container and install it
 # this is the only part that can't be cached against editing the package
 COPY --chown=mapper:mapper . /home/${SUBMIT_USER}/htmap
-RUN chmod +x /home/${SUBMIT_USER}/htmap/docker/entrypoint.sh
 WORKDIR /home/${SUBMIT_USER}/htmap
-RUN pip install --no-cache -e .
+RUN chmod +x /home/${SUBMIT_USER}/htmap/docker/entrypoint.sh \
+ && pip install --no-cache --no-deps -e .

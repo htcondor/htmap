@@ -153,11 +153,8 @@ def create_submit_object_and_itemdata(
     tag: str,
     map_dir: Path,
     num_components: int,
-    map_options: Optional[MapOptions] = None,
+    map_options: MapOptions,
 ) -> Tuple[htcondor.Submit, List[Dict[str, str]]]:
-    if map_options is None:
-        map_options = MapOptions()
-
     run_delivery_setup(
         tag,
         map_dir,

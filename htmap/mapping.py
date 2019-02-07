@@ -23,7 +23,7 @@ import itertools
 
 import htcondor
 
-from . import htio, tags, exceptions, maps, options, settings, names
+from . import htio, tags, exceptions, maps, transfer, options, settings, names
 
 logger = logging.getLogger(__name__)
 
@@ -280,12 +280,24 @@ def create_map(
 
     logger.debug(f'creating map {tag}...')
 
+    if map_options is None:
+        map_options = options.MapOptions()
+
     uid = uuid.uuid4()
     map_dir = map_dir_path(uid)
     try:
         make_map_dir_and_subdirs(map_dir)
         htio.save_func(map_dir, func)
-        num_components = htio.save_inputs(map_dir, args_and_kwargs)
+
+        args_and_kwargs, extra_input_files = process_args_and_kwargs(args_and_kwargs)
+        num_components = len(args_and_kwargs)
+        if num_components == 0:
+            raise exceptions.EmptyMap()
+        if map_options.input_files is None and len(extra_input_files) > 0:
+            map_options.input_files = [[] for _ in range(len(extra_input_files))]
+        for tif, extra in zip(map_options.input_files, extra_input_files):
+            tif.extend(extra)
+        htio.save_inputs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
             tag,
@@ -387,6 +399,8 @@ def zip_args_and_kwargs(
 
     Returns
     -------
+    args_and_kwargs
+        A zipped iterator of tuples (positional arguments) and dictionaries (keyword arguments).
     """
     iterators: List[Iterator] = [iter(args), iter(kwargs)]
     fills = {0: (), 1: {}}
@@ -403,3 +417,45 @@ def zip_args_and_kwargs(
                 iterators[i] = itertools.repeat(fills[i])  # replace the iterator
                 values.append(fills[i])  # for this iteration, insert fills[i] manually
         yield tuple(values)
+
+
+def process_args_and_kwargs(args_and_kwargs):
+    """
+    Perform any pre-processing on the positional and keyword arguments.
+
+    Currently checks for files that should be transferred along with the component input.
+    """
+    processed = []
+    extra_input_files = []
+    for args, kwargs in args_and_kwargs:
+        extra_local_paths = []
+        args = tuple(_check_for_input_files(arg, extra_local_paths) for arg in args)
+        kwargs = {k: _check_for_input_files(v, extra_local_paths) for k, v in kwargs.items()}
+
+        processed.append((args, kwargs))
+        extra_input_files.append(sorted(set(extra_local_paths)))
+
+    return processed, extra_input_files
+
+
+def _normalize(path: transfer.TransferPath, local_paths_accumulator: List[Path]):
+    """Helper function which replaces htmap.TransferPath with Path"""
+    local_paths_accumulator.append(path)
+    return Path('.') / path.name
+
+
+def _check_for_input_files(object_to_check: Any, local_paths_accumulator: List[Path]):
+    """
+    Descends recursively through primitive containers or top-level function arguments and keyword arguments, looking for :class:`htmap.TransferPath` objects.
+    When it encounters one, it adds the local path to the accumulator and replaces the path in the container with the appropriate path for the scratch directory on the execute node.
+    """
+    if isinstance(object_to_check, transfer.TransferPath):
+        return _normalize(object_to_check, local_paths_accumulator)
+
+    # look inside built-in containers recursively
+    elif isinstance(object_to_check, (list, tuple, set)):
+        return type(object_to_check)(_check_for_input_files(c, local_paths_accumulator) for c in object_to_check)
+    elif isinstance(object_to_check, dict):
+        return {k: _check_for_input_files(v, local_paths_accumulator) for k, v in object_to_check.items()}
+
+    return object_to_check
