@@ -54,6 +54,7 @@ COPY binder/condor_config.local /etc/condor/condor_config.local
 
 USER ${NB_USER}
 COPY . ${HOME}/htmap
+COPY docs/source/tutorials ${HOME}/tutorials
 USER root
 RUN chown -R ${NB_UID} ${HOME}
 USER ${NB_USER}
