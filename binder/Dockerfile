@@ -34,15 +34,15 @@ USER root
 COPY docker/condor_config.local /etc/condor/condor_config.local
 COPY . ${HOME}/htmap
 COPY docs/source/tutorials ${HOME}/tutorials
-RUN chown -R ${NB_UID} ${HOME}
+RUN chown -R ${NB_UID} ${HOME} /
+ && chmod +x ${HOME}/htmap/docker/entrypoint.sh
 
 USER ${NB_USER}
 RUN conda config --add channels conda-canary \
- && conda update -y --all \
+ && conda update -y conda \
  && conda clean -y --all \
  && pip install nbstripout \
  && nbstripout ${HOME}/tutorials/* \
- && chmod +x ${HOME}/htmap/docker/entrypoint.sh \
  && pip install -e ${HOME}/htmap
 
 ENTRYPOINT ["htmap/docker/entrypoint.sh"]
