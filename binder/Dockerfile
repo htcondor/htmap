@@ -25,8 +25,8 @@ RUN apt-get update -qq \
  && apt-get install -qq gnupg vim less git  \
  && wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
  && echo "deb  http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
- && apt-fast -y update \
- && apt-fast -y install htcondor \
+ && apt-get -y update \
+ && apt-get -y install htcondor \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
