@@ -49,8 +49,8 @@ RUN conda config --add channels conda-canary \
 
 USER root
 
-COPY start-htcondor.sh /usr/./local/bin/before-notebook.d/
-COPY condor_config.local /etc/condor/condor_config.local
+COPY binder/start-htcondor.sh /usr/./local/bin/before-notebook.d/
+COPY binder/condor_config.local /etc/condor/condor_config.local
 
 RUN mkdir -p /usr/local/bin/before-notebook.d \
   && pip install --no-cache git+https://github.com/htcondor/htmap.git
