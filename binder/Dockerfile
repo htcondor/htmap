@@ -49,7 +49,6 @@ RUN conda config --add channels conda-canary \
 
 USER root
 
-COPY binder/start-htcondor.sh /usr/./local/bin/before-notebook.d/
 COPY binder/condor_config.local /etc/condor/condor_config.local
 
 USER ${NB_USER}
@@ -59,4 +58,7 @@ USER root
 RUN chown -R ${NB_UID} ${HOME}
 USER ${NB_USER}
 
-RUN pip install -e ${HOME}/htmap
+RUN chmod +x ${HOME}/htmap/docker/entrypoint.sh \
+ && pip install -e ${HOME}/htmap
+
+ENTRYPOINT ["htmap/docker/entrypoint.sh"]
