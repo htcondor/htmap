@@ -38,7 +38,7 @@ RUN chown -R ${NB_UID} ${HOME}
 
 USER ${NB_USER}
 RUN conda config --add channels conda-canary \
- && conda update -y -all \
+ && conda update -y --all \
  && conda clean -y --all \
  && pip install nbstripout \
  && nbstripout ${HOME}/tutorials/* \
