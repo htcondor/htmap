@@ -52,8 +52,10 @@ USER root
 COPY binder/start-htcondor.sh /usr/./local/bin/before-notebook.d/
 COPY binder/condor_config.local /etc/condor/condor_config.local
 
-RUN mkdir -p /usr/local/bin/before-notebook.d \
-  && pip install --no-cache git+https://github.com/htcondor/htmap.git
+USER ${NB_USER}
+COPY . ${HOME}/htmap
+USER root
+RUN chown -R ${NB_UID} ${HOME}
+USER ${NB_USER}
 
-USER $NB_UID
-
+RUN pip install -e ${HOME}/htmap
