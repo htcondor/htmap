@@ -32,7 +32,8 @@ RUN apt-get update -qq \
  && apt-get install -qq gnupg vim less git \
  && wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
  && echo "deb  http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
- && apt-get update && apt-get -qq install htcondor \
+ && apt-get update \
+ && apt-get -qq install htcondor \
  && apt-get clean -qq \
  && rm -rf /var/lib/apt/lists/*
 
@@ -54,11 +55,12 @@ COPY binder/condor_config.local /etc/condor/condor_config.local
 USER ${NB_USER}
 COPY . ${HOME}/htmap
 COPY docs/source/tutorials ${HOME}/tutorials
+RUN pip install nbstripout \
+ && nbstripout ${HOME}/tutorials/* \
+ && chmod +x ${HOME}/htmap/docker/entrypoint.sh \
+ && pip install -e ${HOME}/htmap
 USER root
 RUN chown -R ${NB_UID} ${HOME}
 USER ${NB_USER}
-
-RUN chmod +x ${HOME}/htmap/docker/entrypoint.sh \
- && pip install -e ${HOME}/htmap
 
 ENTRYPOINT ["htmap/docker/entrypoint.sh"]
