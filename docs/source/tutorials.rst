@@ -1,6 +1,14 @@
 Tutorials
 =========
 
+.. attention::
+
+    The most convenient way to go through these tutorials is through Binder, which requires no setup on your part.
+
+    .. image:: https://mybinder.org/badge_logo.svg
+       :target: https://mybinder.org/v2/gh/htcondor/htmap/master?urlpath=lab/tree/tutorials/first-steps.ipynb
+
+
 :doc:`tutorials/first-steps`
    If this is your first time using HTMap, start here!
 

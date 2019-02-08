@@ -34,13 +34,11 @@ USER root
 COPY docker/condor_config.local /etc/condor/condor_config.local
 COPY . ${HOME}/htmap
 COPY docs/source/tutorials ${HOME}/tutorials
-
-USER root
 RUN chown -R ${NB_UID} ${HOME}
 
 USER ${NB_USER}
 RUN conda config --add channels conda-canary \
- && conda update -y -n base conda \
+ && conda update -y -all \
  && conda clean -y --all \
  && pip install nbstripout \
  && nbstripout ${HOME}/tutorials/* \
