@@ -49,18 +49,19 @@ RUN conda config --add channels conda-canary \
  && conda update -n base conda
 
 USER root
-
 COPY binder/condor_config.local /etc/condor/condor_config.local
 
 USER ${NB_USER}
 COPY . ${HOME}/htmap
 COPY docs/source/tutorials ${HOME}/tutorials
+
+USER root
+RUN chown -R ${NB_UID} ${HOME}
+
+USER ${NB_USER}
 RUN pip install nbstripout \
  && nbstripout ${HOME}/tutorials/* \
  && chmod +x ${HOME}/htmap/docker/entrypoint.sh \
  && pip install -e ${HOME}/htmap
-USER root
-RUN chown -R ${NB_UID} ${HOME}
-USER ${NB_USER}
 
 ENTRYPOINT ["htmap/docker/entrypoint.sh"]
