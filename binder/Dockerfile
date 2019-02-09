@@ -17,10 +17,10 @@ FROM jupyter/scipy-notebook:6c6ebe8734e9
 ARG HTCONDOR_VERSION=8.8
 ENV NB_USER="jovyan" \
     NB_UID="1000" \
-    NB_GID="100"
+    NB_GID="100" \
+    DEBIAN_FRONTEND=noninteractive
 
 USER root
-ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update -qq \
  && apt-get install -qq gnupg vim less git  \
  && wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
@@ -29,18 +29,15 @@ RUN apt-get update -qq \
  && apt-get -y install htcondor \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
-
-USER root
 COPY docker/condor_config.local /etc/condor/condor_config.local
+COPY docker/.htmaprc ${HOME}/.htmaprc
 COPY . ${HOME}/htmap
 COPY docs/source/tutorials ${HOME}/tutorials
 RUN chown -R ${NB_UID} ${HOME} \
  && chmod +x ${HOME}/htmap/docker/entrypoint.sh
 
 USER ${NB_USER}
-RUN conda config --add channels conda-canary \
- && conda update -y conda \
- && conda clean -y --all \
+RUN conda clean -y --all \
  && pip install nbstripout \
  && nbstripout ${HOME}/tutorials/* \
  && pip install -e ${HOME}/htmap
