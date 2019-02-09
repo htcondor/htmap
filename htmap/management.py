@@ -23,7 +23,6 @@ import json
 import csv
 import io
 import textwrap
-import sys
 
 from . import maps, tags, mapping, utils, state, settings, exceptions
 

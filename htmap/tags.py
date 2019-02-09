@@ -1,4 +1,5 @@
 import random
+import string
 from pathlib import Path
 from typing import Tuple
 
@@ -56,23 +57,39 @@ ADJECTIVES = (
     'burst',
     'busy',
     'calm',
+    'clever',
     'coy',
+    'curly',
     'dark',
     'deep',
     'dire',
+    'dizzy',
+    'dry',
+    'fair',
+    'fancy',
+    'fierce',
     'firm',
+    'fuzzy',
+    'gentle',
     'green',
     'happy',
     'happy',
     'harsh',
+    'hollow',
+    'husky',
     'jaded',
     'light',
     'prim',
     'proper',
     'proud',
+    'puny',
     'quick',
+    'rapid',
+    'rare',
     'red',
+    'ripe',
     'scratchy',
+    'shaky',
     'shallow',
     'short',
     'sleek',
@@ -81,6 +98,7 @@ ADJECTIVES = (
     'snide',
     'soft',
     'soggy',
+    'super',
     'sweet',
     'swift',
     'tall',
@@ -96,46 +114,71 @@ ADJECTIVES = (
     'wise',
 )
 NOUNS = (
+    'actor',
     'apple',
+    'area',
     'axe',
     'badge',
     'beak',
     'bird',
-    'bird',
+    'box',
     'cake',
     'car',
     'cat',
-    'cat',
     'chair',
+    'city',
     'coil',
     'cookie',
     'dog',
     'drone',
     'echo',
+    'exam',
+    'fact',
     'farm',
+    'foot',
     'frog',
+    'goal',
+    'hand',
     'heel',
+    'idea',
     'jaw',
+    'law',
+    'map',
+    'note',
+    'oven',
+    'poem',
     'rig',
     'ring',
+    'river',
     'road',
     'robe',
+    'rock',
     'scone',
     'sock',
     'stick',
+    'stream',
     'table',
+    'tooth',
+    'town',
     'tub',
+    'year',
     'zebra',
 )
 
 
 def random_tag() -> str:
-    existing_tags = set(path.name for path in tags_dir().iterdir())
+    existing_tags = set(get_tags())
 
     for attempt in range(50):
         adj1, adj2 = random.sample(ADJECTIVES, k = 2)
         noun = random.choice(NOUNS)
         tag = f'{adj1}-{adj2}-{noun}'
+        if tag not in existing_tags:
+            return tag
+
+    options = string.ascii_letters + string.digits
+    for attempt in range(1_000_000):
+        tag = ''.join(random.choices(options, k = 6))
         if tag not in existing_tags:
             return tag
 
