@@ -21,14 +21,21 @@ ENV NB_USER="jovyan" \
     DEBIAN_FRONTEND=noninteractive
 
 USER root
-RUN apt-get update -qq \
- && apt-get install -qq gnupg vim less git  \
+
+RUN apt-get update \
+ && apt-get -y install gnupg vim less git  \
  && wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
  && echo "deb  http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
  && apt-get -y update \
  && apt-get -y install htcondor \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
+
+RUN conda config --add channels conda-canary \
+ && conda update -y conda \
+ && conda clean -y --all \
+ && pip install --no-cache-dir nbstripout
+
 COPY docker/condor_config.local /etc/condor/condor_config.local
 COPY docker/.htmaprc ${HOME}/.htmaprc
 COPY . ${HOME}/htmap
@@ -37,9 +44,7 @@ RUN chown -R ${NB_UID} ${HOME} \
  && chmod +x ${HOME}/htmap/docker/entrypoint.sh
 
 USER ${NB_USER}
-RUN conda clean -y --all \
- && pip install nbstripout \
- && nbstripout ${HOME}/tutorials/* \
- && pip install -e ${HOME}/htmap
+RUN nbstripout ${HOME}/tutorials/* \
+ && pip install --no-cache-dir -e ${HOME}/htmap
 
 ENTRYPOINT ["htmap/docker/entrypoint.sh"]
