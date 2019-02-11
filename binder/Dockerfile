@@ -33,18 +33,19 @@ RUN apt-get update \
 
 RUN conda config --add channels conda-canary \
  && conda update -y conda \
- && conda clean -y --all \
  && pip install --no-cache-dir nbstripout
+ && conda clean -y --all \
 
-COPY docker/condor_config.local /etc/condor/condor_config.local
-COPY docker/.htmaprc ${HOME}/.htmaprc
+COPY binder/condor_config.local /etc/condor/condor_config.local
+COPY binder/.htmaprc ${HOME}/.htmaprc
 COPY . ${HOME}/htmap
 COPY docs/source/tutorials ${HOME}/tutorials
 RUN chown -R ${NB_UID} ${HOME} \
- && chmod +x ${HOME}/htmap/docker/entrypoint.sh
+ && chmod +x ${HOME}/htmap/binder/entrypoint.sh
 
 USER ${NB_USER}
 RUN nbstripout ${HOME}/tutorials/* \
  && pip install --no-cache-dir -e ${HOME}/htmap
 
-ENTRYPOINT ["htmap/docker/entrypoint.sh"]
+ENTRYPOINT ["htmap/binder/entrypoint.sh"]
+CMD ["bash"]
