@@ -34,14 +34,14 @@ RUN apt-get update \
 COPY binder/condor_config.local /etc/condor/condor_config.local
 COPY binder/.htmaprc ${HOME}/.htmaprc
 COPY . ${HOME}/htmap
-COPY docs/source/tutorials ${HOME}/tutorials
 RUN pip install --no-cache-dir nbstripout \
+ && cp -r ${HOME}/htmap/docs/source/tutorials ${HOME}/tutorials \
+ && nbstripout ${HOME}/tutorials/* \
+ && pip install --no-cache-dir -e ${HOME}/htmap \
  && chown -R ${NB_UID} ${HOME} \
  && chmod +x ${HOME}/htmap/binder/entrypoint.sh
 
 USER ${NB_USER}
-RUN nbstripout ${HOME}/tutorials/* \
- && pip install --no-cache-dir -e ${HOME}/htmap
 
 ENTRYPOINT ["htmap/binder/entrypoint.sh"]
 CMD ["bash"]

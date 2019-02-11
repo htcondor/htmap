@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 CONTAINER_TAG=binder-test
 
 docker build -t ${CONTAINER_TAG} --file binder/Dockerfile .
