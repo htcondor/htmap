@@ -16,14 +16,12 @@
 FROM jupyter/scipy-notebook:6c6ebe8734e9
 ARG HTCONDOR_VERSION=8.8
 ENV NB_USER="jovyan" \
-    NB_UID="1000" \
-    NB_GID="100" \
     DEBIAN_FRONTEND=noninteractive
 
 USER root
 
 RUN apt-get update \
- && apt-get -y install gnupg vim less git  \
+ && apt-get -y install --no-install-recommends gnupg git  \
  && wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
  && echo "deb  http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
  && apt-get -y update \
@@ -44,4 +42,3 @@ RUN pip install --no-cache-dir nbstripout \
 USER ${NB_USER}
 
 ENTRYPOINT ["htmap/binder/entrypoint.sh"]
-CMD ["bash"]

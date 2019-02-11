@@ -39,7 +39,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # install utils and dependendencies
-RUN apt-fast -y update \
+RUN apt-fast update \
  && apt-fast -y install --no-install-recommends sudo vim less build-essential git gnupg wget ca-certificates locales \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/* \
