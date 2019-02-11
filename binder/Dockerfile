@@ -31,16 +31,12 @@ RUN apt-get update \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
-RUN conda config --add channels conda-canary \
- && conda update -y conda \
- && pip install --no-cache-dir nbstripout \
- && conda clean -y --all
-
 COPY binder/condor_config.local /etc/condor/condor_config.local
 COPY binder/.htmaprc ${HOME}/.htmaprc
 COPY . ${HOME}/htmap
 COPY docs/source/tutorials ${HOME}/tutorials
-RUN chown -R ${NB_UID} ${HOME} \
+RUN pip install --no-cache-dir nbstripout \
+ && chown -R ${NB_UID} ${HOME} \
  && chmod +x ${HOME}/htmap/binder/entrypoint.sh
 
 USER ${NB_USER}
