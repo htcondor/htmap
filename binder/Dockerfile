@@ -33,8 +33,8 @@ RUN apt-get update \
 
 RUN conda config --add channels conda-canary \
  && conda update -y conda \
- && pip install --no-cache-dir nbstripout
- && conda clean -y --all \
+ && pip install --no-cache-dir nbstripout \
+ && conda clean -y --all
 
 COPY binder/condor_config.local /etc/condor/condor_config.local
 COPY binder/.htmaprc ${HOME}/.htmaprc
