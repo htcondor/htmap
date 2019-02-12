@@ -4,5 +4,5 @@ CONTAINER_TAG=htmap-tests
 
 set -e
 echo "Building HTMap testing container..."
-docker build --quiet -t ${CONTAINER_TAG} .
+docker build --quiet -t ${CONTAINER_TAG} --file docker/Dockerfile .
 docker run -it --rm ${CONTAINER_TAG} $@
