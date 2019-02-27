@@ -16,6 +16,8 @@
 # this dockerfile builds a test environment for HTMap
 
 FROM ubuntu:bionic
+
+# switch to root to do root-level config
 USER root
 
 # build config
@@ -31,14 +33,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # faster container builds
 RUN apt-get update \
- && apt-get -y install software-properties-common \
+ && apt-get -y install --no-install-recommends software-properties-common \
  && add-apt-repository ppa:apt-fast/stable \
  && apt-get update \
  && apt-get -y install apt-fast \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
-# install utils and dependendencies
+# install utils and dependencies
 RUN apt-fast update \
  && apt-fast -y install --no-install-recommends sudo vim less build-essential git gnupg wget ca-certificates locales \
  && apt-get -y clean \
@@ -50,7 +52,7 @@ RUN apt-fast update \
 RUN wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
  && echo "deb http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
  && apt-fast -y update \
- && apt-fast -y install htcondor \
+ && apt-fast -y install --no-install-recommends htcondor \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
@@ -60,9 +62,12 @@ ENV CONDA_DIR=/home/${SUBMIT_USER}/conda
 ENV PATH=${CONDA_DIR}/bin:${PATH}
 RUN groupadd ${SUBMIT_USER} \
  && useradd -m -g ${SUBMIT_USER} ${SUBMIT_USER}
+
+# switch to submit user, don't need root anymore
 USER ${SUBMIT_USER}
 
-# install miniconda version specified in config
+# install miniconda and python version specified in config
+# (and ipython, which is nice for debugging inside the container)
 RUN cd /tmp \
  && wget --quiet https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh \
  && bash Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -f -b -p $CONDA_DIR \
@@ -70,17 +75,18 @@ RUN cd /tmp \
  && conda install python=${PYTHON_VERSION} ipython \
  && conda clean -y -all
 
-# install htmap dependencies early for caching
+# install htmap dependencies early for docker build caching
 COPY requirements.txt /home/${SUBMIT_USER}/requirements.txt
 COPY requirements_dev.txt /home/${SUBMIT_USER}/requirements_dev.txt
 RUN pip install --no-cache -r /home/${SUBMIT_USER}/requirements_dev.txt \
  && rm /home/${SUBMIT_USER}/requirements*
 
-# set default command
+# set default entrypoint and command
+# the entrypoint is critical: it starts HTCondor in the container
 ENTRYPOINT ["docker/entrypoint.sh"]
 CMD ["pytest"]
 
-# copy HTCondor and HTMap configs into place
+# copy HTCondor and HTMap testing configs into place
 COPY docker/condor_config.local /etc/condor/condor_config.local
 COPY docker/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 
@@ -88,5 +94,5 @@ COPY docker/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 # this is the only part that can't be cached against editing the package
 COPY --chown=mapper:mapper . /home/${SUBMIT_USER}/htmap
 WORKDIR /home/${SUBMIT_USER}/htmap
-RUN chmod +x /home/${SUBMIT_USER}/htmap/docker/entrypoint.sh \
+RUN chmod +x /home/${SUBMIT_USER}/htmap/docker/entrypoint.sh /home/${SUBMIT_USER}/htmap/tests/travis.sh \
  && pip install --no-cache --no-deps -e .
