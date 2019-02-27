@@ -19,9 +19,9 @@ FROM ubuntu:bionic
 USER root
 
 # build config
-ARG HTCONDOR_VERSION=8.8
-ARG MINICONDA_VERSION=4.5.11
 ARG PYTHON_VERSION=3.6
+ARG HTCONDOR_VERSION=8.8
+ARG MINICONDA_VERSION=latest
 
 # environment setup
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -48,7 +48,7 @@ RUN apt-fast update \
 
 # install HTCondor version specified in config
 RUN wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
- && echo "deb  http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
+ && echo "deb http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
  && apt-fast -y update \
  && apt-fast -y install htcondor \
  && apt-get -y clean \

@@ -8,8 +8,7 @@ python:
   - "3.6"
   - "3.7"
 env:
-  - HTCONDOR_VERSION=8.8.0
-  - HTCONDOR_VERSION=8.8.1
+  - HTCONDOR_VERSION=8.8
 
 install:
   - docker build -t htmap-test --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=$TRAVIS_PYTHON_VERSION .
