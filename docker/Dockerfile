@@ -45,8 +45,8 @@ RUN apt-fast update \
  && apt-fast -y install --no-install-recommends sudo vim less build-essential git gnupg wget ca-certificates locales \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/* \
- && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-    locale-gen
+ && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+ && locale-gen
 
 # install HTCondor version specified in config
 RUN wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
