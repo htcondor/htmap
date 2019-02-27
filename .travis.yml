@@ -1,3 +1,4 @@
+dist: xenial
 sudo: required
 services:
   - docker
@@ -11,7 +12,7 @@ env:
   - HTCONDOR_VERSION=8.8.1
 
 install:
-  - docker build -q -t htmap-test --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=$TRAVIS_PYTHON_VERSION .
+  - docker build -t htmap-test --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=$TRAVIS_PYTHON_VERSION .
 
 script:
   - docker run htmap-test tests/travis.sh
