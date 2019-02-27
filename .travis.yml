@@ -1,14 +1,17 @@
 sudo: required
+services:
+  - docker
 
 language: python
 python:
   - "3.6"
-
-services:
-  - docker
+  - "3.7"
+env:
+  - HTCONDOR_VERSION=8.8.0
+  - HTCONDOR_VERSION=8.8.1
 
 install:
-  - docker build -q -t htmap-test --file docker/Dockerfile .
+  - docker build -q -t htmap-test --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=$TRAVIS_PYTHON_VERSION .
 
 script:
-  - docker run htmap-test bash -e -c "pytest -n 10 --cov ; codecov -t 492519e2-1bcf-4e8a-8a3e-e28be5d9de8d"
+  - docker run htmap-test tests/travis.sh
