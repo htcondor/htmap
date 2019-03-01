@@ -668,7 +668,7 @@ def path(tag):
         'logs': map_dir / names.JOB_LOGS_DIR,
         'inputs': map_dir / names.INPUTS_DIR,
         'outputs': map_dir / names.OUTPUTS_DIR,
-        'tag': Path(htmap.settings('HTMAP_DIR')) / names.TAGS_DIR / map.tag,
+        'tag': Path(htmap.settings['HTMAP_DIR']) / names.TAGS_DIR / map.tag,
     }
 
     click.echo(str(paths[target]))
