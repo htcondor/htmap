@@ -34,7 +34,7 @@ from .mapping import (
 from .mapped import mapped, MappedFunction
 from .maps import Map
 from .holds import ComponentHold
-from .errors import ExecutionError
+from .errors import ComponentError
 from .state import ComponentStatus
 from .options import MapOptions, register_delivery_mechanism
 from .management import (

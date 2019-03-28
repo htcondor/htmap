@@ -299,7 +299,7 @@ class Map:
         self,
         component: int,
         timeout: utils.Timeout = None,
-    ) -> errors.ExecutionError:
+    ) -> errors.ComponentError:
         """
         Try to load a map component as if it failed.
         If the component actually succeeded, raise :class:`ExpectedError`.
@@ -311,7 +311,7 @@ class Map:
         if status == 'OK':
             raise exceptions.ExpectedError(f'tried to load component {component} as an error, but it succeeded')
         elif status == 'ERR':
-            return errors.ExecutionError._from_raw_error(self, next(status_and_raw_error))
+            return errors.ComponentError._from_raw_error(self, next(status_and_raw_error))
         else:
             raise exceptions.InvalidOutputStatus(f'output status {status} is not valid')
 
@@ -321,7 +321,9 @@ class Map:
         timeout: utils.Timeout = None,
     ) -> Any:
         """
-        Return the output associated with the input index.
+        Return the output associated with the input component index.
+        If the component experienced an execution error, this will raise :class:`htmap.exceptions.MapComponentError`.
+        Use :meth:`get_err`, :meth:`errors`, :meth:`error_reports` to see what went wrong!
 
         Parameters
         ----------
@@ -341,7 +343,19 @@ class Map:
         self,
         component: int,
         timeout: utils.Timeout = None,
-    ) -> errors.ExecutionError:
+    ) -> errors.ComponentError:
+        """
+        Return the error associated with the input component index.
+        If the component actually succeeded, this will raise :class:`htmap.exceptions.ExpectedError`.
+
+        Parameters
+        ----------
+        component
+            The index of the input to get the output for.
+        timeout
+            How long to wait for the output to exist before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+        """
         return self._load_error(component, timeout = timeout)
 
     def __iter__(self) -> Iterable[Any]:
@@ -551,11 +565,15 @@ class Map:
 
     @property
     def holds(self) -> Dict[int, holds.ComponentHold]:
-        """Return a dictionary that maps component indices to their :class:`Hold` (if they are held)."""
+        """
+        A dictionary of component indices to their :class:`Hold` (if they are held).
+        """
         return self._state.holds
 
     def hold_report(self) -> str:
-        """Return a string containing a table describing any held components."""
+        """
+        Return a string containing a formatted table describing any held components.
+        """
         headers = ['Component', 'Code', 'Hold Reason']
         rows = [
             (component, hold.code, hold.reason)
@@ -572,7 +590,11 @@ class Map:
         )
 
     @property
-    def errors(self) -> Dict[int, errors.ExecutionError]:
+    def errors(self) -> Dict[int, errors.ComponentError]:
+        """
+        A dictionary of component indices to their :class:`ExecutionError`
+        (if that component experienced an error).
+        """
         err = {}
         for idx in self.components:
             try:
@@ -583,7 +605,9 @@ class Map:
         return err
 
     def error_reports(self) -> Iterator[str]:
-        """Yields the error reports for any components that experienced an error during execution."""
+        """
+        Yields the error reports for any components that experienced an error during execution.
+        """
         for idx in self.components:
             try:
                 yield self.get_err(idx).report()
@@ -861,6 +885,7 @@ class Map:
 
     @property
     def is_transient(self) -> bool:
+        """``True`` is the map is transient, ``False`` otherwise."""
         return self._transient_marker.exists()
 
     def _make_transient(self):

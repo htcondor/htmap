@@ -13,14 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import NamedTuple
 
-
-class ComponentHold(NamedTuple):
+class ComponentHold:
     """Represents an HTCondor hold on a map component."""
 
-    code: int
-    reason: str
+    def __init__(self, code: int, reason: str):
+        """
+        Parameters
+        ----------
+        code
+            The HTCondor ``HoldReasonCode``.
+        reason
+            The HTCondor hold reason.
+        """
+        self.code = code
+        self.reason = reason
 
     def __str__(self):
         return f'[{self.code}] {self.reason}'
