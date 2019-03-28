@@ -29,6 +29,13 @@ def mapped_div_by_x():
     return div_by_x
 
 
+def test_waiting_on_errored_component_raises():
+    m = htmap.map(lambda x: 1 / x, [0])
+
+    with pytest.raises(htmap.exceptions.MapComponentHeld):
+        m.wait(timeout = 180)
+
+
 def test_iterating_over_errored_component_raises(mapped_div_by_x):
     m = mapped_div_by_x.map(range(1))
 

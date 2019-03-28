@@ -37,11 +37,13 @@ class ComponentStatus(utils.StrEnum):
     COMPLETED = 'COMPLETED'
     HELD = 'HELD'
     SUSPENDED = 'SUSPENDED'
+    ERRORED = 'ERRORED'
 
     @classmethod
     def display_statuses(cls) -> Tuple['ComponentStatus', ...]:
         return (
             cls.HELD,
+            cls.ERRORED,
             cls.IDLE,
             cls.RUNNING,
             cls.COMPLETED,
@@ -131,6 +133,12 @@ class MapState:
                     self._holds[component] = h
 
                 new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
+
+                # the component has *terminated*, but did it error?
+                if new_status is ComponentStatus.COMPLETED:
+                    if self.map._peek_status(component) == 'ERR':
+                        new_status = ComponentStatus.ERRORED
+
                 if new_status is not None:
                     self._component_statuses[component] = new_status
 

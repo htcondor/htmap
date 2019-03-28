@@ -208,6 +208,10 @@ class Map:
         """
         Wait until all output associated with this :class:`Map` is available.
 
+        If any components in the map are held or experience an execution error,
+        this method will raise an exception (:class:`htmap.exceptions.MapComponentHeld`
+        or :class:`htmap.exceptions.MapComponentError`, respectively).
+
         Parameters
         ----------
         timeout
@@ -245,6 +249,8 @@ class Map:
                 for component, status in enumerate(self.component_statuses):
                     if status is state.ComponentStatus.HELD:
                         raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} was held: {self.holds[component]}')
+                    elif status is state.ComponentStatus.ERRORED:
+                        raise exceptions.MapComponentError(f'component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}')
 
                 if timeout is not None and time.time() - timeout > start_time:
                     raise exceptions.TimeoutError(f'timeout while waiting for {self}')
@@ -274,6 +280,15 @@ class Map:
 
     def _load_input(self, component: int) -> Tuple[Tuple[Any], Dict[str, Any]]:
         return htio.load_object(self._input_file_path(component))
+
+    def _peek_status(
+        self,
+        component: int,
+    ) -> str:
+        try:
+            return htio.load_object(self._output_file_path(component))
+        except FileNotFoundError as e:
+            raise exceptions.OutputNotFound(f'output for component {component} of map {self.tag} not found') from e
 
     def _load_output(
         self,
