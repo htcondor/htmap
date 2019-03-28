@@ -17,6 +17,26 @@ import textwrap
 
 
 class ComponentError:
+    """
+    Represents an error experienced by a map component during remote execution.
+
+    Attributes
+    ----------
+    map : htmap.Map
+        The :class:`htmap.Map` the component is a part of.
+    component : int
+        The component index from the map.
+    exception_msg : str
+        The raw message string from the remote exception.
+    node_info : tuple
+        A tuple containing information about the HTCondor execute node the component ran on.
+    python_info : tuple
+        A tuple containing information about the Python installation on the execute node.
+    working_dir_contents : List[pathlib.Path]
+        A list of paths in the working directory on the execute node.
+    stack_summary : traceback.StackSummary
+        The Python stack frames at the time of execution, excluding HTMap's own stack frame.
+    """
     def __init__(
         self,
         *,
@@ -37,11 +57,11 @@ class ComponentError:
         self.stack_summary = stack_summary
 
     def __repr__(self):
-        return f'<ComponentError(map = {self.map}, component = {self.component})>'
+        return f'<{self.__class__.__name__}(map = {self.map}, component = {self.component})>'
 
     @classmethod
-    def _from_error(cls, map, error):
-        """Construct a :class:`ComponentError` from a raw component result."""
+    def _from_raw_error(cls, map, error):
+        """Construct a :class:`ComponentError` from a raw component error returned from an execute node."""
         return cls(
             map = map,
             component = error.component,
@@ -100,6 +120,8 @@ class ComponentError:
     def report(self) -> str:
         """
         Return a formatted error report.
+
+        The raw information in this report is available in the attributes of this class.
         """
         lines = [
             f'  Start error report for component {self.component} of map {self.map.tag}  '.center(80, '='),
