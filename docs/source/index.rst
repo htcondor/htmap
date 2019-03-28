@@ -32,7 +32,7 @@ Happy mapping!
    Tutorials on using HTMap.
 
 :doc:`dependencies`
-   Information about how to manage your dependencies.
+   Information about how to manage your what your code depends on (e.g., other Python packages).
 
 :doc:`api`
    Public API documentation.
