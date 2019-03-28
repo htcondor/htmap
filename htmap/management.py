@@ -164,7 +164,7 @@ def _status(
     headers = ['Tag']
     if include_state:
         utils.read_events(maps)
-        headers += [d.short() for d in state.ComponentStatus.display_statuses()]
+        headers += [str(d) for d in state.ComponentStatus.display_statuses()]
     if include_meta:
         headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
 
