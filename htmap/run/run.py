@@ -39,40 +39,12 @@ CHECKPOINT_OLD = '_htmap_old_checkpoint'
 # import cloudpickle goes in the functions that need it directly
 # so that errors are raised later
 
-class ComponentResult:
+
+class ExecutionError:
     def __init__(
         self,
         *,
         component,
-        status,
-    ):
-        self.component = component
-        self.status = status
-
-
-class ComponentOk(ComponentResult):
-    status = 'OK'
-
-    def __init__(
-        self,
-        *,
-        output,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-
-        self.output = output
-
-    def __repr__(self):
-        return '<OK for component {}>'.format(self.component)
-
-
-class ComponentError(ComponentResult):
-    status = 'ERR'
-
-    def __init__(
-        self,
-        *,
         exception_msg,
         node_info,
         python_info,
@@ -80,17 +52,15 @@ class ComponentError(ComponentResult):
         stack_summary,
         **kwargs,
     ):
-        super().__init__(**kwargs)
-
+        self.component = component
         self.exception_msg = exception_msg
-
         self.node_info = node_info
         self.python_info = python_info
         self.working_dir_contents = [str(p.absolute()) for p in working_dir_contents]
         self.stack_summary = stack_summary
 
     def __repr__(self):
-        return '<ERROR for component {}>'.format(self.component)
+        return '<ExecutionError for component {}>'.format(self.component)
 
 
 def get_node_info():
@@ -170,14 +140,15 @@ def load_args_and_kwargs(component):
     return load_object(Path('{}.in'.format(component)))
 
 
-def save_object(obj, path):
+def save_objects(objects, path):
     import cloudpickle
     with gzip.open(path, mode = 'wb') as file:
-        cloudpickle.dump(obj, file)
+        for obj in objects:
+            cloudpickle.dump(obj, file)
 
 
-def save_output(component, result, transfer_dir):
-    save_object(result, transfer_dir / '{}.out'.format(component))
+def save_output(component, status, result_or_error, transfer_dir):
+    save_objects([status, result_or_error], transfer_dir / '{}.out'.format(component))
 
 
 def build_frames(tb):
@@ -246,14 +217,10 @@ def main(component):
         print_run_info(component, func, args, kwargs)
 
         print('\n----- MAP COMPONENT OUTPUT START -----\n')
-        output = func(*args, **kwargs)
+        result_or_error = func(*args, **kwargs)
+        status = 'OK'
         print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
-        result = ComponentOk(
-            component = component,
-            status = 'OK',
-            output = output,
-        )
     except Exception as e:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
 
@@ -261,18 +228,18 @@ def main(component):
         stack_summ = traceback.StackSummary.from_list(build_frames(trace))
         exc_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip()
 
-        result = ComponentError(
+        result_or_error = ExecutionError(
             component = component,
-            status = 'ERR',
             exception_msg = exc_msg,
             stack_summary = stack_summ,
             node_info = node_info,
             python_info = python_info,
             working_dir_contents = contents,
         )
+        status = 'ERR'
 
     clean_and_remake_dir(transfer_dir)
-    save_output(component, result, transfer_dir)
+    save_output(component, status, result_or_error, transfer_dir)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 

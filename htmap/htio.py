@@ -40,6 +40,13 @@ def load_object(path: Path) -> Any:
         return cloudpickle.load(file)
 
 
+def load_objects(path: Path) -> Iterator[Any]:
+    """Deserialize a stream of objects from the file at the given ``path``."""
+    with gzip.open(path, mode = 'rb') as file:
+        while True:
+            yield cloudpickle.load(file)
+
+
 def save_func(map_dir: Path, func: Callable) -> None:
     """Save the mapped function to the map directory."""
     path = map_dir / names.FUNC

@@ -16,7 +16,7 @@
 import textwrap
 
 
-class ComponentError:
+class ExecutionError:
     def __init__(
         self,
         *,
@@ -37,10 +37,10 @@ class ComponentError:
         self.stack_summary = stack_summary
 
     def __repr__(self):
-        return f'<ComponentError(map = {self.map}, component = {self.component})>'
+        return f'<{self.__class__.__name__}(map = {self.map}, component = {self.component})>'
 
     @classmethod
-    def _from_error(cls, map, error):
+    def _from_raw_error(cls, map, error):
         """Construct a :class:`ComponentError` from a raw component result."""
         return cls(
             map = map,

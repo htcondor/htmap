@@ -280,36 +280,40 @@ class Map:
         component: int,
         timeout: utils.Timeout = None,
     ) -> Any:
-        result = self._load_result(component, timeout)
+        """
+        Try to load a map component as if it succeeded.
+        If the component actually failed, raise :class:`MapComponentError`.
+        """
+        self._wait_for_component(component, timeout)
 
-        if result.status == 'OK':
-            return result.output
-        elif result.status == 'ERR':
+        status_and_result = htio.load_objects(self._output_file_path(component))
+        status = next(status_and_result)
+        if status == 'OK':
+            return next(status_and_result)
+        elif status == 'ERR':
             raise exceptions.MapComponentError(f'component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}')
         else:
-            raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
+            raise exceptions.InvalidOutputStatus(f'output status {status} is not valid')
 
     def _load_error(
         self,
         component: int,
         timeout: utils.Timeout = None,
-    ) -> errors.ComponentError:
-        result = self._load_result(component, timeout)
-
-        if result.status == 'OK':
-            raise exceptions.ExpectedError
-        elif result.status == 'ERR':
-            return errors.ComponentError._from_error(map = self, error = result)
-        else:
-            raise exceptions.InvalidOutputStatus(f'output status {result.status} is not valid')
-
-    def _load_result(self, component: int, timeout: utils.Timeout = None):
+    ) -> errors.ExecutionError:
+        """
+        Try to load a map component as if it failed.
+        If the component actually succeeded, raise :class:`ExpectedError`.
+        """
         self._wait_for_component(component, timeout)
 
-        try:
-            return htio.load_object(self._output_file_path(component))
-        except FileNotFoundError:
-            raise exceptions.OutputNotFound(f'Output not found for component {component} of map {self.tag}. Component stderr:\n{self.stderr(component)}')
+        status_and_raw_error = htio.load_objects(self._output_file_path(component))
+        status = next(status_and_raw_error)
+        if status == 'OK':
+            raise exceptions.ExpectedError(f'tried to load component {component} as an error, but it succeeded')
+        elif status == 'ERR':
+            return errors.ExecutionError._from_raw_error(self, next(status_and_raw_error))
+        else:
+            raise exceptions.InvalidOutputStatus(f'output status {status} is not valid')
 
     def get(
         self,
@@ -337,7 +341,7 @@ class Map:
         self,
         component: int,
         timeout: utils.Timeout = None,
-    ) -> errors.ComponentError:
+    ) -> errors.ExecutionError:
         return self._load_error(component, timeout = timeout)
 
     def __iter__(self) -> Iterable[Any]:
@@ -568,7 +572,7 @@ class Map:
         )
 
     @property
-    def errors(self) -> Dict[int, errors.ComponentError]:
+    def errors(self) -> Dict[int, errors.ExecutionError]:
         err = {}
         for idx in self.components:
             try:
