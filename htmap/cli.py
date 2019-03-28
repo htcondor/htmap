@@ -609,12 +609,25 @@ def edit():
     'memory',
     type = int,
 )
-def memory(tag, memory):
-    """Set a map's requested memory (in MB)."""
+@click.option(
+    '--unit',
+    type = click.Choice(['MB', 'GB'], case_sensitive = False),
+    default = 'MB',
+)
+def memory(tag, memory, unit):
+    """Set a map's requested memory."""
     map = _cli_load(tag)
-    with make_spinner(text = f'Setting memory request for map {tag} to {memory} MB') as spinner:
-        map.set_memory(memory)
-        spinner.succeed(f'Setting memory request for map {tag} to {memory} MB')
+    msg = f'memory request for map {tag} to {memory} {unit}'
+
+    multiplier = {
+        'MB': 1,
+        'GB': 1024,
+    }[unit.upper()]
+    memory_in_mb = memory * multiplier
+
+    with make_spinner(text = f'Setting {msg}') as spinner:
+        map.set_memory(memory_in_mb)
+        spinner.succeed(f'Set {msg}')
 
 
 @edit.command()
@@ -623,12 +636,26 @@ def memory(tag, memory):
     'disk',
     type = int,
 )
-def disk(tag, disk):
-    """Set a map's requested disk (in KB)."""
+@click.option(
+    '--unit',
+    type = click.Choice(['KB', 'MB', 'GB'], case_sensitive = False),
+    default = 'GB',
+)
+def disk(tag, disk, unit):
+    """Set a map's requested disk."""
     map = _cli_load(tag)
-    with make_spinner(text = f'Setting memory request for map {tag} to {disk} KB') as spinner:
-        map.set_disk(disk)
-        spinner.succeed(f'Setting memory request for map {tag} to {disk} KB')
+    msg = f'disk request for map {tag} to {disk} {unit}'
+
+    multiplier = {
+        'KB': 1,
+        'MB': 1024,
+        'GB': 1024 * 1024,
+    }[unit.upper()]
+    disk_in_kb = disk * multiplier
+
+    with make_spinner(text = f'Setting {msg}') as spinner:
+        map.set_disk(disk_in_kb)
+        spinner.succeed(f'Set {msg}')
 
 
 @cli.command()
