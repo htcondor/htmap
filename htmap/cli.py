@@ -482,7 +482,7 @@ def errors(tag, limit):
     m = _cli_load(tag)
     reports = m.error_reports()
     if limit > 0:
-        itertools.islice(reports, limit)
+        reports = itertools.islice(reports, limit)
 
     for report in reports:
         click.echo(report)
