@@ -109,7 +109,7 @@ def _map_fg(map) -> Optional[str]:
 
     if sc[htmap.state.ComponentStatus.REMOVED] > 0:
         return 'magenta'
-    elif sc[htmap.state.ComponentStatus.HELD] > 0:
+    elif (sc[htmap.state.ComponentStatus.HELD] + sc[htmap.state.ComponentStatus.ERRORED]) > 0:
         return 'red'
     elif sc[htmap.state.ComponentStatus.COMPLETED] == len(map):
         return 'green'

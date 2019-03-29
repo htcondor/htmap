@@ -204,9 +204,15 @@ class Map:
         self,
         timeout: utils.Timeout = None,
         show_progress_bar: bool = False,
+        holds_ok = False,
+        errors_ok = False,
     ) -> None:
         """
         Wait until all output associated with this :class:`Map` is available.
+
+        If any components in the map are held or experience an execution error,
+        this method will raise an exception (:class:`htmap.exceptions.MapComponentHeld`
+        or :class:`htmap.exceptions.MapComponentError`, respectively).
 
         Parameters
         ----------
@@ -215,6 +221,10 @@ class Map:
             If ``None``, wait forever.
         show_progress_bar
             If ``True``, a progress bar will be displayed.
+        holds_ok
+            If ``True``, will not raise exceptions if components are held.
+        errors_ok
+            If ``True`, will not raise exceptions if components experience execution errors.
         """
         start_time = time.time()
         timeout = utils.timeout_to_seconds(timeout)
@@ -230,9 +240,15 @@ class Map:
 
                 previous_pbar_len = 0
 
+            ok_statuses = [state.ComponentStatus.COMPLETED]
+            if holds_ok:
+                ok_statuses.append(state.ComponentStatus.HELD)
+            if errors_ok:
+                ok_statuses.append(state.ComponentStatus.ERRORED)
+
             while True:
                 num_incomplete = sum(
-                    cs is not state.ComponentStatus.COMPLETED
+                    cs not in ok_statuses
                     for cs in self.component_statuses
                 )
                 if show_progress_bar:
@@ -243,8 +259,10 @@ class Map:
                     break
 
                 for component, status in enumerate(self.component_statuses):
-                    if status is state.ComponentStatus.HELD:
+                    if status is state.ComponentStatus.HELD and not holds_ok:
                         raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} was held: {self.holds[component]}')
+                    elif status is state.ComponentStatus.ERRORED and not errors_ok:
+                        raise exceptions.MapComponentError(f'component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}')
 
                 if timeout is not None and time.time() - timeout > start_time:
                     raise exceptions.TimeoutError(f'timeout while waiting for {self}')
@@ -255,13 +273,17 @@ class Map:
                 pbar.close()
 
     def _wait_for_component(self, component: int, timeout: utils.Timeout = None) -> None:
+        """
+        Wait for a map component to terminate, which could either be because it
+        completes successfully or encounters an error during execution.
+        """
         timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
         while True:
-            component_state = self.component_statuses[component]
-            if component_state is state.ComponentStatus.COMPLETED:
+            component_status = self.component_statuses[component]
+            if component_status in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED):
                 break
-            elif component_state is state.ComponentStatus.HELD:
+            elif component_status is state.ComponentStatus.HELD:
                 raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} is held: {self.holds[component]}')
 
             if timeout is not None and (time.time() >= start_time + timeout):
@@ -274,6 +296,15 @@ class Map:
 
     def _load_input(self, component: int) -> Tuple[Tuple[Any], Dict[str, Any]]:
         return htio.load_object(self._input_file_path(component))
+
+    def _peek_status(
+        self,
+        component: int,
+    ) -> str:
+        try:
+            return htio.load_object(self._output_file_path(component))
+        except FileNotFoundError as e:
+            raise exceptions.OutputNotFound(f'output for component {component} of map {self.tag} not found') from e
 
     def _load_output(
         self,
@@ -666,8 +697,10 @@ class Map:
 
     def _cleanup_local_data(self) -> None:
         # todo: can this be asynchronous?
-        while not all(cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED)
-                      for cs in self.component_statuses):
+        while not all(
+            cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
+            for cs in self.component_statuses
+        ):
             time.sleep(.01)
 
         shutil.rmtree(self._map_dir)
