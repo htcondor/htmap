@@ -20,7 +20,7 @@ import htmap
 
 def test_all_errors_if_no_limit(cli):
     m = htmap.map(lambda x: 1 / x, [0] * 2)
-    m.wait(timeout = 180)
+    m.wait(timeout = 180, errors_ok = True)
 
     result = cli(['errors', m.tag])
 
@@ -30,7 +30,7 @@ def test_all_errors_if_no_limit(cli):
 
 def test_all_errors_if_zero_limit(cli):
     m = htmap.map(lambda x: 1 / x, [0] * 2)
-    m.wait(timeout = 180)
+    m.wait(timeout = 180, errors_ok = True)
 
     result = cli(['errors', '--limit', '0', m.tag])
 
@@ -40,7 +40,7 @@ def test_all_errors_if_zero_limit(cli):
 
 def test_one_error_if_limit_one(cli):
     m = htmap.map(lambda x: 1 / x, [0] * 2)
-    m.wait(timeout = 180)
+    m.wait(timeout = 180, errors_ok = True)
 
     result = cli(['errors', '--limit', '1', m.tag])
 

@@ -204,6 +204,8 @@ class Map:
         self,
         timeout: utils.Timeout = None,
         show_progress_bar: bool = False,
+        holds_ok = False,
+        errors_ok = False,
     ) -> None:
         """
         Wait until all output associated with this :class:`Map` is available.
@@ -219,6 +221,10 @@ class Map:
             If ``None``, wait forever.
         show_progress_bar
             If ``True``, a progress bar will be displayed.
+        holds_ok
+            If ``True``, will not raise exceptions if components are held.
+        errors_ok
+            If ``True`, will not raise exceptions if components experience execution errors.
         """
         start_time = time.time()
         timeout = utils.timeout_to_seconds(timeout)
@@ -234,9 +240,15 @@ class Map:
 
                 previous_pbar_len = 0
 
+            ok_statuses = [state.ComponentStatus.COMPLETED]
+            if holds_ok:
+                ok_statuses.append(state.ComponentStatus.HELD)
+            if errors_ok:
+                ok_statuses.append(state.ComponentStatus.ERRORED)
+
             while True:
                 num_incomplete = sum(
-                    cs is not state.ComponentStatus.COMPLETED
+                    cs not in ok_statuses
                     for cs in self.component_statuses
                 )
                 if show_progress_bar:
@@ -247,9 +259,9 @@ class Map:
                     break
 
                 for component, status in enumerate(self.component_statuses):
-                    if status is state.ComponentStatus.HELD:
+                    if status is state.ComponentStatus.HELD and not holds_ok:
                         raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} was held: {self.holds[component]}')
-                    elif status is state.ComponentStatus.ERRORED:
+                    elif status is state.ComponentStatus.ERRORED and not errors_ok:
                         raise exceptions.MapComponentError(f'component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}')
 
                 if timeout is not None and time.time() - timeout > start_time:
