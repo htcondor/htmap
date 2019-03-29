@@ -261,13 +261,17 @@ class Map:
                 pbar.close()
 
     def _wait_for_component(self, component: int, timeout: utils.Timeout = None) -> None:
+        """
+        Wait for a map component to terminate, which could either be because it
+        completes successfully or encounters an error during execution.
+        """
         timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
         while True:
-            component_state = self.component_statuses[component]
-            if component_state is state.ComponentStatus.COMPLETED:
+            component_status = self.component_statuses[component]
+            if component_status in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED):
                 break
-            elif component_state is state.ComponentStatus.HELD:
+            elif component_status is state.ComponentStatus.HELD:
                 raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} is held: {self.holds[component]}')
 
             if timeout is not None and (time.time() >= start_time + timeout):
@@ -681,8 +685,10 @@ class Map:
 
     def _cleanup_local_data(self) -> None:
         # todo: can this be asynchronous?
-        while not all(cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED)
-                      for cs in self.component_statuses):
+        while not all(
+            cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
+            for cs in self.component_statuses
+        ):
             time.sleep(.01)
 
         shutil.rmtree(self._map_dir)
