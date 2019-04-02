@@ -127,7 +127,7 @@ class MapOptions(collections.UserDict):
             ``fixed_input_files`` is a special case, and is merged up the chain instead of being overwritten.
         """
         new = cls()
-        for other in reversed(others):
+        for other in reversed(others):  # todo: merge requirements as well as TIF
             new.data.update(other.data)
             new.fixed_input_files.extend(other.fixed_input_files)
             new.input_files = other.input_files
@@ -189,6 +189,8 @@ def create_submit_object_and_itemdata(
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
     descriptors['transfer_input_files'] = ','.join(input_files)
+
+    # todo: probably have to do something with requirements
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
@@ -259,6 +261,7 @@ def _copy_run_scripts():
     run_script_source_dir = Path(__file__).parent / names.RUN_DIR
     run_scripts = [
         run_script_source_dir / 'run.py',
+        run_script_source_dir / 'run_with_singularity.sh',
         run_script_source_dir / 'run_with_transplant.sh',
     ]
     target_dir = Path(settings['HTMAP_DIR']) / 'run'
@@ -311,9 +314,25 @@ def _get_base_descriptors_for_docker(
     }
 
 
+def _get_base_descriptors_for_singularity(
+    tag: str,
+    map_dir: Path,
+) -> dict:
+    return {
+        'universe': 'vanilla',
+        'requirements': 'HasSingularity==true',
+        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run_with_singularity.sh').as_posix(),
+        'transfer_input_files': [
+            (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+        ],
+        'arguments': f'{settings["SINGULARITY.IMAGE"]} $(component)',
+        'transfer_executable': 'True',
+    }
+
+
 register_delivery_mechanism(
-    'docker',
-    options_func = _get_base_descriptors_for_docker,
+    'singularity',
+    options_func = _get_base_descriptors_for_singularity,
 )
 
 
