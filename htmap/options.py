@@ -314,6 +314,12 @@ def _get_base_descriptors_for_docker(
     }
 
 
+register_delivery_mechanism(
+    'docker',
+    options_func = _get_base_descriptors_for_docker,
+)
+
+
 def _get_base_descriptors_for_singularity(
     tag: str,
     map_dir: Path,
