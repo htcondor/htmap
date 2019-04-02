@@ -135,22 +135,10 @@ def _map_fg(map) -> Optional[str]:
     help = 'Do not show map metadata (memory, runtime, etc.).',
 )
 @click.option(
-    '--json',
-    is_flag = True,
-    default = False,
-    help = 'Output as human-readable JSON.',
-)
-@click.option(
-    '--jsonc',
-    is_flag = True,
-    default = False,
-    help = 'Output as compact JSON.',
-)
-@click.option(
-    '--csv',
-    is_flag = True,
-    default = False,
-    help = 'Output as CSV.',
+    '--format',
+    type = click.Choice(['text', 'json', 'json_compact', 'csv']),
+    default = 'text',
+    help = 'Select output format: plain text, JSON, compact JSON, or CSV.'
 )
 @click.option(
     '--live',
@@ -164,13 +152,13 @@ def _map_fg(map) -> Optional[str]:
     default = False,
     help = 'Disable color.'
 )
-def status(no_state, no_meta, json, jsonc, csv, live, no_color):
+def status(no_state, no_meta, format, live, no_color):
     """
     Print the status of all maps.
     Transient maps are prefixed with a *
     """
-    if (json, jsonc, csv, live).count(True) > 1:
-        click.echo('Error: no more than one of --json, --jsonc, --csv, or --live can be set.')
+    if format != 'text' and live:
+        click.echo('Error: cannot produce non-text live data.')
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
@@ -182,19 +170,22 @@ def status(no_state, no_meta, json, jsonc, csv, live, no_color):
         include_meta = not no_meta,
     )
 
-    if json:
+    if format == 'json':
         msg = htmap.status_json(maps, **shared_kwargs)
-    elif jsonc:
+    elif format == 'json_compact':
         msg = htmap.status_json(maps, **shared_kwargs, compact = True)
-    elif csv:
+    elif format == 'csv':
         msg = htmap.status_csv(maps, **shared_kwargs)
-    else:
+    elif format == 'text':
         msg = _status(
             maps,
             **shared_kwargs,
             header_fmt = _HEADER_FMT if not no_color else None,
             row_fmt = _RowFmt(maps) if not no_color else None,
         )
+    else:
+        click.echo(f'Error: unknown format option "{format}"')
+        sys.exit(1)
 
     click.echo(msg)
 
