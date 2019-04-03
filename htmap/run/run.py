@@ -48,15 +48,14 @@ class ExecutionError:
         exception_msg,
         node_info,
         python_info,
-        working_dir_contents,
+        scratch_dir_contents,
         stack_summary,
-        **kwargs,
     ):
         self.component = component
         self.exception_msg = exception_msg
         self.node_info = node_info
         self.python_info = python_info
-        self.working_dir_contents = [str(p.absolute()) for p in working_dir_contents]
+        self.scratch_dir_contents = [str(p.absolute()) for p in scratch_dir_contents]
         self.stack_summary = stack_summary
 
     def __repr__(self):
@@ -103,11 +102,8 @@ def pip_freeze() -> str:
     ).stdout.decode('utf-8').strip()
 
 
-def get_working_dir_contents():
-    return list(Path.cwd().iterdir())
 
-
-def print_working_dir_contents(contents):
+def print_dir_contents(contents):
     print('Working directory contents:')
     for path in contents:
         print('  ' + str(path))
@@ -169,6 +165,7 @@ def build_frames(tb):
 
 
 def load_checkpoint(scratch_dir, transfer_dir):
+    """Move checkpoint files back into the scratch directory."""
     curr_dir = scratch_dir / CHECKPOINT_CURRENT
     old_dir = scratch_dir / CHECKPOINT_OLD
 
@@ -192,14 +189,14 @@ def main(component):
     print_node_info(node_info)
     print()
 
-    scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
+    scratch_dir = Path.cwd()
     transfer_dir = scratch_dir / TRANSFER_DIR
     transfer_dir.mkdir(exist_ok = True)
 
     load_checkpoint(scratch_dir, transfer_dir)
 
-    contents = get_working_dir_contents()
-    print_working_dir_contents(contents)
+    contents = list(scratch_dir.iterdir())
+    print_dir_contents(contents)
     print()
 
     try:
@@ -234,7 +231,7 @@ def main(component):
             stack_summary = stack_summ,
             node_info = node_info,
             python_info = python_info,
-            working_dir_contents = contents,
+            scratch_dir_contents = list(scratch_dir.iterdir()),
         )
         status = 'ERR'
 
