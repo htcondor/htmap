@@ -7,4 +7,4 @@ component=$2
 
 export SINGULARITY_CACHEDIR=$_CONDOR_SCRATCH_DIR
 
-singularity exec --bind ${_CONDOR_SCRATCH_DIR}:/_htmap_scratch ${img} bash -c "cd /_htmap_scratch; ./run.py ${component}
+singularity exec --bind ${_CONDOR_SCRATCH_DIR}:/_htmap_scratch ${img} bash -c "cd /_htmap_scratch; ./run.py ${component}"
