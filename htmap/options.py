@@ -128,6 +128,7 @@ class MapOptions(collections.UserDict):
         """
         new = cls()
         for other in reversed(others):
+            # todo: needs test
             new_reqs = new.get('requirements', None)
             other_reqs = other.pop('requirements', None)
             if new_reqs is not None and other_reqs is not None:
@@ -172,6 +173,7 @@ def create_submit_object_and_itemdata(
         settings['DELIVERY_METHOD'],
     )
 
+    # todo: needs test
     base_requirements = descriptors.get('requirements', None)
     extra_requirements = map_options.pop('requirements', None)
     if base_requirements is not None and extra_requirements is not None:
@@ -213,6 +215,7 @@ def create_submit_object_and_itemdata(
             descriptors[opt_key] = opt_value
 
     sub = htcondor.Submit(descriptors)
+    print(sub)
 
     return sub, itemdata
 
@@ -258,10 +261,17 @@ def get_base_descriptors(
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
 
+    from_settings = settings.get('MAP_OPTIONS', default = {})
+
+    base_requirements = base.pop('requirements', None)
+    settings_requirements = from_settings.pop('requirements', None)
+    if base_requirements is not None and settings_requirements is not None:
+        core['requirements'] = f'({base_requirements}) && ({settings_requirements})'
+
     return {
         **core,
         **base,
-        **settings.get('MAP_OPTIONS', default = {})
+        **from_settings,
     }
 
 
