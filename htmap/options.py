@@ -127,7 +127,12 @@ class MapOptions(collections.UserDict):
             ``fixed_input_files`` is a special case, and is merged up the chain instead of being overwritten.
         """
         new = cls()
-        for other in reversed(others):  # todo: merge requirements as well as TIF
+        for other in reversed(others):
+            new_reqs = new.get('requirements', None)
+            other_reqs = other.pop('requirements', None)
+            if new_reqs is not None and other_reqs is not None:
+                new['requirements'] = f'({new_reqs}) && ({other_reqs})'
+
             new.data.update(other.data)
             new.fixed_input_files.extend(other.fixed_input_files)
             new.input_files = other.input_files
@@ -167,6 +172,11 @@ def create_submit_object_and_itemdata(
         settings['DELIVERY_METHOD'],
     )
 
+    base_requirements = descriptors.get('requirements', None)
+    extra_requirements = map_options.pop('requirements', None)
+    if base_requirements is not None and extra_requirements is not None:
+        descriptors['requirements'] = f'({base_requirements}) && ({extra_requirements})'
+
     itemdata = [{'component': str(idx)} for idx in range(num_components)]
 
     input_files = descriptors.get('transfer_input_files', [])
@@ -189,8 +199,6 @@ def create_submit_object_and_itemdata(
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
     descriptors['transfer_input_files'] = ','.join(input_files)
-
-    # todo: probably have to do something with requirements
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
@@ -326,7 +334,7 @@ def _get_base_descriptors_for_singularity(
 ) -> dict:
     return {
         'universe': 'vanilla',
-        'requirements': 'HasSingularity==true',
+        'requirements': 'HasSingularity == true',
         'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run_with_singularity.sh').as_posix(),
         'transfer_input_files': [
             (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
