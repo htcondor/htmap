@@ -162,8 +162,9 @@ def status(no_state, no_meta, format, live, no_color):
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
-    with make_spinner(text = 'Reading map component statuses...'):
-        read_events(maps)
+    if not no_state:
+        with make_spinner(text = 'Reading map component statuses...'):
+            read_events(maps)
 
     shared_kwargs = dict(
         include_state = not no_state,
