@@ -55,6 +55,8 @@ JOB_EVENT_STATUS_TRANSITIONS = {
     htcondor.JobEventType.JOB_EVICTED: ComponentStatus.IDLE,
     htcondor.JobEventType.JOB_UNSUSPENDED: ComponentStatus.IDLE,
     htcondor.JobEventType.JOB_RELEASED: ComponentStatus.IDLE,
+    htcondor.JobEventType.SHADOW_EXCEPTION: ComponentStatus.IDLE,
+    htcondor.JobEventType.JOB_RECONNECT_FAILED: ComponentStatus.IDLE,
     htcondor.JobEventType.JOB_TERMINATED: ComponentStatus.COMPLETED,
     htcondor.JobEventType.EXECUTE: ComponentStatus.RUNNING,
     htcondor.JobEventType.JOB_HELD: ComponentStatus.HELD,
