@@ -215,7 +215,6 @@ def create_submit_object_and_itemdata(
             descriptors[opt_key] = opt_value
 
     sub = htcondor.Submit(descriptors)
-    print(sub)
 
     return sub, itemdata
 
