@@ -682,12 +682,17 @@ class Map:
 
         return a
 
-    def remove(self) -> None:
+    def remove(self, force: bool = False) -> None:
         """
         Permanently remove the map and delete all associated input, output, and metadata files.
+
+        Parameters
+        ----------
+        force
+            If ``True``, do not wait for HTCondor to confirm that all map components have been removed.
         """
         self._remove_from_queue()
-        self._cleanup_local_data()
+        self._cleanup_local_data(force = force)
         MAPS.remove(self)
 
         logger.info(f'removed map {self.tag}')
@@ -695,13 +700,21 @@ class Map:
     def _remove_from_queue(self) -> classad.ClassAd:
         return self._act(htcondor.JobAction.Remove)
 
-    def _cleanup_local_data(self) -> None:
-        # todo: can this be asynchronous?
-        while not all(
-            cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
-            for cs in self.component_statuses
-        ):
-            time.sleep(.01)
+    def _cleanup_local_data(self, force: bool = False) -> None:
+        """
+        Remove all of the local data associated with this map.
+
+        Parameters
+        ----------
+        force
+            If ``True``, do not wait for HTCondor to confirm that all map components have been removed.
+        """
+        if not force:
+            while not all(
+                cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
+                for cs in self.component_statuses
+            ):
+                time.sleep(.01)
 
         shutil.rmtree(self._map_dir)
         logger.debug(f'removed map directory for map {self.tag}')

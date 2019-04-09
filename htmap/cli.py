@@ -332,7 +332,13 @@ def wait(tags, all):
 
 @cli.command()
 @_multi_tag_args
-def remove(tags, all):
+@click.option(
+    '--force',
+    is_flag = True,
+    default = False,
+    help = 'Do not wait for HTCondor to remove the map components.',
+)
+def remove(tags, all, force):
     """Remove maps."""
     if all:
         tags = htmap.get_tags()
@@ -341,7 +347,7 @@ def remove(tags, all):
 
     for tag in tags:
         with make_spinner(f'Removing map {tag} ...') as spinner:
-            _cli_load(tag).remove()
+            _cli_load(tag).remove(force = force)
 
             spinner.succeed(f'Removed map {tag}')
 
