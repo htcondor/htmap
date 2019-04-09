@@ -31,6 +31,7 @@ class ComponentStatus(utils.StrEnum):
     An enumeration of the possible statuses that a map component can be in.
     These are mostly identical to the HTCondor job statuses of the same name.
     """
+    UNKNOWN = 'UNKNOWN'
     IDLE = 'IDLE'
     RUNNING = 'RUNNING'
     REMOVED = 'REMOVED'
@@ -72,7 +73,7 @@ class MapState:
         self._event_reader = None  # delayed until _read_events is called
         self._clusterproc_to_component: Dict[Tuple[int, int], int] = {}
 
-        self._component_statuses = [ComponentStatus.IDLE for _ in self.map.components]
+        self._component_statuses = [ComponentStatus.UNKNOWN for _ in self.map.components]
         self._holds: Dict[int, holds.ComponentHold] = {}
         self._memory_usage = [0 for _ in self.map.components]
         self._runtime = [datetime.timedelta(0) for _ in self.map.components]
