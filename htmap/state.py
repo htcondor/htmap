@@ -142,6 +142,8 @@ class MapState:
                         new_status = ComponentStatus.ERRORED
 
                 if new_status is not None:
+                    if new_status is self._component_statuses[component]:
+                        logger.warning(f'component {component} of map {self.map} tried to transition into the state it is already in ({new_status})')
                     self._component_statuses[component] = new_status
 
 
