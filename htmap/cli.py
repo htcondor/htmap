@@ -74,7 +74,7 @@ def _start_htmap_logger():
     htmap_logger = logging.getLogger('htmap')
     htmap_logger.setLevel(logging.DEBUG)
 
-    handler = logging.StreamHandler(stream = sys.stdout)
+    handler = logging.StreamHandler(stream = sys.stderr)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter('%(asctime)s ~ %(levelname)s ~ %(name)s:%(funcName)s:%(lineno)d ~ %(message)s'))
 
