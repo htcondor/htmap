@@ -6,9 +6,12 @@ New Features
 
 * Revised internals on how error information is returned from execute nodes.
   HTMap now detects runtime errors during component status checks (without too much overhead).
+* Add ``singularity`` delivery method.
+
 
 Bug Fixes
 ---------
+
 
 Known Issues
 ------------

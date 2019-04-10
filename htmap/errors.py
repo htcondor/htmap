@@ -32,8 +32,8 @@ class ComponentError:
         A tuple containing information about the HTCondor execute node the component ran on.
     python_info : tuple
         A tuple containing information about the Python installation on the execute node.
-    working_dir_contents : List[pathlib.Path]
-        A list of paths in the working directory on the execute node.
+    scratch_dir_contents : List[pathlib.Path]
+        A list of paths in the scratch directory on the execute node.
     stack_summary : traceback.StackSummary
         The Python stack frames at the time of execution, excluding HTMap's own stack frame.
     """
@@ -45,7 +45,7 @@ class ComponentError:
         exception_msg: str,
         node_info,
         python_info,
-        working_dir_contents,
+        scratch_dir_contents,
         stack_summary,
     ):
         self.map = map
@@ -53,7 +53,7 @@ class ComponentError:
         self.exception_msg = exception_msg
         self.node_info = node_info
         self.python_info = python_info
-        self.working_dir_contents = working_dir_contents
+        self.scratch_dir_contents = scratch_dir_contents
         self.stack_summary = stack_summary
 
     def __repr__(self):
@@ -68,7 +68,7 @@ class ComponentError:
             exception_msg = error.exception_msg,
             node_info = error.node_info,
             python_info = error.python_info,
-            working_dir_contents = error.working_dir_contents,
+            scratch_dir_contents = error.scratch_dir_contents,
             stack_summary = error.stack_summary,
         )
 
@@ -136,8 +136,8 @@ class ComponentError:
         else:
             lines.append('\nPython executable information not available')
 
-        lines.append('\nWorking directory contents are')
-        for path in self.working_dir_contents:
+        lines.append('\nScratch directory contents are')
+        for path in self.scratch_dir_contents:
             lines.append(self._indent(path))
 
         lines.append('\nException and traceback (most recent call last):')
