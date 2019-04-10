@@ -6,7 +6,7 @@ Dependency Management
 .. py:currentmodule:: htmap
 
 Dependency management for Python programs is a thorny issue in general, and running code on computers that you don't own is even thornier.
-HTMap provides several methods for ensuring that the software that your code depends on are available for your map components.
+HTMap provides several methods for ensuring that the software that your code depends on is available for your map components.
 This could include other Python packages like ``numpy`` or ``tensorflow``, or external software like ``gcc``.
 
 There are two halves of the dependency management game.
@@ -74,7 +74,7 @@ At runtime:
 In this mode, HTMap will run inside a Docker image that you provide.
 Remember that this Docker image needs to have the ``cloudpickle`` module installed.
 The default Docker image is `continuumio/anaconda3:latest <https://hub.docker.com/r/continuumio/anaconda3/>`_,
-which is based on Python 3.5 and has many useful packages pre-installed.
+which is based on Python 3 and has many useful packages pre-installed.
 
 If you want to use your own Docker image, just change the ``'DOCKER.IMAGE'`` setting.
 Because of limitations in HTCondor, your Docker image needs to be pushed back to `Docker Hub <https://hub.docker.com/>`_ to be usable.
@@ -88,6 +88,11 @@ For example, a very simple Dockerfile that can be used with HTMap is
 
 This would create a Docker image with the latest version of Python and ``cloudpickle`` installed.
 From here you could install more Python dependencies, or add more layers to account for other dependencies.
+
+.. attention::
+
+    More information on building Docker images for use with HTMap can be found in the :doc:`recipes/docker-image-cookbook`.
+
 
 .. warning::
 
@@ -118,7 +123,7 @@ In this mode, HTMap will run inside a Singularity image that you provide.
 Remember that this Singularity image needs to have the ``cloudpickle`` module installed.
 
 Singularity can also use Docker images.
-Specify a DockerHub image as ``htmap.settings['SINGULARITY.IMAGE'] = "docker://<repository>/<image>:<tag>"`` to download a Docker image from DockerHub and automatically use it as a Singularity image.
+Specify a Docker Hub image as ``htmap.settings['SINGULARITY.IMAGE'] = "docker://<repository>/<image>:<tag>"`` to download a Docker image from DockerHub and automatically use it as a Singularity image.
 
 For consistency with Docker delivery, the default Singularity image is `docker://continuumio/anaconda3:latest <https://hub.docker.com/r/continuumio/anaconda3/>`_, which is based on Python 3.5 and has many useful packages pre-installed.
 
