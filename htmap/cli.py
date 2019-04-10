@@ -74,9 +74,9 @@ def _start_htmap_logger():
     htmap_logger = logging.getLogger('htmap')
     htmap_logger.setLevel(logging.DEBUG)
 
-    handler = logging.StreamHandler(stream = sys.stdout)
+    handler = logging.StreamHandler(stream = sys.stderr)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    handler.setFormatter(logging.Formatter('%(asctime)s ~ %(levelname)s ~ %(name)s:%(funcName)s:%(lineno)d ~ %(message)s'))
 
     htmap_logger.addHandler(handler)
 
@@ -162,8 +162,9 @@ def status(no_state, no_meta, format, live, no_color):
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
-    with make_spinner(text = 'Reading map component statuses...'):
-        read_events(maps)
+    if not no_state:
+        with make_spinner(text = 'Reading map component statuses...'):
+            read_events(maps)
 
     shared_kwargs = dict(
         include_state = not no_state,
@@ -331,7 +332,13 @@ def wait(tags, all):
 
 @cli.command()
 @_multi_tag_args
-def remove(tags, all):
+@click.option(
+    '--force',
+    is_flag = True,
+    default = False,
+    help = 'Do not wait for HTCondor to remove the map components.',
+)
+def remove(tags, all, force):
     """Remove maps."""
     if all:
         tags = htmap.get_tags()
@@ -340,7 +347,7 @@ def remove(tags, all):
 
     for tag in tags:
         with make_spinner(f'Removing map {tag} ...') as spinner:
-            _cli_load(tag).remove()
+            _cli_load(tag).remove(force = force)
 
             spinner.succeed(f'Removed map {tag}')
 
