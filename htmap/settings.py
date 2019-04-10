@@ -164,6 +164,9 @@ BASE_SETTINGS = Settings(dict(
     DOCKER = dict(
         IMAGE = os.getenv('HTMAP_DOCKER_IMAGE', 'continuumio/anaconda3:latest'),
     ),
+    SINGULARITY = dict(
+        IMAGE = os.getenv('HTMAP_SINGULARITY_IMAGE', 'docker://continuumio/anaconda3:latest'),
+    ),
     TRANSPLANT = dict(
         DIR = (htmap_dir / 'transplants').as_posix(),
         ALTERNATE_INPUT_PATH = None,

@@ -39,58 +39,27 @@ CHECKPOINT_OLD = '_htmap_old_checkpoint'
 # import cloudpickle goes in the functions that need it directly
 # so that errors are raised later
 
-class ComponentResult:
+
+class ExecutionError:
     def __init__(
         self,
         *,
         component,
-        status,
-    ):
-        self.component = component
-        self.status = status
-
-
-class ComponentOk(ComponentResult):
-    status = 'OK'
-
-    def __init__(
-        self,
-        *,
-        output,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-
-        self.output = output
-
-    def __repr__(self):
-        return '<OK for component {}>'.format(self.component)
-
-
-class ComponentError(ComponentResult):
-    status = 'ERR'
-
-    def __init__(
-        self,
-        *,
         exception_msg,
         node_info,
         python_info,
-        working_dir_contents,
+        scratch_dir_contents,
         stack_summary,
-        **kwargs,
     ):
-        super().__init__(**kwargs)
-
+        self.component = component
         self.exception_msg = exception_msg
-
         self.node_info = node_info
         self.python_info = python_info
-        self.working_dir_contents = [str(p.absolute()) for p in working_dir_contents]
+        self.scratch_dir_contents = [str(p.absolute()) for p in scratch_dir_contents]
         self.stack_summary = stack_summary
 
     def __repr__(self):
-        return '<ERROR for component {}>'.format(self.component)
+        return '<ExecutionError for component {}>'.format(self.component)
 
 
 def get_node_info():
@@ -133,11 +102,8 @@ def pip_freeze() -> str:
     ).stdout.decode('utf-8').strip()
 
 
-def get_working_dir_contents():
-    return list(Path.cwd().iterdir())
 
-
-def print_working_dir_contents(contents):
+def print_dir_contents(contents):
     print('Working directory contents:')
     for path in contents:
         print('  ' + str(path))
@@ -170,14 +136,15 @@ def load_args_and_kwargs(component):
     return load_object(Path('{}.in'.format(component)))
 
 
-def save_object(obj, path):
+def save_objects(objects, path):
     import cloudpickle
     with gzip.open(path, mode = 'wb') as file:
-        cloudpickle.dump(obj, file)
+        for obj in objects:
+            cloudpickle.dump(obj, file)
 
 
-def save_output(component, result, transfer_dir):
-    save_object(result, transfer_dir / '{}.out'.format(component))
+def save_output(component, status, result_or_error, transfer_dir):
+    save_objects([status, result_or_error], transfer_dir / '{}.out'.format(component))
 
 
 def build_frames(tb):
@@ -198,6 +165,7 @@ def build_frames(tb):
 
 
 def load_checkpoint(scratch_dir, transfer_dir):
+    """Move checkpoint files back into the scratch directory."""
     curr_dir = scratch_dir / CHECKPOINT_CURRENT
     old_dir = scratch_dir / CHECKPOINT_OLD
 
@@ -221,14 +189,14 @@ def main(component):
     print_node_info(node_info)
     print()
 
-    scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
+    scratch_dir = Path.cwd()
     transfer_dir = scratch_dir / TRANSFER_DIR
     transfer_dir.mkdir(exist_ok = True)
 
     load_checkpoint(scratch_dir, transfer_dir)
 
-    contents = get_working_dir_contents()
-    print_working_dir_contents(contents)
+    contents = list(scratch_dir.iterdir())
+    print_dir_contents(contents)
     print()
 
     try:
@@ -246,14 +214,10 @@ def main(component):
         print_run_info(component, func, args, kwargs)
 
         print('\n----- MAP COMPONENT OUTPUT START -----\n')
-        output = func(*args, **kwargs)
+        result_or_error = func(*args, **kwargs)
+        status = 'OK'
         print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
 
-        result = ComponentOk(
-            component = component,
-            status = 'OK',
-            output = output,
-        )
     except Exception as e:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
 
@@ -261,18 +225,18 @@ def main(component):
         stack_summ = traceback.StackSummary.from_list(build_frames(trace))
         exc_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip()
 
-        result = ComponentError(
+        result_or_error = ExecutionError(
             component = component,
-            status = 'ERR',
             exception_msg = exc_msg,
             stack_summary = stack_summ,
             node_info = node_info,
             python_info = python_info,
-            working_dir_contents = contents,
+            scratch_dir_contents = list(scratch_dir.iterdir()),
         )
+        status = 'ERR'
 
     clean_and_remake_dir(transfer_dir)
-    save_output(component, result, transfer_dir)
+    save_output(component, status, result_or_error, transfer_dir)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
 

@@ -1,0 +1,20 @@
+v0.3.0
+======
+
+New Features
+------------
+
+* Revised internals on how error information is returned from execute nodes.
+  HTMap now detects runtime errors during component status checks (without too much overhead).
+* Add ``singularity`` delivery method.
+
+
+Bug Fixes
+---------
+
+
+Known Issues
+------------
+
+* Map component state may become corrupted when the map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree about the state of their components.

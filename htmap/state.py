@@ -31,17 +31,20 @@ class ComponentStatus(utils.StrEnum):
     An enumeration of the possible statuses that a map component can be in.
     These are mostly identical to the HTCondor job statuses of the same name.
     """
+    UNKNOWN = 'UNKNOWN'
     IDLE = 'IDLE'
     RUNNING = 'RUNNING'
     REMOVED = 'REMOVED'
     COMPLETED = 'COMPLETED'
     HELD = 'HELD'
     SUSPENDED = 'SUSPENDED'
+    ERRORED = 'ERRORED'
 
     @classmethod
     def display_statuses(cls) -> Tuple['ComponentStatus', ...]:
         return (
             cls.HELD,
+            cls.ERRORED,
             cls.IDLE,
             cls.RUNNING,
             cls.COMPLETED,
@@ -53,6 +56,8 @@ JOB_EVENT_STATUS_TRANSITIONS = {
     htcondor.JobEventType.JOB_EVICTED: ComponentStatus.IDLE,
     htcondor.JobEventType.JOB_UNSUSPENDED: ComponentStatus.IDLE,
     htcondor.JobEventType.JOB_RELEASED: ComponentStatus.IDLE,
+    htcondor.JobEventType.SHADOW_EXCEPTION: ComponentStatus.IDLE,
+    htcondor.JobEventType.JOB_RECONNECT_FAILED: ComponentStatus.IDLE,
     htcondor.JobEventType.JOB_TERMINATED: ComponentStatus.COMPLETED,
     htcondor.JobEventType.EXECUTE: ComponentStatus.RUNNING,
     htcondor.JobEventType.JOB_HELD: ComponentStatus.HELD,
@@ -68,7 +73,7 @@ class MapState:
         self._event_reader = None  # delayed until _read_events is called
         self._clusterproc_to_component: Dict[Tuple[int, int], int] = {}
 
-        self._component_statuses = [ComponentStatus.IDLE for _ in self.map.components]
+        self._component_statuses = [ComponentStatus.UNKNOWN for _ in self.map.components]
         self._holds: Dict[int, holds.ComponentHold] = {}
         self._memory_usage = [0 for _ in self.map.components]
         self._runtime = [datetime.timedelta(0) for _ in self.map.components]
@@ -131,7 +136,15 @@ class MapState:
                     self._holds[component] = h
 
                 new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
+
+                # the component has *terminated*, but did it error?
+                if new_status is ComponentStatus.COMPLETED:
+                    if self.map._peek_status(component) == 'ERR':
+                        new_status = ComponentStatus.ERRORED
+
                 if new_status is not None:
+                    if new_status is self._component_statuses[component]:
+                        logger.warning(f'component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
                     self._component_statuses[component] = new_status
 
 

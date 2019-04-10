@@ -27,7 +27,8 @@ For example, if you ``import numpy`` in your code, you need to have ``numpy`` in
 As mentioned above, HTMap provides several "delivery methods" for getting that Python install to the execute location.
 The built-in delivery methods are
 
-* ``docker`` - runs in a user-supplied Docker container.
+* ``docker`` - runs in a (possibly user-supplied) Docker container.
+* ``singularity`` - runs in a (possibly user-supplied) Singularity container.
 * ``assume`` - assumes that the dependencies have already been installed at the execute location.
 * ``transplant`` - copy the user's Python installation to the execute node.
 
@@ -92,6 +93,52 @@ From here you could install more Python dependencies, or add more layers to acco
 
     This delivery mechanism will only work if your HTCondor pool supports Docker jobs!
     If it doesn't, you'll need to talk to your pool administrators or use a different delivery mechanism.
+
+
+Run Inside a Singularity Container
+----------------------------------
+
+In your ``~/.htmaprc`` file:
+
+.. code-block:: bash
+
+    DELIVERY_METHOD = "singularity"
+
+    [SINGULARITY]
+    IMAGE = "<image>"
+
+At runtime:
+
+.. code-block:: python
+
+    htmap.settings['DELIVERY_METHOD'] = 'singularity'
+    htmap.settings['SINGULARITY.IMAGE'] = "<image>"
+
+In this mode, HTMap will run inside a Singularity image that you provide.
+Remember that this Singularity image needs to have the ``cloudpickle`` module installed.
+
+Singularity can also use Docker images.
+Specify a DockerHub image as ``htmap.settings['SINGULARITY.IMAGE'] = "docker://<repository>/<image>:<tag>"`` to download a Docker image from DockerHub and automatically use it as a Singularity image.
+
+For consistency with Docker delivery, the default Singularity image is `docker://continuumio/anaconda3:latest <https://hub.docker.com/r/continuumio/anaconda3/>`_, which is based on Python 3.5 and has many useful packages pre-installed.
+
+If you want to use your own Singularity image, just change the ``'SINGULARITY.IMAGE'`` setting.
+
+.. warning::
+
+    This delivery mechanism will only work if your HTCondor pool supports Singularity jobs!
+    If it doesn't, you'll need to talk to your pool administrators or use a different delivery mechanism.
+
+
+.. note::
+
+    When using this delivery method, HTMap will discover ``python3`` on the system ``PATH`` and use that to run your code.
+
+
+.. warning::
+
+    This delivery method relies on the directory ``/htmap/scratch`` either existing in the Singularity image, or Singularity being able to run with ``overlayfs``.
+    If you get a ``stderr`` message from Singularity about a bind mount directory not existing, that's the problem.
 
 
 Assume Dependencies are Present

@@ -74,9 +74,9 @@ def _start_htmap_logger():
     htmap_logger = logging.getLogger('htmap')
     htmap_logger.setLevel(logging.DEBUG)
 
-    handler = logging.StreamHandler(stream = sys.stdout)
+    handler = logging.StreamHandler(stream = sys.stderr)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    handler.setFormatter(logging.Formatter('%(asctime)s ~ %(levelname)s ~ %(name)s:%(funcName)s:%(lineno)d ~ %(message)s'))
 
     htmap_logger.addHandler(handler)
 
@@ -109,7 +109,7 @@ def _map_fg(map) -> Optional[str]:
 
     if sc[htmap.state.ComponentStatus.REMOVED] > 0:
         return 'magenta'
-    elif sc[htmap.state.ComponentStatus.HELD] > 0:
+    elif (sc[htmap.state.ComponentStatus.HELD] + sc[htmap.state.ComponentStatus.ERRORED]) > 0:
         return 'red'
     elif sc[htmap.state.ComponentStatus.COMPLETED] == len(map):
         return 'green'
@@ -135,22 +135,10 @@ def _map_fg(map) -> Optional[str]:
     help = 'Do not show map metadata (memory, runtime, etc.).',
 )
 @click.option(
-    '--json',
-    is_flag = True,
-    default = False,
-    help = 'Output as human-readable JSON.',
-)
-@click.option(
-    '--jsonc',
-    is_flag = True,
-    default = False,
-    help = 'Output as compact JSON.',
-)
-@click.option(
-    '--csv',
-    is_flag = True,
-    default = False,
-    help = 'Output as CSV.',
+    '--format',
+    type = click.Choice(['text', 'json', 'json_compact', 'csv']),
+    default = 'text',
+    help = 'Select output format: plain text, JSON, compact JSON, or CSV.'
 )
 @click.option(
     '--live',
@@ -164,37 +152,41 @@ def _map_fg(map) -> Optional[str]:
     default = False,
     help = 'Disable color.'
 )
-def status(no_state, no_meta, json, jsonc, csv, live, no_color):
+def status(no_state, no_meta, format, live, no_color):
     """
     Print the status of all maps.
     Transient maps are prefixed with a *
     """
-    if (json, jsonc, csv, live).count(True) > 1:
-        click.echo('Error: no more than one of --json, --jsonc, --csv, or --live can be set.')
+    if format != 'text' and live:
+        click.echo('Error: cannot produce non-text live data.')
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
-    with make_spinner(text = 'Reading map component statuses...'):
-        read_events(maps)
+    if not no_state:
+        with make_spinner(text = 'Reading map component statuses...'):
+            read_events(maps)
 
     shared_kwargs = dict(
         include_state = not no_state,
         include_meta = not no_meta,
     )
 
-    if json:
+    if format == 'json':
         msg = htmap.status_json(maps, **shared_kwargs)
-    elif jsonc:
+    elif format == 'json_compact':
         msg = htmap.status_json(maps, **shared_kwargs, compact = True)
-    elif csv:
+    elif format == 'csv':
         msg = htmap.status_csv(maps, **shared_kwargs)
-    else:
+    elif format == 'text':
         msg = _status(
             maps,
             **shared_kwargs,
             header_fmt = _HEADER_FMT if not no_color else None,
             row_fmt = _RowFmt(maps) if not no_color else None,
         )
+    else:
+        click.echo(f'Error: unknown format option "{format}"')
+        sys.exit(1)
 
     click.echo(msg)
 
@@ -340,7 +332,13 @@ def wait(tags, all):
 
 @cli.command()
 @_multi_tag_args
-def remove(tags, all):
+@click.option(
+    '--force',
+    is_flag = True,
+    default = False,
+    help = 'Do not wait for HTCondor to remove the map components.',
+)
+def remove(tags, all, force):
     """Remove maps."""
     if all:
         tags = htmap.get_tags()
@@ -349,7 +347,7 @@ def remove(tags, all):
 
     for tag in tags:
         with make_spinner(f'Removing map {tag} ...') as spinner:
-            _cli_load(tag).remove()
+            _cli_load(tag).remove(force = force)
 
             spinner.succeed(f'Removed map {tag}')
 
@@ -482,7 +480,7 @@ def errors(tag, limit):
     m = _cli_load(tag)
     reports = m.error_reports()
     if limit > 0:
-        itertools.islice(reports, limit)
+        reports = itertools.islice(reports, limit)
 
     for report in reports:
         click.echo(report)
@@ -609,12 +607,25 @@ def edit():
     'memory',
     type = int,
 )
-def memory(tag, memory):
-    """Set a map's requested memory (in MB)."""
+@click.option(
+    '--unit',
+    type = click.Choice(['MB', 'GB'], case_sensitive = False),
+    default = 'MB',
+)
+def memory(tag, memory, unit):
+    """Set a map's requested memory."""
     map = _cli_load(tag)
-    with make_spinner(text = f'Setting memory request for map {tag} to {memory} MB') as spinner:
-        map.set_memory(memory)
-        spinner.succeed(f'Setting memory request for map {tag} to {memory} MB')
+    msg = f'memory request for map {tag} to {memory} {unit}'
+
+    multiplier = {
+        'MB': 1,
+        'GB': 1024,
+    }[unit.upper()]
+    memory_in_mb = memory * multiplier
+
+    with make_spinner(text = f'Setting {msg}') as spinner:
+        map.set_memory(memory_in_mb)
+        spinner.succeed(f'Set {msg}')
 
 
 @edit.command()
@@ -623,12 +634,26 @@ def memory(tag, memory):
     'disk',
     type = int,
 )
-def disk(tag, disk):
-    """Set a map's requested disk (in KB)."""
+@click.option(
+    '--unit',
+    type = click.Choice(['KB', 'MB', 'GB'], case_sensitive = False),
+    default = 'GB',
+)
+def disk(tag, disk, unit):
+    """Set a map's requested disk."""
     map = _cli_load(tag)
-    with make_spinner(text = f'Setting memory request for map {tag} to {disk} KB') as spinner:
-        map.set_disk(disk)
-        spinner.succeed(f'Setting memory request for map {tag} to {disk} KB')
+    msg = f'disk request for map {tag} to {disk} {unit}'
+
+    multiplier = {
+        'KB': 1,
+        'MB': 1024,
+        'GB': 1024 * 1024,
+    }[unit.upper()]
+    disk_in_kb = disk * multiplier
+
+    with make_spinner(text = f'Setting {msg}') as spinner:
+        map.set_disk(disk_in_kb)
+        spinner.succeed(f'Set {msg}')
 
 
 @cli.command()

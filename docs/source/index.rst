@@ -49,6 +49,9 @@ Happy mapping!
 :doc:`faq`
    These questions are asked, sometimes frequently.
 
+:doc:`version-history`
+   New features, bug fixes, and known issues by version.
+
 :doc:`devs`
    How HTMap works under the hood; how to set up a development environment.
 
@@ -65,5 +68,6 @@ Happy mapping!
    recipes
    tips-and-tricks
    faq
+   version-history
    devs
 
