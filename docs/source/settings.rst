@@ -9,6 +9,11 @@ For more information on how this works, see :class:`htmap.settings.Settings`.
 Users can provide custom default settings by putting them in a file in their home directory named ``.htmaprc``.
 The file is in `TOML format <https://github.com/toml-lang/toml>`_.
 
+HTMap can also read certain settings from the environment.
+When this is possible, it is noted in the description of the setting.
+
+The precedence order is that runtime settings override ``.htmaprc`` settings, which override environment settings, which override built-in defaults.
+
 HTMap's settings are organized into groupings based on TOML headers.
 The settings inside each group are discussed in the following sections.
 
@@ -81,6 +86,7 @@ If set to ``None``, HTMap discovers the local collector automatically.
 Defaults to ``None``.
 Inherits the environment variable ``HTMAP_CONDOR_COLLECTOR``.
 
+
 DOCKER
 ++++++
 
@@ -89,6 +95,16 @@ These settings control how the ``docker`` delivery method works.
 ``IMAGE`` - the path to the Docker image to run components with.
 Defaults to ``'continuumio/anaconda3:latest'``.
 If the environment variable ``HTMAP_DOCKER_IMAGE`` is set, that will be used as the default instead.
+
+
+SINGULARITY
++++++++++++
+
+These settings control how the ``singularity`` delivery method works.
+
+``IMAGE`` - the path to the Singularity image to run components with.
+Defaults to ``'docker://continuumio/anaconda3:latest'``.
+If the environment variable ``HTMAP_SINGULARITY_IMAGE`` is set, that will be used as the default instead.
 
 
 .. _transplant-settings:
