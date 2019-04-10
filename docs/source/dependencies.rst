@@ -19,8 +19,7 @@ it's all of the execute nodes in the pool that your might map components might b
 Submit-side dependency management can be handled using standard Python package management tools.
 We recommend using ``miniconda`` as your package manager (https://docs.conda.io/en/latest/miniconda.html).
 
-HTMap itself requires that execute-side can run a Python script using a Python install that has the module ``cloudpickle`` installed,
-which it locates using the shebang ``#!/usr/bin/env python3``.
+HTMap itself requires that execute-side can run a Python script using a Python install that has the module ``cloudpickle`` installed.
 That Python installation also needs whatever other packages your code needs to run.
 For example, if you ``import numpy`` in your code, you need to have ``numpy`` installed execute-side.
 
@@ -38,18 +37,20 @@ The default delivery method is ``docker``, with image ``continuumio/anaconda3:la
 If your pool can run Docker jobs and your Python code does not depend on any custom packages
 (i.e., you never import any modules that you wrote yourself),
 this default behavior will likely work for you without requiring any changes.
+See the section below on Docker if this isn't the case!
 
 .. attention::
 
     HTMap can transfer inputs and outputs between different minor versions of Python 3, but it can't magically make features from later Python versions available.
     For example, if you run Python 3.6 submit-side you can use f-strings in your code.
     But if you use Python 3.5 execute-side, your code will hit syntax errors because f-strings were not added until Python 3.6.
+    We don't actually test cross-version transfers though, and we recommend running exactly the same version of Python on submit and execute.
 
     HTMap **cannot** transfer inputs and outputs between different versions of ``cloudpickle``.
     Ensure that you have the same version of ``cloudpickle`` installed everywhere.
 
     If you see an exception on a component related to ``cloudpickle.load``, this is the most likely culprit.
-    Note that you may need to manually upgrade/downgrade your local or remote ``cloudpickle``.
+    Note that you may need to manually upgrade/downgrade your submit-side or execute-side ``cloudpickle``.
 
 
 Run Inside a Docker Container
@@ -202,4 +203,4 @@ For advanced transplant functionality, see :ref:`transplant-settings`.
 .. note::
 
     When using the transplant method the transplanted Python installation will be used to run the component,
-    regardless of the what the shebang would resolve to normally.
+    regardless of any other Python installations that might exist execute-side.
