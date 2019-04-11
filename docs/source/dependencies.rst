@@ -126,7 +126,7 @@ Remember that this Singularity image needs to have the ``cloudpickle`` module in
 Singularity can also use Docker images.
 Specify a Docker Hub image as ``htmap.settings['SINGULARITY.IMAGE'] = "docker://<repository>/<image>:<tag>"`` to download a Docker image from DockerHub and automatically use it as a Singularity image.
 
-For consistency with Docker delivery, the default Singularity image is `docker://continuumio/anaconda3:latest <https://hub.docker.com/r/continuumio/anaconda3/>`_, which is based on Python 3.5 and has many useful packages pre-installed.
+For consistency with Docker delivery, the default Singularity image is `docker://continuumio/anaconda3:latest <https://hub.docker.com/r/continuumio/anaconda3/>`_, which has many useful packages pre-installed.
 
 If you want to use your own Singularity image, just change the ``'SINGULARITY.IMAGE'`` setting.
 
