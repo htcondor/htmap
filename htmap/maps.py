@@ -23,6 +23,7 @@ import uuid
 import functools
 import inspect
 import collections
+import collections.abc
 import weakref
 from copy import copy
 from pathlib import Path
@@ -70,7 +71,7 @@ def maps_by_tag() -> Dict[str, 'Map']:
 
 
 @_protect_map_after_remove
-class Map:
+class Map(collections.abc.Sequence):
     """
     Represents the results from a map call.
 
