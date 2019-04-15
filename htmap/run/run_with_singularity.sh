@@ -10,4 +10,4 @@ d=${_CONDOR_SCRATCH_DIR}/.htmap_singularity
 mkdir ${d}
 export SINGULARITY_CACHEDIR=${d}
 
-singularity exec --bind ${_CONDOR_SCRATCH_DIR}:/tmp --workdir /tmp ${img} bash -c "python3 run.py ${component}"
+singularity exec --contain --bind ${_CONDOR_SCRATCH_DIR}:/tmp --workdir /tmp ${img} bash -c "python3 run.py ${component}"
