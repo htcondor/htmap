@@ -6,6 +6,8 @@ img=$1
 component=$2
 
 # would otherwise default to user home dir
-export SINGULARITY_CACHEDIR=${_CONDOR_SCRATCH_DIR}
+d=${_CONDOR_SCRATCH_DIR}/.htmap_singularity
+mkdir ${d}
+export SINGULARITY_CACHEDIR=${d}
 
-singularity exec --bind ${_CONDOR_SCRATCH_DIR}:/htmap/scratch ${img} bash -c "cd /htmap/scratch && python3 run.py ${component}"
+singularity exec --bind ${_CONDOR_SCRATCH_DIR}:/tmp --workdir /tmp ${img} bash -c "python3 run.py ${component}"
