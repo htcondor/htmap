@@ -864,11 +864,11 @@ class Map(collections.abc.Sequence):
             components = self.components
 
         component_set = set(components)
-        incomplete_components = {
+        cant_be_rerun = {
             c for c, status in enumerate(self.component_statuses)
-            if status is not state.ComponentStatus.COMPLETED
+            if status not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
         }
-        intersection = component_set.intersection(incomplete_components)
+        intersection = component_set.intersection(cant_be_rerun)
         if len(intersection) != 0:
             raise exceptions.CannotRerunComponents(f'cannot rerun components {sorted(intersection)} of map {self.tag} because they are not complete')
 
