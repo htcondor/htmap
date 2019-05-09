@@ -8,12 +8,8 @@ FAQ
 How do I install HTMap?
 -----------------------
 
-.. caution::
-
-    The instructions given below will eventually be true, but we're not on PyPI yet.
-    For the moment you should install HTMap by running ``pip install git+https://github.com/htcondor/htmap.git``.
-
 On Unix/Linux systems, ``pip install htmap`` should suffice.
+On Windows, you may need to install HTCondor itself to get access to the HTCondor Python bindings, and use the ``no-deps`` option with ``pip install``.
 
 * To get the latest development version of HTMap, run ``pip install git+https://github.com/htcondor/htmap.git`` instead.
 * Run ``pip install git+https://github.com/htcondor/htmap.git@<branch>`` to install a specific branch.
