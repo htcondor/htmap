@@ -22,7 +22,7 @@ def test_rerun_all_components(cli):
     m = htmap.map(str, range(1))
     m.wait()
 
-    result = cli(['rerun', m.tag, '--all'])
+    result = cli(['rerun', 'map', m.tag])
     m.wait(180)
 
     assert m[0] == '0'
@@ -32,7 +32,8 @@ def test_rerun_components(cli):
     m = htmap.map(str, range(1))
     m.wait()
 
-    result = cli(['rerun', '--components', '0', m.tag])
+    result = cli(['rerun', 'components', m.tag, '0 1'])
     m.wait(180)
 
     assert m[0] == '0'
+    assert m[1] == '1'

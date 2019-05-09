@@ -158,7 +158,7 @@ def status(no_state, no_meta, format, live, no_color):
     Transient maps are prefixed with a *
     """
     if format != 'text' and live:
-        click.echo('ERROR: cannot produce non-text live data.')
+        click.echo('ERROR: cannot produce non-text live data.', err = True)
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
@@ -185,7 +185,7 @@ def status(no_state, no_meta, format, live, no_color):
             row_fmt = _RowFmt(maps) if not no_color else None,
         )
     else:
-        click.echo(f'ERROR: unknown format option "{format}"')
+        click.echo(f'ERROR: unknown format option "{format}"', err = True)
         sys.exit(1)
 
     click.echo(msg)
@@ -523,38 +523,42 @@ def components(tag, status, no_color):
         try:
             status = htmap.ComponentStatus[status.upper()]
         except KeyError:
-            click.echo(f"ERROR: {status} is not a recognized component status (valid options: {' | '.join(str(cs) for cs in htmap.ComponentStatus)})")
+            click.echo(
+                f"ERROR: {status} is not a recognized component status (valid options: {' | '.join(str(cs) for cs in htmap.ComponentStatus)})",
+                err = True,
+            )
             sys.exit(1)
 
         click.echo(' '.join(str(c) for c in m.components_by_status()[status]))
 
 
-@cli.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
-@click.option(
-    '--components',
-    help = 'Rerun the given components',
-)
-@click.option(
-    '--all',
-    is_flag = True,
-    default = False,
-    help = 'Rerun the entire map',
-)
-def rerun(tag, components, all):
-    """Rerun part or all of a map."""
-    if tuple(map(bool, (components, all))).count(True) != 1:
-        click.echo('ERROR: exactly one of --components, --incomplete, and --all can be used.')
-        sys.exit(1)
+@cli.group()
+def rerun():
+    """Rerun (part of) a map."""
 
+
+@rerun.command()
+@click.argument('tag', autocompletion = _autocomplete_tag)
+@click.argument(
+    'components',
+    nargs = -1,
+    type = int,
+)
+def components(tag):
+    """Rerun a set of components from a single map."""
     m = _cli_load(tag)
 
-    if components:
-        components = [int(c) for c in components.split()]
-        with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
-            m.rerun(components)
-            spinner.succeed(f'Reran components {components} of map {tag}')
-    elif all:
+    with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
+        m.rerun(components)
+        spinner.succeed(f'Reran components {components} of map {tag}')
+
+
+@rerun.command()
+@_multi_tag_args
+def map(tags):
+    """Rerun all of the components of any number of maps."""
+    for tag in tags:
+        m = _cli_load(tag)
         with make_spinner(f'Rerunning map {tag} ...') as spinner:
             m.rerun()
             spinner.succeed(f'Reran map {tag}')
@@ -592,7 +596,10 @@ def settings(user):
         try:
             txt = path.read_text(encoding = 'utf-8')
         except FileNotFoundError:
-            click.echo(f'ERROR: you do not have a ~/.htmaprc file ({path} was not found)')
+            click.echo(
+                f'ERROR: you do not have a ~/.htmaprc file ({path} was not found)',
+                err = True,
+            )
             sys.exit(1)
         click.echo(txt)
 
@@ -758,7 +765,8 @@ def _cli_load(tag: str) -> htmap.Map:
         try:
             return htmap.load(tag)
         except Exception as e:
-            spinner.fail(f'ERROR: could not find a map with tag {tag}')
+            spinner.fail()
+            click.echo(f'ERROR: could not find a map with tag {tag}', err = True)
             click.echo(f'Your map tags are:', err = True)
             click.echo(_tag_list(), err = True)
             sys.exit(1)

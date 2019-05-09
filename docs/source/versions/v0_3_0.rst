@@ -6,13 +6,15 @@ New Features
 
 * Revised internals on how error information is returned from execute nodes.
   HTMap now detects runtime errors during component status checks (without too much overhead).
-* Add ``singularity`` delivery method.
+* Add ``singularity`` delivery method. More revisions needed to use best practices,
+  but it works. Expect major changes in the future...
 * Add ``htmap components`` CLI command, which can print out individual component statuses for a map.
   For example, ``htmap components <tag>`` will print out all of the components for a map and their statuses.
   ``htmap components --status ERRORED <tag>`` will print out only the components whose status is ERRORED.
 * Some execution errors (especially the kind that result in output not being produced)
   are now turned into holds by using the submit descriptor ``ON_EXIT_HOLD``.
-
+* Reworked CLI ``rerun`` command. It now has separate sub-commands for rerunning
+  entire maps or only certain components.
 
 Bug Fixes
 ---------
@@ -21,6 +23,10 @@ Bug Fixes
 Known Issues
 ------------
 
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
 * Map component state may become corrupted when a map is manually vacated.
-  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree about the state of their components.
-  This is a result of https://github.com/htcondor/htmap/issues/129
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129
