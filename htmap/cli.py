@@ -158,7 +158,7 @@ def status(no_state, no_meta, format, live, no_color):
     Transient maps are prefixed with a *
     """
     if format != 'text' and live:
-        click.echo('Error: cannot produce non-text live data.')
+        click.echo('ERROR: cannot produce non-text live data.', err = True)
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
@@ -185,7 +185,7 @@ def status(no_state, no_meta, format, live, no_color):
             row_fmt = _RowFmt(maps) if not no_color else None,
         )
     else:
-        click.echo(f'Error: unknown format option "{format}"')
+        click.echo(f'ERROR: unknown format option "{format}"', err = True)
         sys.exit(1)
 
     click.echo(msg)
@@ -269,8 +269,11 @@ STATUS_AND_COLOR = [
     (htmap.ComponentStatus.IDLE, 'yellow'),
     (htmap.ComponentStatus.SUSPENDED, 'red'),
     (htmap.ComponentStatus.HELD, 'red'),
+    (htmap.ComponentStatus.ERRORED, 'red'),
     (htmap.ComponentStatus.REMOVED, 'magenta'),
 ]
+
+STATUS_TO_COLOR = dict(STATUS_AND_COLOR)
 
 
 def _calculate_bar_component_len(count, total, bar_width):
@@ -468,50 +471,97 @@ def stderr(tag, component):
 
 
 @cli.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
+@_multi_tag_args
 @click.option(
     '--limit',
     type = int,
     default = 0,
     help = 'The maximum number of error reports to show (0 for no limit).',
 )
-def errors(tag, limit):
+def errors(tags, all, limit):
     """Look at detailed error reports for a map."""
-    m = _cli_load(tag)
-    reports = m.error_reports()
-    if limit > 0:
-        reports = itertools.islice(reports, limit)
+    if all:
+        tags = htmap.get_tags()
 
-    for report in reports:
-        click.echo(report)
+    _check_tags(tags)
+
+    count = 0
+    for tag in tags:
+        m = _cli_load(tag)
+
+        for report in m.error_reports():
+            click.echo(report)
+            count += 1
+            if 0 < limit <= count:
+                return
 
 
 @cli.command()
 @click.argument('tag', autocompletion = _autocomplete_tag)
 @click.option(
-    '--components',
-    help = 'Rerun the given components',
+    '--status',
+    default = None,
+    help = 'Print out only components that have this status. Case-insensitive.',
 )
 @click.option(
-    '--all',
+    '--no-color',
     is_flag = True,
     default = False,
-    help = 'Rerun the entire map',
+    help = 'Disable color.'
 )
-def rerun(tag, components, all):
-    """Rerun part or all of a map."""
-    if tuple(map(bool, (components, all))).count(True) != 1:
-        click.echo('Error: exactly one of --components, --incomplete, and --all can be used.')
-        sys.exit(1)
-
+def components(tag, status, no_color):
     m = _cli_load(tag)
 
-    if components:
-        components = [int(c) for c in components.split()]
-        with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
+    if status is None:
+        longest_component = len(str(m.components[-1]))
+        for component, s in enumerate(m.component_statuses):
+            click.secho(
+                f'{str(component).rjust(longest_component)} {s}',
+                fg = STATUS_TO_COLOR[s] if not no_color else None,
+            )
+    else:
+        try:
+            status = htmap.ComponentStatus[status.upper()]
+        except KeyError:
+            click.echo(
+                f"ERROR: {status} is not a recognized component status (valid options: {' | '.join(str(cs) for cs in htmap.ComponentStatus)})",
+                err = True,
+            )
+            sys.exit(1)
+
+        click.echo(' '.join(str(c) for c in m.components_by_status()[status]))
+
+
+@cli.group()
+def rerun():
+    """Rerun (part of) a map."""
+
+
+@rerun.command()
+@click.argument('tag', autocompletion = _autocomplete_tag)
+@click.argument(
+    'components',
+    nargs = -1,
+    type = int,
+)
+def components(tag, components):
+    """Rerun selected components from a single map."""
+    m = _cli_load(tag)
+
+    with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
+        try:
             m.rerun(components)
-            spinner.succeed(f'Reran components {components} of map {tag}')
-    elif all:
+        except htmap.exceptions.CannotRerunComponents as err:
+            click.echo(f"ERROR: {err}", err = True)
+        spinner.succeed(f'Reran components {components} of map {tag}')
+
+
+@rerun.command()
+@_multi_tag_args
+def map(tags):
+    """Rerun all of the components of any number of maps."""
+    for tag in tags:
+        m = _cli_load(tag)
         with make_spinner(f'Rerunning map {tag} ...') as spinner:
             m.rerun()
             spinner.succeed(f'Reran map {tag}')
@@ -549,7 +599,10 @@ def settings(user):
         try:
             txt = path.read_text(encoding = 'utf-8')
         except FileNotFoundError:
-            click.echo(f'Error: you do not have a ~/.htmaprc file ({path} was not found)')
+            click.echo(
+                f'ERROR: you do not have a ~/.htmaprc file ({path} was not found)',
+                err = True,
+            )
             sys.exit(1)
         click.echo(txt)
 
@@ -582,7 +635,7 @@ def remove(index):
     try:
         index = int(index)
     except ValueError:
-        click.echo(f'ERROR: index was not an integer (was {index})', err = True)
+        click.echo(f'WARNING: index was not an integer (was {index})', err = True)
         sys.exit(1)
 
     try:
@@ -715,7 +768,8 @@ def _cli_load(tag: str) -> htmap.Map:
         try:
             return htmap.load(tag)
         except Exception as e:
-            spinner.fail(f'ERROR: could not find a map with tag {tag}')
+            spinner.fail()
+            click.echo(f'ERROR: could not find a map with tag {tag}', err = True)
             click.echo(f'Your map tags are:', err = True)
             click.echo(_tag_list(), err = True)
             sys.exit(1)
@@ -727,7 +781,7 @@ def _tag_list() -> str:
 
 def _check_tags(tags):
     if len(tags) == 0:
-        click.echo('Warning: no tags were passed', err = True)
+        click.echo('WARNING: no tags were passed', err = True)
 
 
 if __name__ == '__main__':

@@ -21,8 +21,8 @@ FROM ubuntu:bionic
 USER root
 
 # build config
-ARG PYTHON_VERSION=3.6
-ARG HTCONDOR_VERSION=8.8
+ARG PYTHON_VERSION=3.7
+ARG HTCONDOR_VERSION=8.9
 ARG MINICONDA_VERSION=latest
 
 # environment setup

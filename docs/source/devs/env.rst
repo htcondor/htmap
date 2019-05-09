@@ -4,12 +4,14 @@ Development Environment
 .. py:currentmodule:: htmap
 
 HTMap's test suite relies on a properly set-up environment.
-The simplest way to get that environment is to use the Dockerfile at the top of the repository source tree.
-Also included is a bash script named ``dr`` (**d**\ ocker **r**\ un) that will let you quickly build and execute commands in the container.
+The simplest way to get that environment is to use the Dockerfile in ``docker/Dockerfile``.
+Also included is a bash script named ``dr`` (**d**\ ocker **r**\ un) in the repository root
+that will let you quickly build and execute commands in the container.
 
 .. attention::
 
-    **The Docker container is not linked to the host filesystem in real-time**: if you make changes (either on the host or inside the container), you need to rebuild the Docker container!
+    **The Docker container is not linked to the host filesystem in real-time**:
+    if you make changes (either on the host or inside the container), you need to rebuild the Docker container!
     It should be fast because everything but the very last step can be cached by Docker.
 
 Anything you pass to ``dr`` will be executed inside the container.
