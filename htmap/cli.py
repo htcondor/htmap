@@ -468,22 +468,30 @@ def stderr(tag, component):
 
 
 @cli.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
+@_multi_tag_args
 @click.option(
     '--limit',
     type = int,
     default = 0,
     help = 'The maximum number of error reports to show (0 for no limit).',
 )
-def errors(tag, limit):
+def errors(tags, all, limit):
     """Look at detailed error reports for a map."""
-    m = _cli_load(tag)
-    reports = m.error_reports()
-    if limit > 0:
-        reports = itertools.islice(reports, limit)
+    if all:
+        tags = htmap.get_tags()
 
-    for report in reports:
-        click.echo(report)
+    _check_tags(tags)
+
+    count = 0
+    for tag in tags:
+        m = _cli_load(tag)
+        reports = m.error_reports()
+
+        for report in reports:
+            click.echo(report)
+            count += 1
+            if 0 < limit <= count:
+                return
 
 
 @cli.command()

@@ -251,6 +251,7 @@ def get_base_descriptors(
         'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
         'transfer_output_files': f'{names.TRANSFER_DIR}/',
         'transfer_output_remaps': f'"$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}"',
+        'on_exit_hold': 'ExitCode =!= 0',
         '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }
