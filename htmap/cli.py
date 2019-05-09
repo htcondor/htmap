@@ -269,6 +269,7 @@ STATUS_AND_COLOR = [
     (htmap.ComponentStatus.IDLE, 'yellow'),
     (htmap.ComponentStatus.SUSPENDED, 'red'),
     (htmap.ComponentStatus.HELD, 'red'),
+    (htmap.ComponentStatus.ERRORED, 'red'),
     (htmap.ComponentStatus.REMOVED, 'magenta'),
 ]
 
