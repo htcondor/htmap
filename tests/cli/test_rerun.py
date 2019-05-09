@@ -18,7 +18,7 @@ import pytest
 import htmap
 
 
-def test_rerun_all_components(cli):
+def test_rerun_map(cli):
     m = htmap.map(str, range(1))
     m.wait()
 
@@ -29,7 +29,7 @@ def test_rerun_all_components(cli):
 
 
 def test_rerun_components(cli):
-    m = htmap.map(str, range(1))
+    m = htmap.map(str, [0, 1])
     m.wait()
 
     result = cli(['rerun', 'components', m.tag, '0 1'])
@@ -37,3 +37,12 @@ def test_rerun_components(cli):
 
     assert m[0] == '0'
     assert m[1] == '1'
+
+
+def test_rerun_components_out_range_cannot_rerun(cli):
+    m = htmap.map(str, [0])
+    m.wait()
+
+    result = cli(['rerun', 'components', m.tag, '5'])
+
+    assert 'cannot rerun' in result.output

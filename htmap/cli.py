@@ -544,12 +544,15 @@ def rerun():
     nargs = -1,
     type = int,
 )
-def components(tag):
-    """Rerun a set of components from a single map."""
+def components(tag, components):
+    """Rerun components from a single map."""
     m = _cli_load(tag)
 
     with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
-        m.rerun(components)
+        try:
+            m.rerun(components)
+        except htmap.exceptions.CannotRerunComponents as err:
+            click.echo(f"ERROR: {err}", err = True)
         spinner.succeed(f'Reran components {components} of map {tag}')
 
 

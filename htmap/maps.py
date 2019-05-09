@@ -874,22 +874,28 @@ class Map(collections.abc.Sequence):
         """
         if components is None:
             components = self.components
+        components = set(components)
 
-        component_set = set(components)
+        legal_components = set(self.components)
+        bad_components = components.difference(legal_components)
+        if len(bad_components) > 0:
+            raise exceptions.CannotRerunComponents(f'cannot rerun components {bad_components} because they are not in the map')
+
         cant_be_rerun = {
             c for c, status in enumerate(self.component_statuses)
             if status not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
         }
-        intersection = component_set.intersection(cant_be_rerun)
+        intersection = components.intersection(cant_be_rerun)
         if len(intersection) != 0:
             raise exceptions.CannotRerunComponents(f'cannot rerun components {sorted(intersection)} of map {self.tag} because they are not complete')
 
+        components = sorted(components)
         for path in (self._output_file_path(c) for c in components):
             if path.exists():
                 path.unlink()
 
         itemdata = htio.load_itemdata(self._map_dir)
-        new_itemdata = [item for item in itemdata if int(item['component']) in component_set]
+        new_itemdata = [item for item in itemdata if int(item['component']) in components]
 
         submit_obj = htio.load_submit(self._map_dir)
 
