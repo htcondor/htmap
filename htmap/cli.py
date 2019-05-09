@@ -501,7 +501,7 @@ def errors(tags, all, limit):
 @click.option(
     '--status',
     default = None,
-    help = 'Print out only components that have this status.',
+    help = 'Print out only components that have this status. Case-insensitive.',
 )
 @click.option(
     '--no-color',
@@ -545,7 +545,7 @@ def rerun():
     type = int,
 )
 def components(tag, components):
-    """Rerun components from a single map."""
+    """Rerun selected components from a single map."""
     m = _cli_load(tag)
 
     with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:

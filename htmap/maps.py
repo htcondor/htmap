@@ -192,9 +192,9 @@ class Map(collections.abc.Sequence):
         yield from (self._output_file_path(idx) for idx in self.components)
 
     @property
-    def components(self) -> List[int]:
-        """Return an iterator over the component indices for the :class:`htmap.Map`."""
-        return list(range(self._num_components))
+    def components(self) -> Tuple[int]:
+        """Return a tuple containing the component indices for the :class:`htmap.Map`."""
+        return tuple(range(self._num_components))
 
     @property
     def is_done(self) -> bool:
