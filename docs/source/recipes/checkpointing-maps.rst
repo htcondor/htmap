@@ -203,18 +203,21 @@ For example, using the ``datetime`` library:
 
     import htmap
 
+    def now():
+        return datetime.datetime.utcnow()
+
     @htmap.mapped
     def function(inputs):
-        latest_checkpoint_at = datetime.datetime.now()
+        latest_checkpoint_at = now()
 
         # load from checkpoint or initialize
 
         while not_done:
             # do a unit of work
 
-            if datedate.datetime.now() > latest_checkpoint_at + datetime.timedelta(hours = 1):
+            if now() > latest_checkpoint_at + datetime.timedelta(hours = 1):
                 # write checkpoint
-                latest_checkpoint_at = datetime.datetime.now()
+                latest_checkpoint_at = now()
 
         return result
 
