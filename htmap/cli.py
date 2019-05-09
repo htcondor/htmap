@@ -158,7 +158,7 @@ def status(no_state, no_meta, format, live, no_color):
     Transient maps are prefixed with a *
     """
     if format != 'text' and live:
-        click.echo('Error: cannot produce non-text live data.')
+        click.echo('ERROR: cannot produce non-text live data.')
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
@@ -185,7 +185,7 @@ def status(no_state, no_meta, format, live, no_color):
             row_fmt = _RowFmt(maps) if not no_color else None,
         )
     else:
-        click.echo(f'Error: unknown format option "{format}"')
+        click.echo(f'ERROR: unknown format option "{format}"')
         sys.exit(1)
 
     click.echo(msg)
@@ -271,6 +271,8 @@ STATUS_AND_COLOR = [
     (htmap.ComponentStatus.HELD, 'red'),
     (htmap.ComponentStatus.REMOVED, 'magenta'),
 ]
+
+STATUS_TO_COLOR = dict(STATUS_AND_COLOR)
 
 
 def _calculate_bar_component_len(count, total, bar_width):
@@ -485,13 +487,45 @@ def errors(tags, all, limit):
     count = 0
     for tag in tags:
         m = _cli_load(tag)
-        reports = m.error_reports()
 
-        for report in reports:
+        for report in m.error_reports():
             click.echo(report)
             count += 1
             if 0 < limit <= count:
                 return
+
+
+@cli.command()
+@click.argument('tag', autocompletion = _autocomplete_tag)
+@click.option(
+    '--status',
+    default = None,
+    help = 'Print out only components that have this status.',
+)
+@click.option(
+    '--no-color',
+    is_flag = True,
+    default = False,
+    help = 'Disable color.'
+)
+def components(tag, status, no_color):
+    m = _cli_load(tag)
+
+    if status is None:
+        longest_component = len(str(m.components[-1]))
+        for component, s in enumerate(m.component_statuses):
+            click.secho(
+                f'{str(component).rjust(longest_component)} {s}',
+                fg = STATUS_TO_COLOR[s] if not no_color else None,
+            )
+    else:
+        try:
+            status = htmap.ComponentStatus[status.upper()]
+        except KeyError:
+            click.echo(f"ERROR: {status} is not a recognized component status (valid options: {' | '.join(str(cs) for cs in htmap.ComponentStatus)})")
+            sys.exit(1)
+
+        click.echo(' '.join(str(c) for c in m.components_by_status()[status]))
 
 
 @cli.command()
@@ -509,7 +543,7 @@ def errors(tags, all, limit):
 def rerun(tag, components, all):
     """Rerun part or all of a map."""
     if tuple(map(bool, (components, all))).count(True) != 1:
-        click.echo('Error: exactly one of --components, --incomplete, and --all can be used.')
+        click.echo('ERROR: exactly one of --components, --incomplete, and --all can be used.')
         sys.exit(1)
 
     m = _cli_load(tag)
@@ -557,7 +591,7 @@ def settings(user):
         try:
             txt = path.read_text(encoding = 'utf-8')
         except FileNotFoundError:
-            click.echo(f'Error: you do not have a ~/.htmaprc file ({path} was not found)')
+            click.echo(f'ERROR: you do not have a ~/.htmaprc file ({path} was not found)')
             sys.exit(1)
         click.echo(txt)
 
@@ -590,7 +624,7 @@ def remove(index):
     try:
         index = int(index)
     except ValueError:
-        click.echo(f'ERROR: index was not an integer (was {index})', err = True)
+        click.echo(f'WARNING: index was not an integer (was {index})', err = True)
         sys.exit(1)
 
     try:
@@ -735,7 +769,7 @@ def _tag_list() -> str:
 
 def _check_tags(tags):
     if len(tags) == 0:
-        click.echo('Warning: no tags were passed', err = True)
+        click.echo('WARNING: no tags were passed', err = True)
 
 
 if __name__ == '__main__':

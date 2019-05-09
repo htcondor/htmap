@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, Set
+from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, Set, Mapping
 import logging
 
 import datetime
@@ -586,6 +586,18 @@ class Map(collections.abc.Sequence):
         Return the current :class:`state.ComponentStatus` of each component in the map.
         """
         return self._state.component_statuses
+
+    def components_by_status(self) -> Mapping[state.ComponentStatus, Tuple[int]]:
+        """
+        Return the component indices grouped by their states.
+        """
+        c_to_s = collections.defaultdict(lambda: [])
+        for component, status in enumerate(self.component_statuses):
+            c_to_s[status].append(component)
+
+        c_to_s = {status: tuple(sorted(components)) for status, components in c_to_s.items()}
+
+        return c_to_s
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
