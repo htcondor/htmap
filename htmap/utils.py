@@ -166,14 +166,20 @@ def table(
     return rstr(output)
 
 
-def get_dir_size(path: Path) -> int:
+def get_dir_size(path: Path, safe = True) -> int:
     """Return the size of a directory (including all contents recursively) in bytes."""
     size = 0
     for entry in os.scandir(path):
-        if entry.is_file(follow_symlinks = False):
-            size += entry.stat().st_size
-        elif entry.is_dir():
-            size += get_dir_size(Path(entry.path))
+        try:
+            if entry.is_file(follow_symlinks = False):
+                size += entry.stat().st_size
+            elif entry.is_dir():
+                size += get_dir_size(Path(entry.path))
+        except FileNotFoundError as e:
+            if safe:
+                raise e
+            else:
+                logger.error(f'path {entry} vanished while using it')
     return size
 
 

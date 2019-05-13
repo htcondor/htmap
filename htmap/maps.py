@@ -677,8 +677,9 @@ class Map(collections.abc.Sequence):
     @property
     def local_data(self) -> int:
         """Return the number of bytes stored on the local disk by the map."""
+        # this cache is invalidated by the state reader loop when appropriate
         if self._local_data is None:
-            self._local_data = utils.get_dir_size(self._map_dir)
+            self._local_data = utils.get_dir_size(self._map_dir, safe = False)
         return self._local_data
 
     def _act(
