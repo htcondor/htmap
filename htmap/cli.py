@@ -558,8 +558,13 @@ def components(tag, components):
 
 @rerun.command()
 @_multi_tag_args
-def map(tags):
+def map(tags, all):
     """Rerun all of the components of any number of maps."""
+    if all:
+        tags = htmap.get_tags()
+
+    _check_tags(tags)
+
     for tag in tags:
         m = _cli_load(tag)
         with make_spinner(f'Rerunning map {tag} ...') as spinner:
