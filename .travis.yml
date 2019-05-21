@@ -7,6 +7,7 @@ language: python
 python:
   - "3.6"
   - "3.7"
+  - "3.8-dev"
 env:
   - HTCONDOR_VERSION=8.8
   - HTCONDOR_VERSION=8.9
@@ -15,7 +16,7 @@ matrix:
   fast_finish: true
 
 install:
-  - docker build -t htmap-test --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=$TRAVIS_PYTHON_VERSION .
+  - travis_retry docker build -t htmap-test --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=$TRAVIS_PYTHON_VERSION .
 
 script:
-  - docker run htmap-test tests/travis.sh
+  - travis_retry docker run htmap-test tests/travis.sh
