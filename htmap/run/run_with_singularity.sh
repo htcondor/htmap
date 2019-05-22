@@ -5,7 +5,7 @@ set -e
 img=$1
 component=$2
 
-# would otherwise default to user home dir
+# singularity cachedir would otherwise default to user home dir
 d=${_CONDOR_SCRATCH_DIR}/.htmap_singularity
 mkdir ${d}
 export SINGULARITY_CACHEDIR=${d}
