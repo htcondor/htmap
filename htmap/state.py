@@ -21,7 +21,7 @@ import threading
 
 import htcondor
 
-from . import holds, names, utils
+from . import holds, names, utils, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +139,13 @@ class MapState:
 
                 # the component has *terminated*, but did it error?
                 if new_status is ComponentStatus.COMPLETED:
-                    if self.map._peek_status(component) == 'ERR':
+                    try:
+                        exec_status = self.map._peek_status(component)
+                    except exceptions.OutputNotFound:
+                        logger.warning(f'output was not found for component {component} for map {self.map.tag}, marking as errored')
+                        exec_status = 'ERR'
+
+                    if exec_status == 'ERR':
                         new_status = ComponentStatus.ERRORED
 
                 if new_status is not None:

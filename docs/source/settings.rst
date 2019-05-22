@@ -87,6 +87,8 @@ Defaults to ``None``.
 Inherits the environment variable ``HTMAP_CONDOR_COLLECTOR``.
 
 
+.. _settings-docker:
+
 DOCKER
 ++++++
 

@@ -19,12 +19,12 @@ from pathlib import Path
 
 from setuptools import setup
 
-THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+THIS_DIR = Path(os.path.abspath(os.path.dirname(__file__)))
 
 
 def find_version():
     """Grab the version out of htmap/__init__.py without importing it."""
-    version_file_text = (Path(THIS_DIR) / 'htmap' / '__init__.py').read_text()
+    version_file_text = (THIS_DIR / 'htmap' / '__init__.py').read_text()
     version_match = re.search(
         r"^__version__ = ['\"]([^'\"]*)['\"]",
         version_file_text,
@@ -45,14 +45,16 @@ setup(
     long_description_content_type = "text/markdown",
     url = 'https://github.com/htcondor/htmap',
     classifiers = [
+        "License :: OSI Approved :: Apache Software License",
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: System :: Distributed Computing",
     ],
     packages = [

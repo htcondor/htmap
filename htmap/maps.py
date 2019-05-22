@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, Set
+from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, Set, Mapping
 import logging
 
 import datetime
@@ -192,9 +192,9 @@ class Map(collections.abc.Sequence):
         yield from (self._output_file_path(idx) for idx in self.components)
 
     @property
-    def components(self) -> List[int]:
-        """Return an iterator over the component indices for the :class:`htmap.Map`."""
-        return list(range(self._num_components))
+    def components(self) -> Tuple[int]:
+        """Return a tuple containing the component indices for the :class:`htmap.Map`."""
+        return tuple(range(self._num_components))
 
     @property
     def is_done(self) -> bool:
@@ -587,6 +587,18 @@ class Map(collections.abc.Sequence):
         """
         return self._state.component_statuses
 
+    def components_by_status(self) -> Mapping[state.ComponentStatus, Tuple[int]]:
+        """
+        Return the component indices grouped by their states.
+        """
+        c_to_s = collections.defaultdict(lambda: [])
+        for component, status in enumerate(self.component_statuses):
+            c_to_s[status].append(component)
+
+        c_to_s = {status: tuple(sorted(components)) for status, components in c_to_s.items()}
+
+        return c_to_s
+
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
         counts = collections.Counter(self.component_statuses)
@@ -665,8 +677,9 @@ class Map(collections.abc.Sequence):
     @property
     def local_data(self) -> int:
         """Return the number of bytes stored on the local disk by the map."""
+        # this cache is invalidated by the state reader loop when appropriate
         if self._local_data is None:
-            self._local_data = utils.get_dir_size(self._map_dir)
+            self._local_data = utils.get_dir_size(self._map_dir, safe = False)
         return self._local_data
 
     def _act(
@@ -862,22 +875,28 @@ class Map(collections.abc.Sequence):
         """
         if components is None:
             components = self.components
+        components = set(components)
 
-        component_set = set(components)
-        incomplete_components = {
+        legal_components = set(self.components)
+        bad_components = components.difference(legal_components)
+        if len(bad_components) > 0:
+            raise exceptions.CannotRerunComponents(f'cannot rerun components {bad_components} because they are not in the map')
+
+        cant_be_rerun = {
             c for c, status in enumerate(self.component_statuses)
-            if status is not state.ComponentStatus.COMPLETED
+            if status not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
         }
-        intersection = component_set.intersection(incomplete_components)
+        intersection = components.intersection(cant_be_rerun)
         if len(intersection) != 0:
             raise exceptions.CannotRerunComponents(f'cannot rerun components {sorted(intersection)} of map {self.tag} because they are not complete')
 
+        components = sorted(components)
         for path in (self._output_file_path(c) for c in components):
             if path.exists():
                 path.unlink()
 
         itemdata = htio.load_itemdata(self._map_dir)
-        new_itemdata = [item for item in itemdata if int(item['component']) in component_set]
+        new_itemdata = [item for item in itemdata if int(item['component']) in components]
 
         submit_obj = htio.load_submit(self._map_dir)
 

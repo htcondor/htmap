@@ -18,31 +18,29 @@ import pytest
 import htmap
 
 
-def test_rerun_map(cli):
-    m = htmap.map(str, range(1))
-    m.wait()
+def test_components(cli):
+    m = htmap.map(str, range(1), tag = 'foo')
+    m.wait(timeout = 180)
 
-    result = cli(['rerun', 'map', m.tag])
-    m.wait(180)
+    result = cli(['components', 'foo'])
 
-    assert m[0] == '0'
-
-
-def test_rerun_components(cli):
-    m = htmap.map(str, [0, 1])
-    m.wait()
-
-    result = cli(['rerun', 'components', m.tag, '0 1'])
-    m.wait(180)
-
-    assert m[0] == '0'
-    assert m[1] == '1'
+    assert '0 COMPLETED' in result.output
 
 
-def test_rerun_components_out_range_cannot_rerun(cli):
-    m = htmap.map(str, [0])
-    m.wait()
+def test_components_only_errors(cli):
+    m = htmap.map(lambda x: 1 / x, [0, 0, 1, 1], tag = 'foo')
+    m.wait(timeout = 180, errors_ok = True)
 
-    result = cli(['rerun', 'components', m.tag, '5'])
+    result = cli(['components', '--status', 'errored', 'foo'])
 
-    assert 'cannot rerun' in result.output
+    assert '0 1' in result.output
+    assert '2 3' not in result.output
+
+
+def test_components_bad_status(cli):
+    m = htmap.map(str, range(1), tag = 'foo')
+
+    result = cli(['components', '--status', 'wizbang', 'foo'])
+
+    assert 'ERROR' in result.output
+    assert 'wizbang' in result.output
