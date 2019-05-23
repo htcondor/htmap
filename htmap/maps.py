@@ -101,6 +101,7 @@ class Map(collections.abc.Sequence):
 
         self.stdout = MapStdOut(self)
         self.stderr = MapStdErr(self)
+        self.output_files = MapOutputFiles(self)
 
         MAPS.add(self)
 
@@ -178,21 +179,28 @@ class Map(collections.abc.Sequence):
         """The path to the outputs directory, inside the map directory."""
         return self._map_dir / names.OUTPUTS_DIR
 
-    def _input_file_path(self, component) -> Path:
+    def _input_file_path(self, component: int) -> Path:
         return self._inputs_dir / f'{component}.{names.INPUT_EXT}'
 
-    def _output_file_path(self, component) -> Path:
+    def _output_file_path(self, component: int) -> Path:
         return self._outputs_dir / f'{component}.{names.OUTPUT_EXT}'
 
     @property
     def _job_logs_dir(self) -> Path:
         return self._map_dir / names.JOB_LOGS_DIR
 
-    def _stdout_file_path(self, component) -> Path:
+    def _stdout_file_path(self, component: int) -> Path:
         return self._job_logs_dir / f'{component}.{names.STDOUT_EXT}'
 
-    def _stderr_file_path(self, component) -> Path:
+    def _stderr_file_path(self, component: int) -> Path:
         return self._job_logs_dir / f'{component}.{names.STDERR_EXT}'
+
+    @property
+    def _output_files_dir(self):
+        return self._map_dir / names.OUTPUT_FILES_DIR
+
+    def _output_files_path(self, component: int) -> Path:
+        return self._output_files_dir / str(component)
 
     @property
     def _input_file_paths(self):
@@ -965,3 +973,43 @@ class MapStdOut(MapStdX):
 
 class MapStdErr(MapStdX):
     _func = 'stderr'
+
+
+class MapOutputFiles:
+    def __init__(self, map):
+        self.map = map
+
+    def __len__(self):
+        return len(self.map)
+
+    def __getitem__(self, component: int) -> Dict[str, Path]:
+        return self.get(component)
+
+    def get(
+        self,
+        component: int,
+        timeout: utils.Timeout = None,
+    ) -> Dict[str, Path]:
+        """
+        Return a string containing the stdout/stderr from a single map component.
+
+        Parameters
+        ----------
+        component
+            The index of the map component to look up.
+        timeout
+            How long to wait before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+
+        Returns
+        -------
+        stdx :
+            The standard output/error of the map component.
+        """
+        path = self.map._output_files_path(component)
+        utils.wait_for_path_to_exist(
+            path,
+            timeout = timeout,
+            wait_time = settings['WAIT_TIME'],
+        )
+        return {p.name: p for p in path.iterdir()}
