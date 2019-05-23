@@ -47,4 +47,6 @@ def transfer_output_files(*paths: os.PathLike):
 
     for path in paths:
         path = Path(path).absolute()
-        shutil.copy2(path, user_transfer_dir / path.relative_to(scratch_dir))
+        target = user_transfer_dir / path.relative_to(scratch_dir)
+        target.parent.mkdir(exist_ok = True, parents = True)
+        shutil.move(path, target)

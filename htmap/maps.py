@@ -991,7 +991,8 @@ class MapOutputFiles:
         timeout: utils.Timeout = None,
     ) -> Dict[str, Path]:
         """
-        Return a string containing the stdout/stderr from a single map component.
+        Return a dictionary mapping the names of output files for the given
+        component to its local path on the filesystem.
 
         Parameters
         ----------
@@ -1003,8 +1004,8 @@ class MapOutputFiles:
 
         Returns
         -------
-        stdx :
-            The standard output/error of the map component.
+        files_to_paths :
+            A dictionary mapping file base names as strings to output file paths.
         """
         path = self.map._output_files_path(component)
         utils.wait_for_path_to_exist(
@@ -1012,4 +1013,4 @@ class MapOutputFiles:
             timeout = timeout,
             wait_time = settings['WAIT_TIME'],
         )
-        return {p.name: p for p in path.iterdir()}
+        return path
