@@ -23,8 +23,8 @@ THIS_DIR = Path(os.path.abspath(os.path.dirname(__file__)))
 
 
 def find_version():
-    """Grab the version out of htmap/__init__.py without importing it."""
-    version_file_text = (THIS_DIR / 'htmap' / '__init__.py').read_text()
+    """Grab the version out of htmap/version.py without importing it."""
+    version_file_text = (THIS_DIR / 'htmap' / 'version.py').read_text()
     version_match = re.search(
         r"^__version__ = ['\"]([^'\"]*)['\"]",
         version_file_text,
