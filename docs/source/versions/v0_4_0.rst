@@ -8,6 +8,9 @@ New Features
   from a Dockerfile in the HTMap ``git`` repository. It is based on ``continuumio/anaconda3``,
   with ``htmap`` itself installed as well.
   Issue: https://github.com/htcondor/htmap/issues/152
+* Redid :class:`htmap.Map` ``stdout`` and ``stderr``.
+  They are now attributes that represent sequences over the ``stdout`` and ``stderr``
+  from the map components, as strings, respectively.
 * Acts and Edits on Maps that are not "active" (i.e., have components in the HTCondor queue)
   are now no-ops. Includes a new ``htmap.Map.is_active`` property, which is ``True`` if
   any components are still in the queue.
