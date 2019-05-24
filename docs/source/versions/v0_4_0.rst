@@ -7,6 +7,7 @@ New Features
 * HTMap's default Docker image is now ``htcondor/htmap-exec``, which is produced
   from a Dockerfile in the HTMap ``git`` repository. It is based on ``continuumio/anaconda3``,
   with ``htmap`` itself installed as well.
+  Issue: https://github.com/htcondor/htmap/issues/152
 
 Bug Fixes
 ---------
