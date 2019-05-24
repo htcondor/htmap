@@ -24,11 +24,43 @@ import htmap
 def test_stdout_sees_print():
     m = htmap.map(lambda x: print('foobar'), range(1))
 
-    assert 'foobar' in m.stdout(0)
+    assert 'foobar' in m.stdout[0]
 
 
 @pytest.mark.usefixtures('delivery_methods')
 def test_stderr_sees_print():
-    m = htmap.map(lambda x: print('foobar', file = sys.stderr), range(1))
+    m = htmap.map(lambda x: print('foobar', file = sys.stderr), range(2))
 
-    assert 'foobar' in m.stderr(0)
+    assert 'foobar' in m.stderr[0]
+
+
+@pytest.mark.usefixtures('delivery_methods')
+def test_multiple_stdouts():
+    m = htmap.map(lambda x: print(x), ['foobar', 'wizbang'])
+
+    assert 'foobar' in m.stdout[0]
+    assert 'wizbang' in m.stdout[1]
+
+
+@pytest.mark.usefixtures('delivery_methods')
+def test_multiple_stderrs():
+    m = htmap.map(lambda x: print(x, file = sys.stderr), ['foobar', 'wizbang'])
+
+    assert 'foobar' in m.stderr[0]
+    assert 'wizbang' in m.stderr[1]
+
+
+@pytest.mark.usefixtures('delivery_methods')
+def test_iterating_over_multiple_stdouts():
+    s = ['foobar', 'wizbang', 'googaw']
+    m = htmap.map(lambda x: print(x), s)
+
+    assert all(st in out for st, out in zip(s, m.stdout))
+
+
+@pytest.mark.usefixtures('delivery_methods')
+def test_iterating_over_multiple_stderrs():
+    s = ['foobar', 'wizbang', 'googaw']
+    m = htmap.map(lambda x: print(x, file = sys.stderr), s)
+
+    assert all(st in err for st, err in zip(s, m.stderr))

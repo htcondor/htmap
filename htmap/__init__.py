@@ -32,7 +32,11 @@ from .mapping import (
     MapBuilder,
 )
 from .mapped import mapped, MappedFunction
-from .maps import Map
+from .maps import (
+    Map,
+    MapStdOut,
+    MapStdErr,
+)
 from .holds import ComponentHold
 from .errors import ComponentError
 from .state import ComponentStatus

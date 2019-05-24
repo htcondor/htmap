@@ -99,6 +99,9 @@ class Map(collections.abc.Sequence):
         self._state = state.MapState(self)
         self._local_data = None
 
+        self._stdout: MapStdOut = MapStdOut(self)
+        self._stderr: MapStdErr = MapStdErr(self)
+
         MAPS.add(self)
 
     @classmethod
@@ -175,11 +178,21 @@ class Map(collections.abc.Sequence):
         """The path to the outputs directory, inside the map directory."""
         return self._map_dir / names.OUTPUTS_DIR
 
-    def _input_file_path(self, component):
-        return self._inputs_dir / f'{component}.in'
+    def _input_file_path(self, component) -> Path:
+        return self._inputs_dir / f'{component}.{names.INPUT_EXT}'
 
-    def _output_file_path(self, component):
-        return self._outputs_dir / f'{component}.out'
+    def _output_file_path(self, component) -> Path:
+        return self._outputs_dir / f'{component}.{names.OUTPUT_EXT}'
+
+    @property
+    def _job_logs_dir(self) -> Path:
+        return self._map_dir / names.JOB_LOGS_DIR
+
+    def _stdout_file_path(self, component) -> Path:
+        return self._job_logs_dir / f'{component}.{names.STDOUT_EXT}'
+
+    def _stderr_file_path(self, component) -> Path:
+        return self._job_logs_dir / f'{component}.{names.STDERR_EXT}'
 
     @property
     def _input_file_paths(self):
@@ -814,64 +827,6 @@ class Map(collections.abc.Sequence):
         """
         self._edit('RequestDisk', str(disk))
 
-    def stdout(
-        self,
-        component: int,
-        timeout: utils.Timeout = None,
-    ) -> str:
-        """
-        Return a string containing the stdout from a single map component.
-
-        Parameters
-        ----------
-        component
-            The index of the map component to look up.
-        timeout
-            How long to wait before raising a :class:`htmap.exceptions.TimeoutError`.
-            If ``None``, wait forever.
-
-        Returns
-        -------
-        stdout :
-            The standard output of the map component.
-        """
-        path = self._map_dir / names.JOB_LOGS_DIR / f'{component}.{names.STDOUT_EXT}'
-        utils.wait_for_path_to_exist(
-            path,
-            timeout = timeout,
-            wait_time = settings['WAIT_TIME'],
-        )
-        return utils.rstr(path.read_text())
-
-    def stderr(
-        self,
-        component: int,
-        timeout: utils.Timeout = None,
-    ) -> str:
-        """
-        Return a string containing the stderr from a single map component.
-
-        Parameters
-        ----------
-        component
-            The index of the map component to look up.
-        timeout
-            How long to wait before raising a :class:`htmap.exceptions.TimeoutError`.
-            If ``None``, wait forever.
-
-        Returns
-        -------
-        stderr :
-            The standard error of the map component.
-        """
-        path = self._map_dir / names.JOB_LOGS_DIR / f'{component}.{names.STDERR_EXT}'
-        utils.wait_for_path_to_exist(
-            path,
-            timeout = timeout,
-            wait_time = settings['WAIT_TIME'],
-        )
-        return utils.rstr(path.read_text())
-
     def rerun(self, components: Optional[Iterable[int]] = None):
         """
         Re-run part of a map from scratch.
@@ -971,3 +926,91 @@ class Map(collections.abc.Sequence):
     def _make_persistent(self):
         if self.is_transient:
             self._transient_marker.unlink()
+
+    @property
+    def stdout(self) -> 'MapStdOut':
+        """
+        A sequence containing the ``stdout`` for each map component.
+        You can index into it (with a component index) to get the
+        ``stdout`` for that component, or iterate over the sequence to
+        get all of the ``stdout`` from the map.
+        """
+        return self._stdout
+
+    @property
+    def stderr(self) -> 'MapStdErr':
+        """
+        A sequence containing the ``stderr`` for each map component.
+        You can index into it (with a component index) to get the
+        ``stderr`` for that component, or iterate over the sequence to
+        get all of the ``stderr`` from the map.
+        """
+        return self._stderr
+
+
+class MapStdX(collections.abc.Sequence):
+    """
+    An object that helps implement a map's sequence over its ``stdout`` or ``stdin``.
+    Don't both instantiating one yourself: use the ``Map.stdout`` or ``Map.stderr``
+    attributes instead.
+    """
+
+    _func = None
+
+    def __init__(self, map):
+        self.map = map
+
+    def __len__(self):
+        return len(self.map)
+
+    def __getitem__(self, component: int) -> str:
+        return self.get(component)
+
+    def get(
+        self,
+        component: int,
+        timeout: utils.Timeout = None,
+    ) -> str:
+        """
+        Return a string containing the stdout/stderr from a single map component.
+
+        Parameters
+        ----------
+        component
+            The index of the map component to look up.
+        timeout
+            How long to wait before raising a :class:`htmap.exceptions.TimeoutError`.
+            If ``None``, wait forever.
+
+        Returns
+        -------
+        stdx :
+            The standard output/error of the map component.
+        """
+        path = getattr(self.map, f'_{self._func}_file_path')(component)
+        utils.wait_for_path_to_exist(
+            path,
+            timeout = timeout,
+            wait_time = settings['WAIT_TIME'],
+        )
+        return utils.rstr(path.read_text())
+
+
+class MapStdOut(MapStdX):
+    """
+    An object that helps implement a map's sequence over its ``stdout``.
+    Don't both instantiating one yourself: use the ``Map.stdout``
+    attribute instead.
+    """
+
+    _func = 'stdout'
+
+
+class MapStdErr(MapStdX):
+    """
+    An object that helps implement a map's sequence over its ``stderr``.
+    Don't both instantiating one yourself: use the ``Map.stderr``
+    attribute instead.
+    """
+
+    _func = 'stderr'
