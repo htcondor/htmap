@@ -225,7 +225,7 @@ class Map(collections.abc.Sequence):
         holds_ok
             If ``True``, will not raise exceptions if components are held.
         errors_ok
-            If ``True`, will not raise exceptions if components experience execution errors.
+            If ``True``, will not raise exceptions if components experience execution errors.
         """
         start_time = time.time()
         timeout = utils.timeout_to_seconds(timeout)
@@ -654,8 +654,8 @@ class Map(collections.abc.Sequence):
         """
         for idx in self.components:
             try:
-                yield self.get_err(idx).report()
-            except (exceptions.OutputNotFound, exceptions.ExpectedError) as e:
+                yield self.get_err(idx, timeout = 0).report()
+            except (exceptions.OutputNotFound, exceptions.ExpectedError, exceptions.TimeoutError) as e:
                 pass
 
     @property
@@ -864,7 +864,7 @@ class Map(collections.abc.Sequence):
     def rerun(self, components: Optional[Iterable[int]] = None):
         """
         Re-run part of a map from scratch.
-        The components must be completed.
+        The components must be completed or errored.
         Their existing output will be deleted before the re-run is executed.
 
         Parameters

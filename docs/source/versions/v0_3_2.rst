@@ -10,6 +10,8 @@ Bug Fixes
 * Hopefully finally resolved a recurring issue with checkpoint directories being
   returned to the submit node after execution errors.
   Issue: https://github.com/htcondor/htmap/issues/128
+* :meth:`htmap.Map.error_reports` can now get error reports while part of a map
+  is still running.
 
 Known Issues
 ------------
