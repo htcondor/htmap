@@ -1,4 +1,4 @@
-# Copyright 2018 HTCondor Team, Computer Sciences Department,
+# Copyright 2019 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,21 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
+FROM continuumio/anaconda3:latest
 
-from htmap.version import _version_info
+LABEL maintainer="karpel@wisc.edu"
 
+COPY . /tmp/htmap
+RUN pip install --no-cache-dir /tmp/htmap/ \
+ && rm -rf /tmp/htmap
 
-@pytest.mark.parametrize(
-    'version, expected',
-    [
-        ('0.1.0', (0, 1, 0, '')),
-        ('0.1.0rc1', (0, 1, 0, 'rc1')),
-        ('0.1.0a5', (0, 1, 0, 'a5')),
-        ('2.4.3joe', (2, 4, 3, 'joe')),
-        ('2.4.3', (2, 4, 3, '')),
-        ('2.4.3.1', (2, 4, 3, '.1')),
-    ]
-)
-def test_version_info(version, expected):
-    assert _version_info(version) == expected
+ARG USER=htmap
+RUN groupadd ${USER} \
+ && useradd -m -g ${USER} ${USER}
+USER ${USER}

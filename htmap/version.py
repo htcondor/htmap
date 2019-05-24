@@ -1,4 +1,4 @@
-# Copyright 2018 HTCondor Team, Computer Sciences Department,
+# Copyright 2019 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,21 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
+from typing import Tuple
 
-from htmap.version import _version_info
+__version__ = '0.4.0'
 
 
-@pytest.mark.parametrize(
-    'version, expected',
-    [
-        ('0.1.0', (0, 1, 0, '')),
-        ('0.1.0rc1', (0, 1, 0, 'rc1')),
-        ('0.1.0a5', (0, 1, 0, 'a5')),
-        ('2.4.3joe', (2, 4, 3, 'joe')),
-        ('2.4.3', (2, 4, 3, '')),
-        ('2.4.3.1', (2, 4, 3, '.1')),
-    ]
-)
-def test_version_info(version, expected):
-    assert _version_info(version) == expected
+def version() -> str:
+    """Return a string containing human-readable version information."""
+    return f'HTMap version {__version__}'
+
+
+def _version_info(v: str) -> Tuple[int, int, int, str]:
+    """Un-format ``__version__``."""
+    return (*(int(x) for x in v[:5].split('.')), v[5:])
+
+
+def version_info() -> Tuple[int, int, int, str]:
+    """Return a tuple of version information: ``(major, minor, micro, release_level)``."""
+    return _version_info(__version__)
