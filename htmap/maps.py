@@ -147,7 +147,7 @@ class Map(collections.abc.Sequence):
             )
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}(tag = {self.tag})>'
+        return f'{self.__class__.__name__}(tag = {self.tag})'
 
     def __gt__(self, other):
         return self.tag > other.tag
@@ -337,6 +337,9 @@ class Map(collections.abc.Sequence):
         Try to load a map component as if it succeeded.
         If the component actually failed, raise :class:`MapComponentError`.
         """
+        if component not in range(0, len(self)):
+            raise IndexError(f'tried to get output for component {component}, but map {self.map} only has {len(self.map)} components')
+
         self._wait_for_component(component, timeout)
 
         status_and_result = htio.load_objects(self._output_file_path(component))
@@ -958,6 +961,9 @@ class MapStdX(collections.abc.Sequence):
         stdx :
             The standard output/error of the map component.
         """
+        if component not in range(0, len(self)):
+            raise IndexError(f'tried to get stdout/err file for component {component}, but map {self.map} only has {len(self.map)} components')
+
         path = getattr(self.map, f'_{self._func}_file_path')(component)
         utils.wait_for_path_to_exist(
             path,
@@ -982,17 +988,17 @@ class MapOutputFiles:
     def __len__(self):
         return len(self.map)
 
-    def __getitem__(self, component: int) -> Dict[str, Path]:
+    def __getitem__(self, component: int) -> Path:
         return self.get(component)
 
     def get(
         self,
         component: int,
         timeout: utils.Timeout = None,
-    ) -> Dict[str, Path]:
+    ) -> Path:
         """
-        Return a dictionary mapping the names of output files for the given
-        component to its local path on the filesystem.
+        Return the :class:`pathlib.Path` to the directory containing the output
+        files for the given component.
 
         Parameters
         ----------
@@ -1004,9 +1010,12 @@ class MapOutputFiles:
 
         Returns
         -------
-        files_to_paths :
-            A dictionary mapping file base names as strings to output file paths.
+        path :
+            The path to the directory containing the output files for the given component.
         """
+        if component not in range(0, len(self)):
+            raise IndexError(f'tried to get output files for component {component}, but map {self.map} only has {len(self.map)} components')
+
         path = self.map._output_files_path(component)
         utils.wait_for_path_to_exist(
             path,
