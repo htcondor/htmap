@@ -916,6 +916,7 @@ class Map(collections.abc.Sequence):
         if self.is_transient:
             self._transient_marker.unlink()
 
+    @property
     def stdout(self) -> 'MapStdOut':
         """
         A sequence containing the ``stdout`` for each map component.
@@ -925,6 +926,7 @@ class Map(collections.abc.Sequence):
         """
         return self._stdout
 
+    @property
     def stderr(self) -> 'MapStdErr':
         """
         A sequence containing the ``stderr`` for each map component.
