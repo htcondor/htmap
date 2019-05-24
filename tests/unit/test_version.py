@@ -15,7 +15,7 @@
 
 import pytest
 
-from htmap import _version_info
+from htmap.version import _version_info
 
 
 @pytest.mark.parametrize(
