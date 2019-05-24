@@ -99,8 +99,8 @@ class Map(collections.abc.Sequence):
         self._state = state.MapState(self)
         self._local_data = None
 
-        self.stdout = MapStdOut(self)
-        self.stderr = MapStdErr(self)
+        self._stdout: MapStdOut = MapStdOut(self)
+        self._stderr: MapStdErr = MapStdErr(self)
 
         MAPS.add(self)
 
@@ -238,7 +238,7 @@ class Map(collections.abc.Sequence):
         holds_ok
             If ``True``, will not raise exceptions if components are held.
         errors_ok
-            If ``True`, will not raise exceptions if components experience execution errors.
+            If ``True``, will not raise exceptions if components experience execution errors.
         """
         start_time = time.time()
         timeout = utils.timeout_to_seconds(timeout)
@@ -916,8 +916,32 @@ class Map(collections.abc.Sequence):
         if self.is_transient:
             self._transient_marker.unlink()
 
+    def stdout(self) -> 'MapStdOut':
+        """
+        A sequence containing the ``stdout`` for each map component.
+        You can index into it (with a component index) to get the
+        ``stdout`` for that component, or iterate over the sequence to
+        get all of the ``stdout`` from the map.
+        """
+        return self._stdout
+
+    def stderr(self) -> 'MapStdErr':
+        """
+        A sequence containing the ``stderr`` for each map component.
+        You can index into it (with a component index) to get the
+        ``stderr`` for that component, or iterate over the sequence to
+        get all of the ``stderr`` from the map.
+        """
+        return self._stderr
+
 
 class MapStdX(collections.abc.Sequence):
+    """
+    An object that helps implement a map's sequence over its ``stdout`` or ``stdin``.
+    Don't both instantiating one yourself: use the ``Map.stdout`` or ``Map.stderr``
+    attributes instead.
+    """
+
     _func = None
 
     def __init__(self, map):
@@ -960,8 +984,20 @@ class MapStdX(collections.abc.Sequence):
 
 
 class MapStdOut(MapStdX):
+    """
+    An object that helps implement a map's sequence over its ``stdout``.
+    Don't both instantiating one yourself: use the ``Map.stdout``
+    attribute instead.
+    """
+
     _func = 'stdout'
 
 
 class MapStdErr(MapStdX):
+    """
+    An object that helps implement a map's sequence over its ``stderr``.
+    Don't both instantiating one yourself: use the ``Map.stderr``
+    attribute instead.
+    """
+
     _func = 'stderr'

@@ -1,0 +1,23 @@
+v0.4.0
+======
+
+New Features
+------------
+
+* Redid :class:`htmap.Map` ``stdout`` and ``stderr``.
+  They are now attributes that represent sequences over the ``stdout`` and ``stderr``
+  from the map components, as strings, respectively.
+
+Bug Fixes
+---------
+
+Known Issues
+------------
+
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129
