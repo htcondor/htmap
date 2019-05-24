@@ -18,4 +18,4 @@ install:
   - travis_retry docker build -t htmap-test --file tests/_inf/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=$TRAVIS_PYTHON_VERSION .
 
 script:
-  - docker run htmap-test tests/_inf/travis.sh
+  - travis_retry docker run htmap-test tests/_inf/travis.sh
