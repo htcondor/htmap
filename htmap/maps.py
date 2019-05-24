@@ -214,6 +214,11 @@ class Map(collections.abc.Sequence):
         """``True`` if all of the output is available for this map."""
         return all(cs is state.ComponentStatus.COMPLETED for cs in self.component_statuses)
 
+    @property
+    def is_active(self) -> bool:
+        """``True`` if any map components are not complete (or errored!)."""
+        return any(cs not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED) for cs in self.component_statuses)
+
     def wait(
         self,
         timeout: utils.Timeout = None,
@@ -604,13 +609,13 @@ class Map(collections.abc.Sequence):
         """
         Return the component indices grouped by their states.
         """
-        c_to_s = collections.defaultdict(lambda: [])
+        status_to_components = collections.defaultdict(lambda: [])
         for component, status in enumerate(self.component_statuses):
-            c_to_s[status].append(component)
+            status_to_components[status].append(component)
 
-        c_to_s = {status: tuple(sorted(components)) for status, components in c_to_s.items()}
+        status_to_components = {status: tuple(sorted(components)) for status, components in status_to_components.items()}
 
-        return c_to_s
+        return status_to_components
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
@@ -667,8 +672,8 @@ class Map(collections.abc.Sequence):
         """
         for idx in self.components:
             try:
-                yield self.get_err(idx).report()
-            except (exceptions.OutputNotFound, exceptions.ExpectedError) as e:
+                yield self.get_err(idx, timeout = 0).report()
+            except (exceptions.OutputNotFound, exceptions.ExpectedError, exceptions.TimeoutError) as e:
                 pass
 
     @property
@@ -701,6 +706,9 @@ class Map(collections.abc.Sequence):
         requirements: Optional[str] = None,
     ) -> classad.ClassAd:
         """Perform an action on all of the jobs associated with this map."""
+        if not self.is_active:
+            return classad.ClassAd()
+
         schedd = mapping.get_schedd()
         req = self._requirements(requirements)
         a = schedd.act(action, req)
@@ -779,6 +787,9 @@ class Map(collections.abc.Sequence):
         logger.debug(f'vacated map {self.tag}')
 
     def _edit(self, attr: str, value: str, requirements: Optional[str] = None) -> None:
+        if not self.is_active:
+            return
+
         schedd = mapping.get_schedd()
         schedd.edit(self._requirements(requirements), attr, value)
 
@@ -819,7 +830,7 @@ class Map(collections.abc.Sequence):
     def rerun(self, components: Optional[Iterable[int]] = None):
         """
         Re-run part of a map from scratch.
-        The components must be completed.
+        The components must be completed or errored.
         Their existing output will be deleted before the re-run is executed.
 
         Parameters

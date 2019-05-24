@@ -42,3 +42,4 @@ RUN pip install --no-cache-dir nbstripout \
 USER ${NB_USER}
 
 ENTRYPOINT ["htmap/binder/entrypoint.sh"]
+CMD ["jupyter", "lab"]
