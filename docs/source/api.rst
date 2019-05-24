@@ -141,6 +141,10 @@ Additionally, default map options can be set globally via ``settings['MAP_OPTION
 .. autoclass:: htmap.MapOptions
    :members:
 
+Input File Transfer
+-------------------
+
+.. autoclass:: htmap.TransferPath
 
 Checkpointing
 -------------

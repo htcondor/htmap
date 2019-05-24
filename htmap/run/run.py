@@ -179,8 +179,9 @@ def load_checkpoint(scratch_dir, transfer_dir):
         old_dir.rename(transfer_dir / curr_dir.name)
 
 
-def clean_and_remake_dir(dir):
-    shutil.rmtree(dir, ignore_errors = True)
+def clean_and_remake_dir(dir: Path):
+    if dir.exists():
+        shutil.rmtree(dir)
     dir.mkdir()
 
 
@@ -217,7 +218,6 @@ def main(component):
         result_or_error = func(*args, **kwargs)
         status = 'OK'
         print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
-
     except Exception as e:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
 
@@ -235,6 +235,7 @@ def main(component):
         )
         status = 'ERR'
 
+    clean_and_remake_dir(scratch_dir / CHECKPOINT_CURRENT)
     clean_and_remake_dir(transfer_dir)
     save_output(component, status, result_or_error, transfer_dir)
 
