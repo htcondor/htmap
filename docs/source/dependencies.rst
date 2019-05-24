@@ -141,12 +141,6 @@ If you want to use your own Singularity image, just change the ``'SINGULARITY.IM
     When using this delivery method, HTMap will discover ``python3`` on the system ``PATH`` and use that to run your code.
 
 
-.. warning::
-
-    This delivery method relies on the directory ``/htmap/scratch`` either existing in the Singularity image, or Singularity being able to run with ``overlayfs``.
-    If you get a ``stderr`` message from Singularity about a bind mount directory not existing, that's the problem.
-
-
 Assume Dependencies are Present
 -------------------------------
 

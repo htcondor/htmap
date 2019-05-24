@@ -4,6 +4,9 @@ v0.3.2
 New Features
 ------------
 
+* Singularity delivery no longer requires a specially-named directory in the
+  container and/or overlays.
+
 Bug Fixes
 ---------
 
