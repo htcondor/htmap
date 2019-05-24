@@ -5,7 +5,9 @@ New Features
 ------------
 
 * Acts and Edits on Maps that are not "active" (i.e., have components in the HTCondor queue)
-  are now no-ops.
+  are now no-ops. Includes a new ``htmap.Map.is_active`` property, which is ``True`` if
+  any components are still in the queue.
+  Issue: https://github.com/htcondor/htmap/issues/145
 
 Bug Fixes
 ---------
