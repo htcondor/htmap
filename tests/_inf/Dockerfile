@@ -83,16 +83,16 @@ RUN pip install --no-cache -r /home/${SUBMIT_USER}/requirements_dev.txt \
 
 # set default entrypoint and command
 # the entrypoint is critical: it starts HTCondor in the container
-ENTRYPOINT ["docker/entrypoint.sh"]
+ENTRYPOINT ["tests/_inf/entrypoint.sh"]
 CMD ["pytest"]
 
 # copy HTCondor and HTMap testing configs into place
-COPY docker/condor_config.local /etc/condor/condor_config.local
-COPY docker/.htmaprc /home/${SUBMIT_USER}/.htmaprc
+COPY tests/_inf/condor_config.local /etc/condor/condor_config.local
+COPY tests/_inf/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 
 # copy htmap package into container and install it
 # this is the only part that can't be cached against editing the package
 COPY --chown=mapper:mapper . /home/${SUBMIT_USER}/htmap
 WORKDIR /home/${SUBMIT_USER}/htmap
-RUN chmod +x /home/${SUBMIT_USER}/htmap/docker/entrypoint.sh /home/${SUBMIT_USER}/htmap/tests/travis.sh \
+RUN chmod +x /home/${SUBMIT_USER}/htmap/tests/_inf/entrypoint.sh /home/${SUBMIT_USER}/htmap/tests/_inf/travis.sh \
  && pip install --no-cache --no-deps -e .

@@ -25,6 +25,7 @@ from copy import copy
 import toml
 
 from . import exceptions, utils
+from .version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +149,7 @@ class Settings:
 
 
 htmap_dir = Path(os.getenv('HTMAP_DIR', Path.home() / '.htmap'))
+default_docker_image = f'htcondor/htmap-exec:v{__version__}'
 BASE_SETTINGS = Settings(dict(
     HTMAP_DIR = htmap_dir.as_posix(),
     DELIVERY_METHOD = os.getenv('HTMAP_DELIVERY_METHOD', 'docker'),
@@ -162,10 +164,10 @@ BASE_SETTINGS = Settings(dict(
         request_disk = '1GB',
     ),
     DOCKER = dict(
-        IMAGE = os.getenv('HTMAP_DOCKER_IMAGE', 'continuumio/anaconda3:latest'),
+        IMAGE = os.getenv('HTMAP_DOCKER_IMAGE', default_docker_image),
     ),
     SINGULARITY = dict(
-        IMAGE = os.getenv('HTMAP_SINGULARITY_IMAGE', 'docker://continuumio/anaconda3:latest'),
+        IMAGE = os.getenv('HTMAP_SINGULARITY_IMAGE', f'docker://{default_docker_image}'),
     ),
     TRANSPLANT = dict(
         DIR = (htmap_dir / 'transplants').as_posix(),

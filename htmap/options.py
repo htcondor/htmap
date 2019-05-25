@@ -241,6 +241,7 @@ def get_base_descriptors(
     map_dir: Path,
     delivery: str,
 ) -> dict:
+    map_dir = map_dir.absolute()
     core = {
         'JobBatchName': tag,
         'log': (map_dir / names.EVENT_LOG).as_posix(),
@@ -249,9 +250,10 @@ def get_base_descriptors(
         'stderr': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDERR_EXT}').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
-        'transfer_output_files': f'{names.TRANSFER_DIR}/',
+        'transfer_output_files': f'{names.TRANSFER_DIR}/, {names.USER_TRANSFER_DIR}/$(component)',
         'transfer_output_remaps': f'"$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}"',
         'on_exit_hold': 'ExitCode =!= 0',
+        'initialdir': f"{(map_dir / names.OUTPUT_FILES_DIR).as_posix()}",
         '+component': '$(component)',
         '+IsHTMapJob': 'True',
     }

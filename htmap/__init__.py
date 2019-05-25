@@ -13,10 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '0.3.2'
 
-from typing import Tuple as _Tuple
 import logging as _logging
+
+from .version import (
+    __version__,
+    version,
+    version_info
+)
 
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 
@@ -32,7 +36,11 @@ from .mapping import (
     MapBuilder,
 )
 from .mapped import mapped, MappedFunction
-from .maps import Map
+from .maps import (
+    Map,
+    MapStdOut,
+    MapStdErr,
+)
 from .holds import ComponentHold
 from .errors import ComponentError
 from .state import ComponentStatus
@@ -51,22 +59,8 @@ from .management import (
 )
 from .tags import get_tags
 from .checkpointing import checkpoint
+from .output_files import transfer_output_files
 from .transfer import TransferPath, TransferWindowsPath, TransferPosixPath
 from . import exceptions
 
 from . import _startup
-
-
-def version() -> str:
-    """Return a string containing human-readable version information."""
-    return f'HTMap version {__version__}'
-
-
-def _version_info(v: str) -> _Tuple[int, int, int, str]:
-    """Un-format ``__version__``."""
-    return (*(int(x) for x in v[:5].split('.')), v[5:])
-
-
-def version_info() -> _Tuple[int, int, int, str]:
-    """Return a tuple of version information: ``(major, minor, micro, release_level)``."""
-    return _version_info(__version__)

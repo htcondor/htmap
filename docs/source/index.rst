@@ -34,14 +34,14 @@ Happy mapping!
 :doc:`dependencies`
    Information about how to manage your what your code depends on (e.g., other Python packages).
 
+:doc:`recipes`
+   Deeper dives on specific tasks.
+
 :doc:`api`
    Public API documentation.
 
 :doc:`settings`
    Documentation for the various settings.
-
-:doc:`recipes`
-   Deeper dives on specific, common tasks.
 
 :doc:`tips-and-tricks`
    Useful code snippets, tips, and tricks.

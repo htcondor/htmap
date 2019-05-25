@@ -26,7 +26,7 @@ copyright = '2018, HTCondor Team, Computer Sciences Department, University of Wi
 author = 'HTCondor Team'
 
 # The short X.Y version
-version = htmap.__version__[:5]
+version = htmap.__version__
 # The full version, including alpha/beta/rc tags
 release = htmap.__version__
 

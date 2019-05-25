@@ -78,6 +78,14 @@ See :ref:`error_handling` for more details on error handling.
 .. autoclass:: htmap.ComponentStatus
    :members:
 
+.. autoclass:: htmap.MapStdOut
+   :members: get
+
+.. autoclass:: htmap.MapStdErr
+   :members: get
+
+.. autoclass:: htmap.MapOutputFiles
+   :members: get
 
 .. _error_handling:
 
@@ -145,6 +153,13 @@ Input File Transfer
 -------------------
 
 .. autoclass:: htmap.TransferPath
+
+
+Output File Transfer
+--------------------
+
+.. autofunction:: htmap.transfer_output_files
+
 
 Checkpointing
 -------------

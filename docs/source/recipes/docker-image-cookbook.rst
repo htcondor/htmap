@@ -14,15 +14,20 @@ are installed on the computers your code actually runs on.
 
 To use Docker, you write a **Dockerfile** which tells Docker how to generate an **image**,
 which is a blueprint to construct a **container**.
-The Dockerfile is a list of instructions, such as shell commands or instructions for Docker to copy files from the build environment into the image.
+The Dockerfile is a list of instructions, such as shell commands or instructions
+for Docker to copy files from the build environment into the image.
 You then tell Docker to "build" the image from the Dockerfile.
 
-For use with HTMap, you then upload this image to `Docker Hub <https://hub.docker.com>`_, where it can then be downloaded to execute nodes in an HTCondor pool.
-When your HTMap component lands on an execute node, HTCondor will download your image from Docker Hub and run your code inside it using HTMap.
+For use with HTMap, you then upload this image to `Docker Hub <https://hub.docker.com>`_,
+where it can then be downloaded to execute nodes in an HTCondor pool.
+When your HTMap component lands on an execute node, HTCondor will download your
+image from Docker Hub and run your code inside it using HTMap.
 
-The following sections describe, roughly in order of increasing complexity, different ways to build Docker images for use with HTMap.
+The following sections describe, roughly in order of increasing complexity,
+different ways to build Docker images for use with HTMap.
 Each level of complexity is introduced to solve a more advanced dependency management problem.
-We recommend reading them in order until reach one that works for your dependencies (each section assumes knowledge of the previous sections).
+We recommend reading them in order until reach one that works for your dependencies
+(each section assumes knowledge of the previous sections).
 
 More detailed information on how Dockerfiles work can be found
 `in the Docker documentation itself <https://docs.docker.com/engine/reference/builder/>`_
@@ -37,10 +42,11 @@ This page only covers the bare minimum to get started with HTMap and Docker.
 Can I use HTMap's default image?
 --------------------------------
 
-HTMap's default Docker image is `continuumio/anaconda3:latest <https://hub.docker.com/r/continuumio/anaconda3/>`_.
+HTMap's default Docker image is `htcondor/htmap-exec <https://hub.docker.com/r/htcondor/htmap-exec/>`_,
+which is itself based on`continuumio/anaconda3 <https://hub.docker.com/r/continuumio/anaconda3/>`_.
 It is based on Python 3 and has many useful packages pre-installed, such as ``numpy``, ``scipy``, and ``pandas``.
-If your software only depends on packages included in the `Anaconda distribution <https://docs.anaconda.com/anaconda/packages/pkg-docs/>`_ by default,
-you can use HTMap's default and won't need to create your own image.
+If your software only depends on packages included in the `Anaconda distribution <https://docs.anaconda.com/anaconda/packages/pkg-docs/>`_,
+you can use HTMap's default image and won't need to create your own.
 
 
 I depend on Python packages that aren't in the Anaconda distribution
@@ -52,13 +58,14 @@ I depend on Python packages that aren't in the Anaconda distribution
     and `make an account on Docker Hub <https://hub.docker.com/>`_.
 
 
-Let's pretend that there's a package called ``foobar`` that your Python code depends on, but isn't part of the Anaconda distribution.
+Let's pretend that there's a package called ``foobar`` that your Python function depends on,
+but isn't part of the Anaconda distribution.
 You will need to write your own Dockerfile to include this package in your Docker image.
 
 Docker images are built in **layers**.
 You always start a Dockerfile by stating which existing Docker image you'd like to use as your base layer.
 A good choice is the same Anaconda image that HTMap uses as the default,
-which comes with both the ``conda`` package manager and  the standard ``pip``.
+which comes with both the ``conda`` package manager and the standard ``pip``.
 Create a file named ``Dockerfile`` and write this into it:
 
 .. code-block:: docker
@@ -67,17 +74,40 @@ Create a file named ``Dockerfile`` and write this into it:
 
     FROM continuumio/anaconda3:latest
 
-Lines that begin with a ``#`` are comments in a Dockerfile.
+    RUN pip install --no-cache-dir htmap
+
+    ARG USER=htmap
+    RUN groupadd ${USER} \
+     && useradd -m -g ${USER} ${USER}
+    USER ${USER}
 
 Each line in the Dockerfile starts with a short, capitalized word which tells Docker what kind of build instruction it is.
-``FROM`` means "start with this base image".
-Now we need to tell Docker to run a shell command during the build to install ``foobar``.
+
+* ``FROM`` means "start with this base image".
+* ``RUN`` means "execute these shell commands in the container".
+* ``ARG`` means "set build argument" - it acts like an environment variable that's only set during the image build.
+
+Lines that begin with a ``#`` are comments in a Dockerfile.
+The above lines say that we want to inherit from the image ``continuumio/anaconda3:latest`` and build on top of it.
+To be compatible with HTMap, we install ``htmap`` via ``pip``.
+We also set up a non-root user to do the execution, which is important for security.
+Naming that user ``htmap`` is arbitrary and has nothing to do with the ``htmap`` package itself.
+
+Now we need to tell Docker to run a shell command during the build to install ``foobar``
+by adding one more line to the bottom of the Dockerfile.
 
 .. code-block:: docker
 
     # Dockerfile
 
     FROM continuumio/anaconda3:latest
+
+    RUN pip install --no-cache-dir htmap
+
+    ARG USER=htmap
+    RUN groupadd ${USER} \
+     && useradd -m -g ${USER} ${USER}
+    USER ${USER}
 
     # if foobar can be install via conda, use these lines
     RUN conda install -y foobar \
@@ -100,6 +130,13 @@ If you need install many packages, we recommend writing a ``requirements.txt`` f
     # Dockerfile
 
     FROM continuumio/anaconda3:latest
+
+    RUN pip install --no-cache-dir htmap
+
+    ARG USER=htmap
+    RUN groupadd ${USER} \
+     && useradd -m -g ${USER} ${USER}
+    USER ${USER}
 
     COPY requirements.txt requirements.txt
     RUN pip install --no-cache-dir -r requirements.txt
@@ -153,10 +190,13 @@ Instead of using the full Anaconda distribution, use a base Docker image that on
 
     FROM continuumio/miniconda3:latest
 
-    RUN conda install -y cloudpickle \
-     && conda clean -y -all
+    RUN pip install --no-cache-dir htmap
 
-Note that we need to install ``cloudpickle``, which HTMap depends on execute-side, ourselves.
+    ARG USER=htmap
+    RUN groupadd ${USER} \
+     && useradd -m -g ${USER} ${USER}
+    USER ${USER}
+
 From here, install your particular dependencies as above.
 
 If you prefer to not use ``conda``, an even-barer-bones image could be produced from
@@ -167,8 +207,14 @@ If you prefer to not use ``conda``, an even-barer-bones image could be produced 
 
     FROM python:latest
 
-    RUN pip install --no-cache-dir cloudpickle
+    RUN pip install --no-cache-dir htmap
 
+    ARG USER=htmap
+    RUN groupadd ${USER} \
+     && useradd -m -g ${USER} ${USER}
+    USER ${USER}
+
+We use ``python:latest`` as our base image, so we don't have ``conda`` anymore.
 
 I want to use a Python package that's not on PyPI or Anaconda
 -------------------------------------------------------------
@@ -225,8 +271,9 @@ We recommend adding ``miniconda`` to the image by adding these lines to your Doc
      && conda install python=${PYTHON_VERSION} \
      && conda clean -y -all
 
-After this, you can install any other Python packages you need as in the preceeding sections.
+After this, you can install HTMap and any other Python packages you need as in the preceeding sections.
 
 Note that in this example we based the image on Ubuntu's base image and installed ``wget``,
 which we used to download the ``miniconda`` installer.
-Depending on your base image, you may need to use a different package manager (for example, ``yum``) or different command-line file download tool (for example, ``curl``).
+Depending on your base image, you may need to use a different package manager
+(for example, ``yum``) or different command-line file download tool (for example, ``curl``).
