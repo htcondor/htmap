@@ -151,6 +151,13 @@ Input File Transfer
 
 .. autoclass:: htmap.TransferPath
 
+
+Output File Transfer
+--------------------
+
+.. autofunction:: htmap.transfer_output_files
+
+
 Checkpointing
 -------------
 

@@ -57,3 +57,5 @@ If you want to test this yourself, here's the Dubious Barology Lyricon (really a
     #!/usr/bin/env bash
 
     echo $((2 * $1))
+
+If your external program outputs files, you may find the :doc:`output-files` recipe helpful.

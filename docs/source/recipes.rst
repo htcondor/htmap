@@ -5,7 +5,10 @@ Recipes
 
 :doc:`recipes/docker-image-cookbook`
    How to build HTMap-compatible Docker images.
-   Yes, this recipe is an entire cookbook!
+   Yes, this single recipe is an entire cookbook!
+
+:doc:`recipes/output-files`
+   How to move arbitrary files back to the submit node.
 
 :doc:`recipes/wrapping-external-programs`
    How to send input and output to an external (i.e., non-Python) program from inside a mapped function.
@@ -19,5 +22,6 @@ Recipes
    :hidden:
 
    recipes/docker-image-cookbook
+   recipes/output-files
    recipes/wrapping-external-programs
    recipes/checkpointing-maps

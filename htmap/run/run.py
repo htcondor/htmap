@@ -32,6 +32,7 @@ import getpass
 from pathlib import Path
 
 TRANSFER_DIR = '_htmap_transfer'
+USER_TRANSFER_DIR = '_htmap_user_transfer'
 CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
 CHECKPOINT_OLD = '_htmap_old_checkpoint'
 
@@ -186,6 +187,8 @@ def clean_and_remake_dir(dir: Path):
 
 
 def main(component):
+    os.environ['HTMAP_COMPONENT'] = f"{component}"
+
     node_info = get_node_info()
     print_node_info(node_info)
     print()
@@ -193,6 +196,8 @@ def main(component):
     scratch_dir = Path.cwd()
     transfer_dir = scratch_dir / TRANSFER_DIR
     transfer_dir.mkdir(exist_ok = True)
+    user_transfer_dir = scratch_dir / USER_TRANSFER_DIR / os.getenv('HTMAP_COMPONENT')
+    user_transfer_dir.mkdir(exist_ok = True, parents = True)
 
     load_checkpoint(scratch_dir, transfer_dir)
 

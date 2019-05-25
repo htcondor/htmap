@@ -347,6 +347,7 @@ MAP_SUBDIR_NAMES = (
     names.INPUTS_DIR,
     names.OUTPUTS_DIR,
     names.JOB_LOGS_DIR,
+    names.OUTPUT_FILES_DIR,
 )
 
 
