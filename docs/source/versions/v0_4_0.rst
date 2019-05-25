@@ -4,6 +4,8 @@ v0.4.0
 New Features
 ------------
 
+* **HTMap can now transfer output files!**
+  See the new recipe: :doc:`/recipes/output-files` and the new :func:`htmap.transfer_output_files` function.
 * HTMap's default Docker image is now ``htcondor/htmap-exec``, which is produced
   from a Dockerfile in the HTMap ``git`` repository. It is based on ``continuumio/anaconda3``,
   with ``htmap`` itself installed as well.

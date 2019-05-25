@@ -101,7 +101,7 @@ class Map(collections.abc.Sequence):
 
         self._stdout: MapStdOut = MapStdOut(self)
         self._stderr: MapStdErr = MapStdErr(self)
-        self.output_files = MapOutputFiles(self)
+        self._output_files: MapOutputFiles = MapOutputFiles(self)
 
         MAPS.add(self)
 
@@ -958,6 +958,17 @@ class Map(collections.abc.Sequence):
         """
         return self._stderr
 
+    @property
+    def output_files(self) -> 'MapOutputFiles':
+        """
+        A sequence containing the path to the directory containing the
+        output files for each map component.
+        You can index into it (with a component index) to get the
+        path for that component, or iterate over the sequence to
+        get all of the paths from the map.
+        """
+        return self._output_files
+
 
 class MapStdX(collections.abc.Sequence):
     """
@@ -1031,6 +1042,12 @@ class MapStdErr(MapStdX):
 
 
 class MapOutputFiles:
+    """
+    An object that helps implement a map's sequence over its output file directories.
+    Don't both instantiating one yourself: use the ``Map.output_files``
+    attribute instead.
+    """
+
     def __init__(self, map):
         self.map = map
 
