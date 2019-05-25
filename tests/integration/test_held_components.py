@@ -27,7 +27,7 @@ def test_waiting_on_held_component_raises(mapped_doubler):
     time.sleep(1)  # wait for it to propagate
 
     with pytest.raises(htmap.exceptions.MapComponentHeld):
-        m.wait()
+        m.wait(timeout = 180)
 
 
 def test_getting_held_component_raises(mapped_doubler):

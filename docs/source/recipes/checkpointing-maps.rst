@@ -3,10 +3,6 @@
 Checkpointing Maps
 ------------------
 
-.. attention::
-
-    To use this feature, HTMap itself must be installed in your execute environment (not just ``cloudpickle``).
-
 When running on opportunistic resources, HTCondor might "evict" your map components from the execute locations.
 Evicted components return to the queue and, without your intervention, restart from scratch.
 However, HTMap can preserve files across an eviction and make them available in the next run.

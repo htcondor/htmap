@@ -1,4 +1,4 @@
-# Copyright 2018 HTCondor Team, Computer Sciences Department,
+# Copyright 2019 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,18 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
+FROM continuumio/anaconda3:latest
 
-import pytest
+LABEL maintainer="karpel@wisc.edu"
 
-import htmap
+COPY . /tmp/htmap
+RUN pip install --no-cache-dir /tmp/htmap/ \
+ && rm -rf /tmp/htmap
 
-
-def test_memory_usage_is_nonzero_after_map_complete():
-    # need it run for at least 5 seconds for it generate an image size event
-    m = htmap.map(lambda x: time.sleep(10), [None])
-
-    m.wait(timeout = 180)
-    print(m.memory_usage)
-
-    assert all(x > 0 for x in m.memory_usage)
+ARG USER=htmap
+RUN groupadd ${USER} \
+ && useradd -m -g ${USER} ${USER}
+USER ${USER}

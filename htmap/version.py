@@ -1,4 +1,4 @@
-# Copyright 2018 HTCondor Team, Computer Sciences Department,
+# Copyright 2019 HTCondor Team, Computer Sciences Department,
 # University of Wisconsin-Madison, WI.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,18 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
+from typing import Tuple
 
-import pytest
-
-import htmap
+__version__ = '0.4.0'
 
 
-def test_memory_usage_is_nonzero_after_map_complete():
-    # need it run for at least 5 seconds for it generate an image size event
-    m = htmap.map(lambda x: time.sleep(10), [None])
+def version() -> str:
+    """Return a string containing human-readable version information."""
+    return f'HTMap version {__version__}'
 
-    m.wait(timeout = 180)
-    print(m.memory_usage)
 
-    assert all(x > 0 for x in m.memory_usage)
+def _version_info(v: str) -> Tuple[int, int, int, str]:
+    """Un-format ``__version__``."""
+    return (*(int(x) for x in v[:5].split('.')), v[5:])
+
+
+def version_info() -> Tuple[int, int, int, str]:
+    """Return a tuple of version information: ``(major, minor, micro, release_level)``."""
+    return _version_info(__version__)

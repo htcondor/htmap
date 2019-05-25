@@ -20,7 +20,7 @@ import htmap
 
 def test_rerun_map(cli):
     m = htmap.map(str, range(1))
-    m.wait()
+    m.wait(180)
 
     result = cli(['rerun', 'map', m.tag])
     m.wait(180)
@@ -30,7 +30,7 @@ def test_rerun_map(cli):
 
 def test_rerun_components(cli):
     m = htmap.map(str, [0, 1])
-    m.wait()
+    m.wait(180)
 
     result = cli(['rerun', 'components', m.tag, '0 1'])
     m.wait(180)
@@ -41,7 +41,7 @@ def test_rerun_components(cli):
 
 def test_rerun_components_out_range_cannot_rerun(cli):
     m = htmap.map(str, [0])
-    m.wait()
+    m.wait(180)
 
     result = cli(['rerun', 'components', m.tag, '5'])
 

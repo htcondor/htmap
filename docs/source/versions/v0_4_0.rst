@@ -1,0 +1,31 @@
+v0.4.0
+======
+
+New Features
+------------
+
+* HTMap's default Docker image is now ``htcondor/htmap-exec``, which is produced
+  from a Dockerfile in the HTMap ``git`` repository. It is based on ``continuumio/anaconda3``,
+  with ``htmap`` itself installed as well.
+  Issue: https://github.com/htcondor/htmap/issues/152
+* Redid :class:`htmap.Map` ``stdout`` and ``stderr``.
+  They are now attributes that represent sequences over the ``stdout`` and ``stderr``
+  from the map components, as strings, respectively.
+* Acts and Edits on Maps that are not "active" (i.e., have components in the HTCondor queue)
+  are now no-ops. Includes a new ``htmap.Map.is_active`` property, which is ``True`` if
+  any components are still in the queue.
+  Issue: https://github.com/htcondor/htmap/issues/145
+
+Bug Fixes
+---------
+
+Known Issues
+------------
+
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129

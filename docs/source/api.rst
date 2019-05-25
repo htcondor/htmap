@@ -78,6 +78,11 @@ See :ref:`error_handling` for more details on error handling.
 .. autoclass:: htmap.ComponentStatus
    :members:
 
+.. autoclass:: htmap.MapStdOut
+   :members: get
+
+.. autoclass:: htmap.MapStdErr
+   :members: get
 
 .. _error_handling:
 
@@ -141,6 +146,10 @@ Additionally, default map options can be set globally via ``settings['MAP_OPTION
 .. autoclass:: htmap.MapOptions
    :members:
 
+Input File Transfer
+-------------------
+
+.. autoclass:: htmap.TransferPath
 
 Checkpointing
 -------------

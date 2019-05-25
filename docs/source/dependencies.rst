@@ -19,7 +19,7 @@ it's all of the execute nodes in the pool that your might map components might b
 Submit-side dependency management can be handled using standard Python package management tools.
 We recommend using ``miniconda`` as your package manager (https://docs.conda.io/en/latest/miniconda.html).
 
-HTMap itself requires that execute-side can run a Python script using a Python install that has the module ``cloudpickle`` installed.
+HTMap itself requires that execute-side can run a Python script using a Python install that also has ``htmap`` installed.
 That Python installation also needs whatever other packages your code needs to run.
 For example, if you ``import numpy`` in your code, you need to have ``numpy`` installed execute-side.
 
@@ -33,7 +33,8 @@ The built-in delivery methods are
 
 More details on each of these methods can be found below.
 
-The default delivery method is ``docker``, with image ``continuumio/anaconda3:latest``.
+The default delivery method is ``docker``, with the default image ``htcondor/htmap-exec:<version>``,
+where version will match the version of HTMap you are using submit-side.
 If your pool can run Docker jobs and your Python code does not depend on any custom packages
 (i.e., you never import any modules that you wrote yourself),
 this default behavior will likely work for you without requiring any changes.
@@ -73,8 +74,8 @@ At runtime:
     htmap.settings['DOCKER.IMAGE'] = "<repository>/<image>:<tag>"
 
 In this mode, HTMap will run inside a Docker image that you provide.
-Remember that this Docker image needs to have the ``cloudpickle`` module installed.
-The default Docker image is `continuumio/anaconda3:latest <https://hub.docker.com/r/continuumio/anaconda3/>`_,
+Remember that this Docker image needs to have the ``htmap`` module installed.
+The default Docker image is `htcondor/htmap-exec <https://hub.docker.com/r/htcondor/htmap-exec/>`_,
 which is based on Python 3 and has many useful packages pre-installed.
 
 If you want to use your own Docker image, just change the ``'DOCKER.IMAGE'`` setting.
@@ -83,11 +84,11 @@ For example, a very simple Dockerfile that can be used with HTMap is
 
 .. code-block:: docker
 
-    FROM python:latest
+    FROM python:3
 
-    RUN pip install --no-cache-dir cloudpickle
+    RUN pip install --no-cache-dir htmap
 
-This would create a Docker image with the latest version of Python and ``cloudpickle`` installed.
+This would create a Docker image with the latest versions of Python 3 and ``htmap`` installed.
 From here you could install more Python dependencies, or add more layers to account for other dependencies.
 
 .. attention::
