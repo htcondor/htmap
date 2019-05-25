@@ -84,6 +84,9 @@ See :ref:`error_handling` for more details on error handling.
 .. autoclass:: htmap.MapStdErr
    :members: get
 
+.. autoclass:: htmap.MapOutputFiles
+   :members: get
+
 .. _error_handling:
 
 Error Handling
