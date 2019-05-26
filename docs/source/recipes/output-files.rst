@@ -74,9 +74,9 @@ directories containing the output files from each component, like so:
 .. code-block:: python
 
     with repeat.build_map() as mb:
-    mb('foo', 5)
-    mb('wiz', 3)
-    mb('bam', 2)
+        mb('foo', 5)
+        mb('wiz', 3)
+        mb('bam', 2)
 
     repeated = mb.map
 
