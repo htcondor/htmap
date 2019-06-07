@@ -8,7 +8,7 @@ FAQ
 How do I install HTMap?
 -----------------------
 
-On Unix/Linux systems, runing ``pip install htmap`` from the command line should suffice.
+On Unix/Linux systems, running ``pip install htmap`` from the command line should suffice.
 On Windows, you may need to install HTCondor itself to get access to the HTCondor Python bindings, and use the ``no-deps`` option with ``pip install``.
 You only need to do this "submit-side", but you may also need to do some work to make sure your code will run execute-side: see :doc:`dependencies`.
 
