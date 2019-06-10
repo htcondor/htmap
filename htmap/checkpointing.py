@@ -27,11 +27,13 @@ def checkpoint(*paths: os.PathLike):
 
     .. attention::
 
-        This function is a no-op when executing locally, so you if you're testing your function it won't do anything.
+        This function is a no-op when executing locally (i.e., not execute-side),
+        so you if you're testing your function locally it won't do anything.
 
     .. attention::
 
-        The files will be copied, so try not to make the checkpoint files too large.
+        The files will be **copied** by this function,
+        so try not to make the checkpoint files too large.
 
     Parameters
     ----------

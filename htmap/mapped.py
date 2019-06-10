@@ -134,4 +134,4 @@ def mapped(map_options: Optional[options.MapOptions] = None) -> Union[Callable, 
 
         return wrapper
 
-    raise TypeError('incorrect use of @mapped decorator - argument should be a callable or a MapOptions, or no argument')
+    raise TypeError('incorrect use of @mapped decorator: argument should be a callable or a MapOptions, or no argument')

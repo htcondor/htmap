@@ -272,6 +272,7 @@ class Map(collections.abc.Sequence):
                 ok_statuses.append(state.ComponentStatus.HELD)
             if errors_ok:
                 ok_statuses.append(state.ComponentStatus.ERRORED)
+            ok_statuses = set(ok_statuses)
 
             while True:
                 num_incomplete = sum(
@@ -287,7 +288,7 @@ class Map(collections.abc.Sequence):
 
                 for component, status in enumerate(self.component_statuses):
                     if status is state.ComponentStatus.HELD and not holds_ok:
-                        raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} was held: {self.holds[component]}')
+                        raise exceptions.MapComponentHeld(f'component {component} of map {self.tag} was held. Reason: {self.holds[component]}')
                     elif status is state.ComponentStatus.ERRORED and not errors_ok:
                         raise exceptions.MapComponentError(f'component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}')
 

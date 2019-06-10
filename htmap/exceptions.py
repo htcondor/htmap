@@ -55,7 +55,7 @@ class TagNotFound(HTMapException):
 
 
 class EmptyMap(HTMapException):
-    """The map contains no inputs."""
+    """The map contains no inputs, so it wasn't created."""
     pass
 
 
@@ -75,7 +75,7 @@ class CannotRetagMap(HTMapException):
 
 
 class UnknownPythonDeliveryMethod(HTMapException):
-    """The specified Python delivery mechanism has not been registered."""
+    """The specified Python delivery method has not been registered."""
     pass
 
 

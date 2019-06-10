@@ -30,7 +30,7 @@ def transfer_output_files(*paths: os.PathLike):
 
     .. attention::
 
-        The files will be **moved**, so they will not be available in their original locations.
+        The files will be **moved** by this function, so they will not be available in their original locations.
 
     Parameters
     ----------
