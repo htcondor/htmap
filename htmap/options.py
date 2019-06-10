@@ -277,31 +277,30 @@ def get_base_descriptors(
     }
 
 
-def _copy_run_scripts():
-    run_script_source_dir = Path(__file__).parent / names.RUN_DIR
-    run_scripts = [
-        run_script_source_dir / 'run.py',
-        run_script_source_dir / 'run_with_singularity.sh',
-        run_script_source_dir / 'run_with_transplant.sh',
-    ]
-    target_dir = Path(settings['HTMAP_DIR']) / 'run'
-    target_dir.mkdir(parents = True, exist_ok = True)
-    for src in run_scripts:
-        target = target_dir / src.name
-        shutil.copy2(src, target)
-
-
 def run_delivery_setup(
     tag: str,
     map_dir: Path,
     delivery: str,
 ) -> None:
-    _copy_run_scripts()
+    _copy_run_scripts(map_dir)
 
     try:
         SETUP_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
+
+
+def _copy_run_scripts(map_dir: Path):
+    run_script_source_dir = Path(__file__).parent / 'run'
+    run_scripts = [
+        run_script_source_dir / names.RUN_SCRIPT,
+        run_script_source_dir / names.RUN_WITH_SINGULARITY_SCRIPT,
+        run_script_source_dir / names.RUN_WITH_TRANSPLANT_SCRIPT,
+    ]
+    for src in run_scripts:
+        target = map_dir / src.name
+        shutil.copy2(src, target)
+
 
 
 def _get_base_descriptors_for_assume(
@@ -310,7 +309,7 @@ def _get_base_descriptors_for_assume(
 ) -> dict:
     return {
         'universe': 'vanilla',
-        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+        'executable': (map_dir / names.RUN_SCRIPT).as_posix(),
         'arguments': '$(component)',
     }
 
@@ -328,7 +327,7 @@ def _get_base_descriptors_for_docker(
     return {
         'universe': 'docker',
         'docker_image': settings['DOCKER.IMAGE'],
-        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+        'executable': (map_dir / names.RUN_SCRIPT).as_posix(),
         'arguments': '$(component)',
         'transfer_executable': 'True',
     }
@@ -347,9 +346,9 @@ def _get_base_descriptors_for_singularity(
     return {
         'universe': 'vanilla',
         'requirements': 'HasSingularity == true',
-        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run_with_singularity.sh').as_posix(),
+        'executable': (map_dir / names.RUN_WITH_SINGULARITY_SCRIPT).as_posix(),
         'transfer_input_files': [
-            (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+            (map_dir / names.RUN_SCRIPT).as_posix(),
         ],
         'arguments': f'{settings["SINGULARITY.IMAGE"]} $(component)',
         'transfer_executable': 'True',
@@ -374,10 +373,10 @@ def _get_base_descriptors_for_transplant(
 
     return {
         'universe': 'vanilla',
-        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run_with_transplant.sh').as_posix(),
+        'executable': (map_dir / names.RUN_WITH_TRANSPLANT_SCRIPT).as_posix(),
         'arguments': f'$(component) {h}',
         'transfer_input_files': [
-            (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+            (map_dir / names.RUN_SCRIPT).as_posix(),
             tif_path,
         ],
     }

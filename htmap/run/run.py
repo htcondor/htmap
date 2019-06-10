@@ -33,6 +33,7 @@ from pathlib import Path
 
 TRANSFER_DIR = '_htmap_transfer'
 USER_TRANSFER_DIR = '_htmap_user_transfer'
+CHECKPOINT_PREP = '_htmap_prep_checkpoint'
 CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
 CHECKPOINT_OLD = '_htmap_old_checkpoint'
 

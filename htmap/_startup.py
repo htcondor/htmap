@@ -11,7 +11,6 @@ LOGS_DIR_PATH = Path(settings['HTMAP_DIR']) / names.LOGS_DIR
 
 
 def setup_internal_file_logger():
-    LOGS_DIR_PATH.mkdir(parents = True, exist_ok = True)
     LOG_FILE = LOGS_DIR_PATH / 'htmap.log'
     _logfile_handler = handlers.RotatingFileHandler(
         filename = LOG_FILE,
@@ -36,7 +35,7 @@ def ensure_htmap_dir_exists():
             _htmap_dir,
             _htmap_dir / _names.MAPS_DIR,
             _htmap_dir / _names.TAGS_DIR,
-            _htmap_dir / _names.REMOVED_TAGS_DIR
+            _htmap_dir / _names.LOGS_DIR,
         )
         for dir in dirs:
             dir.mkdir(parents = True, exist_ok = True)
