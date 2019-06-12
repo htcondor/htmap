@@ -1,0 +1,22 @@
+v0.4.1
+======
+
+New Features
+------------
+
+Bug Fixes
+---------
+
+* Fixed a bug where maps submitted with late materialization would choke on the
+  "cluster submit" event when reading their event log. Band-aided for now.
+
+Known Issues
+------------
+
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129
