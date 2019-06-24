@@ -89,3 +89,12 @@ def test_iter_inputs(mapped_doubler):
     m = mapped_doubler.map(range(3))
 
     assert list(m.iter_inputs()) == [((0,), {}), ((1,), {}), ((2,), {})]
+
+
+def test_contains(mapped_doubler):
+    m = mapped_doubler.map(range(3))
+
+    assert 0 in m
+    assert 1 in m
+    assert -1 not in m
+    assert 5 not in m

@@ -165,6 +165,9 @@ class Map(collections.abc.Sequence):
         """The length of a :class:`Map` is the number of components it contains."""
         return self._num_components
 
+    def __contains__(self, component: int)-> bool:
+        return component in range(self._num_components)
+
     @property
     def _tag_file_path(self) -> Path:
         return tags.tag_file_path(self.tag)
@@ -695,7 +698,8 @@ class Map(collections.abc.Sequence):
         A component that hasn't reported yet will show a ``0``.
 
         .. warning::
-            Due to current limitations in the HTCondor Python bindings, memory use for very short-lived components (<5 seconds) will not be accurate.
+            Due to current limitations in HTCondor, memory use for very
+            short-lived components (<5 seconds) will not be accurate.
         """
         return self._state.memory_usage
 
@@ -754,7 +758,8 @@ class Map(collections.abc.Sequence):
         Parameters
         ----------
         force
-            If ``True``, do not wait for HTCondor to confirm that all map components have been removed.
+            If ``True``, do not wait for HTCondor to confirm that all
+            map components have been removed from the queue.
         """
         if not force:
             while not all(
@@ -989,6 +994,9 @@ class MapStdX(collections.abc.Sequence):
     def __getitem__(self, component: int) -> str:
         return self.get(component)
 
+    def __contains__(self, component: int) -> bool:
+        return component in self.map
+
     def get(
         self,
         component: int,
@@ -1057,6 +1065,9 @@ class MapOutputFiles:
 
     def __getitem__(self, component: int) -> Path:
         return self.get(component)
+
+    def __contains__(self, component: int) -> bool:
+        return component in self.map
 
     def get(
         self,
