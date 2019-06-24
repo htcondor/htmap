@@ -113,6 +113,11 @@ class MapState:
             for event in self._event_reader:
                 self.map._local_data = None  # invalidate cache if any events were received
 
+                # skip the late materialization submit event
+                # todo: replace with better mechanism
+                if event.proc < 0:
+                    continue
+
                 if event.type is htcondor.JobEventType.SUBMIT:
                     self._clusterproc_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
 
