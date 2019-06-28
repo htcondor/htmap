@@ -39,11 +39,15 @@ def map_dir_path(uid: Union[uuid.UUID, str]) -> Path:
 
 
 def tagfile_to_map_dir(tagfile: Path) -> Path:
+    """Return the path to the map directory associated with the given ``tag`` file."""
+    if not tagfile.exists():
+        raise exceptions.TagNotFound(f'the tag {tagfile.stem} was not found')
     uid = uuid.UUID(tagfile.read_text())
     return map_dir_path(uid)
 
 
 def tag_to_map_dir(tag: str) -> Path:
+    """Return the path to the map directory for the given ``tag``."""
     return tagfile_to_map_dir(tags.tag_file_path(tag))
 
 

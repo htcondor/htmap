@@ -127,10 +127,7 @@ class Map(collections.abc.Sequence):
             # if we already have this map in memory, return that object instead
             return maps_by_tag()[tag]
         except KeyError:
-            try:
-                map_dir = mapping.tag_to_map_dir(tag)
-            except FileNotFoundError:
-                raise exceptions.TagNotFound(f'the tag {tag} was not found')
+            map_dir = mapping.tag_to_map_dir(tag)
 
             with (map_dir / names.CLUSTER_IDS).open() as file:
                 cluster_ids = [int(cid.strip()) for cid in file]
