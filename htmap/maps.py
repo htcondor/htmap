@@ -66,6 +66,7 @@ def maps_by_tag() -> Dict[str, 'Map']:
     Get the current mapping of tags to map objects.
 
     Don't try to cache the results of this function; always get it fresh.
+    This lets it smoothly handle retagging.
     """
     return {map.tag: map for map in MAPS}
 
@@ -126,12 +127,8 @@ class Map(collections.abc.Sequence):
             # if we already have this map in memory, return that object instead
             return maps_by_tag()[tag]
         except KeyError:
-            try:
-                uid = uuid.UUID(tags.tag_file_path(tag).read_text())
-            except FileNotFoundError:
-                raise exceptions.TagNotFound(f'the tag {tag} could not be found')
+            map_dir = mapping.tag_to_map_dir(tag)
 
-            map_dir = mapping.map_dir_path(uid)
             with (map_dir / names.CLUSTER_IDS).open() as file:
                 cluster_ids = [int(cid.strip()) for cid in file]
 
@@ -768,11 +765,19 @@ class Map(collections.abc.Sequence):
             ):
                 time.sleep(.01)
 
+        # move the tagfile to the removed tags dir
+        # renamed by uid to prevent duplicates
+        removed_tagfile = Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR / self._tag_file_path.read_text()
+        self._tag_file_path.rename(removed_tagfile)
+        logger.debug(f'removed tag file for map {self.tag}')
+
         shutil.rmtree(self._map_dir)
         logger.debug(f'removed map directory for map {self.tag}')
 
-        self._tag_file_path.unlink()
-        logger.debug(f'removed tag file for map {self.tag}')
+        # only delete the tagfile once we removed the map dir
+        # if we don't get here, htmap.clean() will look for the "removed"
+        # tagfile in the removed tags dir and cleanup
+        removed_tagfile.unlink()
 
     @property
     def is_removed(self) -> bool:

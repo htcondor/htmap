@@ -23,8 +23,10 @@ import json
 import csv
 import io
 import textwrap
+import shutil
+import uuid
 
-from . import maps, tags, mapping, utils, state, settings, exceptions
+from . import maps, tags, mapping, utils, state, names, settings, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +111,15 @@ def clean(*, all: bool = False) -> List[str]:
         if map.is_transient or all:
             cleaned_tags.append(map.tag)
             map.remove()
+
+    # clean up maps that were partially removed
+    # the "tagfiles" in this dir are named by uid instead of tag
+    # to guarantee uniqueness
+    for uid in (Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR).iterdir():
+        map_dir = mapping.map_dir_path(uuid.UUID(uid.stem))
+        shutil.rmtree(map_dir)
+        logger.debug(f'removed orphaned map directory {uid.stem}')
+
     logger.debug(f'cleaned maps {cleaned_tags}')
     return cleaned_tags
 

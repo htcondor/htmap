@@ -36,6 +36,7 @@ def ensure_htmap_dir_exists():
             _htmap_dir / _names.MAPS_DIR,
             _htmap_dir / _names.TAGS_DIR,
             _htmap_dir / _names.LOGS_DIR,
+            _htmap_dir / _names.REMOVED_TAGS_DIR,
         )
         for dir in dirs:
             dir.mkdir(parents = True, exist_ok = True)
