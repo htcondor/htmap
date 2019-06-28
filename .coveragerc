@@ -6,16 +6,18 @@ include =
 
 omit =
     tests/*
+    htmap/run/*
+    htmap/checkpointing.py
+    htmap/transfer_output.py
 
 [report]
 exclude_lines =
     pragma: no cover
-
     def __repr__
-
     def __str__
-
     raise NotImplementedError
-
-    for _ in \[\]:
-
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if False:
+    if __name__ == .__main__.:

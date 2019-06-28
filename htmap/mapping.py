@@ -23,7 +23,7 @@ import itertools
 
 import htcondor
 
-from . import htio, tags, exceptions, maps, transfer, options, settings, names, utils
+from . import htio, tags, exceptions, maps, transfer_input, options, settings, names, utils
 
 logger = logging.getLogger(__name__)
 
@@ -449,7 +449,7 @@ def process_args_and_kwargs(args_and_kwargs):
     return processed, extra_input_files
 
 
-def _normalize(path: transfer.TransferPath, local_paths_accumulator: List[Path]):
+def _normalize(path: transfer_input.TransferPath, local_paths_accumulator: List[Path]):
     """Helper function which replaces htmap.TransferPath with Path"""
     local_paths_accumulator.append(path)
     return Path('.') / path.name
@@ -460,7 +460,7 @@ def _check_for_input_files(object_to_check: Any, local_paths_accumulator: List[P
     Descends recursively through primitive containers or top-level function arguments and keyword arguments, looking for :class:`htmap.TransferPath` objects.
     When it encounters one, it adds the local path to the accumulator and replaces the path in the container with the appropriate path for the scratch directory on the execute node.
     """
-    if isinstance(object_to_check, transfer.TransferPath):
+    if isinstance(object_to_check, transfer_input.TransferPath):
         return _normalize(object_to_check, local_paths_accumulator)
 
     # look inside built-in containers recursively

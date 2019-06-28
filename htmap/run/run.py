@@ -15,11 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import os
-
-os.environ['HTMAP_ON_EXECUTE'] = "1"
-
 import shutil
 import sys
 import socket
@@ -102,7 +98,6 @@ def pip_freeze() -> str:
         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
         stdout = subprocess.PIPE,
     ).stdout.decode('utf-8').strip()
-
 
 
 def print_dir_contents(contents):
@@ -188,6 +183,7 @@ def clean_and_remake_dir(dir: Path):
 
 
 def main(component):
+    os.environ['HTMAP_ON_EXECUTE'] = "1"
     os.environ['HTMAP_COMPONENT'] = f"{component}"
 
     node_info = get_node_info()
