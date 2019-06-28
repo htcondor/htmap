@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterable, Dict, Union, NamedTuple, Callable, List
+from typing import Tuple, Iterable, Dict, Union, NamedTuple, Callable, List, Optional
 import logging
 
 from pathlib import Path
@@ -46,9 +46,24 @@ def load(tag: str) -> maps.Map:
     return maps.Map.load(tag)
 
 
-def load_maps() -> Tuple[maps.Map, ...]:
-    """Return a :class:`tuple` containing the :class:`Map` for all existing maps."""
-    return tuple(load(tag) for tag in tags.get_tags())
+def load_maps(pattern: Optional[str] = None) -> Tuple[maps.Map, ...]:
+    """
+    Return a :class:`tuple` containing the :class:`Map` for all existing maps,
+    with optional filtering based on a glob-style pattern.
+
+    Parameters
+    ----------
+    pattern
+        A `glob-style pattern <https://docs.python.org/3/library/fnmatch.html#module-fnmatch>`_.
+        Only maps whose tags fit the pattern will be returned.
+        If ``None`` (the default), all maps will be returned.
+
+    Returns
+    -------
+    maps :
+        A tuple contain the maps whose tags fit the ``pattern``.
+    """
+    return tuple(load(tag) for tag in tags.get_tags(pattern))
 
 
 def remove(tag: str, not_exist_ok: bool = True) -> None:
