@@ -20,6 +20,7 @@
 MAPS_DIR = 'maps'
 TAGS_DIR = 'tags'
 LOGS_DIR = 'logs'
+REMOVED_TAGS_DIR = '.removed-tags'
 
 # names of files and sub-directories of individual map dirs
 FUNC = 'func'

@@ -38,6 +38,15 @@ def map_dir_path(uid: Union[uuid.UUID, str]) -> Path:
     return maps_dir_path() / str(uid)
 
 
+def tagfile_to_map_dir(tagfile: Path) -> Path:
+    uid = uuid.UUID(tagfile.read_text())
+    return map_dir_path(uid)
+
+
+def tag_to_map_dir(tag: str) -> Path:
+    return tagfile_to_map_dir(tags.tag_file_path(tag))
+
+
 def get_schedd():
     """Get the :class:`htcondor.Schedd` that represents the HTCondor scheduler."""
     s = settings['HTCONDOR.SCHEDULER']
