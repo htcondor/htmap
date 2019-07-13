@@ -174,10 +174,6 @@ autodoc_default_flags = ['undoc-members']
 
 napoleon_use_rtype = False
 
-nbsphinx_execute = 'always'
-nbsphinx_allow_errors = True
-nbsphinx_timeout = 180
-
 
 def setup(app):
     app.add_stylesheet('css/custom.css')
