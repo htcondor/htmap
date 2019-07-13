@@ -40,6 +40,7 @@ from .maps import (
     Map,
     MapStdOut,
     MapStdErr,
+    MapOutputFiles,
 )
 from .holds import ComponentHold
 from .errors import ComponentError

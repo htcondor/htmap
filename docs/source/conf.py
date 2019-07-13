@@ -170,9 +170,15 @@ intersphinx_mapping = {
 
 autodoc_member_order = 'bysource'
 autoclass_content = 'both'
-autodoc_default_flags = ['undoc-members']
+autodoc_default_options = {
+    'undoc-members': True,
+}
 
 napoleon_use_rtype = False
+
+nbsphinx_execute = 'always'
+nbsphinx_allow_errors = True
+nbsphinx_timeout = 180
 
 
 def setup(app):
