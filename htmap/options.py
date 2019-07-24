@@ -213,7 +213,11 @@ def create_submit_object_and_itemdata(
         else:
             descriptors[opt_key] = opt_value
 
+    if descriptors['requirements'] is None:
+        descriptors.pop('requirements')
+
     sub = htcondor.Submit(descriptors)
+    print(sub)
 
     return sub, itemdata
 
@@ -235,8 +239,11 @@ def unregister_delivery_mechanism(name: str) -> None:
     SETUP_FUNCTION_BY_DELIVERY.pop(name)
 
 
-def merge_requirements(*requirements: Iterable[Optional[str]]) -> str:
-    return ' && '.join(f'({req})' for req in requirements if req is not None)
+def merge_requirements(*requirements: Optional[str]) -> Optional[str]:
+    requirements = [req for req in requirements if req is not None]
+    if len(requirements) == 0:
+        return None
+    return ' && '.join(f'({req})' for req in requirements)
 
 
 def get_base_descriptors(

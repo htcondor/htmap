@@ -18,6 +18,12 @@ import pytest
 from htmap.options import merge_requirements
 
 
+def test_merge_nothing():
+    req = merge_requirements()
+
+    assert req is None
+
+
 def test_merge_one():
     req = merge_requirements(
         'HasPie == true',
@@ -33,6 +39,16 @@ def test_merge_two():
     )
 
     assert req == '(HasPie == true) && (HasCake == false)'
+
+
+def test_merge_three():
+    req = merge_requirements(
+        'HasPie == true',
+        'HasCake == false',
+        'IsHappy == true',
+    )
+
+    assert req == '(HasPie == true) && (HasCake == false) && (IsHappy == true)'
 
 
 def test_merge_with_none():
