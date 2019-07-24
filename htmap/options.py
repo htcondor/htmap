@@ -274,16 +274,20 @@ def get_base_descriptors(
 
     from_settings = settings.get('MAP_OPTIONS', default = {})
 
-    core['requirements'] = merge_requirements(
-        base.get('requirements', None),
-        from_settings.get('requirements', None),
-    )
-
-    return {
+    merged = {
         **core,
         **base,
         **from_settings,
     }
+
+    # manually fix-up requirements
+    merged['requirements'] = merge_requirements(
+        core.get('requirements', None),
+        base.get('requirements', None),
+        from_settings.get('requirements', None),
+    )
+
+    return merged
 
 
 def _copy_run_scripts():
