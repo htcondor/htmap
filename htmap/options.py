@@ -173,11 +173,10 @@ def create_submit_object_and_itemdata(
         settings['DELIVERY_METHOD'],
     )
 
-    # todo: needs test
-    base_requirements = descriptors.get('requirements', None)
-    extra_requirements = map_options.pop('requirements', None)
-    if base_requirements is not None and extra_requirements is not None:
-        descriptors['requirements'] = f'({base_requirements}) && ({extra_requirements})'
+    descriptors['requirements'] = merge_requirements(
+        descriptors.get('requirements', None),
+        map_options.get('requirements', None),
+    )
 
     itemdata = [{'component': str(idx)} for idx in range(num_components)]
 
@@ -214,6 +213,9 @@ def create_submit_object_and_itemdata(
         else:
             descriptors[opt_key] = opt_value
 
+    if descriptors['requirements'] is None:
+        descriptors.pop('requirements')
+
     sub = htcondor.Submit(descriptors)
 
     return sub, itemdata
@@ -234,6 +236,13 @@ def register_delivery_mechanism(
 def unregister_delivery_mechanism(name: str) -> None:
     BASE_OPTIONS_FUNCTION_BY_DELIVERY.pop(name)
     SETUP_FUNCTION_BY_DELIVERY.pop(name)
+
+
+def merge_requirements(*requirements: Optional[str]) -> Optional[str]:
+    requirements = [req for req in requirements if req is not None]
+    if len(requirements) == 0:
+        return None
+    return ' && '.join(f'({req})' for req in requirements)
 
 
 def get_base_descriptors(
@@ -265,16 +274,20 @@ def get_base_descriptors(
 
     from_settings = settings.get('MAP_OPTIONS', default = {})
 
-    base_requirements = base.pop('requirements', None)
-    settings_requirements = from_settings.pop('requirements', None)
-    if base_requirements is not None and settings_requirements is not None:
-        core['requirements'] = f'({base_requirements}) && ({settings_requirements})'
-
-    return {
+    merged = {
         **core,
         **base,
         **from_settings,
     }
+
+    # manually fix-up requirements
+    merged['requirements'] = merge_requirements(
+        core.get('requirements', None),
+        base.get('requirements', None),
+        from_settings.get('requirements', None),
+    )
+
+    return merged
 
 
 def _copy_run_scripts():

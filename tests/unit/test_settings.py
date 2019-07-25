@@ -216,3 +216,11 @@ def test_can_load_saved_settings(tmpdir):
 
     assert loaded == s
     assert loaded is not s
+
+
+def test_nested_dicts_are_not_hidden_by_set():
+    s = Settings({'top': {'hidden': 0}})
+
+    s['top.new'] = 5
+
+    assert s['top'] == {'hidden': 0, 'new': 5}
