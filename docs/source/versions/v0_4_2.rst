@@ -7,7 +7,16 @@ New Features
 Bug Fixes
 ---------
 
-*
+* Requirements statement merging was broken when any of the three sources of requirements
+  (settings, function-level map options, and invidual-map map options) were not given.
+  Requirements from all source are now properly merged, regardless of whether any of them
+  actually exist.
+  Issue: https://github.com/htcondor/htmap/issues/168
+* Top-level settings that were dictionaries (like ``MAP_OPTIONS``) did not behave
+  correctly when elements of them were set; they did not inherit the old settings.
+  These kinds of settings are now properly inherited, but expect breaking changes in the
+  `Settings` API next release to resolve the underlying issues.
+  Issue: https://github.com/htcondor/htmap/issues/169
 
 Known Issues
 ------------
