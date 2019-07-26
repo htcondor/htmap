@@ -13,13 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM continuumio/anaconda3:latest
+FROM continuumio/anaconda3:2019.03
 
 LABEL maintainer="karpel@wisc.edu"
 
 COPY . /tmp/htmap
-RUN pip install --no-cache-dir /tmp/htmap/ \
+RUN python3 -m pip install --no-cache-dir /tmp/htmap/ \
  && rm -rf /tmp/htmap
+
+COPY htmap-exec/singularity.d /.singularity.d
 
 ARG USER=htmap
 RUN groupadd ${USER} \

@@ -21,6 +21,8 @@ Bug Fixes
   These kinds of settings are now properly inherited, but expect breaking changes in the
   `Settings` API next release to resolve the underlying issues.
   Issue: https://github.com/htcondor/htmap/issues/169
+* The ``htmap-exec`` Docker image should now cleanly export to Singularity.
+  Issue: https://github.com/htcondor/htmap/issues/173
 
 Known Issues
 ------------
