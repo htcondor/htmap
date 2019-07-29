@@ -1,0 +1,36 @@
+v0.4.2
+======
+
+New Features
+------------
+
+Bug Fixes
+---------
+
+* `Map.errors` and `Map.error_reports()` now work when there is a mix of holds
+  and errors in the map. Previously, held components would cause both of these to
+  raise `MapComponentHeld` when trying to access them in that situation.
+  Issue: https://github.com/htcondor/htmap/issues/165
+* Requirements statement merging was broken when any of the three sources of requirements
+  (settings, function-level map options, and individual-map map options) were not given.
+  Requirements from all source are now properly merged, regardless of whether any of them
+  actually exist.
+  Issue: https://github.com/htcondor/htmap/issues/168
+* Top-level settings that were dictionaries (like ``MAP_OPTIONS``) did not behave
+  correctly when elements of them were set; they did not inherit the old settings.
+  These kinds of settings are now properly inherited, but expect breaking changes in the
+  `Settings` API next release to resolve the underlying issues.
+  Issue: https://github.com/htcondor/htmap/issues/169
+* The ``htmap-exec`` Docker image should now cleanly export to Singularity.
+  Issue: https://github.com/htcondor/htmap/issues/173
+
+Known Issues
+------------
+
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129

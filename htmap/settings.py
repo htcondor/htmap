@@ -49,17 +49,14 @@ class Settings:
         self.maps = list(settings)
 
     def __getitem__(self, key: str):
-        for map in self.maps:
+        try:
             path = key.split('.')
-            r = map
-            try:
-                for component in path:
-                    r = r[component]
-            except (KeyError, TypeError):
-                continue
+            r = self.to_dict()
+            for component in path:
+                r = r[component]
             return r
-
-        raise exceptions.MissingSetting()
+        except (KeyError, TypeError):
+            raise exceptions.MissingSetting()
 
     def __eq__(self, other: Any) -> bool:
         return type(self) is type(other) and self.to_dict() == other.to_dict()
@@ -145,7 +142,7 @@ class Settings:
         return utils.rstr(toml.dumps(self.to_dict()))
 
     def __repr__(self) -> str:
-        return utils.rstr(f'<{self.__class__.__name__}>')
+        return f'<{self.__class__.__name__}>'
 
 
 htmap_dir = Path(os.getenv('HTMAP_DIR', Path.home() / '.htmap'))
