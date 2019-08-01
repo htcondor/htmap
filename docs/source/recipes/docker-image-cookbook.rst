@@ -277,3 +277,43 @@ Note that in this example we based the image on Ubuntu's base image and installe
 which we used to download the ``miniconda`` installer.
 Depending on your base image, you may need to use a different package manager
 (for example, ``yum``) or different command-line file download tool (for example, ``curl``).
+
+
+.. _build-osg-image:
+
+I want to build an image for use on the Open Science Grid
+---------------------------------------------------------
+
+First, read through `OSG's Singularity documentation <https://support.opensciencegrid.org/support/solutions/articles/12000024676-docker-and-singularity-containers>`_.
+
+Based on that, our goal will be to build a Docker image and have OSG convert
+it to a Singularity image that can be served by OSG.
+The tricky part of this is that Docker's ``ENV`` instruction won't carry over to
+Singularity, which is the usual method of etting ``python3`` on the ``PATH``
+inside the container.
+To remedy this, we will create a special directory structure that Singularity
+recognizes and uses to execute instructions with specified environments.
+
+This is not a Singularity tutorial, so the simplest thing to do is copy the entire
+`singularity.d` directory that `htmap-exec` uses: https://github.com/htcondor/htmap/tree/master/htmap-exec/singularity.d
+
+Anything you need to specify for your environment should be done in
+``singularity.d/env/90-environment.sh``.
+This file will be "sourced" (run) when the image starts, before HTMap executes.
+
+In your Dockerfile, you must copy this directory to the correct location inside
+the image:
+
+.. code-block:: docker
+
+    # Dockerfile snippet
+
+    COPY <path/to/singularity.d> /.singularity.d
+
+
+Note the path on the right: a hidden directory at the root of the filesystem.
+This is just a Singularity convention.
+The left path is just the location of the ``singularity.d`` directory you made.
+
+Note that if you ``FROM`` an ``htmap-exec`` image, this setup will already be embedded
+in the image for you.
