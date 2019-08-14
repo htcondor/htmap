@@ -77,8 +77,8 @@ RUN cd /tmp \
 
 # install htmap dependencies early for docker build caching
 COPY requirements.txt /home/${SUBMIT_USER}/requirements.txt
-COPY requirements_dev.txt /home/${SUBMIT_USER}/requirements_dev.txt
-RUN pip install --no-cache -r /home/${SUBMIT_USER}/requirements_dev.txt \
+COPY requirements-dev.txt /home/${SUBMIT_USER}/requirements-dev.txt
+RUN pip install --no-cache -r /home/${SUBMIT_USER}/requirements-dev.txt \
  && rm /home/${SUBMIT_USER}/requirements*
 
 # set default entrypoint and command
