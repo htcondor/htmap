@@ -140,7 +140,7 @@ class Map(collections.abc.Sequence):
 
             num_components = htio.load_num_components(map_dir)
 
-            logger.debug(f'loaded map result for map {tag} from {map_dir}')
+            logger.debug(f'loaded map {tag} from {map_dir}')
 
             return cls(
                 tag = tag,

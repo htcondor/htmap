@@ -151,7 +151,10 @@ BASE_SETTINGS = Settings(dict(
     HTMAP_DIR = htmap_dir.as_posix(),
     DELIVERY_METHOD = os.getenv('HTMAP_DELIVERY_METHOD', 'docker'),
     WAIT_TIME = 1,
-    CLI = False,
+    CLI = dict(
+        IS_CLI = False,
+        SPINNERS_ON = True,
+    ),
     HTCONDOR = dict(
         SCHEDULER = os.getenv('HTMAP_CONDOR_SCHEDULER', None),
         COLLECTOR = os.getenv('HTMAP_CONDOR_COLLECTOR', None),
