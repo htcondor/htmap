@@ -1,0 +1,23 @@
+v0.4.3
+======
+
+New Features
+------------
+
+Bug Fixes
+---------
+
+* CLI `stdout` and `stderr` commands were broken, but are now fixed.
+* Add the missing parts of the `/.singularity.d` directory
+  that will make `v0.4.2` Singularity support actually work.
+
+Known Issues
+------------
+
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129

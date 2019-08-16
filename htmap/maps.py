@@ -673,7 +673,9 @@ class Map(collections.abc.Sequence):
         for idx in self.components:
             try:
                 err[idx] = self.get_err(idx)
-            except (exceptions.OutputNotFound, exceptions.ExpectedError) as e:
+            except (exceptions.OutputNotFound,
+                    exceptions.ExpectedError,
+                    exceptions.MapComponentHeld) as e:
                 pass
 
         return err
@@ -685,7 +687,10 @@ class Map(collections.abc.Sequence):
         for idx in self.components:
             try:
                 yield self.get_err(idx, timeout = 0).report()
-            except (exceptions.OutputNotFound, exceptions.ExpectedError, exceptions.TimeoutError) as e:
+            except (exceptions.OutputNotFound,
+                    exceptions.ExpectedError,
+                    exceptions.TimeoutError,
+                    exceptions.MapComponentHeld) as e:
                 pass
 
     @property

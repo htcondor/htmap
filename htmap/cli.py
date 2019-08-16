@@ -488,7 +488,7 @@ def reasons(tags, pattern, all):
 @click.argument('component', type = int)
 def stdout(tag, component):
     """Look at the stdout for a map component."""
-    click.echo(_cli_load(tag).stdout(component))
+    click.echo(_cli_load(tag).stdout[component])
 
 
 @cli.command()
@@ -496,7 +496,7 @@ def stdout(tag, component):
 @click.argument('component', type = int)
 def stderr(tag, component):
     """Look at the stderr for a map component."""
-    click.echo(_cli_load(tag).stderr(component))
+    click.echo(_cli_load(tag).stderr[component])
 
 
 @cli.command()
