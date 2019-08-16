@@ -174,6 +174,8 @@ class MapState:
         with working_path.open(mode = 'wb') as f:
             pickle.dump(self, f, protocol = -1)
 
+        working_path.rename(final_path)
+
         logger.debug(f"Saved map state for map {self.map.tag}")
 
         return final_path
@@ -185,6 +187,15 @@ class MapState:
 
         with (map._map_dir / names.MAP_STATE).open(mode = 'rb') as f:
             return pickle.load(f)
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        d.pop('_event_reader_lock')
+        return d
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self._event_reader_lock = threading.Lock()
 
 
 def parse_runtime(runtime_string: str) -> datetime.timedelta:
