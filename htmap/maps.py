@@ -97,7 +97,13 @@ class Map(collections.abc.Sequence):
         self._cluster_ids = list(cluster_ids)
         self._num_components = num_components
 
-        self._state = state.MapState(self)
+        try:
+            self._state = state.MapState.load(self)
+            logger.debug(f"loaded existing map state for map {self.tag}")
+        except (FileNotFoundError, IOError, exceptions.InsufficientHTCondorVersion) as e:
+            logger.debug(f"failed to read existing map state for map {self.tag} because: {repr(e)}")
+            self._state = state.MapState(self)
+
         self._local_data = None
 
         self._stdout: MapStdOut = MapStdOut(self)

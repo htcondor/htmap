@@ -18,6 +18,8 @@ import logging
 
 import datetime
 import threading
+import pickle
+from pathlib import Path
 
 import htcondor
 
@@ -71,7 +73,8 @@ class MapState:
         self.map = map
 
         self._event_reader = None  # delayed until _read_events is called
-        self._clusterproc_to_component: Dict[Tuple[int, int], int] = {}
+
+        self._jobid_to_component: Dict[Tuple[int, int], int] = {}
 
         self._component_statuses = [ComponentStatus.UNKNOWN for _ in self.map.components]
         self._holds: Dict[int, holds.ComponentHold] = {}
@@ -106,11 +109,14 @@ class MapState:
 
     def _read_events(self):
         with self._event_reader_lock:  # no thread can be in here at the same time as another
+            handled_events = False
+
             if self._event_reader is None:
                 logger.debug(f'created event log reader for map {self.map.tag}')
                 self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
             for event in self._event_reader:
+                handled_events = True
                 self.map._local_data = None  # invalidate cache if any events were received
 
                 # skip the late materialization submit event
@@ -119,10 +125,10 @@ class MapState:
                     continue
 
                 if event.type is htcondor.JobEventType.SUBMIT:
-                    self._clusterproc_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
+                    self._jobid_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
 
                 # this lookup is safe because the SUBMIT event always comes first
-                component = self._clusterproc_to_component[(event.cluster, event.proc)]
+                component = self._jobid_to_component[(event.cluster, event.proc)]
 
                 if event.type is htcondor.JobEventType.IMAGE_SIZE:
                     self._memory_usage[component] = max(
@@ -157,6 +163,28 @@ class MapState:
                     if new_status is self._component_statuses[component]:
                         logger.warning(f'component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
                     self._component_statuses[component] = new_status
+
+            if handled_events and utils.htcondor_version_info() >= (8, 9, 3):
+                self.save()
+
+    def save(self) -> Path:
+        final_path = self.map._map_dir / names.MAP_STATE
+        working_path = final_path.with_suffix('.working')
+
+        with working_path.open(mode = 'wb') as f:
+            pickle.dump(self, f, protocol = -1)
+
+        logger.debug(f"Saved map state for map {self.map.tag}")
+
+        return final_path
+
+    @staticmethod
+    def load(map):
+        if utils.htcondor_version_info() < (8, 9, 3):
+            raise exceptions.InsufficientHTCondorVersion("Map state can only be saved with HTCondor 8.9.3 or greater")
+
+        with (map._map_dir / names.MAP_STATE).open(mode = 'rb') as f:
+            return pickle.load(f)
 
 
 def parse_runtime(runtime_string: str) -> datetime.timedelta:

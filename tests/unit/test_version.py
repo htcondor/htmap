@@ -15,7 +15,7 @@
 
 import pytest
 
-from htmap.version import _version_info
+from htmap.utils import parse_version
 
 
 @pytest.mark.parametrize(
@@ -30,4 +30,4 @@ from htmap.version import _version_info
     ]
 )
 def test_version_info(version, expected):
-    assert _version_info(version) == expected
+    assert parse_version(version) == expected

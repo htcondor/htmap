@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable, Dict
+from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable, Dict, Tuple
 import logging
 
 import os
@@ -22,11 +22,13 @@ import datetime
 import subprocess
 import sys
 import enum
+import re
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from . import exceptions
 
+import htcondor
 from classad import ClassAd
 
 MutableMapping.register(ClassAd)
@@ -223,3 +225,30 @@ def enable_debug_logging():
     handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 
     logger.addHandler(handler)
+
+VERSION_RE = re.compile(
+    r'^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$',
+    re.VERBOSE | re.ASCII,
+)
+
+
+def parse_version(v: str) -> Tuple[int, int, int, str, int]:
+    match = VERSION_RE.match(v)
+    (major, minor, micro, prerelease, prerelease_num) = match.group(1, 2, 4, 5, 6)
+
+    out = (
+        int(major),
+        int(minor),
+        int(micro or 0),
+        prerelease[0] if prerelease is not None else None,
+        int(prerelease_num) if prerelease_num is not None else None,
+    )
+
+    return out
+
+
+EXTRACT_HTCONDOR_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)", flags = re.ASCII)
+
+
+def htcondor_version_info() -> Tuple[int, int, int, str, int]:
+    return parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0))
