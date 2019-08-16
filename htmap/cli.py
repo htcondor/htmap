@@ -46,6 +46,7 @@ def make_spinner(*args, **kwargs):
         *args,
         spinner = random.choice(SPINNERS),
         stream = sys.stderr,
+        enabled = htmap.settings['CLI.SPINNERS_ON'],
         **kwargs,
     )
 
@@ -62,10 +63,10 @@ CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
 )
 def cli(verbose):
     """HTMap command line tools."""
-    logger.debug(f'CLI called with arguments "{" ".join(sys.argv[1:])}"')
-    htmap.settings['CLI'] = True
     if verbose:
         _start_htmap_logger()
+    logger.debug(f'CLI called with arguments "{" ".join(sys.argv[1:])}"')
+    htmap.settings['CLI.IS_CLI'] = True
 
 
 def _start_htmap_logger():
@@ -75,9 +76,11 @@ def _start_htmap_logger():
 
     handler = logging.StreamHandler(stream = sys.stderr)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s ~ %(levelname)s ~ %(name)s:%(funcName)s:%(lineno)d ~ %(message)s'))
+    handler.setFormatter(logging.Formatter('%(asctime)s ~ %(levelname)s ~ %(name)s:%(lineno)d ~ %(message)s'))
 
     htmap_logger.addHandler(handler)
+
+    htmap.settings["CLI.SPINNERS_ON"] = False
 
     return handler
 
