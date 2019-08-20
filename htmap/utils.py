@@ -122,7 +122,7 @@ def table(
         A function to be called on each row string.
         The return value is what will go in the output.
     alignment
-        If ``True``, the first column will be left-aligned instead of centered.
+        A map of headers to string method names to use to align each column.
 
     Returns
     -------
