@@ -112,3 +112,8 @@ class CannotTransplantPython(HTMapException):
 class CannotRerunComponents(HTMapException):
     """The given components cannot be rerun because they are currently active."""
     pass
+
+
+class InsufficientHTCondorVersion(HTMapException):
+    """The version of HTCondor is too low to use a feature."""
+    pass
