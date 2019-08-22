@@ -170,7 +170,7 @@ intersphinx_mapping = {
 
 autodoc_member_order = 'bysource'
 autoclass_content = 'both'
-autodoc_default_flags = ['undoc-members']
+autodoc_default_options = {"undoc-members": True}
 
 napoleon_use_rtype = False
 
