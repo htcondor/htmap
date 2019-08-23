@@ -20,7 +20,7 @@ import shutil
 from . import names
 
 
-def checkpoint(*paths: os.PathLike):
+def checkpoint(*paths: os.PathLike) -> None:
     """
     Informs HTMap about the existence of checkpoint files.
     This function should be called every time the checkpoint files are changed, even if they have the same names as before.

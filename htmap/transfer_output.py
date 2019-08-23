@@ -20,7 +20,7 @@ import shutil
 from . import names
 
 
-def transfer_output_files(*paths: os.PathLike):
+def transfer_output_files(*paths: os.PathLike) -> None:
     """
     Informs HTMap about the existence of output files.
 

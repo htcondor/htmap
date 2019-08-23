@@ -61,7 +61,7 @@ class MapOptions(collections.UserDict):
         *,
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
         input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
-        custom_options: Dict[str, str] = None,
+        custom_options: Optional[Dict[str, str]] = None,
         **kwargs: Union[str, Iterable[str]],
     ):
         """
@@ -398,7 +398,7 @@ def _get_base_descriptors_for_transplant(
 def _run_delivery_setup_for_transplant(
     tag: str,
     map_dir: Path,
-):
+) -> None:
     if not settings.get('TRANSPLANT.ASSUME_EXISTS', False):
         if 'usr' in sys.executable:
             raise exceptions.CannotTransplantPython('system Python installations cannot be transplanted')

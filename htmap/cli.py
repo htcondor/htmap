@@ -115,7 +115,7 @@ class _RowFmt:
         return click.style(text, fg = _map_fg(self.maps[self.idx]))
 
 
-def _map_fg(map) -> Optional[str]:
+def _map_fg(map: htmap.Map) -> Optional[str]:
     sc = collections.Counter(map.component_statuses)
 
     if sc[htmap.state.ComponentStatus.REMOVED] > 0:

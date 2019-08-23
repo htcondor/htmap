@@ -125,18 +125,16 @@ def clean(*, all: bool = False) -> List[str]:
 
 
 def _extract_status_data(
-    map,
-    include_state = True,
-    include_meta = True,
+    map: maps.Map,
+    include_state: bool = True,
+    include_meta: bool = True,
 ) -> dict:
-    sd = {}
-
-    sd['Tag'] = f'{"* " if map.is_transient else ""}{map.tag}'
+    sd = {'Tag': f'{"* " if map.is_transient else ""}{map.tag}'}
 
     if include_state:
         sc = collections.Counter(map.component_statuses)
 
-        sd.update({str(k): sc[k] for k in state.ComponentStatus.display_statuses()})
+        sd.update({str(k): str(sc[k]) for k in state.ComponentStatus.display_statuses()})
 
     if include_meta:
         sd['Local Data'] = utils.num_bytes_to_str(map.local_data)
@@ -148,7 +146,7 @@ def _extract_status_data(
 
 
 def status(
-    maps: Iterable[maps.Map] = None,
+    maps: Optional[Iterable[maps.Map]] = None,
     include_state: bool = True,
     include_meta: bool = True,
 ) -> str:
@@ -178,11 +176,11 @@ def status(
 
 
 def _status(
-    maps: Iterable[maps.Map] = None,
+    maps: Optional[Iterable[maps.Map]] = None,
     include_state: bool = True,
     include_meta: bool = True,
-    header_fmt: Callable[[str], str] = None,
-    row_fmt: Callable[[str], str] = None,
+    header_fmt: Optional[Callable[[str], str]] = None,
+    row_fmt: Optional[Callable[[str], str]] = None,
 ) -> str:
     if maps is None:
         maps = sorted(load_maps(), key = lambda m: (m.is_transient, m.tag))
@@ -209,7 +207,7 @@ def _status(
 
 
 def status_json(
-    maps: Iterable[maps.Map] = None,
+    maps: Optional[Iterable[maps.Map]] = None,
     include_state: bool = True,
     include_meta: bool = True,
     compact: bool = False,
@@ -273,7 +271,7 @@ def status_json(
 
 
 def status_csv(
-    maps: Iterable[maps.Map] = None,
+    maps: Optional[Iterable[maps.Map]] = None,
     include_state: bool = True,
     include_meta: bool = True,
 ) -> str:
@@ -333,16 +331,19 @@ def status_csv(
 
 
 class Transplant(NamedTuple):
+    """
+    An object that represents metadata information about a transplant install.
+    """
+
     hash: str
     path: Path
     created: datetime.datetime
     size: int
-    packages: Tuple[str]
+    packages: Tuple[str, ...]
 
     @classmethod
-    def load(cls, path: Path):
+    def load(cls, path: Path) -> "Transplant":
         """
-
         Parameters
         ----------
         path
@@ -350,7 +351,8 @@ class Transplant(NamedTuple):
 
         Returns
         -------
-
+        transplant
+            The :class:`Transplant` that represents the transplant install.
         """
 
         return cls(

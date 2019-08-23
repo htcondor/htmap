@@ -58,7 +58,7 @@ def save_func(map_dir: Path, func: Callable) -> None:
 def save_inputs(
     map_dir: Path,
     args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
-):
+) -> None:
     """
     Save the arguments to the mapped function to the map's input directory.
     """

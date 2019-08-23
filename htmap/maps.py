@@ -13,13 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, Set, Mapping
+from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, Set, Mapping, MutableMapping
 import logging
 
 import datetime
 import shutil
 import time
-import uuid
 import functools
 import inspect
 import collections
@@ -104,7 +103,7 @@ class Map(collections.abc.Sequence):
             logger.debug(f"failed to read existing map state for map {self.tag} because: {repr(e)}")
             self._state = state.MapState(self)
 
-        self._local_data = None
+        self._local_data: Optional[int] = None
 
         self._stdout: MapStdOut = MapStdOut(self)
         self._stderr: MapStdErr = MapStdErr(self)
@@ -168,7 +167,7 @@ class Map(collections.abc.Sequence):
         """The length of a :class:`Map` is the number of components it contains."""
         return self._num_components
 
-    def __contains__(self, component: int)-> bool:
+    def __contains__(self, component: int) -> bool:
         return component in range(self._num_components)
 
     @property
@@ -237,8 +236,8 @@ class Map(collections.abc.Sequence):
         self,
         timeout: utils.Timeout = None,
         show_progress_bar: bool = False,
-        holds_ok = False,
-        errors_ok = False,
+        holds_ok: bool = False,
+        errors_ok: bool = False,
     ) -> None:
         """
         Wait until all output associated with this :class:`Map` is available.
@@ -596,11 +595,9 @@ class Map(collections.abc.Sequence):
 
         Returns
         -------
-        classads :
+        classads
             An iterator of matching :class:`classad.ClassAd`, with only the projected fields.
         """
-        if self._cluster_ids is None:
-            yield from ()
         if projection is None:
             projection = []
 
@@ -623,17 +620,15 @@ class Map(collections.abc.Sequence):
         """
         return self._state.component_statuses
 
-    def components_by_status(self) -> Mapping[state.ComponentStatus, Tuple[int]]:
+    def components_by_status(self) -> Mapping[state.ComponentStatus, Tuple[int, ...]]:
         """
         Return the component indices grouped by their states.
         """
-        status_to_components = collections.defaultdict(lambda: [])
+        status_to_components: MutableMapping[state.ComponentStatus, List[int]] = collections.defaultdict(list)
         for component, status in enumerate(self.component_statuses):
             status_to_components[status].append(component)
 
-        status_to_components = {status: tuple(sorted(components)) for status, components in status_to_components.items()}
-
-        return status_to_components
+        return {status: tuple(sorted(components)) for status, components in status_to_components.items()}
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
@@ -860,7 +855,7 @@ class Map(collections.abc.Sequence):
         """
         self._edit('RequestDisk', str(disk))
 
-    def rerun(self, components: Optional[Iterable[int]] = None):
+    def rerun(self, components: Optional[Iterable[int]] = None) -> None:
         """
         Re-run part of a map from scratch.
         The components must be completed or errored.
@@ -910,7 +905,7 @@ class Map(collections.abc.Sequence):
 
         logger.debug(f'resubmitted {len(new_itemdata)} inputs from map {self.tag}')
 
-    def retag(self, tag: str):
+    def retag(self, tag: str) -> None:
         """
         Give this map a new ``tag``.
         The old ``tag`` will be available for re-use immediately.
@@ -999,7 +994,7 @@ class MapStdX(collections.abc.Sequence):
     attributes instead.
     """
 
-    _func = None
+    _func: Optional[str] = None
 
     def __init__(self, map):
         self.map = map

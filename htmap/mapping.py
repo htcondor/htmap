@@ -102,7 +102,7 @@ def starmap(
     func: Callable,
     args: Optional[Iterable[tuple]] = None,
     kwargs: Optional[Iterable[Dict[str, Any]]] = None,
-    map_options: options.MapOptions = None,
+    map_options: Optional[options.MapOptions] = None,
     tag: Optional[str] = None,
 ) -> maps.Map:
     """
@@ -430,7 +430,7 @@ def zip_args_and_kwargs(
         yield tuple(values)
 
 
-def process_args_and_kwargs(args_and_kwargs):
+def process_args_and_kwargs(args_and_kwargs: Iterator[Tuple[tuple, dict]]):
     """
     Perform any pre-processing on the positional and keyword arguments.
 
@@ -439,7 +439,7 @@ def process_args_and_kwargs(args_and_kwargs):
     processed = []
     extra_input_files = []
     for args, kwargs in args_and_kwargs:
-        extra_local_paths = []
+        extra_local_paths: List[transfer_input.TransferPath] = []
         args = tuple(_check_for_input_files(arg, extra_local_paths) for arg in args)
         kwargs = {k: _check_for_input_files(v, extra_local_paths) for k, v in kwargs.items()}
 
@@ -449,13 +449,13 @@ def process_args_and_kwargs(args_and_kwargs):
     return processed, extra_input_files
 
 
-def _normalize(path: transfer_input.TransferPath, local_paths_accumulator: List[Path]):
-    """Helper function which replaces htmap.TransferPath with Path"""
+def _normalize(path: transfer_input.TransferPath, local_paths_accumulator: List[transfer_input.TransferPath]) -> Path:
+    """Helper function which replaces :class:`htmap.TransferPath` with :class:`Path`"""
     local_paths_accumulator.append(path)
     return Path('.') / path.name
 
 
-def _check_for_input_files(object_to_check: Any, local_paths_accumulator: List[Path]):
+def _check_for_input_files(object_to_check: Any, local_paths_accumulator: List[transfer_input.TransferPath]) -> Any:
     """
     Descends recursively through primitive containers or top-level function arguments and keyword arguments, looking for :class:`htmap.TransferPath` objects.
     When it encounters one, it adds the local path to the accumulator and replaces the path in the container with the appropriate path for the scratch directory on the execute node.

@@ -96,10 +96,10 @@ class rstr(str):
 def table(
     headers: Iterable[str],
     rows: Iterable[Iterable[Any]],
-    fill: str = '',
-    header_fmt: Callable[[str], str] = None,
-    row_fmt: Callable[[str], str] = None,
-    alignment: Dict[str, str] = None,
+    fill: str = "",
+    header_fmt: Optional[Callable[[str], str]] = None,
+    row_fmt: Optional[Callable[[str], str]] = None,
+    alignment: Optional[Dict[str, str]] = None,
 ) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
@@ -168,7 +168,7 @@ def table(
     return rstr(output)
 
 
-def get_dir_size(path: Path, safe = True) -> int:
+def get_dir_size(path: Path, safe: bool = True) -> int:
     """Return the size of a directory (including all contents recursively) in bytes."""
     size = 0
     for entry in os.scandir(path):
@@ -202,13 +202,13 @@ def pip_freeze() -> str:
     ).stdout.decode('utf-8').strip()
 
 
-def read_events(maps):
+def read_events(maps) -> None:
     """Read the events logs of the given maps using a thread pool."""
     with ThreadPoolExecutor() as pool:
         pool.map(lambda map: map._state._read_events(), maps)
 
 
-def is_interactive_session():
+def is_interactive_session() -> bool:
     import __main__ as main
     return any((
         bool(getattr(sys, 'ps1', sys.flags.interactive)),  # console sessions
@@ -226,6 +226,7 @@ def enable_debug_logging():
 
     logger.addHandler(handler)
 
+
 VERSION_RE = re.compile(
     r'^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$',
     re.VERBOSE | re.ASCII,
@@ -234,6 +235,9 @@ VERSION_RE = re.compile(
 
 def parse_version(v: str) -> Tuple[int, int, int, str, int]:
     match = VERSION_RE.match(v)
+    if match is None:
+        raise Exception(f"Could not determine version info from {v}")
+
     (major, minor, micro, prerelease, prerelease_num) = match.group(1, 2, 4, 5, 6)
 
     out = (
