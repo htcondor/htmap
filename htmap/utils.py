@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable, Dict
+from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable, Dict, Tuple
 import logging
 
 import os
@@ -22,11 +22,13 @@ import datetime
 import subprocess
 import sys
 import enum
+import re
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from . import exceptions
 
+import htcondor
 from classad import ClassAd
 
 MutableMapping.register(ClassAd)
@@ -94,10 +96,10 @@ class rstr(str):
 def table(
     headers: Iterable[str],
     rows: Iterable[Iterable[Any]],
-    fill: str = '',
-    header_fmt: Callable[[str], str] = None,
-    row_fmt: Callable[[str], str] = None,
-    alignment: Dict[str, str] = None,
+    fill: str = "",
+    header_fmt: Optional[Callable[[str], str]] = None,
+    row_fmt: Optional[Callable[[str], str]] = None,
+    alignment: Optional[Dict[str, str]] = None,
 ) -> str:
     """
     Return a string containing a simple table created from headers and rows of entries.
@@ -122,7 +124,7 @@ def table(
         A function to be called on each row string.
         The return value is what will go in the output.
     alignment
-        If ``True``, the first column will be left-aligned instead of centered.
+        A map of headers to string method names to use to align each column.
 
     Returns
     -------
@@ -166,7 +168,7 @@ def table(
     return rstr(output)
 
 
-def get_dir_size(path: Path, safe = True) -> int:
+def get_dir_size(path: Path, safe: bool = True) -> int:
     """Return the size of a directory (including all contents recursively) in bytes."""
     size = 0
     for entry in os.scandir(path):
@@ -200,13 +202,13 @@ def pip_freeze() -> str:
     ).stdout.decode('utf-8').strip()
 
 
-def read_events(maps):
+def read_events(maps) -> None:
     """Read the events logs of the given maps using a thread pool."""
     with ThreadPoolExecutor() as pool:
         pool.map(lambda map: map._state._read_events(), maps)
 
 
-def is_interactive_session():
+def is_interactive_session() -> bool:
     import __main__ as main
     return any((
         bool(getattr(sys, 'ps1', sys.flags.interactive)),  # console sessions
@@ -223,3 +225,34 @@ def enable_debug_logging():
     handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 
     logger.addHandler(handler)
+
+
+VERSION_RE = re.compile(
+    r'^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$',
+    re.VERBOSE | re.ASCII,
+)
+
+
+def parse_version(v: str) -> Tuple[int, int, int, str, int]:
+    match = VERSION_RE.match(v)
+    if match is None:
+        raise Exception(f"Could not determine version info from {v}")
+
+    (major, minor, micro, prerelease, prerelease_num) = match.group(1, 2, 4, 5, 6)
+
+    out = (
+        int(major),
+        int(minor),
+        int(micro or 0),
+        prerelease[0] if prerelease is not None else None,
+        int(prerelease_num) if prerelease_num is not None else None,
+    )
+
+    return out
+
+
+EXTRACT_HTCONDOR_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)", flags = re.ASCII)
+
+
+def htcondor_version_info() -> Tuple[int, int, int, str, int]:
+    return parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0))

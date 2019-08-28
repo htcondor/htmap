@@ -3,10 +3,10 @@ Tutorials
 
 .. attention::
 
-    The most convenient way to go through these tutorials is through Binder, which requires no setup on your part.
+    The most convenient way to go through these tutorials is through Binder, which requires no setup on your part: |binder|
 
-    .. image:: https://mybinder.org/badge_logo.svg
-       :target: https://mybinder.org/v2/gh/htcondor/htmap/master?urlpath=lab/tree/tutorials/first-steps.ipynb
+.. |binder| image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/htcondor/htmap/master?urlpath=lab/tree/tutorials/first-steps.ipynb
 
 
 :doc:`tutorials/first-steps`

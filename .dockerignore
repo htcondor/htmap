@@ -108,3 +108,5 @@ venv.bak/
 
 Dockerfile
 dr
+
+!htmap-exec/singularity.d/*
