@@ -25,9 +25,9 @@ from .version import (
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 
 # SET UP NULL LOG HANDLER
-logger = _logging.getLogger(__name__)
-logger.setLevel(_logging.DEBUG)
-logger.addHandler(_logging.NullHandler())
+_logger = _logging.getLogger(__name__)
+_logger.setLevel(_logging.DEBUG)
+_logger.addHandler(_logging.NullHandler())
 
 from .mapping import (
     map,
