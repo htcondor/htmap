@@ -162,6 +162,7 @@ BASE_SETTINGS = Settings(dict(
     MAP_OPTIONS = dict(
         request_memory = '128MB',
         request_disk = '1GB',
+        keep_claim_idle = '30',
     ),
     DOCKER = dict(
         IMAGE = os.getenv('HTMAP_DOCKER_IMAGE', default_docker_image),
