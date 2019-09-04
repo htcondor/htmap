@@ -108,7 +108,10 @@ class ComponentError:
             row.append(self._indent('\nLocal variables:\n', multiple = 2))
             if frame.locals:
                 for name, value in sorted(frame.locals.items()):
-                    row.append(self._indent(f'{name} = {value}\n', multiple = 3))
+                    v = str(value)
+                    if len(v) > 45:
+                        v = v[:20] + ' ... ' + v[-20:]
+                    row.append(self._indent(f'{name} = {v}\n', multiple = 3))
             result.append(''.join(row))
         if count > _RECURSIVE_CUTOFF:
             count -= _RECURSIVE_CUTOFF
