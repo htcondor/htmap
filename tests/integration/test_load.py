@@ -22,17 +22,17 @@ import htmap
 def test_load_shortcut(mapped_doubler):
     result = mapped_doubler.map(range(3), tag = 'load-shortcut')
 
-    recovered = htmap.load('load-shortcut')
+    loaded = htmap.load('load-shortcut')
 
-    assert recovered is result
+    assert loaded is result
 
 
 def test_load_classmethod(mapped_doubler):
     result = mapped_doubler.map(range(3), tag = 'load-classmethod')
 
-    recovered = htmap.Map.load('load-classmethod')
+    loaded = htmap.Map.load('load-classmethod')
 
-    assert recovered is result
+    assert loaded is result
 
 
 def test_load_on_bad_tag_raises_tag_not_found():

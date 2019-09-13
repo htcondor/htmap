@@ -43,7 +43,7 @@ def tag_file_path(tag: str) -> Path:
 def raise_if_tag_already_exists(tag: str) -> None:
     """Raise a :class:`htmap.exceptions.TagAlreadyExists` if the ``tag`` already exists."""
     if tag_file_path(tag).exists():
-        raise exceptions.TagAlreadyExists(f'the requested tag {tag} already exists (recover the Map, then either use or delete it).')
+        raise exceptions.TagAlreadyExists(f'The requested tag "{tag}" already exists. Load the Map with htmap.load("{tag}"), or remove it using htmap.remove("{tag}").')
 
 
 INVALID_TAG_CHARACTERS = {
