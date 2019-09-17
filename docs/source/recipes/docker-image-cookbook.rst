@@ -73,6 +73,7 @@ Create a file named ``Dockerfile`` and write this into it:
     # Dockerfile
 
     FROM continuumio/anaconda3:latest
+    ENV PATH=/opt/conda/bin/:${PATH}
 
     RUN pip install --no-cache-dir htmap
 
@@ -101,6 +102,7 @@ by adding one more line to the bottom of the Dockerfile.
     # Dockerfile
 
     FROM continuumio/anaconda3:latest
+    ENV PATH=/opt/conda/bin/:${PATH}
 
     RUN pip install --no-cache-dir htmap
 
@@ -130,6 +132,7 @@ If you need install many packages, we recommend writing a ``requirements.txt`` f
     # Dockerfile
 
     FROM continuumio/anaconda3:latest
+    ENV PATH=/opt/conda/bin/:${PATH}
 
     RUN pip install --no-cache-dir htmap
 
@@ -189,6 +192,7 @@ Instead of using the full Anaconda distribution, use a base Docker image that on
     # Dockerfile
 
     FROM continuumio/miniconda3:latest
+    ENV PATH=/opt/conda/bin/:${PATH}
 
     RUN pip install --no-cache-dir htmap
 

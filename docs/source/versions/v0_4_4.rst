@@ -1,0 +1,22 @@
+v0.4.4
+======
+
+New Features
+------------
+
+Bug Fixes
+---------
+
+* In execution error reports, local variables with very long string forms are
+  now cut down to a smaller size.
+
+Known Issues
+------------
+
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129
