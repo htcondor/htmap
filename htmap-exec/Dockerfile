@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM continuumio/anaconda3:2019.03
+FROM continuumio/anaconda3:2019.07
+ENV PATH=/opt/conda/bin/:${PATH}
 
 LABEL maintainer="karpel@wisc.edu"
 
