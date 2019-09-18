@@ -41,7 +41,7 @@ def map_dir_path(uid: Union[uuid.UUID, str]) -> Path:
 def tagfile_to_map_dir(tagfile: Path) -> Path:
     """Return the path to the map directory associated with the given ``tag`` file."""
     if not tagfile.exists():
-        raise exceptions.TagNotFound(f'the tag {tagfile.stem} was not found')
+        raise exceptions.TagNotFound(f'The tag {tagfile.stem} was not found')
     uid = uuid.UUID(tagfile.read_text())
     return map_dir_path(uid)
 
@@ -174,7 +174,7 @@ class MapBuilder:
 
         self._map = None
 
-        logger.debug(f'initialized map builder for map {tag} for {self.func}')
+        logger.debug(f'Initialized map builder for map {tag} for {self.func}')
 
     def __repr__(self):
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
@@ -185,7 +185,7 @@ class MapBuilder:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # if an exception is raised in the with, re-raise without submitting jobs
         if exc_type is not None:
-            logger.exception(f'map builder for map {self.tag} aborted due to')
+            logger.exception(f'Map builder for map {self.tag} aborted due to')
             return False
 
         self._map = starmap(
@@ -196,7 +196,7 @@ class MapBuilder:
             map_options = self.map_options
         )
 
-        logger.debug(f'finished executing map builder for map {self.tag}')
+        logger.debug(f'Finished executing map builder for map {self.tag}')
 
     def __call__(self, *args: Any, **kwargs: Any) -> None:
         """Adds the given inputs to the map."""
@@ -210,7 +210,7 @@ class MapBuilder:
         Will raise :class:`htmap.exceptions.NoMapYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
         """
         if self._map is None:
-            raise exceptions.NoMapYet('map does not exist until after with block')
+            raise exceptions.NoMapYet('Map does not exist until after with block')
         return self._map
 
     def __len__(self) -> int:
@@ -286,7 +286,7 @@ def create_map(
     tags.raise_if_tag_is_invalid(tag)
     tags.raise_if_tag_already_exists(tag)
 
-    logger.debug(f'creating map {tag}...')
+    logger.debug(f'Creating map {tag}...')
 
     if map_options is None:
         map_options = options.MapOptions()
@@ -300,7 +300,7 @@ def create_map(
         args_and_kwargs, extra_input_files = process_args_and_kwargs(args_and_kwargs)
         num_components = len(args_and_kwargs)
         if num_components == 0:
-            raise exceptions.EmptyMap()
+            raise exceptions.EmptyMap("Cannot create a map with zero components")
         if map_options.input_files is None and len(extra_input_files) > 0:
             map_options.input_files = [[] for _ in range(len(extra_input_files))]
         for tif, extra in zip(map_options.input_files, extra_input_files):
@@ -318,13 +318,13 @@ def create_map(
         htio.save_submit(map_dir, submit_obj)
         htio.save_itemdata(map_dir, itemdata)
 
-        logger.debug(f'submitting map {tag}...')
+        logger.debug(f'Submitting map {tag}...')
         cluster_id = execute_submit(
             submit_object = submit_obj,
             itemdata = itemdata,
         )
 
-        logger.debug(f'map {tag} was assigned clusterid {cluster_id}')
+        logger.debug(f'Map {tag} was assigned clusterid {cluster_id}')
 
         with (map_dir / names.CLUSTER_IDS).open(mode = 'a') as file:
             file.write(str(cluster_id) + '\n')
@@ -341,7 +341,7 @@ def create_map(
         if transient:
             m._make_transient()
 
-        logger.info(f'submitted map {m.tag}')
+        logger.info(f'Submitted map {m.tag}')
         if utils.is_interactive_session():
             print(f'created map {m.tag} with {len(m)} components')
 
@@ -352,7 +352,7 @@ def create_map(
         # the condor bindings should prevent any jobs from being submitted
         logger.exception(f'map submission for map {tag} aborted due to')
         shutil.rmtree(str(map_dir.absolute()))
-        logger.debug(f'removed malformed map directory {map_dir}')
+        logger.debug(f'Removed malformed map directory {map_dir}')
         raise e
 
 
@@ -369,7 +369,7 @@ def make_map_dir_and_subdirs(map_dir: Path) -> None:
     for path in (map_dir / d for d in MAP_SUBDIR_NAMES):
         path.mkdir(parents = True, exist_ok = True)
 
-    logger.debug(f'created map directory {map_dir} and subdirectories')
+    logger.debug(f'Created map directory {map_dir} and subdirectories')
 
 
 def execute_submit(submit_object: htcondor.Submit, itemdata: List[Dict[str, str]]) -> int:

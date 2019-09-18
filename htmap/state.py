@@ -112,7 +112,7 @@ class MapState:
             handled_events = False
 
             if self._event_reader is None:
-                logger.debug(f'created event log reader for map {self.map.tag}')
+                logger.debug(f'Created event log reader for map {self.map.tag}')
                 self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
             for event in self._event_reader:
@@ -153,7 +153,7 @@ class MapState:
                     try:
                         exec_status = self.map._peek_status(component)
                     except exceptions.OutputNotFound:
-                        logger.warning(f'output was not found for component {component} for map {self.map.tag}, marking as errored')
+                        logger.warning(f'Output was not found for component {component} for map {self.map.tag}, marking as errored')
                         exec_status = 'ERR'
 
                     if exec_status == 'ERR':
@@ -161,7 +161,7 @@ class MapState:
 
                 if new_status is not None:
                     if new_status is self._component_statuses[component]:
-                        logger.warning(f'component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
+                        logger.warning(f'Component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
                     self._component_statuses[component] = new_status
 
             if handled_events and utils.htcondor_version_info() >= (8, 9, 3):

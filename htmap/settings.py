@@ -81,7 +81,7 @@ class Settings:
 
         m[final] = value
 
-        logger.debug(f'setting {key} changed from {old if old is not None else "<missing>"} to {value}')
+        logger.debug(f'Setting {key} changed from {old if old is not None else "<missing>"} to {value}')
 
     def to_dict(self) -> dict:
         """Return a single dictionary with all of the settings in this :class:`Settings`, merged according to the lookup rules."""
@@ -90,7 +90,7 @@ class Settings:
     def replace(self, other: 'Settings') -> None:
         """Change the settings of this :class:`Settings` to be the settings from another :class:`Settings`."""
         self.maps = other.maps
-        logger.debug('settings were replaced')
+        logger.debug('Settings were replaced')
 
     def append(self, other: Union['Settings', dict]) -> None:
         """
@@ -136,7 +136,7 @@ class Settings:
         with path.open(mode = 'w') as file:
             toml.dump(self.maps[0], file)
 
-        logger.debug(f'saved settings to {path}')
+        logger.debug(f'Saved settings to {path}')
 
     def __str__(self) -> str:
         return utils.rstr(toml.dumps(self.to_dict()))
@@ -180,11 +180,11 @@ BASE_SETTINGS = Settings(dict(
 USER_SETTINGS_PATH = Path.home() / '.htmaprc'
 try:
     USER_SETTINGS = Settings.load(USER_SETTINGS_PATH)
-    logger.debug(f'loaded user settings from {USER_SETTINGS_PATH}')
+    logger.debug(f'Loaded user settings from {USER_SETTINGS_PATH}')
 except FileNotFoundError:
     USER_SETTINGS = Settings()
-    logger.debug(f'no user settings at {USER_SETTINGS_PATH}')
+    logger.debug(f'No user settings at {USER_SETTINGS_PATH}')
 
 settings = Settings.from_settings(Settings(), USER_SETTINGS, BASE_SETTINGS)
 
-logger.debug(f'htmap directory is {settings["HTMAP_DIR"]}')
+logger.debug(f'HTMap directory is {settings["HTMAP_DIR"]}')

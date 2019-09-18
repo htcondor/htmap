@@ -64,7 +64,7 @@ def wait_for_path_to_exist(
     start_time = time.time()
     while not path.exists():
         if timeout is not None and (timeout <= 0 or time.time() > start_time + timeout):
-            raise exceptions.TimeoutError(f'timeout while waiting for {path} to exist')
+            raise exceptions.TimeoutError(f'Timeout while waiting for {path} to exist')
         time.sleep(wait_time)
 
 
@@ -181,7 +181,7 @@ def get_dir_size(path: Path, safe: bool = True) -> int:
             if safe:
                 raise e
             else:
-                logger.error(f'path {entry} vanished while using it')
+                logger.error(f'Path {entry} vanished while using it')
     return size
 
 

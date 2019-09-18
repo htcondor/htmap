@@ -118,9 +118,9 @@ def clean(*, all: bool = False) -> List[str]:
     for uid in (Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR).iterdir():
         map_dir = mapping.map_dir_path(uuid.UUID(uid.stem))
         shutil.rmtree(map_dir)
-        logger.debug(f'removed orphaned map directory {uid.stem}')
+        logger.debug(f'Removed orphaned map directory {uid.stem}')
 
-    logger.debug(f'cleaned maps {cleaned_tags}')
+    logger.debug(f'Cleaned maps {cleaned_tags}')
     return cleaned_tags
 
 
@@ -366,7 +366,7 @@ class Transplant(NamedTuple):
     def remove(self):
         self.path.with_suffix('.pip').unlink()
         self.path.unlink()
-        logger.info(f'removed transplant install {self.hash}, which was created at {self.created}')
+        logger.info(f'Removed transplant install {self.hash}, which was created at {self.created}')
 
 
 def transplants() -> Tuple[Transplant, ...]:

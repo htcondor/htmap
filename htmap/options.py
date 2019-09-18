@@ -196,7 +196,7 @@ def create_submit_object_and_itemdata(
             for files in map_options.input_files
         ]
         if len(joined) != num_components:
-            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
+            raise exceptions.MisalignedInputData(f'Length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
     descriptors['transfer_input_files'] = ','.join(input_files)
@@ -206,7 +206,7 @@ def create_submit_object_and_itemdata(
             itemdata_key = f'itemdata_for_{opt_key}'
             opt_value = tuple(opt_value)
             if len(opt_value) != num_components:
-                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
+                raise exceptions.MisalignedInputData(f'Length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
             for dct, v in zip(itemdata, opt_value):
                 dct[itemdata_key] = v
             descriptors[opt_key] = f'$({itemdata_key})'
@@ -401,9 +401,9 @@ def _run_delivery_setup_for_transplant(
 ) -> None:
     if not settings.get('TRANSPLANT.ASSUME_EXISTS', False):
         if 'usr' in sys.executable:
-            raise exceptions.CannotTransplantPython('system Python installations cannot be transplanted')
+            raise exceptions.CannotTransplantPython('System Python installations cannot be transplanted')
         if sys.platform == 'win32':
-            raise exceptions.CannotTransplantPython('transplant delivery does not work from Windows')
+            raise exceptions.CannotTransplantPython('Transplant delivery does not work from Windows')
 
         py_dir = Path(sys.executable).parent.parent
         pip_freeze = _get_pip_freeze()
@@ -412,10 +412,10 @@ def _run_delivery_setup_for_transplant(
         zip_path = target.with_name(f'{target.stem}.tar.gz')
 
         if zip_path.exists():  # cached version already exists
-            logger.debug(f'using cached zipped python install at {zip_path}')
+            logger.debug(f'Using cached zipped python install at {zip_path}')
             return
 
-        logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
+        logger.debug(f'Creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
 
         try:
             shutil.make_archive(
@@ -425,7 +425,7 @@ def _run_delivery_setup_for_transplant(
             )
         except BaseException as e:
             zip_path.unlink()
-            logger.debug(f'removed partial zipped Python install at {target}')
+            logger.debug(f'Removed partial zipped Python install at {target}')
             raise e
 
         zip_path.rename(target)
@@ -433,7 +433,7 @@ def _run_delivery_setup_for_transplant(
         pip_path = zip_path.with_name(f'{target.stem}.pip')
         pip_path.write_bytes(pip_freeze)
 
-        logger.debug(f'created zipped Python install for transplant, stored at {zip_path}')
+        logger.debug(f'Created zipped Python install for transplant, stored at {zip_path}')
 
 
 def _get_pip_freeze() -> bytes:

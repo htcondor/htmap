@@ -45,4 +45,4 @@ def test_rerun_components_out_range_cannot_rerun(cli):
 
     result = cli(['rerun', 'components', m.tag, '5'])
 
-    assert 'cannot rerun' in result.output
+    assert 'cannot rerun' in result.output.lower()

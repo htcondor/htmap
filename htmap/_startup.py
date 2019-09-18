@@ -42,9 +42,9 @@ def ensure_htmap_dir_exists():
             dir.mkdir(parents = True, exist_ok = True)
 
         if did_not_exist:
-            logger.debug(f'created HTMap dir at {_htmap_dir}')
+            logger.debug(f'Created HTMap dir at {_htmap_dir}')
     except PermissionError as e:
-        raise PermissionError(f'the HTMap directory ({_htmap_dir}) needs to be writable') from e
+        raise PermissionError(f'The HTMap directory ({_htmap_dir}) needs to be writable') from e
 
 
 if os.getenv('HTMAP_ON_EXECUTE') != '1':

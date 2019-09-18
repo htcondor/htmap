@@ -52,7 +52,7 @@ def save_func(map_dir: Path, func: Callable) -> None:
     path = map_dir / names.FUNC
     save_object(func, path)
 
-    logger.debug(f'saved function to {path}')
+    logger.debug(f'Saved function to {path}')
 
 
 def save_inputs(
@@ -66,7 +66,7 @@ def save_inputs(
     for component, a_and_k in enumerate(args_and_kwargs):
         save_object(a_and_k, base_path / f'{component}.{names.INPUT_EXT}')
 
-    logger.debug(f'saved args and kwargs in {base_path}')
+    logger.debug(f'Saved args and kwargs in {base_path}')
 
 
 def save_num_components(map_dir: Path, num_components: int) -> None:
@@ -94,7 +94,7 @@ def save_submit(map_dir: Path, submit: htcondor.Submit) -> None:
             separators = (', ', ': '),
         )
 
-    logger.debug(f'saved submit object to {path}')
+    logger.debug(f'Saved submit object to {path}')
 
 
 def load_submit(map_dir: Path) -> htcondor.Submit:
@@ -118,7 +118,7 @@ def save_itemdata(map_dir: Path, itemdata: List[dict]) -> None:
             separators = (',', ':'),
         )  # most compact representation
 
-    logger.debug(f'saved itemdata to {path}')
+    logger.debug(f'Saved itemdata to {path}')
 
 
 def load_itemdata(map_dir: Path) -> List[dict]:
