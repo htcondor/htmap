@@ -217,8 +217,10 @@ def main(component):
         print_run_info(component, func, args, kwargs)
 
         print('\n----- MAP COMPONENT OUTPUT START -----\n')
+
         result_or_error = func(*args, **kwargs)
         status = 'OK'
+
         print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
     except Exception as e:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
@@ -236,6 +238,8 @@ def main(component):
             scratch_dir_contents = list(scratch_dir.iterdir()),
         )
         status = 'ERR'
+
+        traceback.print_exc(file = sys.stderr)
 
     clean_and_remake_dir(scratch_dir / CHECKPOINT_CURRENT)
     clean_and_remake_dir(transfer_dir)

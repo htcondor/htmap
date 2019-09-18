@@ -19,6 +19,10 @@ Deprecated Features
 Bug Fixes
 ---------
 
+* When an execution errors occurs, the exception and traceback will be printed
+  to stderr execute-side (in addition to being brought back submit-side).
+  Issue: https://github.com/htcondor/htmap/issues/178
+
 
 Known Issues
 ------------
