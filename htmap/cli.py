@@ -22,6 +22,7 @@ import collections
 import random
 import functools
 import shutil
+import re
 from pathlib import Path
 
 import htmap
@@ -132,6 +133,13 @@ def _map_fg(map: htmap.Map) -> Optional[str]:
         return 'white'
 
 
+RE_ANSI = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
+
+
+def remove_ansi(text):
+    return RE_ANSI.sub('', text)
+
+
 @cli.command()
 @click.option(
     '--no-state',
@@ -203,7 +211,8 @@ def status(no_state, no_meta, format, live, no_color):
 
     try:
         while live:
-            prev_len_lines = [len(line) for line in msg.splitlines()]
+            prev_lines = list(msg.splitlines())
+            prev_len_lines = [len(line) for line in prev_lines]
 
             maps = sorted(htmap.load_maps(), key = lambda m: (m.is_transient, m.tag))
             msg = _status(
@@ -214,7 +223,7 @@ def status(no_state, no_meta, format, live, no_color):
             )
 
             move = f'\033[{len(prev_len_lines)}A\r'
-            clear = '\n'.join(' ' * l for l in prev_len_lines) + '\n'
+            clear = '\n'.join(' ' * len(remove_ansi(line)) for line in prev_lines) + '\n'
 
             sys.stdout.write(move + clear + move)
             click.echo(msg)
