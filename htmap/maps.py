@@ -208,16 +208,6 @@ class Map(collections.abc.Sequence):
         return self._output_files_dir / str(component)
 
     @property
-    def _input_file_paths(self):
-        """The paths to the input files."""
-        yield from (self._input_file_path(idx) for idx in self.components)
-
-    @property
-    def _output_file_paths(self):
-        """The paths to the output files."""
-        yield from (self._output_file_path(idx) for idx in self.components)
-
-    @property
     def components(self) -> Tuple[int]:
         """Return a tuple containing the component indices for the :class:`htmap.Map`."""
         return tuple(range(self._num_components))
@@ -434,7 +424,6 @@ class Map(collections.abc.Sequence):
 
     def iter(
         self,
-        callback: Optional[Callable] = None,
         timeout: utils.Timeout = None,
     ) -> Iterator[Any]:
         """
@@ -443,23 +432,15 @@ class Map(collections.abc.Sequence):
 
         Parameters
         ----------
-        callback
-            A function to call on each output as the iteration proceeds.
         timeout
             How long to wait for each output to be available before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
         """
-        if callback is None:
-            callback = lambda o: o
-
         for component in self.components:
-            output = self._load_output(component, timeout = timeout)
-            callback(output)
-            yield output
+            yield self._load_output(component, timeout = timeout)
 
     def iter_with_inputs(
         self,
-        callback: Optional[Callable] = None,
         timeout: utils.Timeout = None,
     ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
@@ -468,24 +449,17 @@ class Map(collections.abc.Sequence):
 
         Parameters
         ----------
-        callback
-            A function to call on each (input, output) pair as the iteration proceeds.
         timeout
             How long to wait for each output to be available before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
         """
-        if callback is None:
-            callback = lambda i, o: (i, o)
-
         for component in self.components:
             output = self._load_output(component, timeout = timeout)
             input = self._load_input(component)
-            callback(input, output)
             yield input, output
 
     def iter_as_available(
         self,
-        callback: Optional[Callable] = None,
         timeout: utils.Timeout = None,
     ) -> Iterator[Any]:
         """
@@ -496,8 +470,6 @@ class Map(collections.abc.Sequence):
 
         Parameters
         ----------
-        callback
-            A function to call on each output as the iteration proceeds.
         timeout
             How long to wait for the entire iteration to complete before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
@@ -505,16 +477,12 @@ class Map(collections.abc.Sequence):
         timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
 
-        if callback is None:
-            callback = lambda o: o
-
         remaining_indices = set(self.components)
         while len(remaining_indices) > 0:
             for component in copy(remaining_indices):
                 try:
                     output = self._load_output(component, timeout = 0)
                     remaining_indices.remove(component)
-                    callback(output)
                     yield output
                 except exceptions.OutputNotFound:
                     pass
@@ -526,7 +494,6 @@ class Map(collections.abc.Sequence):
 
     def iter_as_available_with_inputs(
         self,
-        callback: Optional[Callable] = None,
         timeout: utils.Timeout = None,
     ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
@@ -537,17 +504,12 @@ class Map(collections.abc.Sequence):
 
         Parameters
         ----------
-        callback
-            A function to call on each ``(input, output)`` as the iteration proceeds.
         timeout
             How long to wait for the entire iteration to complete before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
         """
         timeout = utils.timeout_to_seconds(timeout)
         start_time = time.time()
-
-        if callback is None:
-            callback = lambda i, o: (i, o)
 
         remaining_indices = set(self.components)
         while len(remaining_indices) > 0:
@@ -556,7 +518,6 @@ class Map(collections.abc.Sequence):
                     output = self._load_output(component, timeout = 0)
                     input = self._load_input(component)
                     remaining_indices.remove(component)
-                    callback(input, output)
                     yield input, output
                 except exceptions.OutputNotFound:
                     pass

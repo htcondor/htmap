@@ -9,8 +9,16 @@ New Features
   if a component index is in the map.
 
 
+Deprecated Features
+-------------------
+
+* The various iteration methods on :class:`htmap.Map` no longer have a
+  ``callback`` argument.
+
+
 Bug Fixes
 ---------
+
 
 Known Issues
 ------------
