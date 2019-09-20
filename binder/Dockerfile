@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM jupyter/scipy-notebook:6c6ebe8734e9
+FROM jupyter/scipy-notebook:latest
 ARG HTCONDOR_VERSION=8.8
 ENV NB_USER="jovyan" \
     DEBIAN_FRONTEND=noninteractive
