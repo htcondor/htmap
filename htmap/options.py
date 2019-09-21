@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 BASE_OPTIONS_FUNCTION_BY_DELIVERY = {}
 SETUP_FUNCTION_BY_DELIVERY = {}
 
+REQUIREMENTS = 'requirements'
+
 
 class MapOptions(collections.UserDict):
     RESERVED_KEYS = {
@@ -125,18 +127,23 @@ class MapOptions(collections.UserDict):
         .. note::
 
             ``fixed_input_files`` is a special case, and is merged up the chain instead of being overwritten.
+            ``requirements`` are also combined, in a way where all requirements must be satisfied.
         """
         new = cls()
-        for other in reversed(others):
-            # todo: needs test
-            new_reqs = new.get('requirements', None)
-            other_reqs = other.pop('requirements', None)
-            if new_reqs is not None and other_reqs is not None:
-                new['requirements'] = f'({new_reqs}) && ({other_reqs})'
 
+        for other in reversed(others):
             new.data.update(other.data)
+
+            # these need special handling, because they are stored as attributes
+            # instead of in the dictionary
             new.fixed_input_files.extend(other.fixed_input_files)
             new.input_files = other.input_files
+
+        merged_requirements = merge_requirements(
+            *(other.get(REQUIREMENTS, None) for other in others)
+        )
+        if merged_requirements is not None:
+            new[REQUIREMENTS] = merged_requirements
 
         return new
 
@@ -173,9 +180,9 @@ def create_submit_object_and_itemdata(
         settings['DELIVERY_METHOD'],
     )
 
-    descriptors['requirements'] = merge_requirements(
-        descriptors.get('requirements', None),
-        map_options.get('requirements', None),
+    descriptors[REQUIREMENTS] = merge_requirements(
+        descriptors.get(REQUIREMENTS, None),
+        map_options.get(REQUIREMENTS, None),
     )
 
     itemdata = [{'component': str(idx)} for idx in range(num_components)]
@@ -213,8 +220,8 @@ def create_submit_object_and_itemdata(
         else:
             descriptors[opt_key] = opt_value
 
-    if descriptors['requirements'] is None:
-        descriptors.pop('requirements')
+    if descriptors[REQUIREMENTS] is None:
+        descriptors.pop(REQUIREMENTS)
 
     sub = htcondor.Submit(descriptors)
 
@@ -280,11 +287,10 @@ def get_base_descriptors(
         **from_settings,
     }
 
-    # manually fix-up requirements
-    merged['requirements'] = merge_requirements(
-        core.get('requirements', None),
-        base.get('requirements', None),
-        from_settings.get('requirements', None),
+    merged[REQUIREMENTS] = merge_requirements(
+        core.get(REQUIREMENTS, None),
+        base.get(REQUIREMENTS, None),
+        from_settings.get(REQUIREMENTS, None),
     )
 
     return merged
@@ -313,7 +319,6 @@ def _copy_run_scripts(map_dir: Path):
     for src in run_scripts:
         target = map_dir / src.name
         shutil.copy2(src, target)
-
 
 
 def _get_base_descriptors_for_assume(
@@ -358,7 +363,7 @@ def _get_base_descriptors_for_singularity(
 ) -> dict:
     return {
         'universe': 'vanilla',
-        'requirements': 'HasSingularity == true',
+        REQUIREMENTS: 'HasSingularity == true',
         'executable': (map_dir / names.RUN_WITH_SINGULARITY_SCRIPT).as_posix(),
         'transfer_input_files': [
             (map_dir / names.RUN_SCRIPT).as_posix(),
