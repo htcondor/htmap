@@ -40,3 +40,20 @@ def test_status_with_no_state_gives_no_num_jobs(cli):
     result = cli(['status', '--no-state'])
 
     assert ' 1 ' not in result.output
+
+
+@pytest.mark.parametrize('format', ['json', 'json_compact', 'csv'])
+def test_live_conflicts_with_non_text_formats(cli, format):
+    result = cli(['status', '--format', format, '--live'])
+
+    assert 'ERROR' in result.output
+    assert result.exit_code == 1
+
+
+@pytest.mark.parametrize('format', ['wizard', 'pie', 'echo'])
+def test_bad_format_prints_usage(cli, format):
+    result = cli(['status', '--format', format])
+
+    assert 'Usage' in result.output
+    assert format in result.output
+    assert result.exit_code == 2

@@ -26,6 +26,7 @@ from htmap.tags import INVALID_TAG_CHARACTERS, raise_if_tag_is_invalid
         '/def.',
         'def/',
         '\\\\',
+        '',
     ]
 )
 def test_bad_tags(tag):

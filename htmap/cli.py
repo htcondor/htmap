@@ -203,9 +203,11 @@ def status(no_state, no_meta, format, live, no_color):
             header_fmt = _HEADER_FMT if not no_color else None,
             row_fmt = _RowFmt(maps) if not no_color else None,
         )
-    else:
+    else:  # pragma: unreachable
+        # this is a safeguard; this code is actually unreachable, because
+        # click detects the invalid choice before we hit this
         click.echo(f'ERROR: unknown format option "{format}"', err = True)
-        sys.exit(1)
+        sys.exit(2)
 
     click.echo(msg)
 
@@ -297,6 +299,7 @@ STATUS_AND_COLOR = [
     (htmap.ComponentStatus.HELD, 'red'),
     (htmap.ComponentStatus.ERRORED, 'red'),
     (htmap.ComponentStatus.REMOVED, 'magenta'),
+    (htmap.ComponentStatus.UNKNOWN, 'magenta'),
 ]
 
 STATUS_TO_COLOR = dict(STATUS_AND_COLOR)
