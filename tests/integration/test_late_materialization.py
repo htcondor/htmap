@@ -23,20 +23,10 @@ import htmap
 @pytest.fixture(scope = 'function')
 def late_sleep():
     @htmap.mapped(map_options = htmap.MapOptions(max_idle = "1"))
-    def sleep(x):
+    def sleep(_):
         return time.sleep(1)
 
     return sleep
-
-
-@pytest.mark.timeout(360)
-def test_can_be_removed_after_complete(late_sleep):
-    m = late_sleep.map(range(3))
-
-    m.wait(timeout = 180)
-    m.remove()
-
-    assert m.is_removed
 
 
 @pytest.mark.timeout(10)
