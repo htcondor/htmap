@@ -292,6 +292,7 @@ STATUS_AND_COLOR = [
     (htmap.ComponentStatus.COMPLETED, 'green'),
     (htmap.ComponentStatus.RUNNING, 'cyan'),
     (htmap.ComponentStatus.IDLE, 'yellow'),
+    (htmap.ComponentStatus.UNMATERIALIZED, 'yellow'),
     (htmap.ComponentStatus.SUSPENDED, 'red'),
     (htmap.ComponentStatus.HELD, 'red'),
     (htmap.ComponentStatus.ERRORED, 'red'),

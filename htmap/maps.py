@@ -727,7 +727,12 @@ class Map(collections.abc.Sequence):
         """
         if not force:
             while not all(
-                cs in (state.ComponentStatus.REMOVED, state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
+                cs in (
+                    state.ComponentStatus.REMOVED,
+                    state.ComponentStatus.COMPLETED,
+                    state.ComponentStatus.ERRORED,
+                    state.ComponentStatus.UNMATERIALIZED,
+                )
                 for cs in self.component_statuses
             ):
                 time.sleep(.01)

@@ -34,6 +34,7 @@ class ComponentStatus(utils.StrEnum):
     These are mostly identical to the HTCondor job statuses of the same name.
     """
     UNKNOWN = 'UNKNOWN'
+    UNMATERIALIZED = 'UNMATERIALIZED'
     IDLE = 'IDLE'
     RUNNING = 'RUNNING'
     REMOVED = 'REMOVED'
@@ -76,7 +77,7 @@ class MapState:
 
         self._jobid_to_component: Dict[Tuple[int, int], int] = {}
 
-        self._component_statuses = [ComponentStatus.UNKNOWN for _ in self.map.components]
+        self._component_statuses = [ComponentStatus.UNMATERIALIZED for _ in self.map.components]
         self._holds: Dict[int, holds.ComponentHold] = {}
         self._memory_usage = [0 for _ in self.map.components]
         self._runtime = [datetime.timedelta(0) for _ in self.map.components]
@@ -117,11 +118,9 @@ class MapState:
 
             for event in self._event_reader:
                 handled_events = True
-                self.map._local_data = None  # invalidate cache if any events were received
 
                 # skip the late materialization submit event
-                # todo: replace with better mechanism
-                if event.proc < 0:
+                if event.proc == -1:
                     continue
 
                 if event.type is htcondor.JobEventType.SUBMIT:
@@ -162,10 +161,15 @@ class MapState:
                 if new_status is not None:
                     if new_status is self._component_statuses[component]:
                         logger.warning(f'Component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
-                    self._component_statuses[component] = new_status
+                    else:
+                        logger.debug(f'Component {component} of map {self.map.tag} changed state: {self._component_statuses[component]} -> {new_status}')
+                        self._component_statuses[component] = new_status
 
-            if handled_events and utils.htcondor_version_info() >= (8, 9, 3):
-                self.save()
+            if handled_events:
+                self.map._local_data = None  # invalidate cache if any events were received
+
+                if utils.htcondor_version_info() >= (8, 9, 3):
+                    self.save()
 
     def save(self) -> Path:
         final_path = self.map._map_dir / names.MAP_STATE
