@@ -13,15 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM jupyter/scipy-notebook:6c6ebe8734e9
-ARG HTCONDOR_VERSION=8.8
+FROM jupyter/scipy-notebook:latest
+ARG HTCONDOR_VERSION=8.9
 ENV NB_USER="jovyan" \
     DEBIAN_FRONTEND=noninteractive
 
 USER root
 
 RUN apt-get update \
- && apt-get -y install --no-install-recommends gnupg git  \
+ && apt-get -y install --no-install-recommends gnupg git vim less  \
  && wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
  && echo "deb  http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
  && apt-get -y update \
