@@ -4,9 +4,16 @@ v0.5.0
 New Features
 ------------
 
+* HTMap CLI commands that operate on tags can now pattern-match for tags using
+  glob syntax.
+  Issue: https://github.com/htcondor/htmap/issues/159
+* Component status tracking should now be much faster once it has already been
+  performed, since we now store some state between sessions.
+  Issue: https://github.com/htcondor/htmap/issues/166
 * :class:`htmap.Map`, :class:`htmap.MapStdOut`, :class:`htmap.MapStdErr`,
   and :class:`htmap.MapOutputFiles` now all support in the ``in`` operator to check
   if a component index is in the map.
+
 
 Deprecated Features
 -------------------
@@ -18,11 +25,15 @@ Deprecated Features
 Bug Fixes
 ---------
 
+* It should now be much harder to accidentally get a dangling, inaccessible map
+  due to an interrupted ``remove``.
+  Issue: https://github.com/htcondor/htmap/issues/127
 * When an execution errors occurs, the exception and traceback will be printed
   to stderr execute-side (in addition to being brought back submit-side).
   Issue: https://github.com/htcondor/htmap/issues/178
 * The CLI command ``htmap status --live`` now has much better behavior when
   the table width is nearly the width of the terminal.
+
 
 Known Issues
 ------------
