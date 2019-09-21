@@ -553,6 +553,7 @@ def errors(tags, pattern, all, limit):
     help = 'Disable color.'
 )
 def components(tag, status, no_color):
+    """Print out the status of the individual components of a map."""
     m = _cli_load(tag)
 
     if status is None:
