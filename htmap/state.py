@@ -186,16 +186,20 @@ class MapState:
             raise exceptions.InsufficientHTCondorVersion("Map state can only be saved with HTCondor 8.9.3 or greater")
 
         with (map._map_dir / names.MAP_STATE).open(mode = 'rb') as f:
-            return pickle.load(f)
+            state = pickle.load(f)
+        state.map = map
+        return state
 
     def __getstate__(self):
         d = self.__dict__.copy()
         d.pop('_event_reader_lock')
+        d.pop('map')
         return d
 
     def __setstate__(self, state):
         self.__dict__ = state
         self._event_reader_lock = threading.Lock()
+        # note: the map reference is restored in the load method
 
 
 def parse_runtime(runtime_string: str) -> datetime.timedelta:
