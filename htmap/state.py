@@ -162,7 +162,9 @@ class MapState:
                     if new_status is self._component_statuses[component]:
                         logger.warning(f'Component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
                     else:
-                        logger.debug(f'Component {component} of map {self.map.tag} changed state: {self._component_statuses[component]} -> {new_status}')
+                        # this log is commented-out because its very verbose
+                        # might be helpful when debugging
+                        # logger.debug(f'Component {component} of map {self.map.tag} changed state: {self._component_statuses[component]} -> {new_status}')
                         self._component_statuses[component] = new_status
 
             if handled_events:

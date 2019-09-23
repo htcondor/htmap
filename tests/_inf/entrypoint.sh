@@ -23,4 +23,6 @@ else
     echo "Executing default test command in container..."
 fi
 
+condor_version
+
 exec "$@"
