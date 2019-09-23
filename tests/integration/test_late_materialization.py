@@ -36,3 +36,11 @@ def test_can_be_removed_immediately(late_sleep):
     m.remove()
 
     assert m.is_removed
+
+
+def test_wait_with_late_materialization(late_sleep):
+    m = late_sleep.map(range(3))
+
+    m.wait(timeout = 180)
+
+    assert m.is_done

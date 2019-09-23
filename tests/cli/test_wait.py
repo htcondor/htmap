@@ -81,7 +81,7 @@ def test_can_wait_with_no_maps(cli):
     assert result.exit_code == 0
 
 
-@pytest.mark.timeout(360)
+@pytest.mark.timeout(180)
 def test_can_wait_with_late_materialized_map(cli):
     m = htmap.map(str, range(3), map_options = htmap.MapOptions(max_idle = "1"))
 
