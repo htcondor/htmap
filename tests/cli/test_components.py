@@ -22,7 +22,7 @@ def test_components(cli):
     m = htmap.map(str, range(1), tag = 'foo')
     m.wait(timeout = 180)
 
-    result = cli(['components', 'foo'])
+    result = cli(['components', m.tag])
 
     assert '0 COMPLETED' in result.output
 
@@ -31,7 +31,7 @@ def test_components_only_errors(cli):
     m = htmap.map(lambda x: 1 / x, [0, 0, 1, 1], tag = 'foo')
     m.wait(timeout = 180, errors_ok = True)
 
-    result = cli(['components', '--status', 'errored', 'foo'])
+    result = cli(['components', '--status', 'errored', m.tag])
 
     assert '0 1' in result.output
     assert '2 3' not in result.output
@@ -40,7 +40,16 @@ def test_components_only_errors(cli):
 def test_components_bad_status(cli):
     m = htmap.map(str, range(1), tag = 'foo')
 
-    result = cli(['components', '--status', 'wizbang', 'foo'])
+    result = cli(['components', '--status', 'wizbang', m.tag])
 
     assert 'ERROR' in result.output
     assert 'wizbang' in result.output
+
+
+def test_can_see_components_with_late_materialized_map(cli):
+    m = htmap.map(str, range(5), map_options = htmap.MapOptions(max_idle = "1"))
+
+    result = cli(['components', m.tag])
+
+    assert result.exit_code == 0
+    assert 'UNMATERIALIZED' in result.output
