@@ -7,11 +7,11 @@ from . import settings, names
 
 logger = logging.getLogger('htmap')
 
-LOGS_DIR_PATH = Path(settings['HTMAP_DIR']) / names.LOGS_DIR
-
 
 def setup_internal_file_logger():
+    LOGS_DIR_PATH = Path(settings['HTMAP_DIR']) / names.LOGS_DIR
     LOG_FILE = LOGS_DIR_PATH / 'htmap.log'
+    LOGS_DIR_PATH.mkdir(parents = True, exist_ok = True)
     _logfile_handler = handlers.RotatingFileHandler(
         filename = LOG_FILE,
         mode = 'a',
