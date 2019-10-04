@@ -79,7 +79,7 @@ COPY tests/_inf/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 
 # copy htmap package into container and install it
 # this is the only part that can't be cached against editing the package
-WORKDIR /home/${SUBMIT_USER}/htmap
 COPY --chown=mapper:mapper . /home/${SUBMIT_USER}/htmap
 RUN chmod +x /home/${SUBMIT_USER}/htmap/tests/_inf/entrypoint.sh /home/${SUBMIT_USER}/htmap/tests/_inf/travis.sh \
- && pip install --no-cache --no-deps -e .
+ && pip install --no-cache --no-deps -e /home/${SUBMIT_USER}/htmap
+WORKDIR /home/${SUBMIT_USER}/htmap
