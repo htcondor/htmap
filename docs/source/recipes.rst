@@ -16,6 +16,9 @@ Recipes
 :doc:`recipes/checkpointing-maps`
    How to write a function that can continue from partial progress after being evicted.
 
+:doc:`recipes/using-htmap-on-osg`
+   How to use HTMap on the `Open Science Grid <https://opensciencegrid.org/>`_.
+
 
 .. toctree::
    :maxdepth: 2
@@ -25,3 +28,4 @@ Recipes
    recipes/output-files
    recipes/wrapping-external-programs
    recipes/checkpointing-maps
+   recipes/using-htmap-on-osg

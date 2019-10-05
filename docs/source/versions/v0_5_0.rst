@@ -33,6 +33,12 @@ Bug Fixes
   Issue: https://github.com/htcondor/htmap/issues/178
 * The CLI command ``htmap status --live`` now has much better behavior when
   the table width is nearly the width of the terminal.
+* HTMap now handles late materialized jobs much more smoothly: maps with
+  unmaterialized components can be removed and various CLI commands that output
+  color won't fail when acting on maps with unmaterialized components. However,
+  unmaterialized components do not show as `IDLE`, which mirrors the behavior
+  of `condor_q`.
+  Issue: https://github.com/htcondor/htmap/issues/158
 
 
 Known Issues

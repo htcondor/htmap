@@ -125,7 +125,9 @@ Some notes on the above:
 * The ``-y`` options for the ``conda`` commands are the equivalent of answering "yes" to questions that ``conda`` asks on the command line, since the Docker build is non-interactive.
 * A trailing ``\`` is a line continuation, so that first command is equivalent to running ``conda install -y foobar && conda clean -y --all``, which is just ``bash`` shorthand for "do both of these things".
 
-If you need install many packages, we recommend writing a ``requirements.txt`` file (see `the docs <https://pip.pypa.io/en/stable/user_guide/#requirements-files>`_) and using
+If you need install many packages, we recommend writing a ``requirements.txt``
+file (see `the Python packaging docs <https://pip.pypa.io/en/stable/user_guide/#requirements-files>`_)
+and using
 
 .. code-block:: docker
 
