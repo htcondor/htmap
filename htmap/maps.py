@@ -742,15 +742,24 @@ class Map(collections.abc.Sequence):
         # renamed by uid to prevent duplicates
         removed_tagfile = Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR / self._tag_file_path.read_text()
         self._tag_file_path.rename(removed_tagfile)
-        logger.debug(f'Removed tag file for map {self.tag}')
+        logger.debug(f'Moved tag file for map {self.tag} to the removed tags directory')
 
-        shutil.rmtree(self._map_dir)
-        logger.debug(f'Removed map directory for map {self.tag}')
+        # 5 attempts to remove the map directory
+        for _ in range(5):
+            try:
+                shutil.rmtree(self._map_dir)
+                logger.debug(f'Removed map directory for map {self.tag}')
 
-        # only delete the tagfile once we removed the map dir
-        # if we don't get here, htmap.clean() will look for the "removed"
-        # tagfile in the removed tags dir and cleanup
-        removed_tagfile.unlink()
+                # only delete the tagfile after removing the map dir
+                # if we don't get here, htmap.clean() will look for the "removed"
+                # tagfile in the removed tags dir and cleanup
+                removed_tagfile.unlink()
+                logger.debug(f'Removed tag file for map {self.tag}')
+                return  # break out of the loop
+            except OSError:
+                logger.exception(f'Failed to remove map directory for map {self.tag}, retrying in .1 seconds')
+                time.sleep(.1)
+        logger.error(f'Failed to remove map directory for map {self.tag}, run htmap.clean() to try to remove later')
 
     @property
     def is_removed(self) -> bool:

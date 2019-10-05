@@ -117,8 +117,11 @@ def clean(*, all: bool = False) -> List[str]:
     # to guarantee uniqueness
     for uid in (Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR).iterdir():
         map_dir = mapping.map_dir_path(uuid.UUID(uid.stem))
-        shutil.rmtree(map_dir)
-        logger.debug(f'Removed orphaned map directory {uid.stem}')
+        try:
+            shutil.rmtree(map_dir)
+            logger.debug(f'Removed orphaned map directory {uid.stem}')
+        except (OSError, FileNotFoundError):
+            logger.exception(f'Failed to remove orphaned map directory {uid.stem}')
 
     logger.debug(f'Cleaned maps {cleaned_tags}')
     return cleaned_tags
