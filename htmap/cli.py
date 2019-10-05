@@ -64,14 +64,16 @@ CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
 )
 def cli(verbose):
     """HTMap command line tools."""
+    htmap.settings['CLI.IS_CLI'] = True
     if verbose:
         _start_htmap_logger()
     logger.debug(f'CLI called with arguments "{" ".join(sys.argv[1:])}"')
-    htmap.settings['CLI.IS_CLI'] = True
 
 
 def _start_htmap_logger():
     """Initialize a basic logger for HTMap for the CLI."""
+    htmap.settings["CLI.SPINNERS_ON"] = False
+
     htmap_logger = logging.getLogger('htmap')
     htmap_logger.setLevel(logging.DEBUG)
 
@@ -80,8 +82,6 @@ def _start_htmap_logger():
     handler.setFormatter(logging.Formatter('%(asctime)s ~ %(levelname)s ~ %(name)s:%(lineno)d ~ %(message)s'))
 
     htmap_logger.addHandler(handler)
-
-    htmap.settings["CLI.SPINNERS_ON"] = False
 
     return handler
 
