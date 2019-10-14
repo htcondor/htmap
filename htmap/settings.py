@@ -160,6 +160,7 @@ BASE_SETTINGS = Settings(dict(
         COLLECTOR = os.getenv('HTMAP_CONDOR_COLLECTOR', None),
     ),
     MAP_OPTIONS = dict(
+        request_cpus = "1",
         request_memory = '128MB',
         request_disk = '1GB',
         keep_claim_idle = '30',
