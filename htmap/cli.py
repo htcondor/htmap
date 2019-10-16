@@ -828,6 +828,7 @@ def _cli_load(tag: str) -> htmap.Map:
             return htmap.load(tag)
         except Exception as e:
             spinner.fail()
+            logger.exception(f"Could not find a map with tag {tag}")
             click.echo(f'ERROR: could not find a map with tag {tag}', err = True)
             click.echo(f'Your map tags are:', err = True)
             click.echo(_fmt_tag_list(), err = True)
