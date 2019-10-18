@@ -13,18 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Optional
+import pytest
 
-from . import utils
-
-__version__ = '0.5.0'
+import htmap
 
 
-def version() -> str:
-    """Return a string containing human-readable version information."""
-    return f'HTMap version {__version__}'
+def test_read_stdout(cli):
+    def test(x):
+        print(x)
 
+    t = 'HELLO WORLD!'
 
-def version_info() -> Tuple[int, int, int, Optional[str], Optional[int]]:
-    """Return a tuple of version information: ``(major, minor, micro, prerelease)``."""
-    return utils.parse_version(__version__)
+    m = htmap.map(test, [t])
+
+    result = cli(['stdout', m.tag, '0'])
+
+    assert t in result.stdout

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterable, Dict, Union, NamedTuple, Callable, List
+from typing import Tuple, Iterable, Dict, Union, NamedTuple, Callable, List, Optional
 import logging
 
 from pathlib import Path
@@ -23,8 +23,10 @@ import json
 import csv
 import io
 import textwrap
+import shutil
+import uuid
 
-from . import maps, tags, mapping, utils, state, settings, exceptions
+from . import maps, tags, mapping, utils, state, names, settings, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +48,24 @@ def load(tag: str) -> maps.Map:
     return maps.Map.load(tag)
 
 
-def load_maps() -> Tuple[maps.Map, ...]:
-    """Return a :class:`tuple` containing the :class:`Map` for all existing maps."""
-    return tuple(load(tag) for tag in tags.get_tags())
+def load_maps(pattern: Optional[str] = None) -> Tuple[maps.Map, ...]:
+    """
+    Return a :class:`tuple` containing the :class:`Map` for all existing maps,
+    with optional filtering based on a glob-style pattern.
+
+    Parameters
+    ----------
+    pattern
+        A `glob-style pattern <https://docs.python.org/3/library/fnmatch.html#module-fnmatch>`_.
+        Only maps whose tags fit the pattern will be returned.
+        If ``None`` (the default), all maps will be returned.
+
+    Returns
+    -------
+    maps :
+        A tuple contain the maps whose tags fit the ``pattern``.
+    """
+    return tuple(load(tag) for tag in tags.get_tags(pattern))
 
 
 def remove(tag: str, not_exist_ok: bool = True) -> None:
@@ -67,7 +84,7 @@ def remove(tag: str, not_exist_ok: bool = True) -> None:
     except (exceptions.TagNotFound, FileNotFoundError) as e:
         if not not_exist_ok:
             if not isinstance(e, exceptions.TagNotFound):
-                raise exceptions.TagNotFound(f'map {tag} not found') from e
+                raise exceptions.TagNotFound(f'Map {tag} not found') from e
             raise e
 
 
@@ -88,29 +105,39 @@ def clean(*, all: bool = False) -> List[str]:
     cleaned_tags
         A list of the tags of the maps that were removed.
     """
-    logger.debug('cleaning maps...')
+    logger.debug('Cleaning maps...')
     cleaned_tags = []
     for map in load_maps():
         if map.is_transient or all:
             cleaned_tags.append(map.tag)
             map.remove()
-    logger.debug(f'cleaned maps {cleaned_tags}')
+
+    # clean up maps that were partially removed
+    # the "tagfiles" in this dir are named by uid instead of tag
+    # to guarantee uniqueness
+    for uid in (Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR).iterdir():
+        map_dir = mapping.map_dir_path(uuid.UUID(uid.stem))
+        try:
+            shutil.rmtree(map_dir)
+            logger.debug(f'Removed orphaned map directory {uid.stem}')
+        except (OSError, FileNotFoundError):
+            logger.exception(f'Failed to remove orphaned map directory {uid.stem}')
+
+    logger.debug(f'Cleaned maps {cleaned_tags}')
     return cleaned_tags
 
 
 def _extract_status_data(
-    map,
-    include_state = True,
-    include_meta = True,
+    map: maps.Map,
+    include_state: bool = True,
+    include_meta: bool = True,
 ) -> dict:
-    sd = {}
-
-    sd['Tag'] = f'{"* " if map.is_transient else ""}{map.tag}'
+    sd = {'Tag': f'{"* " if map.is_transient else ""}{map.tag}'}
 
     if include_state:
         sc = collections.Counter(map.component_statuses)
 
-        sd.update({str(k): sc[k] for k in state.ComponentStatus.display_statuses()})
+        sd.update({str(k): str(sc[k]) for k in state.ComponentStatus.display_statuses()})
 
     if include_meta:
         sd['Local Data'] = utils.num_bytes_to_str(map.local_data)
@@ -122,7 +149,7 @@ def _extract_status_data(
 
 
 def status(
-    maps: Iterable[maps.Map] = None,
+    maps: Optional[Iterable[maps.Map]] = None,
     include_state: bool = True,
     include_meta: bool = True,
 ) -> str:
@@ -152,11 +179,11 @@ def status(
 
 
 def _status(
-    maps: Iterable[maps.Map] = None,
+    maps: Optional[Iterable[maps.Map]] = None,
     include_state: bool = True,
     include_meta: bool = True,
-    header_fmt: Callable[[str], str] = None,
-    row_fmt: Callable[[str], str] = None,
+    header_fmt: Optional[Callable[[str], str]] = None,
+    row_fmt: Optional[Callable[[str], str]] = None,
 ) -> str:
     if maps is None:
         maps = sorted(load_maps(), key = lambda m: (m.is_transient, m.tag))
@@ -183,7 +210,7 @@ def _status(
 
 
 def status_json(
-    maps: Iterable[maps.Map] = None,
+    maps: Optional[Iterable[maps.Map]] = None,
     include_state: bool = True,
     include_meta: bool = True,
     compact: bool = False,
@@ -247,7 +274,7 @@ def status_json(
 
 
 def status_csv(
-    maps: Iterable[maps.Map] = None,
+    maps: Optional[Iterable[maps.Map]] = None,
     include_state: bool = True,
     include_meta: bool = True,
 ) -> str:
@@ -307,16 +334,19 @@ def status_csv(
 
 
 class Transplant(NamedTuple):
+    """
+    An object that represents metadata information about a transplant install.
+    """
+
     hash: str
     path: Path
     created: datetime.datetime
     size: int
-    packages: Tuple[str]
+    packages: Tuple[str, ...]
 
     @classmethod
-    def load(cls, path: Path):
+    def load(cls, path: Path) -> "Transplant":
         """
-
         Parameters
         ----------
         path
@@ -324,7 +354,8 @@ class Transplant(NamedTuple):
 
         Returns
         -------
-
+        transplant
+            The :class:`Transplant` that represents the transplant install.
         """
 
         return cls(
@@ -338,7 +369,7 @@ class Transplant(NamedTuple):
     def remove(self):
         self.path.with_suffix('.pip').unlink()
         self.path.unlink()
-        logger.info(f'removed transplant install {self.hash}, which was created at {self.created}')
+        logger.info(f'Removed transplant install {self.hash}, which was created at {self.created}')
 
 
 def transplants() -> Tuple[Transplant, ...]:

@@ -21,8 +21,8 @@ import time
 import collections
 import random
 import functools
-import itertools
 import shutil
+import re
 from pathlib import Path
 
 import htmap
@@ -47,6 +47,7 @@ def make_spinner(*args, **kwargs):
         *args,
         spinner = random.choice(SPINNERS),
         stream = sys.stderr,
+        enabled = htmap.settings['CLI.SPINNERS_ON'],
         **kwargs,
     )
 
@@ -63,20 +64,22 @@ CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
 )
 def cli(verbose):
     """HTMap command line tools."""
-    logger.debug(f'CLI called with arguments "{" ".join(sys.argv[1:])}"')
-    htmap.settings['CLI'] = True
+    htmap.settings['CLI.IS_CLI'] = True
     if verbose:
         _start_htmap_logger()
+    logger.debug(f'CLI called with arguments "{" ".join(sys.argv[1:])}"')
 
 
 def _start_htmap_logger():
     """Initialize a basic logger for HTMap for the CLI."""
+    htmap.settings["CLI.SPINNERS_ON"] = False
+
     htmap_logger = logging.getLogger('htmap')
     htmap_logger.setLevel(logging.DEBUG)
 
     handler = logging.StreamHandler(stream = sys.stderr)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s ~ %(levelname)s ~ %(name)s:%(funcName)s:%(lineno)d ~ %(message)s'))
+    handler.setFormatter(logging.Formatter('%(asctime)s ~ %(levelname)s ~ %(name)s:%(lineno)d ~ %(message)s'))
 
     htmap_logger.addHandler(handler)
 
@@ -84,9 +87,18 @@ def _start_htmap_logger():
 
 
 @cli.command()
-def tags():
-    """Print tags. Can be piped to other commands."""
-    click.echo(_tag_list())
+@click.option(
+    '--pattern', '-p',
+    multiple = True,
+    help = 'Act on maps whose tags match glob-style patterns. Patterns must be enclosed in "". Pass -p multiple times for multiple patterns.'
+)
+def tags(pattern):
+    """Print tags."""
+    if len(pattern) == 0:
+        click.echo(_fmt_tag_list())
+    else:
+        for p in set(pattern):
+            click.echo(_fmt_tag_list(p))
 
 
 _HEADER_FMT = functools.partial(click.style, bold = True)
@@ -104,7 +116,7 @@ class _RowFmt:
         return click.style(text, fg = _map_fg(self.maps[self.idx]))
 
 
-def _map_fg(map) -> Optional[str]:
+def _map_fg(map: htmap.Map) -> Optional[str]:
     sc = collections.Counter(map.component_statuses)
 
     if sc[htmap.state.ComponentStatus.REMOVED] > 0:
@@ -119,6 +131,13 @@ def _map_fg(map) -> Optional[str]:
         return 'yellow'
     else:
         return 'white'
+
+
+RE_ANSI = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
+
+
+def remove_ansi(text):
+    return RE_ANSI.sub('', text)
 
 
 @cli.command()
@@ -162,9 +181,13 @@ def status(no_state, no_meta, format, live, no_color):
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
-    if not no_state:
-        with make_spinner(text = 'Reading map component statuses...'):
-            read_events(maps)
+    for map in maps:
+        if not no_state:
+            with make_spinner(text = f'Reading component statuses for map {map.tag}...'):
+                map.component_statuses
+        if not no_meta:
+            with make_spinner(text = f'Determining local data usage for map {map.tag}...'):
+                map.local_data
 
     shared_kwargs = dict(
         include_state = not no_state,
@@ -184,15 +207,18 @@ def status(no_state, no_meta, format, live, no_color):
             header_fmt = _HEADER_FMT if not no_color else None,
             row_fmt = _RowFmt(maps) if not no_color else None,
         )
-    else:
+    else:  # pragma: unreachable
+        # this is a safeguard; this code is actually unreachable, because
+        # click detects the invalid choice before we hit this
         click.echo(f'ERROR: unknown format option "{format}"', err = True)
-        sys.exit(1)
+        sys.exit(2)
 
     click.echo(msg)
 
     try:
         while live:
-            prev_len_lines = [len(line) for line in msg.splitlines()]
+            prev_lines = list(msg.splitlines())
+            prev_len_lines = [len(line) for line in prev_lines]
 
             maps = sorted(htmap.load_maps(), key = lambda m: (m.is_transient, m.tag))
             msg = _status(
@@ -203,7 +229,7 @@ def status(no_state, no_meta, format, live, no_color):
             )
 
             move = f'\033[{len(prev_len_lines)}A\r'
-            clear = '\n'.join(' ' * l for l in prev_len_lines) + '\n'
+            clear = '\n'.join(' ' * len(remove_ansi(line)) for line in prev_lines) + '\n'
 
             sys.stdout.write(move + clear + move)
             click.echo(msg)
@@ -237,6 +263,11 @@ def _multi_tag_args(func):
             required = False,
         ),
         click.option(
+            '--pattern', '-p',
+            multiple = True,
+            help = 'Act on maps whose tags match glob-style patterns. Pass -p multiple times for multiple patterns.'
+        ),
+        click.option(
             '--all',
             is_flag = True,
             default = False,
@@ -267,10 +298,12 @@ STATUS_AND_COLOR = [
     (htmap.ComponentStatus.COMPLETED, 'green'),
     (htmap.ComponentStatus.RUNNING, 'cyan'),
     (htmap.ComponentStatus.IDLE, 'yellow'),
+    (htmap.ComponentStatus.UNMATERIALIZED, 'yellow'),
     (htmap.ComponentStatus.SUSPENDED, 'red'),
     (htmap.ComponentStatus.HELD, 'red'),
     (htmap.ComponentStatus.ERRORED, 'red'),
     (htmap.ComponentStatus.REMOVED, 'magenta'),
+    (htmap.ComponentStatus.UNKNOWN, 'magenta'),
 ]
 
 STATUS_TO_COLOR = dict(STATUS_AND_COLOR)
@@ -285,10 +318,12 @@ def _calculate_bar_component_len(count, total, bar_width):
 
 @cli.command()
 @_multi_tag_args
-def wait(tags, all):
+def wait(tags, pattern, all):
     """Wait for maps to complete."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -341,10 +376,12 @@ def wait(tags, all):
     default = False,
     help = 'Do not wait for HTCondor to remove the map components.',
 )
-def remove(tags, all, force):
+def remove(tags, pattern, all, force):
     """Remove maps."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -357,10 +394,12 @@ def remove(tags, all, force):
 
 @cli.command()
 @_multi_tag_args
-def hold(tags, all):
+def hold(tags, pattern, all):
     """Hold maps."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -372,10 +411,12 @@ def hold(tags, all):
 
 @cli.command()
 @_multi_tag_args
-def release(tags, all):
+def release(tags, pattern, all):
     """Release maps."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -387,10 +428,12 @@ def release(tags, all):
 
 @cli.command()
 @_multi_tag_args
-def pause(tags, all):
+def pause(tags, pattern, all):
     """Pause maps."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -402,10 +445,12 @@ def pause(tags, all):
 
 @cli.command()
 @_multi_tag_args
-def resume(tags, all):
+def resume(tags, pattern, all):
     """Resume maps."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -417,10 +462,12 @@ def resume(tags, all):
 
 @cli.command()
 @_multi_tag_args
-def vacate(tags, all):
+def vacate(tags, pattern, all):
     """Force maps to give up their claimed resources."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -432,10 +479,12 @@ def vacate(tags, all):
 
 @cli.command()
 @_multi_tag_args
-def reasons(tags, all):
+def reasons(tags, pattern, all):
     """Print the hold reasons for maps."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -478,10 +527,12 @@ def stderr(tag, component):
     default = 0,
     help = 'The maximum number of error reports to show (0 for no limit).',
 )
-def errors(tags, all, limit):
+def errors(tags, pattern, all, limit):
     """Look at detailed error reports for a map."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -510,6 +561,7 @@ def errors(tags, all, limit):
     help = 'Disable color.'
 )
 def components(tag, status, no_color):
+    """Print out the status of the individual components of a map."""
     m = _cli_load(tag)
 
     if status is None:
@@ -558,10 +610,12 @@ def components(tag, components):
 
 @rerun.command()
 @_multi_tag_args
-def map(tags, all):
+def map(tags, pattern, all):
     """Rerun all of the components of any number of maps."""
     if all:
         tags = htmap.get_tags()
+    elif len(pattern) > 0:
+        tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
@@ -612,10 +666,10 @@ def settings(user):
         click.echo(txt)
 
 
-@cli.command()
+@cli.command(name = 'set')
 @click.argument('setting')
 @click.argument('value')
-def set(setting, value):
+def set_(setting, value):
     """Change a setting in your ~/.htmaprc file."""
     htmap.USER_SETTINGS[setting] = value
     htmap.USER_SETTINGS.save(Path.home() / '.htmaprc')
@@ -774,14 +828,19 @@ def _cli_load(tag: str) -> htmap.Map:
             return htmap.load(tag)
         except Exception as e:
             spinner.fail()
+            logger.exception(f"Could not find a map with tag {tag}")
             click.echo(f'ERROR: could not find a map with tag {tag}', err = True)
             click.echo(f'Your map tags are:', err = True)
-            click.echo(_tag_list(), err = True)
+            click.echo(_fmt_tag_list(), err = True)
             sys.exit(1)
 
 
-def _tag_list() -> str:
-    return '\n'.join(htmap.get_tags())
+def _get_tags_from_patterns(patterns):
+    return tuple(set(sum((htmap.get_tags(p) for p in patterns), ())))
+
+
+def _fmt_tag_list(pattern: Optional[str] = None) -> str:
+    return '\n'.join(htmap.get_tags(pattern))
 
 
 def _check_tags(tags):

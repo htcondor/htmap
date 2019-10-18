@@ -494,3 +494,22 @@ def test_custom_options(key):
     )
 
     assert '+foo' in sub.keys()
+
+
+def test_merge_requirements_in_map_options():
+    a = htmap.MapOptions(requirements = 'foo')
+    b = htmap.MapOptions(requirements = 'bar')
+
+    merged = htmap.MapOptions.merge(a, b)
+
+    assert 'foo' in merged['requirements']
+    assert 'bar' in merged['requirements']
+
+
+def test_merge_input_files_in_map_options():
+    a = htmap.MapOptions(input_files = ['a', 'b'])
+    b = htmap.MapOptions(input_files = ['c', 'd'])
+
+    merged = htmap.MapOptions.merge(a, b)
+
+    assert merged.input_files == ['a', 'b']

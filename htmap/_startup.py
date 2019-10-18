@@ -7,12 +7,11 @@ from . import settings, names
 
 logger = logging.getLogger('htmap')
 
-LOGS_DIR_PATH = Path(settings['HTMAP_DIR']) / names.LOGS_DIR
-
 
 def setup_internal_file_logger():
-    LOGS_DIR_PATH.mkdir(parents = True, exist_ok = True)
+    LOGS_DIR_PATH = Path(settings['HTMAP_DIR']) / names.LOGS_DIR
     LOG_FILE = LOGS_DIR_PATH / 'htmap.log'
+    LOGS_DIR_PATH.mkdir(parents = True, exist_ok = True)
     _logfile_handler = handlers.RotatingFileHandler(
         filename = LOG_FILE,
         mode = 'a',
@@ -36,15 +35,16 @@ def ensure_htmap_dir_exists():
             _htmap_dir,
             _htmap_dir / _names.MAPS_DIR,
             _htmap_dir / _names.TAGS_DIR,
-            _htmap_dir / _names.REMOVED_TAGS_DIR
+            _htmap_dir / _names.LOGS_DIR,
+            _htmap_dir / _names.REMOVED_TAGS_DIR,
         )
         for dir in dirs:
             dir.mkdir(parents = True, exist_ok = True)
 
         if did_not_exist:
-            logger.debug(f'created HTMap dir at {_htmap_dir}')
+            logger.debug(f'Created HTMap dir at {_htmap_dir}')
     except PermissionError as e:
-        raise PermissionError(f'the HTMap directory ({_htmap_dir}) needs to be writable') from e
+        raise PermissionError(f'The HTMap directory ({_htmap_dir}) needs to be writable') from e
 
 
 if os.getenv('HTMAP_ON_EXECUTE') != '1':

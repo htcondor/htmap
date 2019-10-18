@@ -64,3 +64,23 @@ def test_iterating_over_multiple_stderrs():
     m = htmap.map(lambda x: print(x, file = sys.stderr), s)
 
     assert all(st in err for st, err in zip(s, m.stderr))
+
+
+def test_stdout_contains():
+    m = htmap.map(lambda x: print('foobar'), range(1))
+
+    assert 0 in m.stdout
+    assert 1 not in m.stdout
+
+
+def test_stderr_contains():
+    m = htmap.map(lambda x: print('foobar'), range(1))
+
+    assert 0 in m.stderr
+    assert 1 not in m.stderr
+
+
+def test_error_still_in_stderr():
+    m = htmap.map(lambda x: 1 / x, [0])
+
+    assert 'ZeroDivisionError' in m.stderr.get(0, timeout = 180)

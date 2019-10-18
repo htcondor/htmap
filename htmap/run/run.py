@@ -15,11 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import os
-
-os.environ['HTMAP_ON_EXECUTE'] = "1"
-
 import shutil
 import sys
 import socket
@@ -33,6 +29,7 @@ from pathlib import Path
 
 TRANSFER_DIR = '_htmap_transfer'
 USER_TRANSFER_DIR = '_htmap_user_transfer'
+CHECKPOINT_PREP = '_htmap_prep_checkpoint'
 CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
 CHECKPOINT_OLD = '_htmap_old_checkpoint'
 
@@ -101,7 +98,6 @@ def pip_freeze() -> str:
         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
         stdout = subprocess.PIPE,
     ).stdout.decode('utf-8').strip()
-
 
 
 def print_dir_contents(contents):
@@ -187,6 +183,7 @@ def clean_and_remake_dir(dir: Path):
 
 
 def main(component):
+    os.environ['HTMAP_ON_EXECUTE'] = "1"
     os.environ['HTMAP_COMPONENT'] = f"{component}"
 
     node_info = get_node_info()
@@ -220,8 +217,10 @@ def main(component):
         print_run_info(component, func, args, kwargs)
 
         print('\n----- MAP COMPONENT OUTPUT START -----\n')
+
         result_or_error = func(*args, **kwargs)
         status = 'OK'
+
         print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
     except Exception as e:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
@@ -239,6 +238,8 @@ def main(component):
             scratch_dir_contents = list(scratch_dir.iterdir()),
         )
         status = 'ERR'
+
+        traceback.print_exc(file = sys.stderr)
 
     clean_and_remake_dir(scratch_dir / CHECKPOINT_CURRENT)
     clean_and_remake_dir(transfer_dir)

@@ -1,0 +1,60 @@
+v0.5.0
+======
+
+New Features
+------------
+
+* HTMap CLI commands that operate on tags can now pattern-match for tags using
+  glob syntax. Try adding ``-p "<pattern>"`` to commands like ``htmap remove``
+  or ``htmap release``!
+  Issue: https://github.com/htcondor/htmap/issues/159
+* Component status tracking is now preserved between sessions, so it won't be
+  performed from scratch every time. This will only work if the HTCondor Python
+  bindings version is 8.9.3 or greater. You can upgrade your bindings version
+  roughly-independently of HTMap by running ``pip install --upgrade htcondor``.
+  Issue: https://github.com/htcondor/htmap/issues/166
+* :class:`htmap.Map`, :class:`htmap.MapStdOut`, :class:`htmap.MapStdErr`,
+  and :class:`htmap.MapOutputFiles` now all support in the ``in`` operator to check
+  if a component index is in the map.
+
+
+Deprecated Features
+-------------------
+
+* The various iteration methods on :class:`htmap.Map` no longer have a
+  ``callback`` argument.
+
+
+Bug Fixes
+---------
+
+* It should now be much harder to accidentally get a dangling, inaccessible map
+  due to an interrupted ``remove``.
+  Issue: https://github.com/htcondor/htmap/issues/127
+* When an execution errors occurs, the exception and traceback will be printed
+  to stderr execute-side (in addition to being brought back submit-side). This
+  should make some debugging patterns work as expected.
+  Issue: https://github.com/htcondor/htmap/issues/178
+* The CLI command ``htmap status --live`` now has much better behavior when
+  the table width is nearly the width of the terminal. It should now never wrap
+  unless the table is actually wider than the terminal, instead of a few
+  characters before the actual width.
+* HTMap now handles late materialized jobs much more smoothly: maps with
+  unmaterialized components can be removed, and various CLI commands that output
+  color won't fail when acting on maps with unmaterialized components. However,
+  unmaterialized components do not show as `IDLE`, which mirrors the behavior
+  of `condor_q`. This does make it hard to know how many components are in a
+  late-materialized map at a glance; we are thinking about how to address this.
+  Issue: https://github.com/htcondor/htmap/issues/158
+
+
+Known Issues
+------------
+
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129

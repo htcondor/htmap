@@ -42,7 +42,7 @@ class MappedFunction:
             map_options = options.MapOptions()
         self.map_options = map_options
 
-        logger.debug(f'created mapped function for {self.func} with options {self.map_options}')
+        logger.debug(f'Created mapped function for {self.func} with options {self.map_options}')
 
     def __repr__(self):
         return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
@@ -134,4 +134,4 @@ def mapped(map_options: Optional[options.MapOptions] = None) -> Union[Callable, 
 
         return wrapper
 
-    raise TypeError('incorrect use of @mapped decorator - argument should be a callable or a MapOptions, or no argument')
+    raise TypeError('incorrect use of @mapped decorator: argument should be a callable or a MapOptions, or no argument')

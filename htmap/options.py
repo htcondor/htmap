@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 BASE_OPTIONS_FUNCTION_BY_DELIVERY = {}
 SETUP_FUNCTION_BY_DELIVERY = {}
 
+REQUIREMENTS = 'requirements'
+
 
 class MapOptions(collections.UserDict):
     RESERVED_KEYS = {
@@ -61,7 +63,7 @@ class MapOptions(collections.UserDict):
         *,
         fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
         input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
-        custom_options: Dict[str, str] = None,
+        custom_options: Optional[Dict[str, str]] = None,
         **kwargs: Union[str, Iterable[str]],
     ):
         """
@@ -125,18 +127,23 @@ class MapOptions(collections.UserDict):
         .. note::
 
             ``fixed_input_files`` is a special case, and is merged up the chain instead of being overwritten.
+            ``requirements`` are also combined, in a way where all requirements must be satisfied.
         """
         new = cls()
-        for other in reversed(others):
-            # todo: needs test
-            new_reqs = new.get('requirements', None)
-            other_reqs = other.pop('requirements', None)
-            if new_reqs is not None and other_reqs is not None:
-                new['requirements'] = f'({new_reqs}) && ({other_reqs})'
 
+        for other in reversed(others):
             new.data.update(other.data)
+
+            # these need special handling, because they are stored as attributes
+            # instead of in the dictionary
             new.fixed_input_files.extend(other.fixed_input_files)
             new.input_files = other.input_files
+
+        merged_requirements = merge_requirements(
+            *(other.get(REQUIREMENTS, None) for other in others)
+        )
+        if merged_requirements is not None:
+            new[REQUIREMENTS] = merged_requirements
 
         return new
 
@@ -173,9 +180,9 @@ def create_submit_object_and_itemdata(
         settings['DELIVERY_METHOD'],
     )
 
-    descriptors['requirements'] = merge_requirements(
-        descriptors.get('requirements', None),
-        map_options.get('requirements', None),
+    descriptors[REQUIREMENTS] = merge_requirements(
+        descriptors.get(REQUIREMENTS, None),
+        map_options.get(REQUIREMENTS, None),
     )
 
     itemdata = [{'component': str(idx)} for idx in range(num_components)]
@@ -196,7 +203,7 @@ def create_submit_object_and_itemdata(
             for files in map_options.input_files
         ]
         if len(joined) != num_components:
-            raise exceptions.MisalignedInputData(f'length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
+            raise exceptions.MisalignedInputData(f'Length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
         for d, f in zip(itemdata, joined):
             d['extra_input_files'] = f
     descriptors['transfer_input_files'] = ','.join(input_files)
@@ -206,15 +213,15 @@ def create_submit_object_and_itemdata(
             itemdata_key = f'itemdata_for_{opt_key}'
             opt_value = tuple(opt_value)
             if len(opt_value) != num_components:
-                raise exceptions.MisalignedInputData(f'length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
+                raise exceptions.MisalignedInputData(f'Length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
             for dct, v in zip(itemdata, opt_value):
                 dct[itemdata_key] = v
             descriptors[opt_key] = f'$({itemdata_key})'
         else:
             descriptors[opt_key] = opt_value
 
-    if descriptors['requirements'] is None:
-        descriptors.pop('requirements')
+    if descriptors[REQUIREMENTS] is None:
+        descriptors.pop(REQUIREMENTS)
 
     sub = htcondor.Submit(descriptors)
 
@@ -280,28 +287,13 @@ def get_base_descriptors(
         **from_settings,
     }
 
-    # manually fix-up requirements
-    merged['requirements'] = merge_requirements(
-        core.get('requirements', None),
-        base.get('requirements', None),
-        from_settings.get('requirements', None),
+    merged[REQUIREMENTS] = merge_requirements(
+        core.get(REQUIREMENTS, None),
+        base.get(REQUIREMENTS, None),
+        from_settings.get(REQUIREMENTS, None),
     )
 
     return merged
-
-
-def _copy_run_scripts():
-    run_script_source_dir = Path(__file__).parent / names.RUN_DIR
-    run_scripts = [
-        run_script_source_dir / 'run.py',
-        run_script_source_dir / 'run_with_singularity.sh',
-        run_script_source_dir / 'run_with_transplant.sh',
-    ]
-    target_dir = Path(settings['HTMAP_DIR']) / 'run'
-    target_dir.mkdir(parents = True, exist_ok = True)
-    for src in run_scripts:
-        target = target_dir / src.name
-        shutil.copy2(src, target)
 
 
 def run_delivery_setup(
@@ -309,12 +301,24 @@ def run_delivery_setup(
     map_dir: Path,
     delivery: str,
 ) -> None:
-    _copy_run_scripts()
+    _copy_run_scripts(map_dir)
 
     try:
         SETUP_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
     except KeyError:
         raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
+
+
+def _copy_run_scripts(map_dir: Path):
+    run_script_source_dir = Path(__file__).parent / 'run'
+    run_scripts = [
+        run_script_source_dir / names.RUN_SCRIPT,
+        run_script_source_dir / names.RUN_WITH_SINGULARITY_SCRIPT,
+        run_script_source_dir / names.RUN_WITH_TRANSPLANT_SCRIPT,
+    ]
+    for src in run_scripts:
+        target = map_dir / src.name
+        shutil.copy2(src, target)
 
 
 def _get_base_descriptors_for_assume(
@@ -323,7 +327,7 @@ def _get_base_descriptors_for_assume(
 ) -> dict:
     return {
         'universe': 'vanilla',
-        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+        'executable': (map_dir / names.RUN_SCRIPT).as_posix(),
         'arguments': '$(component)',
     }
 
@@ -341,7 +345,7 @@ def _get_base_descriptors_for_docker(
     return {
         'universe': 'docker',
         'docker_image': settings['DOCKER.IMAGE'],
-        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+        'executable': (map_dir / names.RUN_SCRIPT).as_posix(),
         'arguments': '$(component)',
         'transfer_executable': 'True',
     }
@@ -359,10 +363,10 @@ def _get_base_descriptors_for_singularity(
 ) -> dict:
     return {
         'universe': 'vanilla',
-        'requirements': 'HasSingularity == true',
-        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run_with_singularity.sh').as_posix(),
+        REQUIREMENTS: 'HasSingularity == true',
+        'executable': (map_dir / names.RUN_WITH_SINGULARITY_SCRIPT).as_posix(),
         'transfer_input_files': [
-            (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+            (map_dir / names.RUN_SCRIPT).as_posix(),
         ],
         'arguments': f'{settings["SINGULARITY.IMAGE"]} $(component)',
         'transfer_executable': 'True',
@@ -387,10 +391,10 @@ def _get_base_descriptors_for_transplant(
 
     return {
         'universe': 'vanilla',
-        'executable': (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run_with_transplant.sh').as_posix(),
+        'executable': (map_dir / names.RUN_WITH_TRANSPLANT_SCRIPT).as_posix(),
         'arguments': f'$(component) {h}',
         'transfer_input_files': [
-            (Path(settings['HTMAP_DIR']) / names.RUN_DIR / 'run.py').as_posix(),
+            (map_dir / names.RUN_SCRIPT).as_posix(),
             tif_path,
         ],
     }
@@ -399,12 +403,12 @@ def _get_base_descriptors_for_transplant(
 def _run_delivery_setup_for_transplant(
     tag: str,
     map_dir: Path,
-):
+) -> None:
     if not settings.get('TRANSPLANT.ASSUME_EXISTS', False):
         if 'usr' in sys.executable:
-            raise exceptions.CannotTransplantPython('system Python installations cannot be transplanted')
+            raise exceptions.CannotTransplantPython('System Python installations cannot be transplanted')
         if sys.platform == 'win32':
-            raise exceptions.CannotTransplantPython('transplant delivery does not work from Windows')
+            raise exceptions.CannotTransplantPython('Transplant delivery does not work from Windows')
 
         py_dir = Path(sys.executable).parent.parent
         pip_freeze = _get_pip_freeze()
@@ -413,10 +417,10 @@ def _run_delivery_setup_for_transplant(
         zip_path = target.with_name(f'{target.stem}.tar.gz')
 
         if zip_path.exists():  # cached version already exists
-            logger.debug(f'using cached zipped python install at {zip_path}')
+            logger.debug(f'Using cached zipped python install at {zip_path}')
             return
 
-        logger.debug(f'creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
+        logger.debug(f'Creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
 
         try:
             shutil.make_archive(
@@ -426,7 +430,7 @@ def _run_delivery_setup_for_transplant(
             )
         except BaseException as e:
             zip_path.unlink()
-            logger.debug(f'removed partial zipped Python install at {target}')
+            logger.debug(f'Removed partial zipped Python install at {target}')
             raise e
 
         zip_path.rename(target)
@@ -434,7 +438,7 @@ def _run_delivery_setup_for_transplant(
         pip_path = zip_path.with_name(f'{target.stem}.pip')
         pip_path.write_bytes(pip_freeze)
 
-        logger.debug(f'created zipped Python install for transplant, stored at {zip_path}')
+        logger.debug(f'Created zipped Python install for transplant, stored at {zip_path}')
 
 
 def _get_pip_freeze() -> bytes:

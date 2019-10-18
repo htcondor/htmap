@@ -1,7 +1,8 @@
--r requirements_dev.txt
+-r ../requirements-dev.txt
 
 sphinx
 sphinx_rtd_theme
 sphinx_autodoc_typehints
 pygments-github-lexers
+ipython
 nbsphinx

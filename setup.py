@@ -13,13 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import re
 from pathlib import Path
 
 from setuptools import setup
 
-THIS_DIR = Path(os.path.abspath(os.path.dirname(__file__)))
+THIS_DIR = Path(__file__).parent
 
 
 def find_version():
@@ -44,6 +43,7 @@ setup(
     long_description = Path('README.md').read_text(),
     long_description_content_type = "text/markdown",
     url = 'https://github.com/htcondor/htmap',
+    license = 'ASL 2.0',
     classifiers = [
         "License :: OSI Approved :: Apache Software License",
         "Development Status :: 3 - Alpha",

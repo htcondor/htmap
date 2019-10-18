@@ -55,7 +55,7 @@ class TagNotFound(HTMapException):
 
 
 class EmptyMap(HTMapException):
-    """The map contains no inputs."""
+    """The map contains no inputs, so it wasn't created."""
     pass
 
 
@@ -75,7 +75,7 @@ class CannotRetagMap(HTMapException):
 
 
 class UnknownPythonDeliveryMethod(HTMapException):
-    """The specified Python delivery mechanism has not been registered."""
+    """The specified Python delivery method has not been registered."""
     pass
 
 
@@ -111,4 +111,9 @@ class CannotTransplantPython(HTMapException):
 
 class CannotRerunComponents(HTMapException):
     """The given components cannot be rerun because they are currently active."""
+    pass
+
+
+class InsufficientHTCondorVersion(HTMapException):
+    """The version of HTCondor is too low to use a feature."""
     pass

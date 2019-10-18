@@ -1,7 +1,10 @@
+from typing import Optional
+
 import random
 import string
 from pathlib import Path
 from typing import Tuple
+import fnmatch
 
 from htmap import names, settings, exceptions
 
@@ -10,9 +13,27 @@ def tags_dir() -> Path:
     return Path(settings['HTMAP_DIR']) / names.TAGS_DIR
 
 
-def get_tags() -> Tuple[str, ...]:
-    """Return a tuple containing the ``tag`` for all existing maps."""
-    return tuple(path.name for path in tags_dir().iterdir())
+def get_tags(pattern: Optional[str] = None) -> Tuple[str, ...]:
+    """
+    Return a tuple containing the ``tag`` for all existing maps,
+    with optional filtering based on a glob-style pattern.
+
+    Parameters
+    ----------
+    pattern
+        A `glob-style pattern <https://docs.python.org/3/library/fnmatch.html#module-fnmatch>`_.
+        Only tags that fit the pattern will be returned.
+        If ``None`` (the default), all tags will be returned.
+
+    Returns
+    -------
+    tags :
+        A tuple containing the tags that match the ``pattern``.
+    """
+    return tuple(
+        path.name for path in tags_dir().iterdir()
+        if pattern is None or fnmatch.fnmatchcase(path.name, pattern)
+    )
 
 
 def tag_file_path(tag: str) -> Path:
@@ -22,7 +43,7 @@ def tag_file_path(tag: str) -> Path:
 def raise_if_tag_already_exists(tag: str) -> None:
     """Raise a :class:`htmap.exceptions.TagAlreadyExists` if the ``tag`` already exists."""
     if tag_file_path(tag).exists():
-        raise exceptions.TagAlreadyExists(f'the requested tag {tag} already exists (recover the Map, then either use or delete it).')
+        raise exceptions.TagAlreadyExists(f'The requested tag "{tag}" already exists. Load the Map with htmap.load("{tag}"), or remove it using htmap.remove("{tag}").')
 
 
 INVALID_TAG_CHARACTERS = {
@@ -36,6 +57,9 @@ INVALID_TAG_CHARACTERS = {
     '?',
     '*',
     ' ',
+    '[',
+    ']',
+    '!',
 }
 
 

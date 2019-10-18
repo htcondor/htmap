@@ -25,9 +25,9 @@ from .version import (
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 
 # SET UP NULL LOG HANDLER
-logger = _logging.getLogger(__name__)
-logger.setLevel(_logging.DEBUG)
-logger.addHandler(_logging.NullHandler())
+_logger = _logging.getLogger(__name__)
+_logger.setLevel(_logging.DEBUG)
+_logger.addHandler(_logging.NullHandler())
 
 from .mapping import (
     map,
@@ -60,8 +60,8 @@ from .management import (
 )
 from .tags import get_tags
 from .checkpointing import checkpoint
-from .output_files import transfer_output_files
-from .transfer import TransferPath, TransferWindowsPath, TransferPosixPath
+from .transfer_output import transfer_output_files
+from .transfer_input import TransferPath, TransferWindowsPath, TransferPosixPath
 from . import exceptions
 
 from . import _startup

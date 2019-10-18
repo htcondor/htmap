@@ -20,12 +20,34 @@ import pytest
 import htmap
 
 
-def test_tags(mapped_doubler):
+def test_get_tags(mapped_doubler):
     mapped_doubler.map(range(1), tag = 'a')
     mapped_doubler.map(range(1), tag = 'b')
     mapped_doubler.map(range(1), tag = 'c')
 
     assert set(htmap.get_tags()) == {'a', 'b', 'c'}
+
+
+@pytest.mark.parametrize(
+    'tags, pattern, expected',
+    [
+        (('a', 'b', 'c'), None, ('a', 'b', 'c')),  # None = no filter
+        (('a', 'b', 'c'), 'a', ('a',)),
+        (('a', 'b', 'c'), '?', ('a', 'b', 'c')),
+        (('a', 'b', 'c'), '[ab]', ('a', 'b')),
+        (('a', 'b', 'c'), '[!ab]', ('c',)),
+        (('a', 'b', 'c'), '??', ()),
+        (('a', 'b', 'cc'), '??', ('cc',)),
+        (('a1', 'b1', 'c1'), '?1', ('a1','b1','c1')),
+        (('a1', 'bbb1', 'cc1'), '*1', ('a1', 'bbb1','cc1')),
+        (('A',), 'a', ()),  # case-sensitive
+    ]
+)
+def test_get_tag_with_pattern(mapped_doubler, tags, pattern, expected):
+    for tag in tags:
+        mapped_doubler.map(range(1), tag = tag)
+
+    assert set(htmap.get_tags(pattern)) == set(expected)
 
 
 def test_load_maps_finds_all_maps(mapped_doubler):

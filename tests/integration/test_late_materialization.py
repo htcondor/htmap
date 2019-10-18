@@ -13,18 +13,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Optional
+import time
 
-from . import utils
+import pytest
 
-__version__ = '0.5.0'
-
-
-def version() -> str:
-    """Return a string containing human-readable version information."""
-    return f'HTMap version {__version__}'
+import htmap
 
 
-def version_info() -> Tuple[int, int, int, Optional[str], Optional[int]]:
-    """Return a tuple of version information: ``(major, minor, micro, prerelease)``."""
-    return utils.parse_version(__version__)
+@pytest.fixture(scope = 'function')
+def late_sleep():
+    @htmap.mapped(map_options = htmap.MapOptions(max_idle = "1"))
+    def sleep(_):
+        return time.sleep(1)
+
+    return sleep
+
+
+@pytest.mark.timeout(10)
+def test_can_be_removed_immediately(late_sleep):
+    m = late_sleep.map(range(1000))
+
+    m.remove()
+
+    assert m.is_removed
+
+
+def test_wait_with_late_materialization(late_sleep):
+    m = late_sleep.map(range(3))
+
+    m.wait(timeout = 180)
+
+    assert m.is_done
