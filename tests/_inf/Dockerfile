@@ -69,8 +69,8 @@ RUN cd /tmp \
 
 # install htmap dependencies early for docker build caching
 COPY requirements* /home/${SUBMIT_USER}/
-RUN pip install --no-cache -r /home/${SUBMIT_USER}/requirements-dev.txt \
- && pip install --no-cache --upgrade htcondor==${HTCONDOR_VERSION}.* \
+RUN pip install --no-cache-dir -r /home/${SUBMIT_USER}/requirements-dev.txt \
+ && pip install --no-cache-dir --upgrade htcondor==${HTCONDOR_VERSION}.* \
  && rm /home/${SUBMIT_USER}/requirements*
 
 # set default entrypoint and command
@@ -86,5 +86,5 @@ COPY tests/_inf/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 # this is the only part that can't be cached against editing the package
 COPY --chown=mapper:mapper . /home/${SUBMIT_USER}/htmap
 RUN chmod +x /home/${SUBMIT_USER}/htmap/tests/_inf/entrypoint.sh /home/${SUBMIT_USER}/htmap/tests/_inf/travis.sh \
- && pip install --no-cache --no-deps -e /home/${SUBMIT_USER}/htmap
+ && pip install --no-cache-dir --no-deps -e /home/${SUBMIT_USER}/htmap
 WORKDIR /home/${SUBMIT_USER}/htmap
