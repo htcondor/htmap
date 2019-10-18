@@ -181,9 +181,13 @@ def status(no_state, no_meta, format, live, no_color):
         sys.exit(1)
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
-    if not no_state:
-        with make_spinner(text = 'Reading map component statuses...'):
-            read_events(maps)
+    for map in maps:
+        if not no_state:
+            with make_spinner(text = f'Reading component statuses for map {map.tag}...'):
+                map.component_statuses
+        if not no_meta:
+            with make_spinner(text = f'Determining local data usage for map {map.tag}...'):
+                map.local_data
 
     shared_kwargs = dict(
         include_state = not no_state,
@@ -824,6 +828,7 @@ def _cli_load(tag: str) -> htmap.Map:
             return htmap.load(tag)
         except Exception as e:
             spinner.fail()
+            logger.exception(f"Could not find a map with tag {tag}")
             click.echo(f'ERROR: could not find a map with tag {tag}', err = True)
             click.echo(f'Your map tags are:', err = True)
             click.echo(_fmt_tag_list(), err = True)

@@ -43,6 +43,7 @@ setup(
     long_description = Path('README.md').read_text(),
     long_description_content_type = "text/markdown",
     url = 'https://github.com/htcondor/htmap',
+    license = 'ASL 2.0',
     classifiers = [
         "License :: OSI Approved :: Apache Software License",
         "Development Status :: 3 - Alpha",

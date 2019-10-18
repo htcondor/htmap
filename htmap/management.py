@@ -84,7 +84,7 @@ def remove(tag: str, not_exist_ok: bool = True) -> None:
     except (exceptions.TagNotFound, FileNotFoundError) as e:
         if not not_exist_ok:
             if not isinstance(e, exceptions.TagNotFound):
-                raise exceptions.TagNotFound(f'map {tag} not found') from e
+                raise exceptions.TagNotFound(f'Map {tag} not found') from e
             raise e
 
 
@@ -105,7 +105,7 @@ def clean(*, all: bool = False) -> List[str]:
     cleaned_tags
         A list of the tags of the maps that were removed.
     """
-    logger.debug('cleaning maps...')
+    logger.debug('Cleaning maps...')
     cleaned_tags = []
     for map in load_maps():
         if map.is_transient or all:

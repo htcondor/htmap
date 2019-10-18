@@ -68,8 +68,7 @@ RUN cd /tmp \
  && conda clean -y -all
 
 # install htmap dependencies early for docker build caching
-COPY requirements.txt /home/${SUBMIT_USER}/requirements.txt
-COPY requirements-dev.txt /home/${SUBMIT_USER}/requirements-dev.txt
+COPY requirements* /home/${SUBMIT_USER}/
 RUN pip install --no-cache -r /home/${SUBMIT_USER}/requirements-dev.txt \
  && pip install --no-cache --upgrade htcondor==${HTCONDOR_VERSION}.* \
  && rm /home/${SUBMIT_USER}/requirements*
