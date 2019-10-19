@@ -23,7 +23,7 @@ COPY --chown=jovyan:0 docs/source/tutorials ${HOME}/tutorials
 
 # use the repository version of HTMap, not whatever was in the htc notebook
 # also, strip any run results out of the tutorial notebooks
-COPY . /tmp/htmap
+COPY --chown=jovyan:0 . /tmp/htmap
 RUN pip install --no-cache-dir nbstripout \
  && nbstripout ${HOME}/tutorials/* \
  && pip install --no-cache-dir --upgrade /tmp/htmap \
