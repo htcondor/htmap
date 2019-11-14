@@ -476,6 +476,7 @@ def test_unknown_delivery_mechanism():
         'my.foo',
         'MY.foo',
         'mY.foo',
+        'My.foo',
     ]
 )
 def test_custom_options(key):
@@ -493,7 +494,7 @@ def test_custom_options(key):
         map_options,
     )
 
-    assert '+foo' in sub.keys()
+    assert 'MY.foo' in sub.keys()
 
 
 def test_merge_requirements_in_map_options():

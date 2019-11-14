@@ -96,7 +96,7 @@ class MapOptions(collections.UserDict):
             for key, val in custom_options.items()
         }
         self._check_keyword_arguments(cleaned_custom_options)
-        kwargs = {**kwargs, **{'+' + key: val for key, val in cleaned_custom_options.items()}}
+        kwargs = {**kwargs, **{'MY.' + key: val for key, val in cleaned_custom_options.items()}}
 
         super().__init__(**kwargs)
 
