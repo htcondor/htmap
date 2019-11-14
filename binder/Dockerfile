@@ -13,33 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM jupyter/scipy-notebook:latest
-ARG HTCONDOR_VERSION=8.9
-ENV NB_USER="jovyan" \
-    DEBIAN_FRONTEND=noninteractive
-
-USER root
-
-RUN apt-get update \
- && apt-get -y install --no-install-recommends gnupg git vim less  \
- && wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
- && echo "deb  http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
- && apt-get -y update \
- && apt-get -y install htcondor \
- && apt-get -y clean \
- && rm -rf /var/lib/apt/lists/*
-
-COPY binder/condor_config.local /etc/condor/condor_config.local
-COPY binder/.htmaprc ${HOME}/.htmaprc
-COPY . ${HOME}/htmap
-RUN pip install --no-cache-dir nbstripout \
- && cp -r ${HOME}/htmap/docs/source/tutorials ${HOME}/tutorials \
- && nbstripout ${HOME}/tutorials/* \
- && pip install --no-cache-dir -e ${HOME}/htmap \
- && chown -R ${NB_UID} ${HOME} \
- && chmod +x ${HOME}/htmap/binder/entrypoint.sh
+FROM htcondor/htc-minimal-notebook:latest
+ENV NB_USER="jovyan"
 
 USER ${NB_USER}
 
-ENTRYPOINT ["htmap/binder/entrypoint.sh"]
-CMD ["jupyter", "lab"]
+# copy the tutorial notebooks into the container
+COPY --chown=jovyan:0 docs/source/tutorials ${HOME}/tutorials
+
+# use the repository version of HTMap, not whatever was in the htc notebook
+# also, strip any run results out of the tutorial notebooks
+COPY --chown=jovyan:0 . /tmp/htmap
+RUN pip install --no-cache-dir nbstripout \
+ && nbstripout ${HOME}/tutorials/* \
+ && pip install --no-cache-dir --upgrade /tmp/htmap \
+ && rm -rf /tmp/htmap
+
+WORKDIR ${HOME}/tutorials
