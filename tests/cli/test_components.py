@@ -45,11 +45,3 @@ def test_components_bad_status(cli):
     assert 'ERROR' in result.output
     assert 'wizbang' in result.output
 
-
-def test_can_see_components_with_late_materialized_map(cli):
-    m = htmap.map(str, range(5), map_options = htmap.MapOptions(max_idle = "1"))
-
-    result = cli(['components', m.tag])
-
-    assert result.exit_code == 0
-    assert 'UNMATERIALIZED' in result.output
