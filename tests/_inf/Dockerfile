@@ -65,7 +65,7 @@ RUN cd /tmp \
  && bash Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -f -b -p $CONDA_DIR \
  && rm Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh \
  && conda install python=${PYTHON_VERSION} ipython \
- && conda clean -y -all
+ && conda clean -y --all
 
 # install htmap dependencies early for docker build caching
 COPY requirements* /home/${SUBMIT_USER}/
