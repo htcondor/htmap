@@ -21,6 +21,7 @@ import pytest
 import htmap
 
 
+@pytest.mark.timeout(120)
 def test_checkpoint_file_exists_after_restart():
     @htmap.mapped
     def test(_):
@@ -50,6 +51,7 @@ def test_checkpoint_file_exists_after_restart():
     assert m[0] is True
 
 
+@pytest.mark.timeout(120)
 def test_checkpoint_file_has_expected_contents_after_restart():
     @htmap.mapped
     def test(_):

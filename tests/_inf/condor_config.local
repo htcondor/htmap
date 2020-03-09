@@ -22,18 +22,21 @@ SHADOW_QUEUE_UPDATE_INTERVAL=10
 UPDATE_INTERVAL=5
 RUNBENCHMARKS=0
 
-# Don't use all the machine resources
-RESERVED_MEMORY = ( $(DETECTED_MEMORY) / 2 )
+# Put all of the machine resources under a single partitionable slot
+NUM_SLOTS = 1
+NUM_SLOTS_TYPE_1 = 1
+SLOT_TYPE_1 = 100%
+SLOT_TYPE_1_PARTITIONABLE = TRUE
+
 JOB_RENICE_INCREMENT=5
 SCHED_UNIV_RENICE_INCREMENT=5
 SHADOW_RENICE_INCREMENT=5
 
-# If the job does not explicitly set an environment, define
-# some default environment variables that put Conda in the path.
-JOB_TRANSFORM_NAMES = $(JOB_TRANSFORM_NAMES) SetCondaVars
-JOB_TRANSFORM_SetCondaVars @=end
+# Get the HTMap source into the Python path
+JOB_TRANSFORM_NAMES = $(JOB_TRANSFORM_NAMES) SetPyVars
+JOB_TRANSFORM_SetPyVars @=end
 [
   Requirements = ((Env?:"") == "") && ((Environment?:"") == "");
-  set_Environment = "PATH=/home/mapper/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin CONDA_DIR=/home/mapper/conda";
+  set_Environment = "PYTHONPATH=/home/mapper/htmap";
 ]
 @end
