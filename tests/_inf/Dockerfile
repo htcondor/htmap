@@ -15,12 +15,11 @@
 
 # this dockerfile builds a test environment for HTMap
 
-ARG PYTHON_VERSION=3.7
+ARG PYTHON_VERSION=3.6
 FROM python:${PYTHON_VERSION}
 
 # build config
-ARG HTCONDOR_VERSION=8.9
-ARG MINICONDA_VERSION=latest
+ARG HTCONDOR_VERSION=8.8
 
 # switch to root to do root-level config
 USER root

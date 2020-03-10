@@ -37,6 +37,6 @@ JOB_TRANSFORM_NAMES = $(JOB_TRANSFORM_NAMES) SetPyVars
 JOB_TRANSFORM_SetPyVars @=end
 [
   Requirements = ((Env?:"") == "") && ((Environment?:"") == "");
-  set_Environment = "PYTHONPATH=/home/mapper/htmap";
+  set_Environment = "PATH=/home/mapper/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin PYTHONPATH=/home/mapper/htmap";
 ]
 @end

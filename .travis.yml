@@ -7,7 +7,7 @@ language: python
 python:
   - "3.6"
   - "3.7"
-  - "3.8"
+#  - "3.8"
 env:
   - HTCONDOR_VERSION=8.8
   - HTCONDOR_VERSION=8.9
@@ -19,7 +19,7 @@ install:
   - travis_retry docker build -t htmap-test --file tests/_inf/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=${TRAVIS_PYTHON_VERSION} .
 
 script:
-  - docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test pytest -n 2 --cov=./
+  - docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test pytest -n 2 --cov
 
 after_script:
   - codecov

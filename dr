@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CONTAINER_TAG=htmap-tests
+CONTAINER_TAG='htmap-tests'
 
 set -e
 echo "Building HTMap testing container..."
