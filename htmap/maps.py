@@ -707,7 +707,14 @@ class Map(collections.abc.Sequence):
         force
             If ``True``, do not wait for HTCondor to confirm that all map components have been removed.
         """
-        self._remove_from_queue()
+        try:
+            self._remove_from_queue()
+        except Exception as e:
+            if not force:
+                raise e
+
+            logger.exception(f"Encountered error while force-removing map {self.tag}; ignoring and moving to cleanup step")
+
         self._cleanup_local_data(force = force)
         MAPS.remove(self)
 
