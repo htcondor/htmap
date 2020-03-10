@@ -3,6 +3,7 @@ pytest >= 4.1.1
 pytest-mock
 pytest-xdist
 pytest-timeout
+pytest-watch
 coverage
 pytest-cov
 codecov
