@@ -6,3 +6,4 @@ pytest-timeout
 pytest-watch
 coverage < 5
 pytest-cov
+codecov
