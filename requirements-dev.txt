@@ -4,6 +4,5 @@ pytest-mock
 pytest-xdist
 pytest-timeout
 pytest-watch
-coverage
+coverage < 5
 pytest-cov
-codecov
