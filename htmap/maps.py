@@ -262,7 +262,7 @@ class Map(collections.abc.Sequence):
 
                 previous_pbar_len = 0
 
-            ok_statuses = set([state.ComponentStatus.COMPLETED])
+            ok_statuses = {state.ComponentStatus.COMPLETED}
             if holds_ok:
                 ok_statuses.add(state.ComponentStatus.HELD)
             if errors_ok:
