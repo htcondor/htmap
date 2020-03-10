@@ -97,3 +97,5 @@ def test_can_force_remove_map_without_contacting_schedd(mapped_doubler, mocker):
     mocker.patch('htmap.mapping.get_schedd', side_effect = FileNotFoundError("poison"))
 
     m.remove(force = True)
+
+    assert m.is_removed

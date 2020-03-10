@@ -21,25 +21,25 @@ import htmap
 
 
 @pytest.fixture(scope = 'function')
-def late_sleep():
+def late_noop():
     @htmap.mapped(map_options = htmap.MapOptions(max_idle = "1"))
-    def sleep(_):
-        return time.sleep(1)
+    def noop(_):
+        return True
 
-    return sleep
+    return noop
 
 
 @pytest.mark.timeout(10)
-def test_can_be_removed_immediately(late_sleep):
-    m = late_sleep.map(range(1000))
+def test_can_be_removed_immediately(late_noop):
+    m = late_noop.map(range(1000))
 
     m.remove()
 
     assert m.is_removed
 
 
-def test_wait_with_late_materialization(late_sleep):
-    m = late_sleep.map(range(3))
+def test_wait_with_late_materialization(late_noop):
+    m = late_noop.map(range(3))
 
     m.wait(timeout = 180)
 

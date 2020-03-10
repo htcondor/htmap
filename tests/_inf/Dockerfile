@@ -29,7 +29,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # install utils and dependencies
 RUN apt-get update \
- && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales \
+ && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/* \
  && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \

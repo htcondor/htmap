@@ -4,6 +4,7 @@ pytest-mock
 pytest-xdist
 pytest-timeout
 pytest-watch
+pytest-profiling
 coverage
 pytest-cov
 codecov

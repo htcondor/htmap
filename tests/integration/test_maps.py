@@ -39,12 +39,9 @@ def test_starmap_produces_correct_output(mapped_power):
     assert list(m) == [x ** p for x, p in zip(range(n), range(n))]
 
 
-def test_getitem_too_soon_raises_output_not_found(mapped_sleepy_double):
-    n = 3
-    m = mapped_sleepy_double.map(range(n))
-
+def test_getitem_too_soon_raises_output_not_found(map_that_never_finishes):
     with pytest.raises(htmap.exceptions.OutputNotFound):
-        print(m[0])
+        print(map_that_never_finishes[0])
 
 
 @pytest.mark.parametrize(
@@ -54,12 +51,9 @@ def test_getitem_too_soon_raises_output_not_found(mapped_sleepy_double):
         datetime.timedelta(seconds = 0.01),
     ]
 )
-def test_get_with_too_short_timeout_raises_timeout_error(mapped_sleepy_double, timeout):
-    n = 3
-    m = mapped_sleepy_double.map(range(n))
-
+def test_get_with_too_short_timeout_raises_timeout_error(map_that_never_finishes, timeout):
     with pytest.raises(htmap.exceptions.TimeoutError):
-        print(m.get(n - 1, timeout = timeout))
+        print(map_that_never_finishes.get(0, timeout = timeout))
 
 
 def test_get_waits_until_ready(mapped_doubler):

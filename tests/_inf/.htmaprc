@@ -1,4 +1,5 @@
 DELIVERY_METHOD = "assume"
+WAIT_TIME = 0.01
 
 [MAP_OPTIONS]
 request_disk = "100MB"
