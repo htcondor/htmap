@@ -253,6 +253,4 @@ def parse_version(v: str) -> Tuple[int, int, int, str, int]:
 
 EXTRACT_HTCONDOR_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)", flags = re.ASCII)
 
-
-def htcondor_version_info() -> Tuple[int, int, int, str, int]:
-    return parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0))
+HTCONDOR_VERSION_INFO = parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0))

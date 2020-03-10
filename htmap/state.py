@@ -170,7 +170,7 @@ class MapState:
             if handled_events:
                 self.map._local_data = None  # invalidate cache if any events were received
 
-                if utils.htcondor_version_info() >= (8, 9, 3):
+                if utils.HTCONDOR_VERSION_INFO >= (8, 9, 3):
                     self.save()
 
     def save(self) -> Path:
@@ -188,7 +188,7 @@ class MapState:
 
     @staticmethod
     def load(map):
-        if utils.htcondor_version_info() < (8, 9, 3):
+        if utils.HTCONDOR_VERSION_INFO < (8, 9, 3):
             raise exceptions.InsufficientHTCondorVersion("Map state can only be saved with HTCondor 8.9.3 or greater")
 
         with (map._map_dir / names.MAP_STATE).open(mode = 'rb') as f:
