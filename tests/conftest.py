@@ -26,6 +26,8 @@ from htmap._startup import ensure_htmap_dir_exists
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
 htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for testing
+htmap.settings['WAIT_TIME'] = 0.01
+htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
 
 
 @pytest.fixture(scope = 'session', autouse = True)

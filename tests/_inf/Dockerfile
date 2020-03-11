@@ -69,7 +69,6 @@ RUN pip install --user --no-cache-dir -r /tmp/requirements-dev.txt \
 
 # copy HTCondor and HTMap testing configs into place
 COPY tests/_inf/condor_config.local /etc/condor/condor_config.local
-COPY tests/_inf/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 
 # set default entrypoint and command
 # the entrypoint is critical: it starts HTCondor in the container
