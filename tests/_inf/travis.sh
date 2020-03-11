@@ -8,9 +8,6 @@ python -c "import htcondor; print(htcondor.version())"
 echo "pytest version"
 pytest --version
 
-echo "htmap settings"
-htmap settings
-
 pytest -n 4 --cov --durations=20
 
 coverage xml -o /tmp/coverage.xml
