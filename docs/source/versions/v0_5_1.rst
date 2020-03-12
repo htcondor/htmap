@@ -1,0 +1,29 @@
+v0.5.1
+======
+
+New Features
+------------
+
+
+Deprecated Features
+-------------------
+
+
+Bug Fixes
+---------
+
+* Maps can now be force-removed even if the schedd cannot be contacted.
+  Graceful removal still requires contact with the schedd.
+  Issue: https://github.com/htcondor/htmap/issues/186
+
+
+Known Issues
+------------
+
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: https://github.com/htcondor/htmap/issues/129
