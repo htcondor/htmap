@@ -76,3 +76,26 @@ def test_calling_public_methods_after_remove_raises(method, mapped_doubler):
         # some of the methods take arguments
         # but this will actually fail before that check happens
         getattr(m, method)()
+
+
+@pytest.mark.issue(186)
+def test_failure_to_contact_schedd_when_removing_map_reraises_underlying_exception(mapped_doubler, mocker):
+    m = mapped_doubler.map(range(1))
+
+    # simulate failing to get the schedd for some reason
+    mocker.patch('htmap.mapping.get_schedd', side_effect = FileNotFoundError("poison"))
+
+    with pytest.raises(FileNotFoundError):
+        m.remove()
+
+
+@pytest.mark.issue(186)
+def test_can_force_remove_map_without_contacting_schedd(mapped_doubler, mocker):
+    m = mapped_doubler.map(range(1))
+
+    # simulate failing to get the schedd for some reason
+    mocker.patch('htmap.mapping.get_schedd', side_effect = FileNotFoundError("poison"))
+
+    m.remove(force = True)
+
+    assert m.is_removed

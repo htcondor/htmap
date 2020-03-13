@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-CONTAINER_TAG=htmap-tests
+CONTAINER_TAG='htmap-tests'
 
 set -e
 echo "Building HTMap testing container..."
 docker build --quiet -t ${CONTAINER_TAG} --file tests/_inf/Dockerfile .
-docker run -it --rm ${CONTAINER_TAG} $@
+docker run -it --rm --mount type=bind,src="$PWD",dst=/home/mapper/htmap ${CONTAINER_TAG} $@

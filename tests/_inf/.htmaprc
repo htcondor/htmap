@@ -1,4 +1,0 @@
-DELIVERY_METHOD = "assume"
-
-[MAP_OPTIONS]
-request_disk = "100MB"

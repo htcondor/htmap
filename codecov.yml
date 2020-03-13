@@ -1,0 +1,11 @@
+coverage:
+  range: 50..90
+  round: down
+  precision: 0
+  status:
+    project:
+      default:
+        threshold: 1%  # allow coverage to drop by up to 1% in a PR before marking it failed
+  
+comment:
+  layout: "diff, files"

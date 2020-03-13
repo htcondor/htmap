@@ -26,6 +26,8 @@ from htmap._startup import ensure_htmap_dir_exists
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
 htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for testing
+htmap.settings['WAIT_TIME'] = 0.01
+htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
 
 
 @pytest.fixture(scope = 'session', autouse = True)
@@ -37,8 +39,8 @@ def set_transplant_dir(tmpdir_factory):
 def pytest_addoption(parser):
     parser.addoption(
         "--delivery",
-        action = "store",
-        default = 'assume',
+        nargs = "+",
+        default = ['assume'],
     )
 
 
@@ -46,27 +48,20 @@ def pytest_generate_tests(metafunc):
     if 'delivery_methods' in metafunc.fixturenames:
         metafunc.parametrize(
             'delivery_method',
-            metafunc.config.getoption('delivery').split(),
+            metafunc.config.getoption('delivery'),
         )
 
 
-@pytest.fixture()
+@pytest.fixture(scope = 'function')
 def delivery_methods(delivery_method):
     htmap.settings['DELIVERY_METHOD'] = delivery_method
 
 
-@pytest.fixture(scope = 'session', autouse = True)
+@pytest.fixture(scope = 'function', autouse = True)
 def set_htmap_dir(tmpdir_factory):
     path = Path(tmpdir_factory.mktemp('htmap_dir'))
     htmap.settings['HTMAP_DIR'] = path
     ensure_htmap_dir_exists()
-
-
-@pytest.fixture(scope = 'function', autouse = True)
-def clean_after_test():
-    yield
-
-    htmap.clean(all = True)
 
 
 @pytest.fixture(scope = 'session')
@@ -98,18 +93,19 @@ def mapped_power(power):
 
 
 @pytest.fixture(scope = 'session')
-def sleepy_double():
-    def sleepy_double(x):
-        time.sleep(30)
-        return 2 * x
+def never_returns():
+    def never(_):
+        while True:
+            time.sleep(1)
 
-    return sleepy_double
+    return never
 
 
-@pytest.fixture(scope = 'session')
-def mapped_sleepy_double(sleepy_double):
-    mapper = htmap.mapped(sleepy_double)
-    return mapper
+@pytest.fixture(scope = 'function')
+def map_that_never_finishes(never_returns):
+    m = htmap.map(never_returns, [None])
+    yield m
+    m.remove()
 
 
 @pytest.fixture(scope = 'session')

@@ -15,22 +15,21 @@
 
 # this dockerfile builds a test environment for HTMap
 
-FROM ubuntu:bionic
+ARG PYTHON_VERSION=3.6
+FROM python:${PYTHON_VERSION}
+
+# build config
+ARG HTCONDOR_VERSION=8.8
 
 # switch to root to do root-level config
 USER root
-
-# build config
-ARG PYTHON_VERSION=3.7
-ARG HTCONDOR_VERSION=8.9
-ARG MINICONDA_VERSION=latest
 
 # environment setup
 ENV DEBIAN_FRONTEND=noninteractive
 
 # install utils and dependencies
 RUN apt-get update \
- && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales \
+ && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/* \
  && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
@@ -41,50 +40,38 @@ ENV LC_ALL=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8
 
 # install HTCondor version specified in config
-RUN wget -qO - https://research.cs.wisc.edu/htcondor/ubuntu/HTCondor-Release.gpg.key | apt-key add - \
- && echo "deb http://research.cs.wisc.edu/htcondor/ubuntu/${HTCONDOR_VERSION}/bionic bionic contrib" >> /etc/apt/sources.list \
+RUN wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg.key | apt-key add - \
+ && echo "deb http://research.cs.wisc.edu/htcondor/debian/${HTCONDOR_VERSION}/buster buster contrib" >> /etc/apt/sources.list.d/htcondor.list \
  && apt-get -y update \
  && apt-get -y install --no-install-recommends htcondor \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
-# create a user to be our submitter and set conda install location
-ENV SUBMIT_USER=mapper
-ENV CONDA_DIR=/home/${SUBMIT_USER}/conda
-ENV PATH=${CONDA_DIR}/bin:${PATH}
+# copy entrypoint into place and make executable
+COPY tests/_inf/entrypoint.sh /.entrypoint.sh
+RUN chmod +x /.entrypoint.sh
+
+# create a user, set their PATH and PYTHONPATH
+ENV SUBMIT_USER=mapper \
+    PATH="/home/mapper/.local/bin:${PATH}" \
+    PYTHONPATH="/home/mapper/htmap:${PYTHONPATH}"
 RUN groupadd ${SUBMIT_USER} \
  && useradd -m -g ${SUBMIT_USER} ${SUBMIT_USER}
 
-# switch to submit user, don't need root anymore
+# switch to the user, don't need root anymore
 USER ${SUBMIT_USER}
 
-# install miniconda and python version specified in config
-# (and ipython, which is nice for debugging inside the container)
-RUN cd /tmp \
- && wget --quiet https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh \
- && bash Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -f -b -p $CONDA_DIR \
- && rm Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh \
- && conda install python=${PYTHON_VERSION} ipython \
- && conda clean -y --all
-
-# install htmap dependencies early for docker build caching
-COPY requirements* /home/${SUBMIT_USER}/
-RUN pip install --no-cache-dir -r /home/${SUBMIT_USER}/requirements-dev.txt \
- && pip install --no-cache-dir --upgrade htcondor==${HTCONDOR_VERSION}.* \
- && rm /home/${SUBMIT_USER}/requirements*
-
-# set default entrypoint and command
-# the entrypoint is critical: it starts HTCondor in the container
-ENTRYPOINT ["tests/_inf/entrypoint.sh"]
-CMD ["pytest"]
+# install htmap dependencies and debugging tools early for docker build caching
+COPY requirements* /tmp/
+RUN pip install --user --no-cache-dir -r /tmp/requirements-dev.txt \
+ && pip install --user --no-cache-dir ipython \
+ && pip install --user --no-cache-dir --upgrade htcondor==${HTCONDOR_VERSION}.*
 
 # copy HTCondor and HTMap testing configs into place
 COPY tests/_inf/condor_config.local /etc/condor/condor_config.local
-COPY tests/_inf/.htmaprc /home/${SUBMIT_USER}/.htmaprc
 
-# copy htmap package into container and install it
-# this is the only part that can't be cached against editing the package
-COPY --chown=mapper:mapper . /home/${SUBMIT_USER}/htmap
-RUN chmod +x /home/${SUBMIT_USER}/htmap/tests/_inf/entrypoint.sh /home/${SUBMIT_USER}/htmap/tests/_inf/travis.sh \
- && pip install --no-cache-dir --no-deps -e /home/${SUBMIT_USER}/htmap
+# set default entrypoint and command
+# the entrypoint is critical: it starts HTCondor in the container
 WORKDIR /home/${SUBMIT_USER}/htmap
+ENTRYPOINT ["/.entrypoint.sh"]
+CMD ["pytest"]

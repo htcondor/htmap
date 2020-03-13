@@ -262,7 +262,7 @@ class Map(collections.abc.Sequence):
 
                 previous_pbar_len = 0
 
-            ok_statuses = set([state.ComponentStatus.COMPLETED])
+            ok_statuses = {state.ComponentStatus.COMPLETED}
             if holds_ok:
                 ok_statuses.add(state.ComponentStatus.HELD)
             if errors_ok:
@@ -707,7 +707,14 @@ class Map(collections.abc.Sequence):
         force
             If ``True``, do not wait for HTCondor to confirm that all map components have been removed.
         """
-        self._remove_from_queue()
+        try:
+            self._remove_from_queue()
+        except Exception as e:
+            if not force:
+                raise e
+
+            logger.exception(f"Encountered error while force-removing map {self.tag}; ignoring and moving to cleanup step")
+
         self._cleanup_local_data(force = force)
         MAPS.remove(self)
 
@@ -736,7 +743,7 @@ class Map(collections.abc.Sequence):
                 )
                 for cs in self.component_statuses
             ):
-                time.sleep(.01)
+                time.sleep(settings["WAIT_TIME"])
 
         # move the tagfile to the removed tags dir
         # renamed by uid to prevent duplicates
@@ -757,8 +764,8 @@ class Map(collections.abc.Sequence):
                 logger.debug(f'Removed tag file for map {self.tag}')
                 return  # break out of the loop
             except OSError:
-                logger.exception(f'Failed to remove map directory for map {self.tag}, retrying in .1 seconds')
-                time.sleep(.1)
+                logger.exception(f'Failed to remove map directory for map {self.tag}, retrying in {settings["WAIT_TIME"]} seconds')
+                time.sleep(settings["WAIT_TIME"])
         logger.error(f'Failed to remove map directory for map {self.tag}, run htmap.clean() to try to remove later')
 
     @property
