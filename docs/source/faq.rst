@@ -26,4 +26,7 @@ If you are using custom libraries, always import them before trying to load any 
 
 I'm getting an error about a job being held. What should I do?
 --------------------------------------------------------------------
-Your code likely encountered an error during remote execution. See the :doc:`tutorials` for more details on how to troubleshoot remove execution errors.
+
+Your code likely encountered an error during remote execution. See the
+:doc:`tutorials` and :doc:`tutorials/error-handling` for more details on how to
+troubleshoot remove execution errors.
