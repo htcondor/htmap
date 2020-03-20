@@ -24,6 +24,6 @@ See the "Attention" box near the top of :doc:`dependencies`.
 
 If you are using custom libraries, always import them before trying to load any output from maps that use them.
 
-I'm getting an error about a job being held
--------------------------------------------
-Your code likely through an error. See :doc:`tutorials` for more detail.
+I'm getting an error about a job being held. What should I do?
+--------------------------------------------------------------------
+Your code likely encountered an error during remote execution. See the :doc:`tutorials` for more details on how to troubleshoot remove execution errors.
