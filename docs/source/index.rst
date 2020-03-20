@@ -3,8 +3,10 @@ HTMap
 
 .. py:currentmodule:: htmap
 
-HTMap is a library that wraps the process of mapping Python function calls out to an HTCondor pool.
+HTMap is a library that wraps the process of mapping Python function calls out to an `HTCondor pool`_.
 It provides tools for submitting, managing, and processing the output of arbitrary functions.
+
+.. HTCondor pool: https://htcondor.readthedocs.io/
 
 Our goal is to provide as transparent an interface as possible to
 high-throughput computing resources so that you can spend more time thinking about your own code,
