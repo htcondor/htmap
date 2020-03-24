@@ -1,8 +1,6 @@
 [run]
 branch = True
 
-data_file = /tmp/htmap-test-coverage
-
 include =
     htmap/*
 
