@@ -51,6 +51,9 @@ RUN wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg
 COPY tests/_inf/entrypoint.sh /.entrypoint.sh
 RUN chmod +x /.entrypoint.sh
 
+# Install pandoc for docs
+RUN apt-get update && apt-get install -y pandoc
+
 # create a user, set their PATH and PYTHONPATH
 ENV SUBMIT_USER=mapper \
     PATH="/home/mapper/.local/bin:${PATH}" \

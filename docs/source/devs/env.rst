@@ -35,7 +35,16 @@ Building the Docs
 
 HTMap's documentation is served by `Read the Docs <https://readthedocs.org/>`_, which builds the docs as well.
 However, it can be helpful to build the docs locally.
-To do so, you'll need to do an editable install of ``htmap`` (``pip install -e .`` from the repository root), and then also install the extra documentation requirements (``pip install -r requirements_dev.txt``).
-You can then go into the ``docs`` directory and run ``make html`` to build the docs.
+There are two ways to do this:
 
-For rapid development, I recommend ``pip install sphinx-autobuild`` and running ``sphinx-autobuild source build/html`` from the ``docs`` directory.
+.. code:: shell
+
+   $ ./dr bash
+   ...
+   $ pip install -e .
+   $ cd docs
+   $ pip install -r requirements.txt
+   $ make html
+
+For rapid development, I recommend ``pip install sphinx-autobuild`` and running
+``sphinx-autobuild source build/html`` from the ``docs`` directory.

@@ -1,8 +1,8 @@
 Tutorials
 =========
 
-API Tutorials
--------------
+Basic Tutorials
+---------------
 
 .. attention::
 
@@ -30,8 +30,8 @@ API Tutorials
 :doc:`tutorials/error-handling`
    What do when something goes wrong.
 
-Integration Tutorials
----------------------
+Advanced Tutorials
+------------------
 
 `Note: these tutorial can not be run with Binder`
 
