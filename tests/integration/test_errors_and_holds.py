@@ -34,7 +34,9 @@ def hold_before_error():
 
     assert map.component_statuses == [htmap.ComponentStatus.HELD, htmap.ComponentStatus.ERRORED]
 
-    return map
+    yield map
+
+    map.remove()
 
 
 @pytest.fixture(scope = 'function')
@@ -49,7 +51,9 @@ def error_before_hold():
 
     assert map.component_statuses == [htmap.ComponentStatus.ERRORED, htmap.ComponentStatus.HELD]
 
-    return map
+    yield map
+
+    map.remove()
 
 
 def test_can_get_error_if_hold_in_front(hold_before_error):

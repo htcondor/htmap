@@ -2,12 +2,16 @@
 
 set -e
 
+pip install -e . > /dev/null
+
 # set up directories for state
 _condor_local_dir=`condor_config_val LOCAL_DIR` || exit 5
 mkdir -p "$_condor_local_dir/lock" "$_condor_local_dir/log" "$_condor_local_dir/run" "$_condor_local_dir/spool" "$_condor_local_dir/execute" "$_condor_local_dir/cred_dir"
 
 # start condor
 condor_master
+
+condor_version
 
 # once the shared port daemon wakes up, use condor_who to wait for condor to stand up
 while [[ ! -s "${_condor_local_dir}/log/SharedPortLog" ]]
