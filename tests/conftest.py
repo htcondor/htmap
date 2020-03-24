@@ -26,7 +26,7 @@ from htmap._startup import ensure_htmap_dir_exists
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
-htmap.settings['DELIVERY_METHOD'] = 'shared'  # shared is the default for all tests that aren't parametric
+htmap.settings['DELIVERY_METHOD'] = 'assume'  # shared is the default for all tests that aren't parametric
 htmap.settings['WAIT_TIME'] = 0.01
 htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
 
@@ -53,7 +53,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--delivery",
         nargs = "+",
-        default = ['shared'],  # shared is the default for parametric delivery testing
+        default = ['assume'],  # shared is the default for parametric delivery testing
     )
 
 

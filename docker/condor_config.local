@@ -31,3 +31,12 @@ SLOT_TYPE_1_PARTITIONABLE = TRUE
 JOB_RENICE_INCREMENT=5
 SCHED_UNIV_RENICE_INCREMENT=5
 SHADOW_RENICE_INCREMENT=5
+
+# Get the HTMap source into the Python path
+JOB_TRANSFORM_NAMES = $(JOB_TRANSFORM_NAMES) SetPyVars
+JOB_TRANSFORM_SetPyVars @=end
+[
+  Requirements = ((Env?:"") == "") && ((Environment?:"") == "");
+  set_Environment = "PATH=/home/mapper/.local/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin PYTHONPATH=/home/mapper/htmap";
+]
+@end
