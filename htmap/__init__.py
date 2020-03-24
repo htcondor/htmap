@@ -45,7 +45,7 @@ from .maps import (
 from .holds import ComponentHold
 from .errors import ComponentError
 from .state import ComponentStatus
-from .options import MapOptions, register_delivery_mechanism
+from .options import MapOptions, register_delivery_method
 from .management import (
     status,
     status_json,
