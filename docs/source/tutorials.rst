@@ -1,9 +1,6 @@
 Tutorials
 =========
 
-Basic Tutorials
----------------
-
 .. attention::
 
     The most convenient way to go through these tutorials is through Binder, which requires no setup on your part: |binder|
@@ -29,6 +26,17 @@ Basic Tutorials
 
 :doc:`tutorials/error-handling`
    What do when something goes wrong.
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   tutorials/first-steps
+   tutorials/basic-mapping
+   tutorials/working-with-files
+   tutorials/map-options
+   tutorials/advanced-mapping
+   tutorials/error-handling
 
 Advanced Tutorials
 ------------------
@@ -58,12 +66,6 @@ Advanced Tutorials
    :maxdepth: 2
    :hidden:
 
-   tutorials/first-steps
-   tutorials/basic-mapping
-   tutorials/working-with-files
-   tutorials/map-options
-   tutorials/advanced-mapping
-   tutorials/error-handling
    recipes/docker-image-cookbook
    recipes/output-files
    recipes/wrapping-external-programs
