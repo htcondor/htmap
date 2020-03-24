@@ -6,7 +6,7 @@ HTMap
 HTMap is a library that wraps the process of mapping Python function calls out to an `HTCondor pool`_.
 It provides tools for submitting, managing, and processing the output of arbitrary functions.
 
-.. HTCondor pool: https://htcondor.readthedocs.io/
+.. _HTCondor pool: https://htcondor.readthedocs.io/
 
 Our goal is to provide as transparent an interface as possible to
 high-throughput computing resources so that you can spend more time thinking about your own code,
@@ -36,9 +36,6 @@ Happy mapping!
 :doc:`dependencies`
    Information about how to manage your what your code depends on (e.g., other Python packages).
 
-:doc:`recipes`
-   Deeper dives on specific tasks.
-
 :doc:`api`
    Public API documentation.
 
@@ -67,7 +64,6 @@ Happy mapping!
    dependencies
    api
    settings
-   recipes
    tips-and-tricks
    faq
    version-history
