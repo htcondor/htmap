@@ -3,6 +3,40 @@ Tips and Tricks
 
 .. py:currentmodule:: htmap
 
+HTCondor commands
+-----------------
+
+Here are some shell HTCondor commands and their primary use:
+
+* `condor_q`_: seeing the jobs submitted to the scheduler (aliased to
+  :func:`htmap.status`)
+* `condor_status`_: seeing resources the different machines have
+
+The links go an HTML version of the man pages; their also visible with ``man
+condor_q``.
+Here's a list of possibly useful commands:
+
+.. code:: shell
+
+   ## See the jobs you've submitted, and refresh them every 2 seconds
+   watch condor_q --submitter foobar
+
+   ## See if how many machines have GPUs, and how many are available
+   condor_status --constraint "CUDADriverVersion>=10.1" -total
+
+   ## See how much CUDA memory on each machine (and how many are available)
+   condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -json
+   # See which machines have that memory
+   # Also write JSON file so readable by Pandas read_json
+   condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -attribute Machine -json >> stats.json
+
+``CUDAGlobalMemoryMb`` is not the only attribute that can be displayed; a more
+complete list is at
+https://htcondor.readthedocs.io/en/latest/classad-attributes/machine-classad-attributes.html.
+
+.. _condor_q: https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html
+.. _condor_status: https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html
+
 
 .. _filter:
 
