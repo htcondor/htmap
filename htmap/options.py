@@ -357,6 +357,27 @@ register_delivery_mechanism(
 )
 
 
+def _get_base_descriptors_for_shared(
+    tag: str,
+    map_dir: Path,
+) -> dict:
+    return {
+        'universe': 'vanilla',
+        'executable': Path(sys.executable).absolute().as_posix(),
+        'transfer_executable': 'False',
+        'arguments': f'{names.RUN_SCRIPT} $(component)',
+        'transfer_input_files': [
+            (map_dir / names.RUN_SCRIPT).as_posix(),
+        ],
+    }
+
+
+register_delivery_mechanism(
+    'shared',
+    options_func = _get_base_descriptors_for_shared,
+)
+
+
 def _get_base_descriptors_for_singularity(
     tag: str,
     map_dir: Path,
