@@ -1,15 +1,16 @@
-HTCondor tips
-=============
+Using HTCondor
+==============
 
-What does it mean if a job is held or idle? What exactly does an "errored" or
-"completed" job entail? Details are at
-https://htcondor.readthedocs.io/en/latest/admin-manual/policy-configuration.html#machine-states
+Specification on exactly what "held", "idle", "running" and "completed" jobs
+mean is detailed at the `HTCondor documentation on machine states`_.
+
+.. _HTCondor documentation on machine states: https://htcondor.readthedocs.io/en/latest/admin-manual/policy-configuration.html#machine-states
 
 Requesting commonly used resources
 ----------------------------------
 
 HTCondor's default configuration can be limiting -- what if your job requires
-more memory or multiple CPUs?
+more memory or more disk space?
 
 HTCondor can be configured to allow this, and HTMap supports the
 configuration via :func:`~htmap.MapOptions`.
