@@ -1,108 +1,20 @@
-Tips and Tricks
-===============
+Tips & Tricks
+=============
 
-.. py:currentmodule:: htmap
+:doc:`tips-and-tricks/htcondor`
+   How to set up an environment for development and testing.
 
-HTCondor commands
------------------
+:doc:`tips-and-tricks/api`
+   API tricks on functional programming with HTMap.
 
-Here are some shell HTCondor commands and their primary use:
+Note: the environment variable ``HTMAP_ON_EXECUTE`` is set to ``'1'`` while map
+components are executing out on the cluster.  This can be useful if you need to
+switch certain behavior on or off depending whether you're running your
+function locally or not.
 
-* `condor_q`_: seeing the jobs submitted to the scheduler (aliased to
-  :func:`htmap.status`)
-* `condor_status`_: seeing resources the different machines have
+.. toctree::
+   :maxdepth: 2
+   :hidden:
 
-The links go an HTML version of the man pages; their also visible with ``man
-condor_q``.
-Here's a list of possibly useful commands:
-
-.. code:: shell
-
-   ## See the jobs you've submitted, and refresh them every 2 seconds
-   watch condor_q --submitter foobar
-
-   ## See if how many machines have GPUs, and how many are available
-   condor_status --constraint "CUDADriverVersion>=10.1" -total
-
-   ## See how much CUDA memory on each machine (and how many are available)
-   condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -json
-   # See which machines have that memory
-   # Also write JSON file so readable by Pandas read_json
-   condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -attribute Machine -json >> stats.json
-
-``CUDAGlobalMemoryMb`` is not the only attribute that can be displayed; a more
-complete list is at
-https://htcondor.readthedocs.io/en/latest/classad-attributes/machine-classad-attributes.html.
-
-.. _condor_q: https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html
-.. _condor_status: https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html
-
-
-.. _filter:
-
-Filter
-------
-
-In the parlance of higher-order functions, HTMap only provides map.
-Another higher-order function, filter, is easy to implement once you have a map.
-To mimic it we create a map with a boolean output, and use :func:`htmap.Map.iter_with_inputs` inside a list comprehension to filter the inputs using the outputs.
-
-Here's a brief example: checking whether integers are even.
-
-.. code-block:: python
-
-    import htmap
-
-    @htmap.mapped
-    def is_even(x: int) -> bool:
-        return x % 2 == 0
-
-    result = is_even.map(range(10))
-
-    filtered = [input for input, output in result.iter_with_inputs() if output]
-
-    print(filtered)  # [((0,), {}), ((2,), {}), ((4,), {}), ((6,), {}), ((8,), {})]
-
-
-.. _groupby:
-
-Groupby
--------
-
-In the parlance of higher-order functions, HTMap only provides map.
-Another higher-order function, groupby, is easy to implement once you have a map.
-To mimic it we'll write a helper function that uses a :class:`collections.defaultdict` to construct a dictionary that collects inputs that have the same output, using the output as the key.
-
-Here's a brief example: grouping integer by whether they are even or not.
-
-.. code-block:: python
-
-    import collections
-    import htmap
-
-    @htmap.mapped
-    def is_even(x: int) -> bool:
-        return x % 2 == 0
-
-    def groupby(result):
-        groups = collections.defaultdict(list)
-
-        for input, output in result.iter_with_inputs():
-            groups[output].append(input)
-
-        return groups
-
-    result = is_even.map(range(10))
-
-    for group, elements in groupby(result).items():
-        print(group, elements)
-
-    # True [((0,), {}), ((2,), {}), ((4,), {}), ((6,), {}), ((8,), {})]
-    # False [((1,), {}), ((3,), {}), ((5,), {}), ((7,), {}), ((9,), {})]
-
-
-Conditional Execution on Cluster vs. Submit
--------------------------------------------
-
-The environment variable ``HTMAP_ON_EXECUTE`` is set to ``'1'`` while map components are executing out on the cluster.
-This can be useful if you need to switch certain behavior on or off depending whether you're running your function locally or not.
+   tips-and-tricks/api
+   tips-and-tricks/htcondor

@@ -43,7 +43,7 @@ Happy mapping!
    Documentation for the various settings.
 
 :doc:`tips-and-tricks`
-   Useful code snippets, tips, and tricks.
+   Useful tips & tricks on HTCondor and the API.
 
 :doc:`faq`
    These questions are asked, sometimes frequently.
@@ -65,6 +65,7 @@ Happy mapping!
    api
    settings
    tips-and-tricks
+   htcondor
    faq
    version-history
    devs
