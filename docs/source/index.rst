@@ -65,7 +65,6 @@ Happy mapping!
    api
    settings
    tips-and-tricks
-   htcondor
    faq
    version-history
    devs

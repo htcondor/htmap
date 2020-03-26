@@ -1,6 +1,10 @@
 HTCondor tips
 =============
 
+What does it mean if a job is held or idle? What exactly does an "errored" or
+"completed" job entail? Details are at
+https://htcondor.readthedocs.io/en/latest/admin-manual/policy-configuration.html#machine-states
+
 Requesting commonly used resources
 ----------------------------------
 
@@ -15,13 +19,13 @@ configuration via :func:`~htmap.MapOptions`.
 
 * ``request_memory``. Possible values are ``"1M`` for 1MB, ``"2GB"`` for 2GB of
   memory. If not specified, the HTCondor's defaults are accepted provided
-  ``JOB_DEFAULT_REQUESTMEMORY`` is not set (one of the `configuration
-  variables`_).
+  ``JOB_DEFAULT_REQUESTMEMORY`` is not set (one of the
+  `configuration variables`_).
 * ``request_cpus``. Possible values are ``"1"`` for 1 CPU.
 * ``request_disk``. Possible values are ``"10GB"`` for 10GB, ``"1T"`` for 1
   terabytes.
 
-.. _configuration variable: https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html
+.. _configuration variables: https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html
 
 GPUs
 ----
