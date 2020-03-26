@@ -4,6 +4,6 @@ CONTAINER_TAG='htmap-dev'
 
 set -e
 
-docker build --quiet -t ${CONTAINER_TAG} --file docker/Dockerfile .
+docker build -t ${CONTAINER_TAG} --file docker/Dockerfile .
 
 docker run -it --rm --mount type=bind,src="$PWD",dst=/home/mapper/htmap -p 8000:8000 ${CONTAINER_TAG} $@
