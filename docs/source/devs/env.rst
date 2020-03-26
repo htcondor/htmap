@@ -75,7 +75,7 @@ To test whether the Binder container is working properly, run the
 
 .. code:: shell
 
-   $ source binder/test.sh
+   $ ./binder/test.sh
 
 It will give you a link to enter into your web browser that will land you in the
 same Jupyter environment you would get on Binder.
