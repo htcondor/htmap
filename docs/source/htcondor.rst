@@ -46,12 +46,15 @@ GPUs
 ----
 
 * For any GPU job, the option ``request_gpus`` needs to be set.
-* CHTC has some good guide on GPU jobs in "`Jobs that use GPUs`_".
 * Many GPU jobs are machine learning jobs. CHTC has a guide on "`Run Machine
   Learning Jobs on the HTC system`_".
 
+There are some site-specific options. For example, CHTC has a guide on some of
+these options "`Jobs that use GPUs`_". Check with your site's documentation to
+see if they have any GPU documentation.
+
 .. _Jobs that use GPUs: http://chtc.cs.wisc.edu/gpu-jobs
-.. _Run Machine Learning Jobs on the HTC system: http://chtc.cs.wisc.edu/gpu-jobs.shtml
+.. _Run Machine Learning Jobs on the HTC system: http://chtc.cs.wisc.edu/machine-learning-htc
 
 Shell commands
 --------------
