@@ -10,13 +10,11 @@ Requesting commonly used resources
 ----------------------------------
 
 HTCondor's default configuration can be limiting -- what if your job requires
-more memory or more disk space?
+more memory or more disk space? HTCondor can be configured to allow this, and
+HTMap supports the configuration via :class:`~htmap.MapOptions`.
 
-HTCondor can be configured to allow this, and HTMap supports the
-configuration via :func:`~htmap.MapOptions`.
-
-`condor_submit`_ accepts many of the same keys that can go into
-:func:`~htmap.MapOptions`. Some of the more commonly requested keys are:
+:class:`~htmap.MapOptions` accepts many of the same keys that `condor_submit`_
+accepts.  Some of the more commonly requested keys are:
 
 * ``request_memory``. Possible values are ``"1M`` for 1MB, ``"2GB"`` for 2GB of
   memory. If not specified, the HTCondor's defaults are accepted provided
@@ -26,17 +24,30 @@ configuration via :func:`~htmap.MapOptions`.
 * ``request_disk``. Possible values are ``"10GB"`` for 10GB, ``"1T"`` for 1
   terabytes.
 
+These would be set with :class:`~htmap.MapOptions`. For example, this code
+might be used:
+
+.. code:: python
+
+   options = ht.MapOptions(
+       request_cpus="1",
+       request_disk="10GB",
+       request_memory="4GB",
+       custom_options={"+wantFlocking": "true"},
+   )
+   ht.map(..., map_options=options)
+
 .. _configuration variables: https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html
 
 GPUs
 ----
 
-CHTC has some good guides on this:
+* For any GPU job, the option ``request_gpus`` needs to be set.
+* CHTC has some good guide on GPU jobs in "`Jobs that use GPUs`_".
+* Many GPU jobs are machine learning jobs. CHTC has a guide on "`Run Machine
+  Learning Jobs on the HTC system`_".
 
-* "`Jobs that use GPUs`_"
-* "`Run Machine Learning Jobs on the HTC system`_"
-
-.. _Jobs that use GPUs: http://chtc.cs.wisc.edu/gpu-jobs.shtml
+.. _Jobs that use GPUs: http://chtc.cs.wisc.edu/gpu-jobs
 .. _Run Machine Learning Jobs on the HTC system: http://chtc.cs.wisc.edu/gpu-jobs.shtml
 
 Shell commands
@@ -58,6 +69,9 @@ The links go an HTML version of the man pages; their also visible with ``man``
 
    ## See if how many machines have GPUs, and how many are available
    condor_status --constraint "CUDADriverVersion>=10.1" -total
+
+   ## See the stats on GPU machines (including GPU name)
+   condor_status -compact -constraint 'TotalGpus > 0' -af Machine TotalGpus CUDADeviceName CUDACapability
 
    ## See how much CUDA memory on each machine (and how many are available)
    condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -json
