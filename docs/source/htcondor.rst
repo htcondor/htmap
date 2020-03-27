@@ -33,9 +33,12 @@ might be used:
        request_cpus="1",
        request_disk="10GB",
        request_memory="4GB",
-       custom_options={"+wantFlocking": "true"},
    )
    ht.map(..., map_options=options)
+
+When it's mentioned that "the option ``foo`` needs to be set" (possibly in a
+submit file), this corresponds to adding the option in the appropriate
+place in :class:`~MapOptions` (see the documentation for details).
 
 .. _configuration variables: https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html
 
