@@ -50,9 +50,10 @@ GPUs
   Learning Jobs on the HTC system`_".
 
 There are some site-specific options. For example, CHTC has a guide on some of
-these options "`Jobs that use GPUs`_". Check with your site's documentation to
-see if they have any GPU documentation.
+these options "`Jobs that use GPUs`_" to run jobs on their `GPU Lab`_. Check
+with your site's documentation to see if they have any GPU documentation.
 
+.. _GPU Lab: http://chtc.cs.wisc.edu/gpu-lab
 .. _Jobs that use GPUs: http://chtc.cs.wisc.edu/gpu-jobs
 .. _Run Machine Learning Jobs on the HTC system: http://chtc.cs.wisc.edu/machine-learning-htc
 
