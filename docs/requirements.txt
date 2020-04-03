@@ -6,3 +6,4 @@ sphinx_autodoc_typehints
 pygments-github-lexers
 ipython
 nbsphinx
+sphinx-click

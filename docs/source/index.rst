@@ -39,6 +39,9 @@ Happy mapping!
 :doc:`api`
    Public API documentation.
 
+:doc:`cli`
+   Use of the HTMap CLI.
+
 :doc:`htcondor`
    Tips on using HTMap with HTCondor
 
@@ -66,6 +69,7 @@ Happy mapping!
    tutorials
    dependencies
    api
+   cli
    htcondor
    settings
    tips-and-tricks
