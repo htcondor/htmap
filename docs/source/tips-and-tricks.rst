@@ -3,6 +3,24 @@ Tips and Tricks
 
 .. py:currentmodule:: htmap
 
+Only processing successful jobs
+-------------------------------
+
+Let's say you submitted 10,000 long-running jobs, and 99.9% of these jobs
+complete successfully. You'd like to get the results from the successful jobs,
+and save the results to disk.
+
+The right function to use is :func:`~htmap.Map.components_by_status`. It can
+filter out the successful jobs and process those. See the
+:func:`~htmap.Map.components_by_status` documentation for an example usage.
+
+Conditional Execution on Cluster vs. Submit
+-------------------------------------------
+
+The environment variable ``HTMAP_ON_EXECUTE`` is set to ``'1'`` while map components are executing out on the cluster.
+This can be useful if you need to switch certain behavior on or off depending whether you're running your function locally or not.
+
+
 .. _filter:
 
 Filter
