@@ -17,19 +17,23 @@ import pytest
 
 import htmap
 
+TIMEOUT = 300
 
+
+@pytest.mark.timeout(TIMEOUT)
 def test_rerun(mapped_doubler):
     m = mapped_doubler.map([1])
-    m.wait(timeout = 180)
+    m.wait()
 
     m.rerun()
 
     assert list(m) == [2]
 
 
-def test_recover_then_rerun(mapped_doubler):
+@pytest.mark.timeout(TIMEOUT)
+def test_load_then_rerun(mapped_doubler):
     m = mapped_doubler.map([1], tag = 'load-then-rerun')
-    m.wait(timeout = 180)
+    m.wait()
 
     loaded = htmap.load('load-then-rerun')
     loaded.rerun()
@@ -37,9 +41,10 @@ def test_recover_then_rerun(mapped_doubler):
     assert list(loaded) == [2]
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_rerun_out_of_range_component_raises(mapped_doubler):
     m = mapped_doubler.map([1], tag = 'load-then-rerun')
-    m.wait(timeout = 180)
+    m.wait()
 
     with pytest.raises(htmap.exceptions.CannotRerunComponents):
         m.rerun([5])
