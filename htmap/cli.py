@@ -26,7 +26,7 @@ import re
 from pathlib import Path
 
 import htmap
-from htmap import names
+from htmap import names, __version__
 from htmap.management import _status
 from htmap.utils import read_events
 
@@ -61,6 +61,11 @@ CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
     is_flag = True,
     default = False,
     help = 'Show log messages as the CLI runs.',
+)
+@click.version_option(
+    version = __version__,
+    prog_name = "HTMap",
+    message = '%(prog)s version %(version)s',
 )
 def cli(verbose):
     """HTMap command line tools."""

@@ -1,4 +1,4 @@
--r ../requirements-dev.txt
+-r requirements-dev.txt
 
 sphinx
 sphinx_rtd_theme
@@ -7,3 +7,4 @@ pygments-github-lexers
 ipython
 nbsphinx
 sphinx-click
+sphinx-autobuild

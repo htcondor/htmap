@@ -11,10 +11,11 @@ This could include other Python packages like ``numpy`` or ``tensorflow``, or ex
 
 There are two halves of the dependency management game.
 The first is on "your" computer, which we call **submit-side**.
-This could be your laptop running a personal HTCondor, or an HTCondor submit node that you ``ssh`` to,
-or whatever other way you to access an HTCondor pool.
+This could be your laptop running a personal HTCondor poll,
+or an HTCondor "submit node" that you ``ssh`` to,
+or whatever other way you access your HTCondor pool.
 The other side is **execute-side**, which isn't really a single place:
-it's all of the execute nodes in the pool that your might map components might be run.
+it is all of the execute nodes in the pool that your map components might run on.
 
 Submit-side dependency management can be handled using standard Python package management tools.
 We recommend using ``miniconda`` as your package manager (https://docs.conda.io/en/latest/miniconda.html).

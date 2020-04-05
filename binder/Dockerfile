@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM htcondor/htc-minimal-notebook:latest
+FROM htcondor/htc-scipy-notebook:latest
 ENV NB_USER="jovyan"
 
 USER ${NB_USER}
