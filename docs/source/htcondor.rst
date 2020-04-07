@@ -86,6 +86,9 @@ The links go an HTML version of the man pages; their also visible with ``man``
    # Also write JSON file so readable by Pandas read_json
    condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -attribute Machine -json >> stats.json
 
+   ## See how many GPUs are available
+   watch 'condor_status --constraint "CUDADriverVersion>=10.1" -total'
+
 ``CUDAGlobalMemoryMb`` is not the only attribute that can be displayed; a more
 complete list is at
 https://htcondor.readthedocs.io/en/latest/classad-attributes/machine-classad-attributes.html.
