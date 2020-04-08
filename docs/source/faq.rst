@@ -16,6 +16,23 @@ You only need to do this "submit-side", but you may also need to do some work to
 * Run ``pip install git+https://github.com/htcondor/htmap.git@<branch>`` to install a specific branch.
 * You may need to append ``--user`` to the ``pip`` command if you do not have permission to install packages directly into the Python you are using.
 
+Is it possible to use Dask with HTCondor?
+-----------------------------------------
+
+`Dask Distributed`_ is a lightweight library for distributed Python computation.
+Dask Distributed has familiar APIs, is declarative and supports more complex
+scheduling than map/filter/reduce.
+
+`Dask-Jobqueue`_ present a wrapper for HTCondor clusters through their
+`HTCondorCluster`_. After `HTCondorCluster`_ is used, Dask can be used as
+normal or on your own machine. This is common with other cluster managers too:
+Dask-Jobqueue also wraps SLURM, SGE, PBS and LSF clusters, and Dask Distributed
+can wrap Kubernetes and Hadoop clusters. This interface will not use HTMap.
+
+.. _Dask-Jobqueue: https://jobqueue.dask.org/en/latest/
+.. _HTCondorCluster: https://jobqueue.dask.org/en/latest/generated/dask_jobqueue.HTCondorCluster.html#dask_jobqueue.HTCondorCluster
+.. _Dask Distributed: https://distributed.dask.org/
+
 I'm getting a weird error from ``cloudpickle.load``?
 ----------------------------------------------------
 
