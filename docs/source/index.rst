@@ -30,6 +30,9 @@ If you're just getting started, jump into the first tutorial: :doc:`tutorials/fi
 
 Happy mapping!
 
+:doc:`installation`
+   Installing HTMap
+
 :doc:`tutorials`
    Tutorials on using HTMap.
 
@@ -66,6 +69,7 @@ Happy mapping!
    :hidden:
 
    self
+   installation
    tutorials
    dependencies
    api
