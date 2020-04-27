@@ -318,6 +318,8 @@ def create_map(
         htio.save_submit(map_dir, submit_obj)
         htio.save_itemdata(map_dir, itemdata)
 
+        logger.debug(f"Submit description for map {tag} is\n{submit_obj}")
+
         logger.debug(f'Submitting map {tag}...')
         cluster_id = execute_submit(
             submit_object = submit_obj,
