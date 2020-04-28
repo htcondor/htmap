@@ -15,6 +15,7 @@
 
 import time
 from pathlib import Path
+from copy import copy
 
 import pytest
 
@@ -29,11 +30,30 @@ htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for testin
 htmap.settings['WAIT_TIME'] = 0.01
 htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
 
+SETTINGS = copy(htmap.settings)
 
-@pytest.fixture(scope = 'session', autouse = True)
-def set_transplant_dir(tmpdir_factory):
+
+@pytest.fixture(scope = 'function', autouse = True)
+def reset_settings():
+    htmap.settings.replace(SETTINGS)
+
+
+@pytest.fixture(scope = 'function', autouse = True)
+def set_transplant_dir(tmpdir_factory, reset_settings):
     path = Path(tmpdir_factory.mktemp('htmap_transplant_dir'))
     htmap.settings['TRANSPLANT.DIR'] = path
+
+
+@pytest.fixture(scope = 'function')
+def delivery_methods(delivery_method, reset_settings):
+    htmap.settings['DELIVERY_METHOD'] = delivery_method
+
+
+@pytest.fixture(scope = 'function', autouse = True)
+def set_htmap_dir(tmpdir_factory, reset_settings):
+    path = Path(tmpdir_factory.mktemp('htmap_dir'))
+    htmap.settings['HTMAP_DIR'] = path
+    ensure_htmap_dir_exists()
 
 
 def pytest_addoption(parser):
@@ -50,18 +70,6 @@ def pytest_generate_tests(metafunc):
             'delivery_method',
             metafunc.config.getoption('delivery'),
         )
-
-
-@pytest.fixture(scope = 'function')
-def delivery_methods(delivery_method):
-    htmap.settings['DELIVERY_METHOD'] = delivery_method
-
-
-@pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir(tmpdir_factory):
-    path = Path(tmpdir_factory.mktemp('htmap_dir'))
-    htmap.settings['HTMAP_DIR'] = path
-    ensure_htmap_dir_exists()
 
 
 @pytest.fixture(scope = 'session')

@@ -19,7 +19,10 @@ from pathlib import Path
 
 import htmap
 
+TIMEOUT = 300
 
+
+@pytest.mark.timeout(TIMEOUT)
 def test_single_output_file_single_component():
     def test(_):
         p = Path('testfile')
@@ -27,13 +30,14 @@ def test_single_output_file_single_component():
 
         htmap.transfer_output_files(p)
 
-    m = htmap.map(test, [None], tag = 'test-single-output-file-one-comp')
+    m = htmap.map(test, range(1), tag = 'test-single-output-file-one-comp')
 
-    m.wait(180)
+    m.wait()
 
     assert (m.output_files[0] / 'testfile').read_text() == 'foobar'
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_single_output_file_multiple_components():
     def test(x):
         p = Path('testfile')
@@ -43,13 +47,14 @@ def test_single_output_file_multiple_components():
 
     m = htmap.map(test, range(2), tag = 'test-single-output-file-multi-comps')
 
-    m.wait(180)
+    m.wait()
 
     for i, ops in enumerate(m.output_files):
         assert (ops / 'testfile').read_text() == str(i)
 
 
-def test_two_output_files():
+@pytest.mark.timeout(TIMEOUT)
+def test_multiple_output_files_from_single_component():
     def test(_):
         p = Path('testfile')
         p.write_text('foobar')
@@ -61,12 +66,13 @@ def test_two_output_files():
 
     m = htmap.map(test, [None], tag = 'test-multi-output')
 
-    m.wait(180)
+    m.wait()
 
     assert (m.output_files[0] / 'testfile').read_text() == 'foobar'
     assert (m.output_files[0] / 'otherfile').read_text() == 'wizbang'
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_nested_output_file():
     def test(_):
         d = Path('nested')
@@ -79,6 +85,6 @@ def test_nested_output_file():
 
     m = htmap.map(test, [None], tag = 'test-nested-output-file')
 
-    m.wait(180)
+    m.wait()
 
     assert (m.output_files[0] / 'nested' / 'testfile').read_text() == 'foobar'

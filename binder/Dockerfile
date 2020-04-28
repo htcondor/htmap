@@ -13,20 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM htcondor/htc-scipy-notebook:latest
-ENV NB_USER="jovyan"
+FROM htcondor/htc-minimal-notebook:latest
 
-USER ${NB_USER}
+USER root
 
-# copy the tutorial notebooks into the container
-COPY --chown=jovyan:0 docs/source/tutorials ${HOME}/tutorials
+# Use the repository version of HTMap, not whatever was in the htc-notebook.
+COPY . ${HOME}/htmap
+RUN chown -R ${NB_UID}:${NB_GID} ${HOME}/htmap
 
-# use the repository version of HTMap, not whatever was in the htc notebook
-# also, strip any run results out of the tutorial notebooks
-COPY --chown=jovyan:0 . /tmp/htmap
-RUN pip install --no-cache-dir nbstripout \
+USER ${NB_UID}:${NB_GID}
+
+# Install HTMap and strip any run results out of the tutorial notebooks.
+RUN cp -r ${HOME}/htmap/docs/source/tutorials ${HOME}/tutorials \
+ && pip install --no-cache-dir nbstripout \
  && nbstripout ${HOME}/tutorials/* \
- && pip install --no-cache-dir --upgrade /tmp/htmap \
- && rm -rf /tmp/htmap
+ && pip install --no-cache-dir --upgrade -e ${HOME}/htmap
 
 WORKDIR ${HOME}/tutorials

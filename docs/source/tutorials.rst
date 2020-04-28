@@ -6,7 +6,7 @@ Tutorials
     The most convenient way to go through these tutorials is through Binder, which requires no setup on your part: |binder|
 
 .. |binder| image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/htcondor/htmap/master?urlpath=lab/tree/tutorials/first-steps.ipynb
+   :target: https://mybinder.org/v2/gh/htcondor/htmap/master?urlpath=lab%2Ftree%2Ffirst-steps.ipynb
 
 
 :doc:`tutorials/first-steps`

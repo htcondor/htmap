@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/htcondor/htmap/branch/master/graph/badge.svg)](https://codecov.io/gh/htcondor/htmap)
 
 **Jump right in to the tutorials with Binder!** 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/htcondor/htmap/master?urlpath=lab/tree/tutorials/first-steps.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/htcondor/htmap/master?urlpath=lab%2Ftree%2Ffirst-steps.ipynb)
 
 HTMap is a library that wraps the process of mapping Python function calls out 
 to an HTCondor pool.

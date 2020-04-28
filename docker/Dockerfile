@@ -63,11 +63,12 @@ USER ${SUBMIT_USER}
 
 # install htmap dependencies and debugging tools early for docker build caching
 COPY requirements* /tmp/
-RUN pip install --user --no-cache-dir -r /tmp/requirements-dev.txt -r /tmp/requirements-docs.txt ipython \
- && pip install --user --no-cache-dir --upgrade htcondor==${HTCONDOR_VERSION}.*
+RUN python -m pip install --user --no-cache-dir -r /tmp/requirements-dev.txt -r /tmp/requirements-docs.txt ipython \
+ && python -m pip install --user --no-cache-dir --upgrade htcondor==${HTCONDOR_VERSION}.*
 
 # copy HTCondor and HTMap testing configs into place
 COPY docker/condor_config.local /etc/condor/condor_config.local
+COPY --chown=mapper:mapper docker/.htmaprc /home/${SUBMIT_USER}/
 
 # set default entrypoint and command
 # the entrypoint is critical: it starts HTCondor in the container
