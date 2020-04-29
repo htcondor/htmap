@@ -1,4 +1,4 @@
-v0.5.1
+v0.6.0
 ======
 
 New Features
@@ -7,6 +7,10 @@ New Features
 * Add the ``shared`` delivery method, which supports HTCondor pools that use
   shared filesystems to make Python installations available universally.
   Issues: https://github.com/htcondor/htmap/issues/195 and https://github.com/htcondor/htmap/issues/198
+
+
+Changed/Deprecated Features
+---------------------------
 
 
 Bug Fixes
