@@ -29,8 +29,9 @@ The built-in delivery methods are
 
 * ``docker`` - runs in a (possibly user-supplied) Docker container.
 * ``singularity`` - runs in a (possibly user-supplied) Singularity container.
+* ``shared`` - runs with the same Python installation used submit-side.
 * ``assume`` - assumes that the dependencies have already been installed at the execute location.
-* ``transplant`` - copy the user's Python installation to the execute node.
+* ``transplant`` - copy the submit-side Python installation to the execute location.
 
 More details on each of these methods can be found below.
 
@@ -71,8 +72,8 @@ At runtime:
 
 .. code-block:: python
 
-    htmap.settings['DELIVERY_METHOD'] = 'docker'
-    htmap.settings['DOCKER.IMAGE'] = "<repository>/<image>:<tag>"
+    htmap.settings["DELIVERY_METHOD"] = "docker"
+    htmap.settings["DOCKER.IMAGE"] = "<repository>/<image>:<tag>"
 
 In this mode, HTMap will run inside a Docker image that you provide.
 Remember that this Docker image needs to have the ``htmap`` module installed.
@@ -119,8 +120,8 @@ At runtime:
 
 .. code-block:: python
 
-    htmap.settings['DELIVERY_METHOD'] = 'singularity'
-    htmap.settings['SINGULARITY.IMAGE'] = "<image>"
+    htmap.settings["DELIVERY_METHOD"] = "singularity"
+    htmap.settings["SINGULARITY.IMAGE"] = "<image>"
 
 In this mode, HTMap will run inside a Singularity image that you provide.
 Remember that this Singularity image needs to have the ``cloudpickle`` module installed.
@@ -149,6 +150,37 @@ If you want to use your own Singularity image, just change the ``'SINGULARITY.IM
     If you get a ``stderr`` message from Singularity about a bind mount directory not existing, that's the problem.
 
 
+Run With a Shared Python Installation
+-------------------------------------
+
+In your ``~/.htmaprc`` file:
+
+.. code-block:: bash
+
+    DELIVERY_METHOD = "shared"
+
+At runtime:
+
+.. code-block:: python
+
+    htmap.settings["DELIVERY_METHOD"] = "shared"
+
+In this mode, HTMap will run your components using the same interpreter being
+used submit-side.
+This requires that that the submit-side Python interpreter be
+"visible" from the execute location, which is usually done in one of two ways:
+
+1. The execute location **is** the submit location
+   (i.e., they are the same physical computer).
+2. The Python installation is stored on a shared filesystem, such that submit
+   and execute can both see the same file paths.
+
+Either way, the practical requirement to use this delivery method is that the
+path to the Python interpreter
+(i.e., ``python -c "import sys, print(sys.executable)"``)
+is the same both submit-side and execute-side.
+
+
 Assume Dependencies are Present
 -------------------------------
 
@@ -162,7 +194,7 @@ At runtime:
 
 .. code-block:: python
 
-    htmap.settings['DELIVERY_METHOD'] = 'assume'
+    htmap.settings["DELIVERY_METHOD"] = 'assume'
 
 In this mode, HTMap assumes that a Python installation with all Python dependencies is already present.
 This will almost surely require some additional setup by your HTCondor pool's administrators.
@@ -183,7 +215,7 @@ At runtime:
 
 .. code-block:: python
 
-    htmap.settings['DELIVERY_METHOD'] = 'transplant'
+    htmap.settings["DELIVERY_METHOD"] = 'transplant'
 
 If you are running HTMap from a standalone Python install (like an Anaconda installation),
 you can use this delivery mechanism to transfer a copy of your entire Python install.

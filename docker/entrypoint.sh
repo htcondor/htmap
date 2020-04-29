@@ -9,6 +9,8 @@ mkdir -p "$_condor_local_dir/lock" "$_condor_local_dir/log" "$_condor_local_dir/
 # start condor
 condor_master
 
+condor_version
+
 # once the shared port daemon wakes up, use condor_who to wait for condor to stand up
 while [[ ! -s "${_condor_local_dir}/log/SharedPortLog" ]]
 do

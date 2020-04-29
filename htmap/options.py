@@ -228,7 +228,7 @@ def create_submit_object_and_itemdata(
     return sub, itemdata
 
 
-def register_delivery_mechanism(
+def register_delivery_method(
     name: str,
     options_func: Callable[[str, Path], dict],
     setup_func: Optional[Callable[[str, Path], None]] = None,
@@ -332,7 +332,7 @@ def _get_base_descriptors_for_assume(
     }
 
 
-register_delivery_mechanism(
+register_delivery_method(
     'assume',
     options_func = _get_base_descriptors_for_assume,
 )
@@ -351,9 +351,30 @@ def _get_base_descriptors_for_docker(
     }
 
 
-register_delivery_mechanism(
+register_delivery_method(
     'docker',
     options_func = _get_base_descriptors_for_docker,
+)
+
+
+def _get_base_descriptors_for_shared(
+    tag: str,
+    map_dir: Path,
+) -> dict:
+    return {
+        'universe': 'vanilla',
+        'executable': Path(sys.executable).absolute().as_posix(),
+        'transfer_executable': 'False',
+        'arguments': f'{names.RUN_SCRIPT} $(component)',
+        'transfer_input_files': [
+            (map_dir / names.RUN_SCRIPT).as_posix(),
+        ],
+    }
+
+
+register_delivery_method(
+    'shared',
+    options_func = _get_base_descriptors_for_shared,
 )
 
 
@@ -373,7 +394,7 @@ def _get_base_descriptors_for_singularity(
     }
 
 
-register_delivery_mechanism(
+register_delivery_method(
     'singularity',
     options_func = _get_base_descriptors_for_singularity,
 )
@@ -451,7 +472,7 @@ def _get_transplant_hash(pip_freeze_output: bytes) -> str:
     return h.hexdigest()
 
 
-register_delivery_mechanism(
+register_delivery_method(
     'transplant',
     options_func = _get_base_descriptors_for_transplant,
     setup_func = _run_delivery_setup_for_transplant,
