@@ -165,15 +165,19 @@ At runtime:
 
     htmap.settings["DELIVERY_METHOD"] = "shared"
 
-In this mode, HTMap will run your components using the same interpeter being used submit-side.
-This requires that that interpreter be visible from the execute location, which is usually done in one of two ways:
+In this mode, HTMap will run your components using the same interpreter being
+used submit-side.
+This requires that that the submit-side Python interpreter be
+"visible" from the execute location, which is usually done in one of two ways:
 
-1. The execute location **is** the submit location (i.e., they are the same physical computer).
-2. The Python installation is stored on a shared filesystem, such that submit and execute can both see the same file paths.
+1. The execute location **is** the submit location
+   (i.e., they are the same physical computer).
+2. The Python installation is stored on a shared filesystem, such that submit
+   and execute can both see the same file paths.
 
 Either way, the practical requirement to use this delivery method is that the
 path to the Python interpreter
-(i.e., `python -c "import sys, print(sys.executable)"`)
+(i.e., ``python -c "import sys, print(sys.executable)"``)
 is the same both submit-side and execute-side.
 
 
