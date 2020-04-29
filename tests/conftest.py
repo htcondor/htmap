@@ -26,8 +26,8 @@ from htmap._startup import ensure_htmap_dir_exists
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
-htmap.settings['DELIVERY_METHOD'] = 'assume'  # shared is the default for all tests that aren't parametric
-htmap.settings['WAIT_TIME'] = 0.01
+htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for all tests that aren't parametric
+htmap.settings['WAIT_TIME'] = 0.1
 htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
 
 SETTINGS = copy(htmap.settings)
@@ -53,8 +53,16 @@ def pytest_addoption(parser):
     parser.addoption(
         "--delivery",
         nargs = "+",
-        default = ['assume'],  # shared is the default for parametric delivery testing
+        default = ['assume'],  # assume is the default for parametric delivery testing
     )
+
+
+def pytest_generate_tests(metafunc):
+    if 'delivery_methods' in metafunc.fixturenames:
+        metafunc.parametrize(
+            'delivery_method',
+            metafunc.config.getoption('delivery'),
+        )
 
 
 MAP_DIRS = []
@@ -74,20 +82,6 @@ def cleanup():
         htmap.settings['HTMAP_DIR'] = map_dir
         htmap.clean(all = True)
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--delivery",
-        nargs = "+",
-        default = ['shared'],  # shared is the default for parametric delivery testing
-    )
-
-
-def pytest_generate_tests(metafunc):
-    if 'delivery_methods' in metafunc.fixturenames:
-        metafunc.parametrize(
-            'delivery_method',
-            metafunc.config.getoption('delivery'),
-        )
 
 @pytest.fixture(scope = 'session')
 def doubler():
