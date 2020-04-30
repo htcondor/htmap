@@ -22,6 +22,7 @@ from pathlib import Path
 import htmap
 
 TEST_FILE_NAME = 'test_file'
+TIMEOUT = 300
 
 
 @pytest.fixture(scope = 'function')
@@ -36,23 +37,24 @@ def cwd_names() -> Set[str]:
     return {p.name for p in Path.cwd().iterdir()}
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_path_in_args(transfer_path):
     m = htmap.map(lambda p: p.name in cwd_names(), [transfer_path])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_path_in_kwargs(transfer_path):
     def func(path = None):
         return path.name in cwd_names()
 
     m = htmap.starmap(func, kwargs = [{'path': transfer_path}])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_multiple_paths_in_args(tmp_path):
     paths = [
         htmap.TransferPath(tmp_path / "test-1.txt"),
@@ -67,59 +69,58 @@ def test_multiple_paths_in_args(tmp_path):
         return all(p.name in cwd_names() for p in (a, b, c))
 
     m = func.starmap(args = [paths])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_paths_in_list_arg(transfer_path):
     @htmap.mapped
     def func(list_of_paths):
         return all(p.name in cwd_names() for p in list_of_paths)
 
     m = func.map(args = [[transfer_path]])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_paths_in_set_arg(transfer_path):
     @htmap.mapped
     def func(set_of_paths):
         return all(p.name in cwd_names() for p in set_of_paths)
 
     m = func.map(args = [{transfer_path}])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_paths_in_dict_arg(transfer_path):
     @htmap.mapped
     def func(dict_of_paths):
         return all(p.name in cwd_names() for p in dict_of_paths.values())
 
     m = func.map(args = [{'key': transfer_path}])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_duplicate_paths(transfer_path):
     @htmap.mapped
     def func(list_of_paths):
         return all(p.name in cwd_names() for p in list_of_paths)
 
     m = func.map(args = [[transfer_path, transfer_path]])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
 
 
 # NOTE: not all of the possible recursive combinations are tested here
 # (since there are infinitely many of them...)
 # so I've just tested the most obvious ones
-
+@pytest.mark.timeout(TIMEOUT)
 def test_path_in_nested_list(tmp_path):
     @htmap.mapped
     def func(list_of_list_of_paths):
@@ -137,11 +138,11 @@ def test_path_in_nested_list(tmp_path):
         p.touch()
 
     m = func.map(args = [[paths]])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_path_in_nested_dict(tmp_path):
     @htmap.mapped
     def func(dict_of_dict_of_paths):
@@ -159,6 +160,21 @@ def test_path_in_nested_dict(tmp_path):
         p.touch()
 
     m = func.map(args = [{'paths': dict(zip(range(len(paths)), paths))}])
-    m.wait(180)
 
-    assert m[0]
+    assert m.get(0)
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_transfer_directory(tmp_path):
+    dir = tmp_path / 'dir'
+    dir.mkdir()
+
+    file_in_dir = dir / 'file'
+    file_in_dir.write_text('hi')
+
+    def test(dir):
+        return (dir / 'file').read_text() == 'hi'
+
+    m = htmap.map(test, [dir])
+
+    assert m.get(0)

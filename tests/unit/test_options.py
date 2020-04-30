@@ -185,6 +185,61 @@ def test_list_of_path_input_files(tmp_path):
     assert itemdata == expected
 
 
+def test_list_of_transfer_path_input_files(tmp_path):
+    tag = 'foo'
+    num_components = 3
+    map_options = htmap.MapOptions(
+        input_files = [
+            htmap.TransferPath('foo.txt', protocol = 'file'),
+            htmap.TransferPath('bar.txt', protocol = 's3', location = 's3.server.com'),
+            htmap.TransferPath('buz.txt'),
+        ],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        tag,
+        tmp_path,
+        num_components,
+        map_options,
+    )
+
+    expected = [
+        {'component': '0', 'extra_input_files': 'file:///foo.txt'},
+        {'component': '1', 'extra_input_files': 's3://s3.server.com/bar.txt'},
+        {'component': '2', 'extra_input_files': (Path.cwd() / 'buz.txt').absolute().as_posix()},
+    ]
+
+    assert itemdata == expected
+
+
+def test_list_of_list_of_transfer_path_input_files(tmp_path):
+    tag = 'foo'
+    num_components = 3
+    map_options = htmap.MapOptions(
+        input_files = [
+            htmap.TransferPath('foo.txt', protocol = 'file'),
+            [htmap.TransferPath('bar.txt', protocol = 's3', location = 's3.server.com'), htmap.TransferPath('wiz.txt')],
+            htmap.TransferPath('buz.txt'),
+        ],
+    )
+
+    sub, itemdata = create_submit_object_and_itemdata(
+        tag,
+        tmp_path,
+        num_components,
+        map_options,
+    )
+
+    expected = [
+        {'component': '0', 'extra_input_files': 'file:///foo.txt'},
+        {'component': '1', "extra_input_files": f"s3://s3.server.com/bar.txt, {(Path.cwd() / 'wiz.txt').absolute().as_posix()}"},
+        {'component': '2', 'extra_input_files': (Path.cwd() / 'buz.txt').absolute().as_posix()},
+    ]
+
+    assert itemdata == expected
+
+
+
 def test_list_of_list_of_path_input_files(tmp_path):
     tag = 'foo'
     num_components = 3

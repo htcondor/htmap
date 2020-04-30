@@ -29,6 +29,7 @@ htmap.settings.replace(BASE_SETTINGS)
 htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for all tests that aren't parametric
 htmap.settings['WAIT_TIME'] = 0.1
 htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
+htmap.settings['MAP_OPTIONS.keep_claim_idle'] = '1'
 
 SETTINGS = copy(htmap.settings)
 

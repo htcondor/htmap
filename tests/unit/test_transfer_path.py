@@ -13,30 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from pathlib import Path
 
-import htmap
+from htmap import TransferPath
 
 
-def test_path_to_transfer_path():
-    assert isinstance(Path(htmap.TransferPath('foobar')), Path)
+@pytest.mark.parametrize(
+    "transfer_path, expected",
+    [
+        (TransferPath.cwd() / "foobar.txt", (Path.cwd() / "foobar.txt").as_posix(),),
+        (TransferPath.home() / "foobar.txt", (Path.home() / "foobar.txt").as_posix(),),
+        (
+            TransferPath(path="foo/0.txt", protocol="s3", location="s3.server.com",),
+            "s3://s3.server.com/foo/0.txt",
+        ),
+    ],
+)
+def test_as_tif(transfer_path, expected):
+    assert transfer_path.as_tif() == expected
 
 
-def test_transfer_path_to_path():
-    assert isinstance(htmap.TransferPath(Path('foobar')), htmap.TransferPath)
+def test_must_have_protocol_if_has_location():
+    with pytest.raises(ValueError):
+        TransferPath('foo.txt', location = 'foo.bar.com')
 
-
-def test_transfer_path_isinstance_path():
-    assert isinstance(htmap.TransferPath.cwd(), Path)
-
-
-def test_path_is_not_instance_of_transfer_path():
-    assert not isinstance(Path.cwd(), htmap.TransferPath)
-
-
-def test_transfer_path_is_subclass_of_path():
-    assert issubclass(htmap.TransferPath, Path)
-
-
-def path_is_not_subclass_of_transfer_path():
-    assert not issubclass(Path, htmap.TransferPath)

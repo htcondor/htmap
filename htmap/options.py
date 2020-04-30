@@ -24,7 +24,7 @@ from pathlib import Path
 
 import htcondor
 
-from . import utils, exceptions, names, settings
+from . import utils, transfer, exceptions, names, settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ SETUP_FUNCTION_BY_DELIVERY = {}
 
 REQUIREMENTS = 'requirements'
 
+TRANSFER_PATH = Union[str, Path, transfer.TransferPath]
 
 class MapOptions(collections.UserDict):
     RESERVED_KEYS = {
@@ -61,8 +62,8 @@ class MapOptions(collections.UserDict):
     def __init__(
         self,
         *,
-        fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
-        input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
+        fixed_input_files: Optional[Union[TRANSFER_PATH, Iterable[TRANSFER_PATH]]] = None,
+        input_files: Optional[Union[Iterable[TRANSFER_PATH], Iterable[Iterable[TRANSFER_PATH]]]] = None,
         custom_options: Optional[Dict[str, str]] = None,
         **kwargs: Union[str, Iterable[str]],
     ):
@@ -153,13 +154,11 @@ def normalize_path(path: Union[str, Path]) -> str:
     Turn input file paths into a format that HTCondor can understand.
     In particular, all local file paths must be turned into posix-style paths (even on Windows!)
     """
-    if isinstance(path, Path):
-        return path.absolute().as_posix()
-
-    if '://' in path:  # i.e., this is an url-like input file path
-        return path
-
-    return normalize_path(Path(path))  # local file path, but as a string
+    if isinstance(path, transfer.TransferPath):
+        return path.as_tif()
+    elif isinstance(path, Path) or '://' not in path:
+        return Path(path).absolute().as_posix()
+    return path
 
 
 def create_submit_object_and_itemdata(
@@ -198,7 +197,7 @@ def create_submit_object_and_itemdata(
         input_files.append('$(extra_input_files)')
 
         joined = [
-            normalize_path(files) if isinstance(files, (str, Path))  # single file
+            normalize_path(files) if isinstance(files, (str, Path, transfer.TransferPath))  # single file
             else ', '.join(normalize_path(f) for f in files)  # multiple files
             for files in map_options.input_files
         ]
