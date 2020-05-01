@@ -26,7 +26,7 @@ from htmap._startup import ensure_htmap_dir_exists
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
-htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for all tests that aren't parametric
+htmap.settings['DELIVERY_METHOD'] = 'shared'  # shared is the default for all tests that aren't parametric
 htmap.settings['WAIT_TIME'] = 0.1
 htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
 htmap.settings['MAP_OPTIONS.keep_claim_idle'] = '1'
@@ -54,7 +54,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--delivery",
         nargs = "+",
-        default = ['assume'],  # assume is the default for parametric delivery testing
+        default = ['shared'],  # shared is the default for parametric delivery testing
     )
 
 
@@ -66,22 +66,16 @@ def pytest_generate_tests(metafunc):
         )
 
 
-MAP_DIRS = []
-
-
 @pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir(tmpdir_factory):
+def set_htmap_dir_and_clean(tmpdir_factory):
     map_dir = Path(tmpdir_factory.mktemp('htmap_dir'))
-    MAP_DIRS.append(map_dir)
+
     htmap.settings['HTMAP_DIR'] = map_dir
     ensure_htmap_dir_exists()
 
+    yield
 
-@pytest.fixture(scope = 'session', autouse = True)
-def cleanup():
-    for map_dir in MAP_DIRS:
-        htmap.settings['HTMAP_DIR'] = map_dir
-        htmap.clean(all = True)
+    htmap.clean(all = True)
 
 
 @pytest.fixture(scope = 'session')
