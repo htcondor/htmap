@@ -20,6 +20,8 @@ from pathlib import Path
 
 import htmap
 
+TIMEOUT = 300
+
 
 @pytest.fixture(scope = 'function')
 def late_noop():
@@ -30,15 +32,7 @@ def late_noop():
     return noop
 
 
-@pytest.mark.timeout(10)
-def test_can_be_removed_immediately(late_noop):
-    m = late_noop.map(range(1000))
-
-    m.remove()
-
-    assert m.is_removed
-
-
+@pytest.mark.timeout(TIMEOUT)
 def test_wait_with_late_materialization(late_noop):
     m = late_noop.map(range(3))
 
@@ -60,6 +54,7 @@ def test_wait_with_late_materialization(late_noop):
     except:
         print('failed to get digest file')
 
-    m.wait(timeout = 180)
+    m.wait()
+
 
     assert m.is_done

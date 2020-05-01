@@ -15,7 +15,7 @@
 
 # this dockerfile builds a test environment for HTMap
 
-ARG PYTHON_VERSION=3.6
+ARG PYTHON_VERSION=3.7
 FROM python:${PYTHON_VERSION}
 
 # build config
