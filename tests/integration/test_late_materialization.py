@@ -13,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-
 import pytest
+
+import subprocess
+from pathlib import Path
 
 import htmap
 
@@ -40,6 +41,24 @@ def test_can_be_removed_immediately(late_noop):
 
 def test_wait_with_late_materialization(late_noop):
     m = late_noop.map(range(3))
+
+    try:
+        cid = m._cluster_ids[0]
+
+        digest = Path(
+            subprocess.run(
+                ["condor_q", "-factory", str(cid)],
+                stdout = subprocess.PIPE,
+                text = True
+            ).stdout.splitlines()[-1].split()[-1]
+        ).read_text()
+        items = Path(digest.splitlines()[-1].split()[-1]).read_text()
+
+        print(digest)
+        print()
+        print(items)
+    except:
+        print('failed to get digest file')
 
     m.wait(timeout = 180)
 
