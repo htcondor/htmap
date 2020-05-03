@@ -1,7 +1,7 @@
 htcondor >= 8.8.0
-cloudpickle ~= 1.2
+cloudpickle ~= 1.4
 toml ~= 0.10
-tqdm ~= 4.36
+tqdm ~= 4.46
 click ~= 7.0
 click-didyoumean ~= 0.0.3
 halo ~= 0.0.28
