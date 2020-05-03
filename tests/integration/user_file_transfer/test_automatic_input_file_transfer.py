@@ -166,7 +166,7 @@ def test_path_in_nested_dict(tmp_path):
 
 @pytest.mark.timeout(TIMEOUT)
 def test_transfer_directory(tmp_path):
-    dir = tmp_path / 'dir'
+    dir = htmap.TransferPath(tmp_path / 'dir')
     dir.mkdir()
 
     file_in_dir = dir / 'file'
@@ -176,5 +176,18 @@ def test_transfer_directory(tmp_path):
         return (dir / 'file').read_text() == 'hi'
 
     m = htmap.map(test, [dir])
+
+    assert m.get(0)
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_transfer_via_file_protocol(tmp_path):
+    f = htmap.TransferPath(tmp_path / 'f', protocol = 'file')
+    f.write_text('hi')
+
+    def test(file):
+        return file.read_text() == 'hi'
+
+    m = htmap.map(test, [f])
 
     assert m.get(0)
