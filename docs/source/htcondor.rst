@@ -1,5 +1,5 @@
-Using HTCondor
-==============
+Using HTCondor with HTMap
+=========================
 
 Specification on exactly what "held", "idle", "running" and "completed" jobs
 mean is detailed at the `HTCondor documentation on machine states`_.

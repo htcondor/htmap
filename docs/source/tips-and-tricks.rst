@@ -3,6 +3,38 @@ Tips and Tricks
 
 .. py:currentmodule:: htmap
 
+
+.. _cli-tips:
+
+Use the CLI
+-----------
+
+The CLI is useful to monitor and modify ongoing jobs.
+
+This will reveal some of these useful commands to view information:
+
+.. code:: shell
+
+   htmap status  # See info on each job, and various tags
+   htmap logs  # get path to log file; info here is useful for debugging
+   htmap components foo  # view which component status for tag "foo"
+   htmap errors foo # view all errors for tag "foo"
+   htmap stdout foo 0  # view stdout for first job of tag "foo"
+   htmap stderr foo 0  # view stdout for first job of tag "foo"
+   htmap reasons foo  # get reasons for holding map "foo"
+
+Some of the longer output is useful to pipe into ``less`` so it's easily
+navigable and searchable. For example,
+
+.. code:: shell
+
+   htmap errors foo | less
+
+To get help on ``less``, use the command ``man less`` or press ``h`` while in
+``less``.
+
+Full CLI documentation is at :ref:`cli`.
+
 Only processing successful jobs
 -------------------------------
 

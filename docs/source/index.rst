@@ -48,14 +48,14 @@ Happy mapping!
 :doc:`htcondor`
    Tips on using HTMap with HTCondor
 
-:doc:`settings`
-   Documentation for the various settings.
-
 :doc:`tips-and-tricks`
    Useful tips & tricks on the API.
 
 :doc:`faq`
    These questions are asked, sometimes frequently.
+
+:doc:`settings`
+   Documentation for the various settings.
 
 :doc:`version-history`
    New features, bug fixes, and known issues by version.
