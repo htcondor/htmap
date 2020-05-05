@@ -14,7 +14,7 @@ rely on the script being free of bugs on submission. Likewise, un-expected
 errors can easily be adapted (such as hung jobs, etc).
 
 The CLI is useful to monitor and modify ongoing jobs. Generally, in simple use
-cases the HTMap developers write three scripts:
+cases we recommend writing two or three scripts:
 
 * A script for job submission (which is run once).
 * A script for monitoring jobs (which is run many times).
