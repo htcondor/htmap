@@ -88,7 +88,7 @@ The links go an HTML version of the man pages; their also visible with ``man``
 
    ## See how much CUDA memory on each machine (and how many are available)
    condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -json
-   # See which machines have that memory
+   # See which machines have that much memory
    # Also write JSON file so readable by Pandas read_json
    condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -attribute Machine -json >> stats.json
 
