@@ -67,17 +67,29 @@ Happy mapping!
 .. toctree::
    :maxdepth: 2
    :hidden:
+   :caption: Getting started
 
-   self
    installation
    tutorials
+   htcondor
+   tips-and-tricks
+   faq
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Use and Reference
+
    dependencies
    api
    cli
-   htcondor
    settings
-   tips-and-tricks
-   faq
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Develop
+
    version-history
    devs
 

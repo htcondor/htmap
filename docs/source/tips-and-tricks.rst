@@ -6,16 +6,43 @@ Tips and Tricks
 
 .. _cli-tips:
 
+Separate job submission/monitoring/collection
+---------------------------------------------
+
+The CLI is useful to monitor and modify ongoing jobs. Generally, in simple use
+cases the HTMap developers write three scripts:
+
+* A script for job submission (which is run once).
+* A script for monitoring jobs (which is run many times).
+* A script to collect results (which is a few times).
+
+Each script uses these commands:
+
+* Submission: HTMap's Python API is primarily used here, possibly through
+  :func:`map`.
+* Monitoring: CLI usage is heavy here, and the command ``htmap status`` is
+  heavily used. If any of the jobs fail, it's easy to diagnose why with the
+  additional commands.
+* Collection: the completed jobs are collected (as mentioned in
+  :ref:`successful-jobs`) and the results are written to disk/etc.
+
+Use of the CLI is useful for debugging when any of the scripts produces an
+error.
+
+
 Use the CLI
 -----------
 
-The CLI is useful to monitor and modify ongoing jobs.
-
-This will reveal some of these useful commands to view information:
+This will reveal the status of each job:
 
 .. code:: shell
 
    htmap status  # See info on each job, and various tags
+
+These commands will reveal more information about each job:
+
+.. code::
+
    htmap logs  # get path to log file; info here is useful for debugging
    htmap components foo  # view which component status for tag "foo"
    htmap errors foo # view all errors for tag "foo"
@@ -35,17 +62,6 @@ To get help on ``less``, use the command ``man less`` or press ``h`` while in
 
 Full CLI documentation is at :ref:`cli`.
 
-Only processing successful jobs
--------------------------------
-
-Let's say you submitted 10,000 long-running jobs, and 99.9% of these jobs
-complete successfully. You'd like to get the results from the successful jobs,
-and save the results to disk.
-
-The right function to use is :func:`~htmap.Map.components_by_status`. It can
-filter out the successful jobs and process those. See the
-:func:`~htmap.Map.components_by_status` documentation for an example usage.
-
 Conditional Execution on Cluster vs. Submit
 -------------------------------------------
 
@@ -53,10 +69,12 @@ The environment variable ``HTMAP_ON_EXECUTE`` is set to ``'1'`` while map compon
 This can be useful if you need to switch certain behavior on or off depending whether you're running your function locally or not.
 
 
+Functional programming
+----------------------
 .. _filter:
 
 Filter
-------
+^^^^^^
 
 In the parlance of higher-order functions, HTMap only provides map.
 Another higher-order function, filter, is easy to implement once you have a map.
@@ -82,7 +100,7 @@ Here's a brief example: checking whether integers are even.
 .. _groupby:
 
 Groupby
--------
+^^^^^^^
 
 In the parlance of higher-order functions, HTMap only provides map.
 Another higher-order function, groupby, is easy to implement once you have a map.
