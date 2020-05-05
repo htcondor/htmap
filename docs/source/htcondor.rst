@@ -64,7 +64,9 @@ with your site's documentation to see if they have any GPU documentation.
 Shell commands
 --------------
 
-Here are some shell HTCondor commands and their primary use:
+HTMap tries to expose a complete interface for submitting and managing jobs,
+but not for examining the state of your HTCondor pool itself.
+Here are some HTCondor shell commands that you may find useful:
 
 * `condor_q`_: seeing the jobs submitted to the scheduler (aliased to
   :func:`htmap.status`)
