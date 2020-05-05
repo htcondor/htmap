@@ -11,6 +11,11 @@ Map components will usually be in one of four states:
 * **Held**: HTCondor has decided that it can't run the job/component, but that you (the user) might be able to fix the problem. The job will try to run again if it released.
 * **Completed**: the job/component has finished running, and HTMap has collected its output.
 
+For more detail, see the relevant HTCondor documentation:
+
+* https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#checking-on-the-progress-of-jobs
+* https://htcondor.readthedocs.io/en/latest/admin-manual/policy-configuration.html#machine-states
+
 Requesting commonly used resources
 ----------------------------------
 
