@@ -25,6 +25,7 @@ import shutil
 import re
 from pathlib import Path
 
+import htcondor
 import htmap
 from htmap import names, __version__
 from htmap.management import _status
@@ -68,7 +69,9 @@ CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
     message = '%(prog)s version %(version)s',
 )
 def cli(verbose):
-    """HTMap command line tools."""
+    """
+    HTMap command line tools.
+    """
     htmap.settings['CLI.IS_CLI'] = True
     if verbose:
         _start_htmap_logger()
@@ -98,7 +101,9 @@ def _start_htmap_logger():
     help = 'Act on maps whose tags match glob-style patterns. Patterns must be enclosed in "". Pass -p multiple times for multiple patterns.'
 )
 def tags(pattern):
-    """Print tags."""
+    """
+    Print the tags of existing maps.
+    """
     if len(pattern) == 0:
         click.echo(_fmt_tag_list())
     else:
@@ -252,7 +257,14 @@ def status(no_state, no_meta, format, live, no_color):
     help = 'Remove non-transient maps as well.',
 )
 def clean(all):
-    """Clean up maps."""
+    """
+    Clean up transient maps by removing them.
+
+    Maps that have never had a tag explicitly set are assigned randomized tags
+    and marked as "transient". This command removes maps marked transient
+    (and can also remove all maps, not just transient ones, if the --all option
+    is passed).
+    """
     with make_spinner('Cleaning maps...') as spinner:
         cleaned_tags = htmap.clean(all = all)
         spinner.succeed(f'Cleaned maps {", ".join(cleaned_tags)}')
@@ -373,16 +385,20 @@ def wait(tags, pattern, all):
         return
 
 
-@cli.command()
+@cli.command(short_help = "Remove maps; all data associated with the maps will be permanently deleted.")
 @_multi_tag_args
 @click.option(
     '--force',
     is_flag = True,
     default = False,
-    help = 'Do not wait for HTCondor to remove the map components.',
+    help = 'Do not wait for HTCondor to remove the map components before removing local data.',
 )
 def remove(tags, pattern, all, force):
-    """Remove maps."""
+    """
+    This command removes a map.
+    All data associated with a removed map is permanently deleted and all
+    components are removed from the HTCondor queue.
+    """
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -397,10 +413,19 @@ def remove(tags, pattern, all, force):
             spinner.succeed(f'Removed map {tag}')
 
 
-@cli.command()
+@cli.command(short_help = "Hold maps; components will be prevented from running until released.")
 @_multi_tag_args
 def hold(tags, pattern, all):
-    """Hold maps."""
+    """
+    This command holds a map.
+    The components of the map will not be allowed to run until released
+    (see the release command).
+
+
+    HTCondor may itself hold your map components if it detects that
+    something has gone wrong with them. Resolve the underlying problem,
+    then use the release command to allow the components to run again.
+    """
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -414,10 +439,17 @@ def hold(tags, pattern, all):
             spinner.succeed(f'Held map {tag}')
 
 
-@cli.command()
+@cli.command(short_help = "Release maps; held components will become idle again.")
 @_multi_tag_args
 def release(tags, pattern, all):
-    """Release maps."""
+    """
+    This command releases a map, undoing holds.
+    The held components of a released map will become idle again.
+
+    HTCondor may itself hold your map components if it detects that
+    something has gone wrong with them. Resolve the underlying problem,
+    then use this command to allow the components to run again.
+    """
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -431,10 +463,15 @@ def release(tags, pattern, all):
             spinner.succeed(f'Released map {tag}')
 
 
-@cli.command()
+@cli.command(short_help = "Pause maps; components will stop executing, but keep their resource claims.")
 @_multi_tag_args
 def pause(tags, pattern, all):
-    """Pause maps."""
+    """
+    This command pauses a map.
+    The running components of a paused map will keep their resource claims, but
+    will stop actively executing.
+    The map can be un-paused by resuming it (see the resume command).
+    """
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -448,10 +485,14 @@ def pause(tags, pattern, all):
             spinner.succeed(f'Paused map {tag}')
 
 
-@cli.command()
+@cli.command(short_help = "Resume maps after pause; components will resume executing on their claimed resource.")
 @_multi_tag_args
 def resume(tags, pattern, all):
-    """Resume maps."""
+    """
+    This command resumes a map (reverses the pause command).
+    The running components of a resumed map will resume execution on their
+    claimed resources.
+    """
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -465,10 +506,18 @@ def resume(tags, pattern, all):
             spinner.succeed(f'Resumed map {tag}')
 
 
-@cli.command()
+@cli.command(short_help = "Vacate maps; components will give up claimed resources and become idle.")
 @_multi_tag_args
 def vacate(tags, pattern, all):
-    """Force maps to give up their claimed resources."""
+    """
+    This command vacates a map.
+    The running components of a vacated map will give up their claimed
+    resources and become idle again.
+
+    Checkpointing maps will still have access to their last checkpoint,
+    and will resume from it as if execution was interrupted for any other
+    reason.
+    """
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -485,7 +534,13 @@ def vacate(tags, pattern, all):
 @cli.command()
 @_multi_tag_args
 def reasons(tags, pattern, all):
-    """Print the hold reasons for maps."""
+    """
+    Print the hold reasons for map components.
+
+    HTCondor may hold your map components if it detects that
+    something has gone wrong with them. Resolve the underlying problem,
+    then use the release command to allow the components to run again.
+    """
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -530,10 +585,10 @@ def stderr(tag, component):
     '--limit',
     type = int,
     default = 0,
-    help = 'The maximum number of error reports to show (0 for no limit).',
+    help = 'The maximum number of error reports to show (0, the default, for no limit).',
 )
 def errors(tags, pattern, all, limit):
-    """Look at detailed error reports for a map."""
+    """Show execution error reports for map components."""
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -588,10 +643,17 @@ def components(tag, status, no_color):
 
         click.echo(' '.join(str(c) for c in m.components_by_status()[status]))
 
-
 @cli.group()
 def rerun():
-    """Rerun (part of) a map."""
+    """
+    Rerun (part of) a map from scratch.
+
+    The selected components must be completed or errored.
+
+    Any existing output of re-run components is removed; they are re-submitted
+    to the HTCondor queue with their original map options (i.e., without any
+    subsequent edits).
+    """
 
 
 @rerun.command()
@@ -602,7 +664,13 @@ def rerun():
     type = int,
 )
 def components(tag, components):
-    """Rerun selected components from a single map."""
+    """
+    Rerun selected components from a single map.
+
+    Any existing output of re-run components is removed; they are re-submitted
+    to the HTCondor queue with their original map options (i.e., without any
+    subsequent edits).
+    """
     m = _cli_load(tag)
 
     with make_spinner(f'Rerunning components {components} of map {tag} ...') as spinner:
@@ -616,7 +684,13 @@ def components(tag, components):
 @rerun.command()
 @_multi_tag_args
 def map(tags, pattern, all):
-    """Rerun all of the components of any number of maps."""
+    """
+    Rerun all of the components of any number of maps.
+
+    Any existing output of re-run components is removed; they are re-submitted
+    to the HTCondor queue with their original map options (i.e., without any
+    subsequent edits).
+    """
     if all:
         tags = htmap.get_tags()
     elif len(pattern) > 0:
@@ -635,7 +709,13 @@ def map(tags, pattern, all):
 @click.argument('tag', autocompletion = _autocomplete_tag)
 @click.argument('new')
 def retag(tag, new):
-    """Retag a map."""
+    """
+    Change the tag of an existing map.
+
+    Retagging a map makes it not transient.
+    Maps that have never had an explicit tag given to them are transient
+    and can be easily cleaned up via the clean command.
+    """
     with make_spinner(f'Retagging map {tag} to {new} ...') as spinner:
         _cli_load(tag).retag(new)
         spinner.succeed(f'Retagged map {tag} to {new}')
@@ -643,8 +723,9 @@ def retag(tag, new):
 
 @cli.command()
 def version():
-    """Print HTMap version information."""
+    """Print HTMap and HTCondor Python bindings version information."""
     click.echo(htmap.version())
+    click.echo(htcondor.version())
 
 
 @cli.command()
@@ -655,7 +736,13 @@ def version():
     help = 'Display only user settings (the contents of ~/.htmaprc).',
 )
 def settings(user):
-    """Print HTMap's settings."""
+    """
+    Print HTMap's current settings.
+
+    By default, this command shows the merger of your user settings from
+    ~/.htmaprc and HTMap's own default settings. To show only your user
+    settings, pass the --user option.
+    """
     if not user:
         click.echo(str(htmap.settings))
     else:
@@ -715,7 +802,13 @@ def remove(index):
 
 @cli.group()
 def edit():
-    """Edit a map's attributes."""
+    """
+    Edit a map's attributes (e.g., its memory request).
+
+    Edits do not affect components that are currently running. To "restart"
+    components so that they see the new attribute value, consider vacating
+    their map (see the vacate command).
+    """
 
 
 @edit.command()
@@ -730,7 +823,13 @@ def edit():
     default = 'MB',
 )
 def memory(tag, memory, unit):
-    """Set a map's requested memory."""
+    """
+    Set a map's requested memory.
+
+    Edits do not affect components that are currently running. To "restart"
+    components so that they see the new attribute value, consider vacating
+    their map (see the vacate command).
+    """
     map = _cli_load(tag)
     msg = f'memory request for map {tag} to {memory} {unit}'
 
@@ -757,7 +856,13 @@ def memory(tag, memory, unit):
     default = 'GB',
 )
 def disk(tag, disk, unit):
-    """Set a map's requested disk."""
+    """
+    Set a map's requested disk.
+
+    Edits do not affect components that are currently running. To "restart"
+    components so that they see the new attribute value, consider vacating
+    their map (see the vacate command).
+    """
     map = _cli_load(tag)
     msg = f'disk request for map {tag} to {disk} {unit}'
 
@@ -777,9 +882,11 @@ def disk(tag, disk, unit):
 @click.argument('tag', autocompletion = _autocomplete_tag)
 def path(tag):
     """
-    Get paths to various things.
-    Mostly for debugging.
-    The tag argument is a map tag, optionally followed by a colon (:) and a target.
+    Get paths to parts of HTMap's data storage for a map.
+
+    This command is mostly useful for debugging or interfacing with other tools.
+    The tag argument is a map tag, optionally followed by a colon (:) and a
+    target.
 
     If you have a map tagged "foo",
     these commands would give the following paths (command -> path):
@@ -819,7 +926,7 @@ def path(tag):
 @cli.command()
 def logs():
     """
-    Echo the path to HTMap's current log file.
+    Print the path to HTMap's current log file.
 
     The log file rotates, so if you need to go further back in time,
     look at the rotated log files (stored next to the current log file).
