@@ -32,8 +32,10 @@ Each script uses these commands:
 * Collection: the completed jobs are collected (as mentioned in
   :ref:`successful-jobs`) and the results are written to disk/etc.
 
-Use of the CLI is useful for debugging when any of the scripts produces an
-error.
+The CLI is useful for debugging when dealing with component holds and execution errors.
+It can be used to quickly view the same kind of information as the :class:`Map` API
+(though we recommend loading up the map in Python once you need to do anything
+more complex than read text).
 
 
 Use the CLI
