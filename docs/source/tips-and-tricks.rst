@@ -9,6 +9,10 @@ Tips and Tricks
 Separate job submission/monitoring/collection
 ---------------------------------------------
 
+This is recommended because it's more interactive and more flexible: it doesn't
+rely on the script being free of bugs on submission. Likewise, un-expected
+errors can easily be adapted (such as hung jobs, etc).
+
 The CLI is useful to monitor and modify ongoing jobs. Generally, in simple use
 cases the HTMap developers write three scripts:
 
@@ -33,13 +37,18 @@ error.
 Use the CLI
 -----------
 
-This will reveal the status of each job:
+Use of the CLI is recommended to go alongside separation of
+submission/monitoring/collection as mentioned above. This section will provide
+some useful commands.  This command shows the status of each job for various
+tags:
 
 .. code:: shell
 
    htmap status  # See info on each job, and various tags
 
-These commands will reveal more information about each job:
+This might indicate that 4 jobs in tag ``foo`` are completed and 2 are idle (or
+waiting to be run).  These commands will reveal more information about a
+specific tag:
 
 .. code::
 
