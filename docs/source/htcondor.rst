@@ -10,8 +10,8 @@ Requesting commonly used resources
 ----------------------------------
 
 HTCondor's default configuration can be limiting -- what if your job requires
-more memory or more disk space? HTCondor can be configured to allow this, and
-HTMap supports the configuration via :class:`~htmap.MapOptions`.
+more memory or more disk space? HTCondor jobs can request resources, and
+HTMap supports those requests via :class:`~htmap.MapOptions`.
 
 :class:`~htmap.MapOptions` accepts many of the same keys that `condor_submit`_
 accepts.  Some of the more commonly requested keys are:
@@ -96,4 +96,3 @@ https://htcondor.readthedocs.io/en/latest/classad-attributes/machine-classad-att
 .. _condor_q: https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html
 .. _condor_status: https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html
 .. _condor_submit: https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html
-
