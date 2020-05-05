@@ -26,13 +26,12 @@ HTMap supports those requests via :class:`~htmap.MapOptions`.
 :class:`~htmap.MapOptions` accepts many of the same keys that `condor_submit`_
 accepts.  Some of the more commonly requested keys are:
 
-* ``request_memory``. Possible values are ``"1M`` for 1MB, ``"2GB"`` for 2GB of
-  memory. If not specified, the HTCondor's defaults are accepted provided
-  ``JOB_DEFAULT_REQUESTMEMORY`` is not set (one of the
-  `configuration variables`_).
-* ``request_cpus``. Possible values are ``"1"`` for 1 CPU.
-* ``request_disk``. Possible values are ``"10GB"`` for 10GB, ``"1T"`` for 1
-  terabytes.
+* ``request_memory``. Possible values are like ``"1MB`` for 1MB, or ``"2GB"`` for 2GB of
+  memory.
+* ``request_cpus``. Possible values are like ``"1"`` for 1 CPU, or ``"2"`` for 2 CPUs.
+* ``request_disk`` to request an amount of disk space. Possible values are like ``"10GB"`` for 10GB, or ``"1TB"`` for 1 terabyte.
+  
+If any of the resource requests are not set, the default values set by your HTCondor cluster administrator will be used.
 
 These would be set with :class:`~htmap.MapOptions`. For example, this code
 might be used:
