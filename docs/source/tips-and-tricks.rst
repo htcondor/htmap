@@ -25,9 +25,10 @@ Each script uses these commands:
 
 * Submission: HTMap's Python API is primarily used here, possibly through
   :func:`map`.
-* Monitoring: CLI usage is heavy here, and the command ``htmap status`` is
-  heavily used. If any of the jobs fail, it's easy to diagnose why with the
-  additional commands.
+* Monitoring: CLI usage is heavy here. 
+  ``htmap status`` is a good way to view a summary. 
+  If any of the jobs fail, diagnose why with
+  commands like ``htmap reasons`` or ``htmap errors``.
 * Collection: the completed jobs are collected (as mentioned in
   :ref:`successful-jobs`) and the results are written to disk/etc.
 
