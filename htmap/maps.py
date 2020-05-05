@@ -598,15 +598,15 @@ class Map(collections.abc.Sequence):
                sleep(x)
                return 1 / x
 
-           futures = htmap.map(job, [0, 2, 4, 6, 8], tag="foo")
+           m = htmap.map(job, [0, 2, 4, 6, 8], tag="foo")
 
            # Wait for all jobs to finish.
            # Alternatively, use `futures = htmap.load("foo")` on a different process
            sleep(10)
 
-           jobs = futures.components_by_status()
-           for future in jobs["COMPLETED"]:
-               result = futures.get(future)
+           completed = m.components_by_status()[htmap.JobStatus.COMPLETED]
+           for component in completed:
+               result = m.get(future)
                # Whatever processing needs to be done
                print(result)  # prints "2", "4", "6", and "8"
 
