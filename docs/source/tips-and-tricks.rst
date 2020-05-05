@@ -55,8 +55,8 @@ specific tag:
    htmap logs  # get path to log file; info here is useful for debugging
    htmap components foo  # view which component status for tag "foo"
    htmap errors foo # view all errors for tag "foo"
-   htmap stdout foo 0  # view stdout for first job of tag "foo"
-   htmap stderr foo 0  # view stdout for first job of tag "foo"
+   htmap stdout foo 0  # view stdout for first component of tag "foo"
+   htmap stderr foo 0  # view stdout for first component of tag "foo"
    htmap reasons foo  # get reasons for holding map "foo"
 
 Some of the longer output is useful to pipe into ``less`` so it's easily
