@@ -1,6 +1,10 @@
 Using HTCondor with HTMap
 =========================
 
+HTMap is only a Python wrapper to the HTCondor API. That means all of the
+HTCondor functionality is available. Here's a brief overview of how to use
+HTCondor with HTMap:
+
 Component and Job States
 -------------------------------------
 Each HTMap map component is represented by an HTCondor job.
@@ -46,8 +50,8 @@ might be used:
    htmap.map(..., map_options=options)
 
 When it's mentioned that "the option ``foo`` needs to be set" (possibly in a
-submit file), this corresponds to adding the option in the appropriate
-place in :class:`~MapOptions` (see the documentation for details).
+submit file), this corresponds to adding the option in the appropriate place in
+:class:`~htmap.MapOptions`.
 
 .. _configuration variables: https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html
 
@@ -80,8 +84,8 @@ The links go an HTML version of the man pages; their also visible with ``man``
 
 .. code:: shell
 
-   ## See the jobs you've submitted, and refresh them every 2 seconds
-   watch condor_q --submitter foobar
+   ## See the jobs user foobar has submitted, and their status
+   condor_q --submitter foobar
 
    ## See if how many machines have GPUs, and how many are available
    condor_status --constraint "CUDADriverVersion>=10.1" -total

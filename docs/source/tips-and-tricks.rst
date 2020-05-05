@@ -47,8 +47,8 @@ tags:
    htmap status  # See info on each job, and various tags
 
 This might indicate that 4 jobs in tag ``foo`` are completed and 2 are idle (or
-waiting to be run).  These commands will reveal more information about a
-specific tag:
+waiting to be run).  These commands will show more information about individual
+maps and map components:
 
 .. code::
 
