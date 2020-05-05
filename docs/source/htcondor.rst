@@ -73,7 +73,9 @@ with your site's documentation to see if they have any GPU documentation.
 Shell commands
 --------------
 
-Here are some shell HTCondor commands and their primary use:
+HTMap tries to expose a complete interface for submitting and managing jobs,
+but not for examining the state of your HTCondor pool itself.
+Here are some HTCondor shell commands that you may find useful:
 
 * `condor_q`_: seeing the jobs submitted to the scheduler (aliased to
   :func:`htmap.status`)
@@ -95,7 +97,7 @@ The links go an HTML version of the man pages; their also visible with ``man``
 
    ## See how much CUDA memory on each machine (and how many are available)
    condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -json
-   # See which machines have that memory
+   # See which machines have that much memory
    # Also write JSON file so readable by Pandas read_json
    condor_status --constraint "CUDADriverVersion>=10.1" -attributes CUDAGlobalMemoryMb -attribute Machine -json >> stats.json
 
