@@ -41,8 +41,9 @@ Use the CLI
 
 Use of the CLI is recommended to go alongside separation of
 submission/monitoring/collection as mentioned above. This section will provide
-some useful commands.  This command shows the status of each job for various
-tags:
+some useful commands.
+
+This command shows the status of each job for various tags:
 
 .. code:: shell
 
