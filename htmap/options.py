@@ -105,7 +105,7 @@ class MapOptions(collections.UserDict):
               bbb = false
               ccc = 1
 
-           Then, the ``MapOptions`` that would encode submit file would be:
+           The ``MapOptions`` that express the same submit options would be:
 
            .. code:: python
 
