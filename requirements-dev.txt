@@ -1,5 +1,6 @@
 -r requirements.txt
-pytest >= 4.1.1
+
+pytest
 pytest-mock
 pytest-xdist
 pytest-timeout

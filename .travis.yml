@@ -16,7 +16,6 @@ jobs:
   fast_finish: true
 
 install:
-  - pip install codecov
   - travis_retry docker build -t htmap-test --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=${TRAVIS_PYTHON_VERSION} .
 
 script:

@@ -33,6 +33,7 @@ SCHED_UNIV_RENICE_INCREMENT=5
 SHADOW_RENICE_INCREMENT=5
 
 # Get the HTMap source into the Python path
+# We do this instead of doing an editable pip install because we don't necessarily want to write to the git dir
 JOB_TRANSFORM_NAMES = $(JOB_TRANSFORM_NAMES) SetPyVars
 JOB_TRANSFORM_SetPyVars @=end
 [

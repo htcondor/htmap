@@ -33,6 +33,10 @@ Happy mapping!
 :doc:`installation`
    Installing HTMap
 
+.. note::
+
+    Bug reports and feature requests should go on our `GitHub issue tracker <https://github.com/htcondor/htmap/issues>`_.
+
 :doc:`tutorials`
    Tutorials on using HTMap.
 
@@ -61,8 +65,7 @@ Happy mapping!
    New features, bug fixes, and known issues by version.
 
 :doc:`devs`
-   How HTMap works under the hood; how to set up a development environment.
-
+   How to contribute to HTMap, how to set up a development environment, how HTMap works under the hood, etc.
 
 .. toctree::
    :maxdepth: 2
