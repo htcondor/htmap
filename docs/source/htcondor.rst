@@ -1,10 +1,15 @@
 Using HTCondor with HTMap
 =========================
 
-Specification on exactly what "held", "idle", "running" and "completed" jobs
-mean is detailed at the `HTCondor documentation on machine states`_.
+Component and Job States
+-------------------------------------
+Each HTMap map component is represented by an HTCondor job.
+Map components will usually be in one of four states:
 
-.. _HTCondor documentation on machine states: https://htcondor.readthedocs.io/en/latest/admin-manual/policy-configuration.html#machine-states
+* **Idle**: the job/component has not started running yet; it is waiting to be assigned resources to execute on.
+* **Running**: the job/component is running on an execute machine.
+* **Held**: HTCondor has decided that it can't run the job/component, but that you (the user) might be able to fix the problem. The job will try to run again if it released.
+* **Completed**: the job/component has finished running, and HTMap has collected its output.
 
 Requesting commonly used resources
 ----------------------------------
