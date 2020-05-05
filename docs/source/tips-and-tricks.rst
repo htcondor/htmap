@@ -6,7 +6,7 @@ Tips and Tricks
 
 .. _cli-tips:
 
-Separate job submission/monitoring/collection
+Separate Job Submission/Monitoring/Collection
 ---------------------------------------------
 
 This is recommended because it's more interactive and more flexible: it doesn't
@@ -18,16 +18,17 @@ The CLI is useful to monitor and modify ongoing jobs. Generally, in simple use
 cases we recommend writing two or three scripts:
 
 * A script for job submission (which is run once).
-* A script for monitoring jobs (which is run many times).
+* Use the CLI or a script for monitoring jobs (which is run many times).
 * A script to collect results (which is a few times).
 
 Each script uses these commands:
 
 * Submission: HTMap's Python API is primarily used here, possibly through
   :func:`map`.
-* Monitoring: CLI usage is heavy here, and the command ``htmap status`` is
-  heavily used. If any of the jobs fail, it's easy to diagnose why with the
-  additional commands.
+* Monitoring: CLI usage is heavy here. 
+  ``htmap status`` is a good way to view a summary. 
+  If any of the jobs fail, diagnose why with
+  commands like ``htmap reasons`` or ``htmap errors``.
 * Collection: the completed jobs are collected (as mentioned in
   :ref:`successful-jobs`) and the results are written to disk/etc.
 
