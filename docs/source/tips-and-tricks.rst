@@ -18,7 +18,7 @@ The CLI is useful to monitor and modify ongoing jobs. Generally, in simple use
 cases we recommend writing two or three scripts:
 
 * A script for job submission (which is run once).
-* A script for monitoring jobs (which is run many times).
+* Use the CLI or a script for monitoring jobs (which is run many times).
 * A script to collect results (which is a few times).
 
 Each script uses these commands:
