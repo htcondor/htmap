@@ -29,12 +29,12 @@ might be used:
 
 .. code:: python
 
-   options = ht.MapOptions(
+   options = htmap.MapOptions(
        request_cpus="1",
        request_disk="10GB",
        request_memory="4GB",
    )
-   ht.map(..., map_options=options)
+   htmap.map(..., map_options=options)
 
 When it's mentioned that "the option ``foo`` needs to be set" (possibly in a
 submit file), this corresponds to adding the option in the appropriate
@@ -96,5 +96,4 @@ https://htcondor.readthedocs.io/en/latest/classad-attributes/machine-classad-att
 .. _condor_q: https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html
 .. _condor_status: https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html
 .. _condor_submit: https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html
-
 
