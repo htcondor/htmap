@@ -6,7 +6,7 @@ Tips and Tricks
 
 .. _cli-tips:
 
-Separate job submission/monitoring/collection
+Separate Job Submission/Monitoring/Collection
 ---------------------------------------------
 
 This is recommended because it's more interactive and more flexible: it doesn't
