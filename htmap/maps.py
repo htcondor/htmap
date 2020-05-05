@@ -605,7 +605,6 @@ class Map(collections.abc.Sequence):
            sleep(10)
 
            jobs = futures.components_by_status()
-           jobs = {k.name: v for k, v in jobs.items()}  # nicer key names
            for future in jobs["COMPLETED"]:
                result = futures.get(future)
                # Whatever processing needs to be done
