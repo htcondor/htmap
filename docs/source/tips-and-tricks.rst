@@ -12,6 +12,7 @@ Separate job submission/monitoring/collection
 This is recommended because it's more interactive and more flexible: it doesn't
 rely on the script being free of bugs on submission. Likewise, un-expected
 errors can easily be adapted (such as hung jobs, etc).
+This is most appropriate for medium- or long-running jobs.
 
 The CLI is useful to monitor and modify ongoing jobs. Generally, in simple use
 cases we recommend writing two or three scripts:
