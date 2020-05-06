@@ -6,11 +6,20 @@ New Features
 
 * Add the ``shared`` delivery method, which supports HTCondor pools that use
   shared filesystems to make Python installations available universally.
-  Issues: https://github.com/htcondor/htmap/issues/195 and https://github.com/htcondor/htmap/issues/198
+  Issues: https://github.com/htcondor/htmap/issues/195
+  and https://github.com/htcondor/htmap/issues/198
+* The HTMap CLI now supports autocompletion on commands and tags.
+  Run ``htmap autocompletion`` from the command line to add the necessary
+  setup to your shell startup script.
+* The HTMap CLI ``logs`` command now has a ``--view`` option which, instead of
+  just printing the path to the HTMap log file, displays its contents.
 
 
 Changed/Deprecated Features
 ---------------------------
+
+* Several HTMap CLI commands now support explicit enable/disable flags instead
+  of just one or other other. The default behaviors were not changed.
 
 
 Bug Fixes
