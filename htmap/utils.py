@@ -36,7 +36,7 @@ MutableMapping.register(ClassAd)
 logger = logging.getLogger(__name__)
 
 
-class StrEnum(enum.Enum):
+class StrEnum(str, enum.Enum):
     def __str__(self):
         return self.value
 

@@ -97,7 +97,7 @@ class MapOptions(collections.UserDict):
             for key, val in custom_options.items()
         }
         self._check_keyword_arguments(cleaned_custom_options)
-        kwargs = {**kwargs, **{'MY.' + key: val for key, val in cleaned_custom_options.items()}}
+        kwargs = {**kwargs, **{f'MY.{key}': val for key, val in cleaned_custom_options.items()}}
 
         super().__init__(**kwargs)
 
@@ -193,7 +193,8 @@ def create_submit_object_and_itemdata(
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
-    if map_options.input_files is not None:
+    # if any of the components have per-component input files, use a submit macro to insert them
+    if map_options.input_files is not None and any(map_options.input_files):
         input_files.append('$(extra_input_files)')
 
         joined = [
@@ -269,8 +270,8 @@ def get_base_descriptors(
         'transfer_output_remaps': f'"$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}"',
         'on_exit_hold': 'ExitCode =!= 0',
         'initialdir': f"{(map_dir / names.OUTPUT_FILES_DIR).as_posix()}",
-        '+component': '$(component)',
-        '+IsHTMapJob': 'True',
+        'MY.component': '$(component)',
+        'MY.IsHTMapJob': 'True',
     }
 
     try:

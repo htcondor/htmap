@@ -117,3 +117,8 @@ class CannotRerunComponents(HTMapException):
 class InsufficientHTCondorVersion(HTMapException):
     """The version of HTCondor is too low to use a feature."""
     pass
+
+
+class CorruptEventLog(HTMapException):
+    """HTMap doesn't understand what it's seeing in an event log."""
+    pass
