@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import pytest
+import time
 
 from pathlib import Path
 
@@ -27,6 +28,7 @@ TIMEOUT = 300
 def late_noop():
     @htmap.mapped(map_options = htmap.MapOptions(max_idle = "1"))
     def noop(_):
+        time.sleep(1)
         return True
 
     return noop
@@ -35,6 +37,7 @@ def late_noop():
 @pytest.mark.timeout(TIMEOUT)
 def test_wait_with_late_materialization(late_noop):
     m = late_noop.map(range(3))
+    time.sleep(.1)
 
     cid = m._cluster_ids[0]
 
@@ -55,4 +58,3 @@ def test_wait_with_late_materialization(late_noop):
     m.wait()
 
     assert m.is_done
-    assert False
