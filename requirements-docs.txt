@@ -7,4 +7,5 @@ pygments-github-lexers
 ipython
 nbsphinx
 sphinx-click
+sphinx-issues
 sphinx-autobuild
