@@ -178,16 +178,3 @@ def test_transfer_directory(tmp_path):
     m = htmap.map(test, [dir])
 
     assert m.get(0)
-
-
-@pytest.mark.timeout(TIMEOUT)
-def test_transfer_via_file_protocol(tmp_path):
-    f = htmap.TransferPath(tmp_path / 'f', protocol = 'file')
-    f.write_text('hi')
-
-    def test(file):
-        return file.read_text() == 'hi'
-
-    m = htmap.map(test, [f])
-
-    assert m.get(0)

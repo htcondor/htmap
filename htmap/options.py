@@ -35,6 +35,7 @@ REQUIREMENTS = 'requirements'
 
 TRANSFER_PATH = Union[str, Path, transfer.TransferPath]
 
+
 class MapOptions(collections.UserDict):
     RESERVED_KEYS = {
         'jobbatchname',
@@ -194,6 +195,7 @@ def create_submit_object_and_itemdata(
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
     # if any of the components have per-component input files, use a submit macro to insert them
+    print(map_options.input_files)
     if map_options.input_files is not None and any(map_options.input_files):
         input_files.append('$(extra_input_files)')
 
