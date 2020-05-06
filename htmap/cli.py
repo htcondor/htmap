@@ -72,10 +72,10 @@ def cli(verbose):
     """
     HTMap command line tools.
     """
-    htmap.settings['CLI.IS_CLI'] = True
     if verbose:
         _start_htmap_logger()
     logger.debug(f'CLI called with arguments "{" ".join(sys.argv[1:])}"')
+    htmap.settings['CLI.IS_CLI'] = True
 
 
 def _start_htmap_logger():
@@ -921,17 +921,29 @@ def path(tag):
 
 
 @cli.command()
-def logs():
+@click.option(
+    '--view / --no-view',
+    default = False,
+    help = "If enabled, display the contents of the current log file instead of its path (defaults to disabled)."
+)
+def logs(view):
     """
     Print the path to HTMap's current log file.
 
     The log file rotates, so if you need to go further back in time,
     look at the rotated log files (stored next to the current log file).
     """
-    click.echo(Path(htmap.settings['HTMAP_DIR']) / names.LOGS_DIR / 'htmap.log')
+    log_file = Path(htmap.settings['HTMAP_DIR']) / names.LOGS_DIR / 'htmap.log'
+
+    if view:
+        with log_file.open() as f:
+            click.echo_via_pager(f)
+            return
+
+    click.echo(str(log_file))
 
 
-@cli.command(short_help = "Enable autocompletion for HTMap CLI commands and tags in your shell.")
+@cli.command(short_help = "Enable autocompletion for HTMap CLI commands and tags in your shell. Run this once!")
 @click.option(
     "--shell",
     required=True,

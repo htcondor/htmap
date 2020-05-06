@@ -677,8 +677,9 @@ class Map(collections.abc.Sequence):
         # this cache is invalidated by the state reader loop when appropriate
         if self._local_data is None:
             logger.debug(f"Getting map directory size for map {self.tag} (map directory is {self._map_dir})")
-            self._local_data = utils.get_dir_size(self._map_dir, safe = False)
-            logger.debug(f"Map directory size for map {self.tag}: {utils.num_bytes_to_str(self._local_data)}")
+            with utils.Timer() as timer:
+                self._local_data = utils.get_dir_size(self._map_dir, safe = False)
+            logger.debug(f"Map directory size for map {self.tag}is  {utils.num_bytes_to_str(self._local_data)} (took {timer.elapsed:.6f} seconds)")
         return self._local_data
 
     def _act(

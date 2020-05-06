@@ -168,6 +168,31 @@ def table(
     return rstr(output)
 
 
+class Timer:
+    def __init__(self):
+        self.start = None
+        self.end = None
+
+    @property
+    def elapsed(self):
+        """The elapsed time in seconds from the start of the timer to the end."""
+        if self.start is None:
+            raise ValueError("Timer hasn't started yet!")
+
+        if self.end is None:
+            raise ValueError("Timer hasn't stopped yet!")
+
+        return self.end - self.start
+
+    def __enter__(self):
+        self.start = time.monotonic()
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end = time.monotonic()
+
+
 def get_dir_size(path: Path, safe: bool = True) -> int:
     """Return the size of a directory (including all contents recursively) in bytes."""
     size = 0
