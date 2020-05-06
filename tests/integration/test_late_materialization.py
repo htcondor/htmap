@@ -57,4 +57,14 @@ def test_wait_with_late_materialization(late_noop):
 
     m.wait()
 
+    sched_log = Path.home() / '.condor' / 'state' / 'log' / 'SchedLog'
+
+    sched_log_lines = sched_log.read_text().splitlines()
+    for idx, line in enumerate(sched_log_lines):
+        if str(cid) in line:
+            break
+
+    for line in sched_log_lines[idx:]:
+        print(line)
+
     assert m.is_done
