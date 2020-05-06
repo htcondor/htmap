@@ -585,6 +585,33 @@ class Map(collections.abc.Sequence):
     def components_by_status(self) -> Mapping[state.ComponentStatus, Tuple[int, ...]]:
         """
         Return the component indices grouped by their states.
+
+        Examples
+        --------
+        This example finds the completed jobs for a submitted map,
+        and processes those results:
+
+        .. code:: python
+
+           from time import sleep
+           import htmap
+
+           def job(x):
+               sleep(x)
+               return 1 / x
+
+           m = htmap.map(job, [0, 2, 4, 6, 8], tag="foo")
+
+           # Wait for all jobs to finish.
+           # Alternatively, use `futures = htmap.load("foo")` on a different process
+           sleep(10)
+
+           completed = m.components_by_status()[htmap.JobStatus.COMPLETED]
+           for component in completed:
+               result = m.get(future)
+               # Whatever processing needs to be done
+               print(result)  # prints "2", "4", "6", and "8"
+
         """
         status_to_components: MutableMapping[state.ComponentStatus, List[int]] = collections.defaultdict(list)
         for component, status in enumerate(self.component_statuses):
