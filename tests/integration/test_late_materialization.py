@@ -15,10 +15,10 @@
 
 import pytest
 
-import subprocess
 from pathlib import Path
 
 import htmap
+import htcondor
 
 TIMEOUT = 300
 
@@ -36,25 +36,23 @@ def late_noop():
 def test_wait_with_late_materialization(late_noop):
     m = late_noop.map(range(3))
 
-    try:
-        cid = m._cluster_ids[0]
+    cid = m._cluster_ids[0]
 
-        digest = Path(
-            subprocess.run(
-                ["condor_q", "-factory", str(cid)],
-                stdout = subprocess.PIPE,
-                text = True
-            ).stdout.splitlines()[-1].split()[-1]
-        ).read_text()
-        items = Path(digest.splitlines()[-1].split()[-1]).read_text()
+    schedd = htcondor.Schedd()
+    ads = schedd.query(f"ClusterId=={cid}")
 
-        print(digest)
+    for ad in ads:
+        for k, v in sorted(ad.items()):
+            print(f"{k} = {v}")
         print()
-        print(items)
-    except:
-        print('failed to get digest file')
+
+    digest = Path(ads[0]["JobMaterializeDigestFile"]).read_text()
+    print(digest)
+
+    items = Path(ads[0]["JobMaterializeItemsFile"]).read_text()
+    print(items)
 
     m.wait()
 
-
     assert m.is_done
+    assert False
