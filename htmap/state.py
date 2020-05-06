@@ -139,7 +139,11 @@ class MapState:
                 self._jobid_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
 
             # this lookup is safe because the SUBMIT event always comes first
-            component = self._jobid_to_component[(event.cluster, event.proc)]
+            # ... but it can happen if the event log is corrupted somehow
+            try:
+                component = self._jobid_to_component[(event.cluster, event.proc)]
+            except KeyError as e:
+                raise exceptions.CorruptEventLog(f"Found an event for a job that we never saw a submit event for:\n{event}") from e
 
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
                 self._memory_usage[component] = max(
