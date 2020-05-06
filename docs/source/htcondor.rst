@@ -1,9 +1,9 @@
 Using HTCondor with HTMap
 =========================
 
-HTMap is only a Python wrapper to the HTCondor API. That means all of the
-HTCondor functionality is available. Here's a brief overview of how to use
-HTCondor with HTMap:
+HTMap is only a Python wrapper to the HTCondor API. That means the vast
+majority of the HTCondor functionality is available.  Here's a brief overview
+of how to use HTCondor with HTMap:
 
 Component and Job States
 -------------------------------------

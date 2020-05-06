@@ -83,10 +83,10 @@ Happy mapping!
    :hidden:
    :caption: Use and Reference
 
-   dependencies
    api
    cli
    settings
+   dependencies
 
 .. toctree::
    :maxdepth: 2

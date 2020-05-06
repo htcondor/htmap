@@ -5,17 +5,17 @@ FAQ
 
 .. _successful-jobs:
 
-How do I collect only completed jobs?
+How do I only process completed jobs?
 -------------------------------------
 
-Let's say you submitted 10,000 long-running jobs, and 99.9% of these jobs
-complete successfully. You'd like to get the results from the successful jobs,
-and save the results to disk.
+Let's say you submitted 10,000 long-running jobs, and 99.9% of these jobs have
+finished successfully. You'd like to get the results from the successful jobs,
+and save the results to disk without have to wait for the 10 remaining jobs
+slow jobs.
 
 The right function to use is :func:`~htmap.Map.components_by_status`. It can
 filter out the successful jobs and process those. See the
 :func:`~htmap.Map.components_by_status` documentation for an example usage.
-
 
 Is it possible to use Dask with HTCondor?
 -----------------------------------------
