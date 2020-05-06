@@ -55,7 +55,7 @@ def test_wait_with_late_materialization(late_noop):
     items = Path(ads[0]["JobMaterializeItemsFile"]).read_text()
     print(items)
 
-    m.wait()
+    m.wait(holds_ok = True)
 
     sched_log = Path.home() / '.condor' / 'state' / 'log' / 'SchedLog'
 
