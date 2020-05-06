@@ -34,7 +34,11 @@ def late_noop():
     return noop
 
 
+# This test occasionally fails on CI on HTCondor v8.8.8; have never been able
+# to reproduce locally, and has never impacted any actual users.
+# Marked non-strict xfail for now; hope to revisit in the future.
 @pytest.mark.timeout(TIMEOUT)
+@pytest.mark.xfail(strict = False)
 def test_wait_with_late_materialization(late_noop):
     m = late_noop.map(range(3))
     time.sleep(.1)
@@ -55,16 +59,19 @@ def test_wait_with_late_materialization(late_noop):
     items = Path(ads[0]["JobMaterializeItemsFile"]).read_text()
     print(items)
 
-    m.wait()
+    try:
+        m.wait()
+    except Exception as e:
+        sched_log = Path.home() / '.condor' / 'state' / 'log' / 'SchedLog'
 
-    sched_log = Path.home() / '.condor' / 'state' / 'log' / 'SchedLog'
+        sched_log_lines = sched_log.read_text().splitlines()
+        for idx, line in enumerate(sched_log_lines):
+            if str(cid) in line:
+                break
 
-    sched_log_lines = sched_log.read_text().splitlines()
-    for idx, line in enumerate(sched_log_lines):
-        if str(cid) in line:
-            break
+        for line in sched_log_lines[idx:]:
+            print(line)
 
-    for line in sched_log_lines[idx:]:
-        print(line)
+        raise e
 
     assert m.is_done
