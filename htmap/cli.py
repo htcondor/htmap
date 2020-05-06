@@ -177,7 +177,7 @@ def remove_ansi(text):
     default = True,
     help = 'Toggle colorized output (defaults to colorized).'
 )
-def status(state, meta, format, live, no_color):
+def status(state, meta, format, live, color):
     """
     Print a status table for all of your maps.
 
@@ -211,8 +211,8 @@ def status(state, meta, format, live, no_color):
         msg = _status(
             maps,
             **shared_kwargs,
-            header_fmt = _HEADER_FMT if not no_color else None,
-            row_fmt = _RowFmt(maps) if not no_color else None,
+            header_fmt = _HEADER_FMT if color else None,
+            row_fmt = _RowFmt(maps) if color else None,
         )
     else:  # pragma: unreachable
         # this is a safeguard; this code is actually unreachable, because
