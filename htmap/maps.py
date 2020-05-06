@@ -99,7 +99,9 @@ class Map(collections.abc.Sequence):
         try:
             self._state = state.MapState.load(self)
             logger.debug(f"Loaded existing map state for map {self.tag}")
-        except (FileNotFoundError, IOError, exceptions.InsufficientHTCondorVersion) as e:
+        except exceptions.InsufficientHTCondorVersion:
+            self._state = state.MapState(self)
+        except (FileNotFoundError, IOError) as e:
             logger.debug(f"Failed to read existing map state for map {self.tag} because: {repr(e)}")
             self._state = state.MapState(self)
 
