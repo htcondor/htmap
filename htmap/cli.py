@@ -306,7 +306,7 @@ def _read_tags_from_stdin(ctx, param, value):
 
 
 def _autocomplete_tag(ctx, args, incomplete):
-    return [tag for tag in htmap.get_tags() if incomplete in tag]
+    return sorted(tag for tag in htmap.get_tags() if tag.startswith(incomplete) and tag not in args)
 
 
 TOTAL_WIDTH = 80
@@ -933,6 +933,68 @@ def logs():
     """
     click.echo(Path(htmap.settings['HTMAP_DIR']) / names.LOGS_DIR / 'htmap.log')
 
+
+@cli.command(short_help = "Enable autocompletion for HTMap CLI commands and tags in your shell.")
+@click.option(
+    "--shell",
+    required=True,
+    type=click.Choice(["bash", "zsh", "fish"], case_sensitive=False),
+    help="Which shell program to enable autocompletion for.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Append the autocompletion activation command even if it already exists.",
+)
+@click.option(
+    "--destination",
+    type=click.Path(dir_okay=False, writable=True, resolve_path=True),
+    default=None,
+    help="Append the autocompletion activation command to this file instead of the shell default.",
+)
+def autocompletion(shell, force, destination):
+    """
+    Enable autocompletion for HTMap CLI commands and tags in your shell.
+
+    This command should only need to be run once.
+
+    Note that your Python
+    environment must be available (i.e., running "htmap" must work) by the time
+    the autocompletion-enabling command runs in your shell configuration file.
+    """
+    cmd, dst = {
+        "bash": (
+            r'eval "$(_HTMAP_COMPLETE=source_bash htmap)"',
+            Path.home() / ".bashrc",
+        ),
+        "zsh": (
+            r'eval "$(_HTMAP_COMPLETE=source_zsh htmap)"',
+            Path.home() / ".zshrc",
+        ),
+        "fish": (
+            r"eval (env _HTMAP_COMPLETE=source_fish foo-bar)",
+            Path.home() / ".config" / "fish" / "completions" / "htmap.fish",
+        ),
+    }[shell]
+
+    if destination is not None:
+        dst = Path(destination)
+
+    if not force and cmd in dst.read_text():
+        click.secho(
+            f"Autocompletion already enabled for {shell} (in {dst}).",
+            fg="yellow",
+        )
+        return
+
+    with dst.open(mode="a") as f:
+        f.write(f"\n# enable htmap CLI autocompletion\n{cmd}\n")
+
+    click.secho(
+        f"Autocompletion enabled for {shell} (startup command added to {dst}). Restart your shell to use it.",
+        fg="green",
+    )
 
 def _cli_load(tag: str) -> htmap.Map:
     with make_spinner(text = f'Loading map {tag}...') as spinner:
