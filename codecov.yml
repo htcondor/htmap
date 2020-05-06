@@ -1,11 +1,22 @@
 coverage:
-  range: 50..90
+  range: 50..100
   round: down
   precision: 0
+  
   status:
+    
     project:
       default:
-        threshold: 1%  # allow coverage to drop by up to 1% in a PR before marking it failed
-  
+        target: auto
+        threshold: 5
+        only_pulls: true
+        
+    patch: off
+      default:
+        target: auto
+        threshold: 20
+        only_pulls: true
+
 comment:
   layout: "diff, files"
+  require_changes: false
