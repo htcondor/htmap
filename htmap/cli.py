@@ -152,39 +152,36 @@ def remove_ansi(text):
 
 @cli.command()
 @click.option(
-    '--no-state',
-    is_flag = True,
-    default = False,
-    help = 'Do not show map component states.',
+    '--state/--no-state',
+    default = True,
+    help = 'Toggle display of component states (defaults to enabled).',
 )
 @click.option(
-    '--no-meta',
-    is_flag = True,
-    default = False,
-    help = 'Do not show map metadata (memory, runtime, etc.).',
+    '--meta/--no-meta',
+    default = True,
+    help = 'Toggle display of map metadata like memory, runtime, etc. (defaults to enabled).',
 )
 @click.option(
     '--format',
     type = click.Choice(['text', 'json', 'json_compact', 'csv']),
     default = 'text',
-    help = 'Select output format: plain text, JSON, compact JSON, or CSV.'
+    help = 'Select output format: plain text, JSON, compact JSON, or CSV (defaults to plain text)'
 )
 @click.option(
-    '--live',
-    is_flag = True,
+    '--live/--no-live',
     default = False,
-    help = 'Live reloading.',
+    help = 'Toggle live reloading of the status table (defaults to not live).',
 )
 @click.option(
-    '--no-color',
-    is_flag = True,
-    default = False,
-    help = 'Disable color.'
+    '--color/--no-color',
+    default = True,
+    help = 'Toggle colorized output (defaults to colorized).'
 )
-def status(no_state, no_meta, format, live, no_color):
+def status(state, meta, format, live, no_color):
     """
-    Print the status of all maps.
-    Transient maps are prefixed with a *
+    Print a status table for all of your maps.
+
+    Transient maps are prefixed with a leading "*".
     """
     if format != 'text' and live:
         click.echo('ERROR: cannot produce non-text live data.', err = True)
@@ -192,16 +189,16 @@ def status(no_state, no_meta, format, live, no_color):
 
     maps = sorted((_cli_load(tag) for tag in htmap.get_tags()), key = lambda m: (m.is_transient, m.tag))
     for map in maps:
-        if not no_state:
+        if state:
             with make_spinner(text = f'Reading component statuses for map {map.tag}...'):
                 map.component_statuses
-        if not no_meta:
+        if meta:
             with make_spinner(text = f'Determining local data usage for map {map.tag}...'):
                 map.local_data
 
     shared_kwargs = dict(
-        include_state = not no_state,
-        include_meta = not no_meta,
+        include_state = state,
+        include_meta = meta,
     )
 
     if format == 'json':
@@ -385,7 +382,7 @@ def wait(tags, pattern, all):
         return
 
 
-@cli.command(short_help = "Remove maps; all data associated with the maps will be permanently deleted.")
+@cli.command(short_help = "Remove maps; all components will be removed from the queue and all data associated with the maps will be permanently deleted.")
 @_multi_tag_args
 @click.option(
     '--force',
@@ -607,7 +604,7 @@ def errors(tags, pattern, all, limit):
                 return
 
 
-@cli.command()
+@cli.command(short_help = "Print out the status of the individual components of a map.")
 @click.argument('tag', autocompletion = _autocomplete_tag)
 @click.option(
     '--status',
@@ -721,7 +718,7 @@ def retag(tag, new):
         spinner.succeed(f'Retagged map {tag} to {new}')
 
 
-@cli.command()
+@cli.command(short_help = "Print HTMap and HTCondor Python bindings version information.")
 def version():
     """Print HTMap and HTCondor Python bindings version information."""
     click.echo(htmap.version())
