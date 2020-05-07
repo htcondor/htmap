@@ -704,8 +704,9 @@ class Map(collections.abc.Sequence):
         # this cache is invalidated by the state reader loop when appropriate
         if self._local_data is None:
             logger.debug(f"Getting map directory size for map {self.tag} (map directory is {self._map_dir})")
-            self._local_data = utils.get_dir_size(self._map_dir, safe = False)
-            logger.debug(f"Map directory size for map {self.tag}: {utils.num_bytes_to_str(self._local_data)}")
+            with utils.Timer() as timer:
+                self._local_data = utils.get_dir_size(self._map_dir, safe = False)
+            logger.debug(f"Map directory size for map {self.tag} is {utils.num_bytes_to_str(self._local_data)} (took {timer.elapsed:.6f} seconds)")
         return self._local_data
 
     def _act(
@@ -727,12 +728,14 @@ class Map(collections.abc.Sequence):
 
     def remove(self, force: bool = False) -> None:
         """
-        Permanently remove the map and delete all associated input, output, and metadata files.
+        This command removes a map.
+        All data associated with a removed map is permanently deleted and all
+        components are removed from the HTCondor queue.
 
         Parameters
         ----------
         force
-            If ``True``, do not wait for HTCondor to confirm that all map components have been removed.
+            If ``True``, do not wait for HTCondor to remove the map components before removing local data.
         """
         try:
             self._remove_from_queue()
@@ -800,27 +803,61 @@ class Map(collections.abc.Sequence):
         return not self._map_dir.exists()
 
     def hold(self) -> None:
-        """Temporarily remove the map from the queue, until it is released."""
+        """
+        This command holds a map.
+        The components of the map will not be allowed to run until released
+        (see :func:`Map.release`).
+
+        HTCondor may itself hold your map components if it detects that
+        something has gone wrong with them. Resolve the underlying problem,
+        then use the :func:`Map.release` command to allow the components to
+        run again.
+        """
         self._act(htcondor.JobAction.Hold)
         logger.debug(f'Held map {self.tag}')
 
     def release(self) -> None:
-        """Releases a held map back into the queue."""
+        """
+        This command releases a map, undoing holds (see :func:`Map.hold`).
+        The held components of a released map will become idle again.
+
+        HTCondor may itself hold your map components if it detects that
+        something has gone wrong with them. Resolve the underlying problem,
+        then use this command to allow the components to run again.
+        """
         self._act(htcondor.JobAction.Release)
         logger.debug(f'Released map {self.tag}')
 
     def pause(self) -> None:
-        """Pause the map."""
+        """
+        This command pauses a map.
+        The running components of a paused map will keep their resource claims, but
+        will stop actively executing.
+        The map can be un-paused by resuming it
+        (see the :func:`Map.resume` command).
+        """
         self._act(htcondor.JobAction.Suspend)
         logger.debug(f'paused map {self.tag}')
 
     def resume(self) -> None:
-        """Resume the map from a paused state."""
+        """
+        This command resumes a map (reverses the :func:`Map.pause` command).
+        The running components of a resumed map will resume execution on their
+        claimed resources.
+        """
         self._act(htcondor.JobAction.Continue)
         logger.debug(f'Resumed map {self.tag}')
 
     def vacate(self) -> None:
-        """Force the map to give up any claimed resources."""
+        """
+        This command vacates a map.
+        The running components of a vacated map will give up their claimed
+        resources and become idle again.
+
+        Checkpointing maps will still have access to their last checkpoint,
+        and will resume from it as if execution was interrupted for any other
+        reason.
+        """
         self._act(htcondor.JobAction.Vacate)
         logger.debug(f'Vacated map {self.tag}')
 
@@ -839,8 +876,9 @@ class Map(collections.abc.Sequence):
 
         .. warning::
 
-            This doesn't change anything for map components that have already started running,
-            so you may need to hold and release your map to propagate this change.
+            Edits do not affect components that are currently running. To "restart"
+            components so that they see the new attribute value, consider vacating
+            their map (see the vacate command).
 
         Parameters
         ----------
@@ -855,8 +893,9 @@ class Map(collections.abc.Sequence):
 
         .. warning::
 
-            This doesn't change anything for map components that have already started running,
-            so you may need to hold and release your map to propagate this change.
+            Edits do not affect components that are currently running. To "restart"
+            components so that they see the new attribute value, consider vacating
+            their map (see the vacate command).
 
         Parameters
         ----------
@@ -891,9 +930,12 @@ class Map(collections.abc.Sequence):
 
     def rerun(self, components: Optional[Iterable[int]] = None) -> None:
         """
-        Re-run part of a map from scratch.
-        The components must be completed or errored.
-        Their existing output will be deleted before the re-run is executed.
+        Re-run (part of) the map from scratch.
+        The selected components must be completed or errored.
+
+        Any existing output of re-run components is removed; they are re-submitted
+        to the HTCondor queue with their original map options (i.e., without any
+        subsequent edits).
 
         Parameters
         ----------
@@ -934,11 +976,13 @@ class Map(collections.abc.Sequence):
         The old ``tag`` will be available for re-use immediately.
 
         Retagging a map makes it not transient.
+        Maps that have never had an explicit tag given to them are transient
+        and can be easily cleaned up via the clean command.
 
         Parameters
         ----------
         tag
-            The ``tag`` to assign to this map.
+            The ``tag`` to assign to the map.
         """
         if tag == self.tag:
             raise exceptions.CannotRetagMap('Cannot retag a map to the same tag it already has')
