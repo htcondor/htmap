@@ -20,6 +20,10 @@ Changed/Deprecated Features
 * The HTMap CLI ``version`` command now also prints HTCondor Python bindings
   version information. Added ``htmap --version`` that only prints HTMap version
   information.
+* Item access (``[]``) on ``Map.stdout``, ``Map.stderr``, and ``Map.output_files``
+  is now non-blocking and will raise ``FileNotFound`` exceptions if accessed before
+  available. The blocking API (with a timeout) is still available via the ``get``
+  method.
 
 
 Bug Fixes

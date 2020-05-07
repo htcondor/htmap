@@ -321,31 +321,21 @@ def create_map(
         logger.debug(f"Submit description for map {tag} is\n{submit_obj}")
 
         logger.debug(f'Submitting map {tag}...')
-        cluster_id = execute_submit(
-            submit_object = submit_obj,
-            itemdata = itemdata,
-        )
-
-        logger.debug(f'Map {tag} was assigned clusterid {cluster_id}')
-
-        with (map_dir / names.CLUSTER_IDS).open(mode = 'a') as file:
-            file.write(str(cluster_id) + '\n')
 
         tags.tag_file_path(tag).write_text(str(uid))
 
         m = maps.Map(
             tag = tag,
             map_dir = map_dir,
-            cluster_ids = [cluster_id],
-            num_components = num_components,
         )
 
         if transient:
             m._make_transient()
 
-        logger.info(f'Submitted map {m.tag}')
+        m._submit()
+
         if utils.is_interactive_session():
-            print(f'created map {m.tag} with {len(m)} components')
+            print(f'Created map {m.tag} with {len(m)} components')
 
         return m
     except BaseException as e:
@@ -353,6 +343,10 @@ def create_map(
         # so delete the entire map directory
         # the condor bindings should prevent any jobs from being submitted
         logger.exception(f'map submission for map {tag} aborted due to')
+        try:
+            tags.tag_file_path(tag).unlink()
+        except FileNotFoundError:
+            pass
         shutil.rmtree(str(map_dir.absolute()))
         logger.debug(f'Removed malformed map directory {map_dir}')
         raise e
