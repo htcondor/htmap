@@ -942,7 +942,7 @@ def autocompletion(shell, force, destination):
             Path.home() / ".zshrc",
         ),
         "fish": (
-            r"eval (env _HTMAP_COMPLETE=source_fish foo-bar)",
+            r"eval (env _HTMAP_COMPLETE=source_fish htmap)",
             Path.home() / ".config" / "fish" / "completions" / "htmap.fish",
         ),
     }[shell]
