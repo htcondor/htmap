@@ -52,6 +52,11 @@ def make_spinner(*args, **kwargs):
         **kwargs,
     )
 
+color = click.option(
+    '--color/--no-color',
+    default = True,
+    help = 'Toggle colorized output (defaults to colorized).'
+)
 
 CONTEXT_SETTINGS = dict(help_option_names = ['-h', '--help'])
 
@@ -165,11 +170,7 @@ def _map_fg(map: htmap.Map) -> Optional[str]:
     default = False,
     help = 'Toggle live reloading of the status table (defaults to not live).',
 )
-@click.option(
-    '--color/--no-color',
-    default = True,
-    help = 'Toggle colorized output (defaults to colorized).'
-)
+@color
 def status(state, meta, format, live, color):
     """
     Print a status table for all of your maps.
@@ -556,15 +557,12 @@ def errors(tags, pattern, all, limit):
 @click.argument('tag', autocompletion = _autocomplete_tag)
 @click.option(
     '--status',
+    type = click.Choice(list(htmap.ComponentStatus), case_sensitive = False),
     default = None,
-    help = 'Print out only components that have this status. Case-insensitive.',
+    help = 'Print out only components that have this status. Case-insensitive. If not passed, print out the stats of all components (the default).',
 )
-@click.option(
-    '--color/--no-color',
-    default = True,
-    help = 'Enable/disable color.'
-)
-def components(tag, status, no_color):
+@color
+def components(tag, status, color):
     """Print out the status of the individual components of a map."""
     m = _cli_load(tag)
 
@@ -573,7 +571,7 @@ def components(tag, status, no_color):
         for component, s in enumerate(m.component_statuses):
             click.secho(
                 f'{str(component).rjust(longest_component)} {s}',
-                fg = STATUS_TO_COLOR[s] if not no_color else None,
+                fg = STATUS_TO_COLOR[s] if color else None,
             )
     else:
         try:
