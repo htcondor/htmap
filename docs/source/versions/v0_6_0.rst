@@ -12,8 +12,6 @@ New Features/Improvements
 * The HTMap CLI (normally accessed by running ``htmap``) can now also be
   accessed by running ``python -m htmap``.
   Issue: :issue:`190`
-  Issues: https://github.com/htcondor/htmap/issues/195
-  and https://github.com/htcondor/htmap/issues/198
 * The HTMap CLI now supports autocompletion on commands and tags.
   Run ``htmap autocompletion`` from the command line to add the necessary
   setup to your shell startup script.
