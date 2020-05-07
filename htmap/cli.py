@@ -22,7 +22,6 @@ import collections
 import random
 import functools
 import shutil
-import re
 from pathlib import Path
 
 import htcondor
