@@ -514,20 +514,37 @@ def reasons(tags, pattern, all):
     click.echo('\n'.join(reps))
 
 
+tag = click.argument('tag', autocompletion = _autocomplete_tag)
+
+component = click.argument(
+    'component',
+    type = int,
+)
+
+timeout = click.option(
+    '--timeout',
+    default = None,
+    type = int,
+    help = "How long to wait (in seconds) for the file to be available. If not set (the default), wait forever."
+)
+
+
 @cli.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
-@click.argument('component', type = int)
-def stdout(tag, component):
+@tag
+@component
+@timeout
+def stdout(tag, component, timeout):
     """Look at the stdout for a map component."""
-    click.echo(_cli_load(tag).stdout[component])
+    click.echo(_cli_load(tag).stdout.get(component, timeout = timeout))
 
 
 @cli.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
-@click.argument('component', type = int)
-def stderr(tag, component):
+@tag
+@component
+@timeout
+def stderr(tag, component, timeout):
     """Look at the stderr for a map component."""
-    click.echo(_cli_load(tag).stderr[component])
+    click.echo(_cli_load(tag).stderr.get(component, timeout = timeout))
 
 
 @cli.command()
@@ -554,7 +571,7 @@ def errors(tags, pattern, all, limit):
 
 
 @cli.command(short_help = "Print out the status of the individual components of a map.")
-@click.argument('tag', autocompletion = _autocomplete_tag)
+@tag
 @click.option(
     '--status',
     type = click.Choice(list(htmap.ComponentStatus), case_sensitive = False),
@@ -603,7 +620,7 @@ def rerun():
 
 
 @rerun.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
+@tag
 @click.argument(
     'components',
     nargs = -1,
@@ -647,7 +664,7 @@ def map(tags, pattern, all):
 
 
 @cli.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
+@tag
 @click.argument('new')
 def retag(tag, new):
     """
@@ -753,7 +770,7 @@ def edit():
 
 
 @edit.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
+@tag
 @click.argument(
     'memory',
     type = int,
@@ -786,7 +803,7 @@ def memory(tag, memory, unit):
 
 
 @edit.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
+@tag
 @click.argument(
     'disk',
     type = int,
@@ -820,7 +837,7 @@ def disk(tag, disk, unit):
 
 
 @cli.command()
-@click.argument('tag', autocompletion = _autocomplete_tag)
+@tag
 def path(tag):
     """
     Get paths to parts of HTMap's data storage for a map.

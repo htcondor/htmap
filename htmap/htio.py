@@ -83,6 +83,22 @@ def _num_components_path(map_dir: Path) -> Path:
     return map_dir / names.NUM_COMPONENTS
 
 
+def append_cluster_id(map_dir: Path, cluster_id: int):
+    with _cluster_ids_path(map_dir).open(mode = 'a') as file:
+        file.write(str(cluster_id) + '\n')
+
+
+def load_cluster_ids(map_dir: Path):
+    return [
+        int(cid.strip())
+        for cid in _cluster_ids_path(map_dir).read_text().splitlines()
+    ]
+
+
+def _cluster_ids_path(map_dir: Path) -> Path:
+    return map_dir / names.CLUSTER_IDS
+
+
 def save_submit(map_dir: Path, submit: htcondor.Submit) -> None:
     """Save a dictionary that represents the map's :class:`htcondor.Submit` object."""
     path = _submit_path(map_dir)

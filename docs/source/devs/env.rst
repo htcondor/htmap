@@ -79,6 +79,6 @@ To test whether the Binder container is working properly, run the
 
 It will give you a link to enter into your web browser that will land you in the
 same Jupyter environment you would get on Binder.
+
 The ``binder/edit.sh`` script will do the same, but also bind-mount the
 tutorials into the container so that they can be edited in the Jupyter environment.
-
