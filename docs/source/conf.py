@@ -49,6 +49,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'nbsphinx',
     'IPython.sphinxext.ipython_console_highlighting',
+    'sphinx_click.ext',
+    'sphinx_issues',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -175,6 +177,7 @@ autodoc_default_options = {"undoc-members": True}
 
 napoleon_use_rtype = False
 
+issues_github_path = "htcondor/htmap"
 
 def setup(app):
     app.add_stylesheet('css/custom.css')

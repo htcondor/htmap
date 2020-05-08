@@ -88,6 +88,38 @@ class MapOptions(collections.UserDict):
             Values that are single strings are used for all components of the map.
             Providing an iterable for the value will map that option.
             Certain keywords are reserved for internal use (see the RESERVED_KEYS class attribute).
+
+        Notes
+        -----
+        .. warning::
+           The representation of the values in ``fixed_input_files``,
+           ``input_files``, ``custom_options`` and ``kwargs`` should
+           exactly match the characters in the submit file after the ``=``.
+
+           For example, let's
+           say your job requires this submit file:
+
+           .. code::
+
+              # file: job.submit
+              foo = "bar"
+              aaa = xyz
+              bbb = false
+              ccc = 1
+
+           The ``MapOptions`` that express the same submit options would be:
+
+           .. code:: python
+
+               >>> options = {"foo": '"bar"', "aaa": "xyz", "bbb": "false", "ccc": "1"}
+               >>> print(options["foo"])  # exactly matches the value in the submit file
+               ... "bar"
+               >>> options["foo"] = "\\"bar\\""  # alternative value
+               >>> MapOptions(**options)
+
+           Submit file values with quotes require escaped quotes in the
+           Python string.
+
         """
         self._check_keyword_arguments(kwargs)
 

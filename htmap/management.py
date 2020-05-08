@@ -90,9 +90,12 @@ def remove(tag: str, not_exist_ok: bool = True) -> None:
 
 def clean(*, all: bool = False) -> List[str]:
     """
-    Remove maps.
-    By default, only removes transient maps.
-    If ``all`` is ``True``, remove **all** maps, including non-transient ones.
+    Clean up transient maps by removing them.
+
+    Maps that have never had a tag explicitly set are assigned randomized tags
+    and marked as "transient". This command removes maps marked transient
+    (and can also remove all maps, not just transient ones, if the --all option
+    is passed).
 
     Parameters
     ----------

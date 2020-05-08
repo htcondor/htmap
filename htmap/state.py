@@ -110,72 +110,80 @@ class MapState:
 
     def _read_events(self):
         with self._event_reader_lock:  # no thread can be in here at the same time as another
-            handled_events = False
-
             if self._event_reader is None:
                 logger.debug(f'Created event log reader for map {self.map.tag}')
                 self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
-            for event in self._event_reader:
-                handled_events = True
+            with utils.Timer() as timer:
+                handled_events = self._handle_events()
 
-                # skip the late materialization submit event
-                if event.proc == -1:
-                    continue
+            if handled_events > 0:
+                logger.debug(f"Processed {handled_events} events for map {self.map.tag} (took {timer.elapsed:.6f} seconds)")
 
-                if event.type is htcondor.JobEventType.SUBMIT:
-                    self._jobid_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
-
-                # this lookup is safe because the SUBMIT event always comes first
-                # ... but it can happen if the event log is corrupted somehow
-                try:
-                    component = self._jobid_to_component[(event.cluster, event.proc)]
-                except KeyError as e:
-                    raise exceptions.CorruptEventLog(f"Found an event for a job that we never saw a submit event for:\n{event}") from e
-
-                if event.type is htcondor.JobEventType.IMAGE_SIZE:
-                    self._memory_usage[component] = max(
-                        self._memory_usage[component],
-                        int(event.get('MemoryUsage', 0)),
-                    )
-                elif event.type is htcondor.JobEventType.JOB_TERMINATED:
-                    self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
-                elif event.type is htcondor.JobEventType.JOB_RELEASED:
-                    self._holds.pop(component, None)
-                elif event.type is htcondor.JobEventType.JOB_HELD:
-                    h = holds.ComponentHold(
-                        code = int(event['HoldReasonCode']),
-                        reason = event.get('HoldReason', 'UNKNOWN').strip(),
-                    )
-                    self._holds[component] = h
-
-                new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
-
-                # the component has *terminated*, but did it error?
-                if new_status is ComponentStatus.COMPLETED:
-                    try:
-                        exec_status = self.map._peek_status(component)
-                    except exceptions.OutputNotFound:
-                        logger.warning(f'Output was not found for component {component} for map {self.map.tag}, marking as errored')
-                        exec_status = 'ERR'
-
-                    if exec_status == 'ERR':
-                        new_status = ComponentStatus.ERRORED
-
-                if new_status is not None:
-                    if new_status is self._component_statuses[component]:
-                        logger.warning(f'Component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
-                    else:
-                        # this log is commented-out because its very verbose
-                        # might be helpful when debugging
-                        # logger.debug(f'Component {component} of map {self.map.tag} changed state: {self._component_statuses[component]} -> {new_status}')
-                        self._component_statuses[component] = new_status
-
-            if handled_events:
                 self.map._local_data = None  # invalidate cache if any events were received
 
                 if utils.HTCONDOR_VERSION_INFO >= (8, 9, 3):
                     self.save()
+
+    def _handle_events(self):
+        handled_events = 0
+
+        for event in self._event_reader:
+            handled_events += 1
+
+            # skip the late materialization submit event
+            if event.proc == -1:
+                continue
+
+            if event.type is htcondor.JobEventType.SUBMIT:
+                self._jobid_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
+
+            # this lookup is safe because the SUBMIT event always comes first
+            # ... but it can happen if the event log is corrupted somehow
+            try:
+                component = self._jobid_to_component[(event.cluster, event.proc)]
+            except KeyError as e:
+                raise exceptions.CorruptEventLog(f"Found an event for a job that we never saw a submit event for:\n{event}") from e
+
+            if event.type is htcondor.JobEventType.IMAGE_SIZE:
+                self._memory_usage[component] = max(
+                    self._memory_usage[component],
+                    int(event.get('MemoryUsage', 0)),
+                )
+            elif event.type is htcondor.JobEventType.JOB_TERMINATED:
+                self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
+            elif event.type is htcondor.JobEventType.JOB_RELEASED:
+                self._holds.pop(component, None)
+            elif event.type is htcondor.JobEventType.JOB_HELD:
+                h = holds.ComponentHold(
+                    code = int(event['HoldReasonCode']),
+                    reason = event.get('HoldReason', 'UNKNOWN').strip(),
+                )
+                self._holds[component] = h
+
+            new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
+
+            # the component has *terminated*, but did it error?
+            if new_status is ComponentStatus.COMPLETED:
+                try:
+                    exec_status = self.map._peek_status(component)
+                except exceptions.OutputNotFound:
+                    logger.warning(f'Output was not found for component {component} for map {self.map.tag}, marking as errored')
+                    exec_status = 'ERR'
+
+                if exec_status == 'ERR':
+                    new_status = ComponentStatus.ERRORED
+
+            if new_status is not None:
+                if new_status is self._component_statuses[component]:
+                    logger.warning(f'Component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
+                else:
+                    # this log is commented-out because its very verbose
+                    # might be helpful when debugging
+                    # logger.debug(f'Component {component} of map {self.map.tag} changed state: {self._component_statuses[component]} -> {new_status}')
+                    self._component_statuses[component] = new_status
+
+        return handled_events
 
     def save(self) -> Path:
         final_path = self.map._map_dir / names.MAP_STATE

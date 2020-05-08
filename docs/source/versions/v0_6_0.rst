@@ -1,29 +1,56 @@
 v0.6.0
 ======
 
-New Features
-------------
+New Features/Improvements
+-------------------------
 
 * Add the ``shared`` delivery method, which supports HTCondor pools that use
   shared filesystems to make Python installations available universally.
-  Issues: https://github.com/htcondor/htmap/issues/195 and https://github.com/htcondor/htmap/issues/198
+  Issues: :issue:`195` and :issue:`198`
+* Massive documentation upgrade courtesy of `Scott Sievert <https://github.com/stsievert>`_!
+  Issues/PRs: :issue:`208`, :pr:`191`, and :pr:`202`
+* The HTMap CLI (normally accessed by running ``htmap``) can now also be
+  accessed by running ``python -m htmap``.
+  Issue: :issue:`190`
+* The HTMap CLI now supports autocompletion on commands and tags.
+  Run ``htmap autocompletion`` from the command line to add the necessary
+  setup to your shell startup script.
+* The HTMap CLI ``logs`` command now has a ``--view`` option which, instead of
+  just printing the path to the HTMap log file, displays its contents.
 
 
 Changed/Deprecated Features
 ---------------------------
+
+* Item access (``[]``) on ``Map.stdout``, ``Map.stderr``, and ``Map.output_files``
+  is now non-blocking and will raise ``FileNotFound`` exceptions if accessed before
+  available. The blocking API (with a timeout) is still available via the ``get``
+  method.
+* The HTMap CLI ``version`` command now also prints HTCondor Python bindings
+  version information. Added ``htmap --version`` that only prints HTMap version
+  information.
+* Several HTMap CLI commands now support explicit enable/disable flags instead
+  of just one or the other. The default behaviors were not changed.
 
 
 Bug Fixes
 ---------
 
 
+
 Known Issues
 ------------
 
+* HTMap does not currently allow "directory content transfers", which is an HTCondor
+  feature where naming a directory in ``transfer_input_files`` with a trailing
+  slash transfers the contents of the directory, not the directory itself.
+  (If you try it, the directory itself will be transferred, as if you had not
+  used a trailing slash).
+  Issue: :issue:`215`
 * Execution errors that result in the job being terminated but no output being
   produced are still not handled entirely gracefully. Right now, the component
   state will just show as ``ERRORED``, but there won't be an actual error report.
 * Map component state may become corrupted when a map is manually vacated.
   Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
   about the state of their components.
-  Issue: https://github.com/htcondor/htmap/issues/129
+  Issue: :issue:`129`

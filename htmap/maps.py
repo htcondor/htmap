@@ -85,23 +85,20 @@ class Map(collections.abc.Sequence):
 
     def __init__(
         self,
+        *,
         tag: str,
         map_dir: Path,
-        cluster_ids: Iterable[int],
-        num_components: int,
     ):
         self.tag = tag
 
         self._map_dir = map_dir
-        self._cluster_ids = list(cluster_ids)
-        self._num_components = num_components
 
         try:
             self._state = state.MapState.load(self)
             logger.debug(f"Loaded existing map state for map {self.tag}")
-        except exceptions.InsufficientHTCondorVersion:
+        except (FileNotFoundError, exceptions.InsufficientHTCondorVersion):
             self._state = state.MapState(self)
-        except (FileNotFoundError, IOError) as e:
+        except IOError as e:
             logger.debug(f"Failed to read existing map state for map {self.tag} because: {repr(e)}")
             self._state = state.MapState(self)
 
@@ -112,6 +109,14 @@ class Map(collections.abc.Sequence):
         self._output_files: MapOutputFiles = MapOutputFiles(self)
 
         MAPS.add(self)
+
+    @property
+    def _cluster_ids(self):
+        return htio.load_cluster_ids(self._map_dir)
+
+    @property
+    def _num_components(self):
+        return htio.load_num_components(self._map_dir)
 
     @classmethod
     def load(cls, tag: str) -> 'Map':
@@ -136,18 +141,11 @@ class Map(collections.abc.Sequence):
         except KeyError:
             map_dir = mapping.tag_to_map_dir(tag)
 
-            with (map_dir / names.CLUSTER_IDS).open() as file:
-                cluster_ids = [int(cid.strip()) for cid in file]
-
-            num_components = htio.load_num_components(map_dir)
-
             logger.debug(f'Loaded map {tag} from {map_dir}')
 
             return cls(
                 tag = tag,
                 map_dir = map_dir,
-                cluster_ids = cluster_ids,
-                num_components = num_components,
             )
 
     def __repr__(self):
@@ -203,11 +201,11 @@ class Map(collections.abc.Sequence):
         return self._job_logs_dir / f'{component}.{names.STDERR_EXT}'
 
     @property
-    def _output_files_dir(self):
+    def _user_output_files_dir(self):
         return self._map_dir / names.OUTPUT_FILES_DIR
 
-    def _output_files_path(self, component: int) -> Path:
-        return self._output_files_dir / str(component)
+    def _user_output_files_path(self, component: int) -> Path:
+        return self._user_output_files_dir / str(component)
 
     @property
     def components(self) -> Tuple[int]:
@@ -585,6 +583,33 @@ class Map(collections.abc.Sequence):
     def components_by_status(self) -> Mapping[state.ComponentStatus, Tuple[int, ...]]:
         """
         Return the component indices grouped by their states.
+
+        Examples
+        --------
+        This example finds the completed jobs for a submitted map,
+        and processes those results:
+
+        .. code:: python
+
+           from time import sleep
+           import htmap
+
+           def job(x):
+               sleep(x)
+               return 1 / x
+
+           m = htmap.map(job, [0, 2, 4, 6, 8], tag="foo")
+
+           # Wait for all jobs to finish.
+           # Alternatively, use `futures = htmap.load("foo")` on a different process
+           sleep(10)
+
+           completed = m.components_by_status()[htmap.JobStatus.COMPLETED]
+           for component in completed:
+               result = m.get(future)
+               # Whatever processing needs to be done
+               print(result)  # prints "2", "4", "6", and "8"
+
         """
         status_to_components: MutableMapping[state.ComponentStatus, List[int]] = collections.defaultdict(list)
         for component, status in enumerate(self.component_statuses):
@@ -679,8 +704,9 @@ class Map(collections.abc.Sequence):
         # this cache is invalidated by the state reader loop when appropriate
         if self._local_data is None:
             logger.debug(f"Getting map directory size for map {self.tag} (map directory is {self._map_dir})")
-            self._local_data = utils.get_dir_size(self._map_dir, safe = False)
-            logger.debug(f"Map directory size for map {self.tag}: {utils.num_bytes_to_str(self._local_data)}")
+            with utils.Timer() as timer:
+                self._local_data = utils.get_dir_size(self._map_dir, safe = False)
+            logger.debug(f"Map directory size for map {self.tag} is {utils.num_bytes_to_str(self._local_data)} (took {timer.elapsed:.6f} seconds)")
         return self._local_data
 
     def _act(
@@ -702,12 +728,14 @@ class Map(collections.abc.Sequence):
 
     def remove(self, force: bool = False) -> None:
         """
-        Permanently remove the map and delete all associated input, output, and metadata files.
+        This command removes a map.
+        All data associated with a removed map is permanently deleted and all
+        components are removed from the HTCondor queue.
 
         Parameters
         ----------
         force
-            If ``True``, do not wait for HTCondor to confirm that all map components have been removed.
+            If ``True``, do not wait for HTCondor to remove the map components before removing local data.
         """
         try:
             self._remove_from_queue()
@@ -775,27 +803,61 @@ class Map(collections.abc.Sequence):
         return not self._map_dir.exists()
 
     def hold(self) -> None:
-        """Temporarily remove the map from the queue, until it is released."""
+        """
+        This command holds a map.
+        The components of the map will not be allowed to run until released
+        (see :func:`Map.release`).
+
+        HTCondor may itself hold your map components if it detects that
+        something has gone wrong with them. Resolve the underlying problem,
+        then use the :func:`Map.release` command to allow the components to
+        run again.
+        """
         self._act(htcondor.JobAction.Hold)
         logger.debug(f'Held map {self.tag}')
 
     def release(self) -> None:
-        """Releases a held map back into the queue."""
+        """
+        This command releases a map, undoing holds (see :func:`Map.hold`).
+        The held components of a released map will become idle again.
+
+        HTCondor may itself hold your map components if it detects that
+        something has gone wrong with them. Resolve the underlying problem,
+        then use this command to allow the components to run again.
+        """
         self._act(htcondor.JobAction.Release)
         logger.debug(f'Released map {self.tag}')
 
     def pause(self) -> None:
-        """Pause the map."""
+        """
+        This command pauses a map.
+        The running components of a paused map will keep their resource claims, but
+        will stop actively executing.
+        The map can be un-paused by resuming it
+        (see the :func:`Map.resume` command).
+        """
         self._act(htcondor.JobAction.Suspend)
         logger.debug(f'paused map {self.tag}')
 
     def resume(self) -> None:
-        """Resume the map from a paused state."""
+        """
+        This command resumes a map (reverses the :func:`Map.pause` command).
+        The running components of a resumed map will resume execution on their
+        claimed resources.
+        """
         self._act(htcondor.JobAction.Continue)
         logger.debug(f'Resumed map {self.tag}')
 
     def vacate(self) -> None:
-        """Force the map to give up any claimed resources."""
+        """
+        This command vacates a map.
+        The running components of a vacated map will give up their claimed
+        resources and become idle again.
+
+        Checkpointing maps will still have access to their last checkpoint,
+        and will resume from it as if execution was interrupted for any other
+        reason.
+        """
         self._act(htcondor.JobAction.Vacate)
         logger.debug(f'Vacated map {self.tag}')
 
@@ -814,8 +876,9 @@ class Map(collections.abc.Sequence):
 
         .. warning::
 
-            This doesn't change anything for map components that have already started running,
-            so you may need to hold and release your map to propagate this change.
+            Edits do not affect components that are currently running. To "restart"
+            components so that they see the new attribute value, consider vacating
+            their map (see the vacate command).
 
         Parameters
         ----------
@@ -830,8 +893,9 @@ class Map(collections.abc.Sequence):
 
         .. warning::
 
-            This doesn't change anything for map components that have already started running,
-            so you may need to hold and release your map to propagate this change.
+            Edits do not affect components that are currently running. To "restart"
+            components so that they see the new attribute value, consider vacating
+            their map (see the vacate command).
 
         Parameters
         ----------
@@ -840,11 +904,38 @@ class Map(collections.abc.Sequence):
         """
         self._edit('RequestDisk', str(disk))
 
+    def _submit(self, components: Optional[Iterable[int]] = None):
+        if components is None:
+            components = self.components
+
+        components = sorted(components)
+
+        itemdata = htio.load_itemdata(self._map_dir)
+        sliced_itemdata = [item for item in itemdata if int(item['component']) in components]
+
+        submit_obj = htio.load_submit(self._map_dir)
+
+        new_cluster_id = mapping.execute_submit(
+            submit_obj,
+            sliced_itemdata,
+        )
+
+        # if we fail to write the cluster id for any reason, abort the submit
+        try:
+            htio.append_cluster_id(self._map_dir, new_cluster_id)
+        except BaseException as e:
+            mapping.get_schedd().act(htcondor.JobAction.Remove, f"ClusterId=={new_cluster_id}")
+
+        logger.debug(f'Submitted {len(sliced_itemdata)} components (out of {self._num_components}) from map {self.tag}')
+
     def rerun(self, components: Optional[Iterable[int]] = None) -> None:
         """
-        Re-run part of a map from scratch.
-        The components must be completed or errored.
-        Their existing output will be deleted before the re-run is executed.
+        Re-run (part of) the map from scratch.
+        The selected components must be completed or errored.
+
+        Any existing output of re-run components is removed; they are re-submitted
+        to the HTCondor queue with their original map options (i.e., without any
+        subsequent edits).
 
         Parameters
         ----------
@@ -869,26 +960,15 @@ class Map(collections.abc.Sequence):
         if len(intersection) != 0:
             raise exceptions.CannotRerunComponents(f'Cannot rerun components {sorted(intersection)} of map {self.tag} because they are not complete')
 
-        components = sorted(components)
         for path in (self._output_file_path(c) for c in components):
-            if path.exists():
+            try:
                 path.unlink()
+            except FileNotFoundError:
+                pass
+        for path in (self.output_files[c] for c in components):
+            shutil.rmtree(path, ignore_errors = True)
 
-        itemdata = htio.load_itemdata(self._map_dir)
-        new_itemdata = [item for item in itemdata if int(item['component']) in components]
-
-        submit_obj = htio.load_submit(self._map_dir)
-
-        new_cluster_id = mapping.execute_submit(
-            submit_obj,
-            new_itemdata,
-        )
-
-        self._cluster_ids.append(new_cluster_id)
-        with (self._map_dir / names.CLUSTER_IDS).open(mode = 'a') as f:
-            f.write(str(new_cluster_id) + '\n')
-
-        logger.debug(f'Resubmitted {len(new_itemdata)} inputs from map {self.tag}')
+        self._submit(components = components)
 
     def retag(self, tag: str) -> None:
         """
@@ -896,11 +976,13 @@ class Map(collections.abc.Sequence):
         The old ``tag`` will be available for re-use immediately.
 
         Retagging a map makes it not transient.
+        Maps that have never had an explicit tag given to them are transient
+        and can be easily cleaned up via the clean command.
 
         Parameters
         ----------
         tag
-            The ``tag`` to assign to this map.
+            The ``tag`` to assign to the map.
         """
         if tag == self.tag:
             raise exceptions.CannotRetagMap('Cannot retag a map to the same tag it already has')
@@ -988,7 +1070,10 @@ class MapStdX(collections.abc.Sequence):
         return len(self.map)
 
     def __getitem__(self, component: int) -> str:
-        return self.get(component)
+        try:
+            return self.get(component, timeout = 0)
+        except exceptions.TimeoutError as e:
+            raise FileNotFoundError(f"Standard output/error for component {component} of map {self.map.tag} is not available yet.") from e
 
     def __contains__(self, component: int) -> bool:
         return component in self.map
@@ -1060,7 +1145,10 @@ class MapOutputFiles:
         return len(self.map)
 
     def __getitem__(self, component: int) -> Path:
-        return self.get(component)
+        try:
+            return self.get(component, timeout = 0)
+        except exceptions.TimeoutError as e:
+            raise FileNotFoundError(f"The output file directory for component {component} of map {self.map.tag} is not available yet.") from e
 
     def __contains__(self, component: int) -> bool:
         return component in self.map
@@ -1090,7 +1178,7 @@ class MapOutputFiles:
         if component not in range(0, len(self)):
             raise IndexError(f'Tried to get output files for component {component}, but map {self.map} only has {len(self.map)} components')
 
-        path = self.map._output_files_path(component)
+        path = self.map._user_output_files_path(component)
         utils.wait_for_path_to_exist(
             path,
             timeout = timeout,

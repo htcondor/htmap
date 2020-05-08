@@ -19,7 +19,24 @@ import pytest
 
 import htmap
 
+TIMEOUT = 300
 
+
+@pytest.mark.timeout(TIMEOUT)
+def test_read_stdout(cli):
+    def test(x):
+        print(x)
+
+    t = 'HELLO WORLD!'
+
+    m = htmap.map(test, [t])
+
+    result = cli(['stdout', m.tag, '0'])
+
+    assert t in result.stdout
+
+
+@pytest.mark.timeout(TIMEOUT)
 def test_read_stderr(cli):
     def test(x):
         print(x, file = sys.stderr)

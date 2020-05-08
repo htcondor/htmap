@@ -3,8 +3,10 @@ HTMap
 
 .. py:currentmodule:: htmap
 
-HTMap is a library that wraps the process of mapping Python function calls out to an HTCondor pool.
+HTMap is a library that wraps the process of mapping Python function calls out to an `HTCondor pool`_.
 It provides tools for submitting, managing, and processing the output of arbitrary functions.
+
+.. _HTCondor pool: https://htcondor.readthedocs.io/
 
 Our goal is to provide as transparent an interface as possible to
 high-throughput computing resources so that you can spend more time thinking about your own code,
@@ -28,10 +30,12 @@ If you're just getting started, jump into the first tutorial: :doc:`tutorials/fi
 
 Happy mapping!
 
+:doc:`installation`
+   Installing HTMap
+
 .. note::
 
     Bug reports and feature requests should go on our `GitHub issue tracker <https://github.com/htcondor/htmap/issues>`_.
-
 
 :doc:`tutorials`
    Tutorials on using HTMap.
@@ -39,20 +43,23 @@ Happy mapping!
 :doc:`dependencies`
    Information about how to manage your what your code depends on (e.g., other Python packages).
 
-:doc:`recipes`
-   Deeper dives on specific tasks.
-
 :doc:`api`
    Public API documentation.
 
-:doc:`settings`
-   Documentation for the various settings.
+:doc:`cli`
+   Use of the HTMap CLI.
+
+:doc:`htcondor`
+   Tips on using HTMap with HTCondor
 
 :doc:`tips-and-tricks`
-   Useful code snippets, tips, and tricks.
+   Useful tips & tricks on the API.
 
 :doc:`faq`
    These questions are asked, sometimes frequently.
+
+:doc:`settings`
+   Documentation for the various settings.
 
 :doc:`version-history`
    New features, bug fixes, and known issues by version.
@@ -63,15 +70,29 @@ Happy mapping!
 .. toctree::
    :maxdepth: 2
    :hidden:
+   :caption: Getting started
 
-   self
+   installation
    tutorials
-   dependencies
-   api
-   settings
-   recipes
+   htcondor
    tips-and-tricks
    faq
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Use and Reference
+
+   api
+   cli
+   settings
+   dependencies
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Develop
+
    version-history
    devs
 

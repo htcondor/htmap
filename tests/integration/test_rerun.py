@@ -15,6 +15,9 @@
 
 import pytest
 
+import time
+from pathlib import Path
+
 import htmap
 
 TIMEOUT = 300
@@ -48,3 +51,45 @@ def test_rerun_out_of_range_component_raises(mapped_doubler):
 
     with pytest.raises(htmap.exceptions.CannotRerunComponents):
         m.rerun([5])
+
+
+@pytest.fixture(scope = 'function')
+def sleepy_doubler_that_writes_a_file():
+    @htmap.mapped
+    def sleepy_double(x):
+        time.sleep(1)
+        r = x * 2
+        p = Path('foo')
+        p.write_text('hi')
+        htmap.transfer_output_files(p)
+        return r
+
+    return sleepy_double
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_rerun_removes_current_output_file(sleepy_doubler_that_writes_a_file):
+    m = sleepy_doubler_that_writes_a_file.map([1], tag = 'load-then-rerun')
+
+    m.wait()
+
+    assert m.get(0) == 2
+
+    m.rerun()
+
+    with pytest.raises(htmap.exceptions.OutputNotFound):
+        m[0]
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_rerun_removes_current_user_output_file(sleepy_doubler_that_writes_a_file):
+    m = sleepy_doubler_that_writes_a_file.map([1], tag = 'load-then-rerun')
+
+    m.wait()
+
+    assert (m.output_files.get(0) / 'foo').read_text() == 'hi'
+
+    m.rerun()
+
+    with pytest.raises(FileNotFoundError):
+        (m.output_files[0] / 'foo').read_text()
