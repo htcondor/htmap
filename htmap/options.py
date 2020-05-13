@@ -290,8 +290,6 @@ def get_base_descriptors(
     map_dir: Path,
     delivery: str,
 ) -> dict:
-    can_use_url_output_transfer = utils.HTCONDOR_VERSION_INFO >= (8, 9, 2) or utils.HTCONDOR_VERSION_INFO is None
-
     map_dir = map_dir.absolute()
     output_files = [
         f'{names.TRANSFER_DIR}/',
@@ -301,7 +299,7 @@ def get_base_descriptors(
         f'$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}',
     ]
 
-    if can_use_url_output_transfer:
+    if utils.CAN_USE_URL_OUTPUT_TRANSFER:
         output_files.append(names.TRANSFER_PLUGIN_MARKER)
         output_remaps.append(f'{names.TRANSFER_PLUGIN_MARKER}=htmap://_')
 

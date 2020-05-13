@@ -287,3 +287,4 @@ except:
     logger.warning("Was not able to parse HTCondor version information. Is HTCondor itself installed? (Not just the bindings.)")
     HTCONDOR_VERSION_INFO = None
 
+CAN_USE_URL_OUTPUT_TRANSFER = HTCONDOR_VERSION_INFO is None or HTCONDOR_VERSION_INFO >= (8, 9, 2)
