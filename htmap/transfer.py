@@ -228,7 +228,7 @@ def transfer_output_files(*paths: Union[os.PathLike, Tuple[os.PathLike, Transfer
     for path in paths:
         if isinstance(path, tuple):
             path, destination = path
-            if utils.HTCONDOR_VERSION_INFO < (8, 9, 2):
+            if utils.HTCONDOR_VERSION_INFO is None or utils.HTCONDOR_VERSION_INFO < (8, 9, 2):
                 raise exceptions.InsufficientHTCondorVersion("HTMap URL output transfer requires HTCondor v8.9.2 or later.")
         else:
             path, destination = path, None

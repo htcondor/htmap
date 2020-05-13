@@ -290,7 +290,7 @@ def get_base_descriptors(
     map_dir: Path,
     delivery: str,
 ) -> dict:
-    can_use_url_output_transfer = utils.HTCONDOR_VERSION_INFO >= (8, 9, 2)
+    can_use_url_output_transfer = utils.HTCONDOR_VERSION_INFO >= (8, 9, 2) or utils.HTCONDOR_VERSION_INFO is None
 
     map_dir = map_dir.absolute()
     output_files = [

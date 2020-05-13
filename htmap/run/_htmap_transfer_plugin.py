@@ -97,7 +97,6 @@ def print_capabilities():
     sys.stdout.write(classad.ClassAd(capabilities).printOld())
 
 
-
 def main(args):
     transfers = [
         pickle.load(f.open("rb")) for f in Path(TRANSFER_PLUGIN_CACHE).iterdir()
@@ -230,7 +229,6 @@ def find_first_plugin(available_methods, method):
     for plugin, methods in available_methods.items():
         if method in methods:
             return plugin
-
 
 
 def write_dict_to_file_as_ad(dict_, path):
