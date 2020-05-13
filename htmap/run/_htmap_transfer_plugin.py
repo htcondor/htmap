@@ -249,14 +249,14 @@ if __name__ == "__main__":
 
     try:
         args = parse_args()
-    except:
+    except Exception:
         sys.exit(-1)
 
     try:
         scratch_dir = Path.cwd()
         job_ad = classad.parseOne((scratch_dir / ".job.ad").read_text())
         out, err = scratch_dir / job_ad["Out"], scratch_dir / job_ad["Err"]
-        with open(out, mode = "a") as out_file, open(err, mode = "a") as err_file:
+        with out.open(mode = "a") as out_file, err.open(mode = "a") as err_file:
             with contextlib.redirect_stdout(out_file), contextlib.redirect_stderr(
                 err_file
             ):

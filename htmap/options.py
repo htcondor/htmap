@@ -319,7 +319,7 @@ def get_base_descriptors(
         'MY.IsHTMapJob': 'True',
     }
 
-    if can_use_url_output_transfer:
+    if utils.CAN_USE_URL_OUTPUT_TRANSFER:
         core['transfer_plugins'] = f"htmap={(map_dir / names.TRANSFER_PLUGIN).as_posix()}"
 
     try:
