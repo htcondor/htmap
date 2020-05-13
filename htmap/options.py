@@ -188,7 +188,7 @@ def normalize_path(path: Union[str, Path]) -> str:
     In particular, all local file paths must be turned into posix-style paths (even on Windows!)
     """
     if isinstance(path, transfer.TransferPath):
-        return path.as_tif()
+        return path.as_url()
     elif isinstance(path, Path) or '://' not in path:
         return Path(path).absolute().as_posix()
     return path
@@ -290,7 +290,21 @@ def get_base_descriptors(
     map_dir: Path,
     delivery: str,
 ) -> dict:
+    can_use_url_output_transfer = utils.HTCONDOR_VERSION_INFO >= (8, 9, 2)
+
     map_dir = map_dir.absolute()
+    output_files = [
+        f'{names.TRANSFER_DIR}/',
+        f'{names.USER_TRANSFER_DIR}/$(component)',
+    ]
+    output_remaps = [
+        f'$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}',
+    ]
+
+    if can_use_url_output_transfer:
+        output_files.append(names.TRANSFER_PLUGIN_MARKER)
+        output_remaps.append(f'{names.TRANSFER_PLUGIN_MARKER}=htmap://_')
+
     core = {
         'JobBatchName': tag,
         'log': (map_dir / names.EVENT_LOG).as_posix(),
@@ -299,13 +313,16 @@ def get_base_descriptors(
         'stderr': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDERR_EXT}').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
-        'transfer_output_files': f'{names.TRANSFER_DIR}/, {names.USER_TRANSFER_DIR}/$(component)',
-        'transfer_output_remaps': f'"$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}"',
+        'transfer_output_files': " , ".join(output_files),
+        'transfer_output_remaps': f'" {" ; ".join(output_remaps)} "',
         'on_exit_hold': 'ExitCode =!= 0',
         'initialdir': f"{(map_dir / names.OUTPUT_FILES_DIR).as_posix()}",
         'MY.component': '$(component)',
         'MY.IsHTMapJob': 'True',
     }
+
+    if can_use_url_output_transfer:
+        core['transfer_plugins'] = f"htmap={(map_dir / names.TRANSFER_PLUGIN).as_posix()}"
 
     try:
         base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
@@ -348,6 +365,7 @@ def _copy_run_scripts(map_dir: Path):
         run_script_source_dir / names.RUN_SCRIPT,
         run_script_source_dir / names.RUN_WITH_SINGULARITY_SCRIPT,
         run_script_source_dir / names.RUN_WITH_TRANSPLANT_SCRIPT,
+        run_script_source_dir / names.TRANSFER_PLUGIN,
     ]
     for src in run_scripts:
         target = map_dir / src.name

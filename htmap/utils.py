@@ -278,4 +278,12 @@ def parse_version(v: str) -> Tuple[int, int, int, str, int]:
 
 EXTRACT_HTCONDOR_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)", flags = re.ASCII)
 
-HTCONDOR_VERSION_INFO = parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0))
+BINDINGS_VERSION_INFO = parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0))
+
+try:
+    condor_version = subprocess.run("condor_version", stdout = subprocess.PIPE).stdout.decode()
+    HTCONDOR_VERSION_INFO = parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(condor_version).group(0))
+except:
+    logger.warning("Was not able to parse HTCondor version information. Is HTCondor itself installed? (Not just the bindings.)")
+    HTCONDOR_VERSION_INFO = None
+

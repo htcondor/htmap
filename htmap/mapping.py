@@ -20,6 +20,7 @@ import uuid
 import shutil
 from pathlib import Path
 import itertools
+from pprint import pformat
 
 import htcondor
 
@@ -319,6 +320,7 @@ def create_map(
         htio.save_itemdata(map_dir, itemdata)
 
         logger.debug(f"Submit description for map {tag} is\n{submit_obj}")
+        logger.debug(f"First itemdata for map {tag} is \n{pformat(itemdata[0])}")
 
         logger.debug(f'Submitting map {tag}...')
 

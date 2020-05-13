@@ -13,29 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import pytest
 
 from pathlib import Path
 
-from htmap import TransferPath
+import htmap
+
+TIMEOUT = 300
 
 
-@pytest.mark.parametrize(
-    "transfer_path, expected",
-    [
-        (TransferPath.cwd() / "foobar.txt", (Path.cwd() / "foobar.txt").as_posix(),),
-        (TransferPath.home() / "foobar.txt", (Path.home() / "foobar.txt").as_posix(),),
-        (
-            TransferPath(path="foo/0.txt", protocol="s3", location="s3.server.com",),
-            "s3://s3.server.com/foo/0.txt",
-        ),
-    ],
-)
-def test_as_url(transfer_path, expected):
-    assert transfer_path.as_url() == expected
+
+@pytest.mark.timeout(TIMEOUT)
+@pytest.mark.xfail(reason = "I don't understand yet why this doesn't work...")
+def test_input_transfer_via_file_protocol(tmp_path):
+    f = htmap.TransferPath(__file__, protocol = 'file')
+
+    MARKER = 12345
+    def test(file):
+        return "MARKER = 12345" in file.read_text()
+
+    m = htmap.map(test, [f])
+
+    assert m.get(0)
 
 
-def test_must_have_protocol_if_has_location():
-    with pytest.raises(ValueError):
-        TransferPath('foo.txt', location = 'foo.bar.com')
+@pytest.mark.timeout(TIMEOUT)
+def test_input_transfer_via_https_protocol(tmp_path):
+    f = htmap.TransferPath("status/200", protocol = 'https', location = "httpbin.org")
 
+    def test(file):
+        return file.read_text() == ""
+
+    m = htmap.map(test, [f])
+
+    assert m.get(0)

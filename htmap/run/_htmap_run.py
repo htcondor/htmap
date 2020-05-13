@@ -32,7 +32,9 @@ USER_TRANSFER_DIR = '_htmap_user_transfer'
 CHECKPOINT_PREP = '_htmap_prep_checkpoint'
 CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
 CHECKPOINT_OLD = '_htmap_old_checkpoint'
-
+TRANSFER_PLUGIN_CACHE = "_htmap_transfer_plugin_cache"
+USER_URL_TRANSFER_DIR = '_htmap_user_url_transfer'
+TRANSFER_PLUGIN_MARKER = "_htmap_do_output_transfer"
 
 # import cloudpickle goes in the functions that need it directly
 # so that errors are raised later
@@ -100,10 +102,28 @@ def pip_freeze() -> str:
     ).stdout.decode('utf-8').strip()
 
 
-def print_dir_contents(contents):
-    print('Working directory contents:')
-    for path in contents:
-        print('  ' + str(path))
+def print_dir_contents(root):
+    msg = '\n'.join(_yield_dir_contents_tree(root))
+    print(msg)
+
+
+def _yield_dir_contents_tree(root, prefix = ""):
+    contents = list(root.iterdir())
+    for idx, path in enumerate(sorted(contents)):
+        if idx < len(contents) - 1:
+            tree = "|-"
+            next_prefix = prefix + "|  "
+        else:
+            tree = "\\-"
+            next_prefix = prefix + "   "
+
+        yield f"{prefix}{tree} {'* ' if path.is_dir() else ''}{path.name}"
+
+        if path.is_dir():
+            yield from _yield_dir_contents_tree(
+                path,
+                prefix = next_prefix,
+            )
 
 
 def print_run_info(component, func, args, kwargs):
@@ -186,6 +206,9 @@ def main(component):
     os.environ['HTMAP_ON_EXECUTE'] = "1"
     os.environ['HTMAP_COMPONENT'] = f"{component}"
 
+    # for k, v in os.environ.items():
+    #     print(k, v)
+
     node_info = get_node_info()
     print_node_info(node_info)
     print()
@@ -195,11 +218,16 @@ def main(component):
     transfer_dir.mkdir(exist_ok = True)
     user_transfer_dir = scratch_dir / USER_TRANSFER_DIR / os.getenv('HTMAP_COMPONENT')
     user_transfer_dir.mkdir(exist_ok = True, parents = True)
+    Path(TRANSFER_PLUGIN_CACHE).mkdir(exist_ok = True, parents = True)
+    Path(TRANSFER_PLUGIN_MARKER).touch(exist_ok = True)
+
+    # print((scratch_dir / '.job.ad').read_text())
+    # print((scratch_dir / '.machine.ad').read_text())
 
     load_checkpoint(scratch_dir, transfer_dir)
 
-    contents = list(scratch_dir.iterdir())
-    print_dir_contents(contents)
+    print("Scratch directory contents before run:")
+    print_dir_contents(scratch_dir)
     print()
 
     try:
@@ -246,6 +274,10 @@ def main(component):
     save_output(component, status, result_or_error, transfer_dir)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
+    print()
+
+    print("Scratch directory contents after run:")
+    print_dir_contents(scratch_dir)
 
 
 if __name__ == '__main__':

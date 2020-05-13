@@ -13,17 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 import os
 import shutil
 import functools
-
+import pickle
 
 from pathlib import Path
 from urllib.parse import urlunsplit
 
-from . import names
+from . import names, utils, exceptions
 
 
 @functools.total_ordering
@@ -89,7 +89,7 @@ class TransferPath:
 
     def __init__(
         self,
-        path: Union[Path, str],
+        path: Union["TransferPath", Path, str, os.PathLike],
         protocol: Optional[str] = None,
         location: Optional[str] = None,
     ):
@@ -119,13 +119,13 @@ class TransferPath:
         self.location = location
 
     def __eq__(self, other):
-        return self.__class__ is other.__class__ and self.as_tif() == other.as_tif()
+        return self.__class__ is other.__class__ and self.as_url() == other.as_url()
 
     def __hash__(self):
-        return hash((self.__class__, self.as_tif()))
+        return hash((self.__class__, self.as_url()))
 
     def __le__(self, other):
-        return self.as_tif() < other.as_tif()
+        return self.as_url() < other.as_url()
 
     def __repr__(self):
         return f"{self.__class__.__name__}(path={repr(self.path.as_posix())}, protocol={repr(self.protocol)}, location={repr(self.location)})"
@@ -142,7 +142,7 @@ class TransferPath:
             "",
         )
 
-    def as_tif(self):
+    def as_url(self):
         return urlunsplit(self._parts)
 
     def __getattr__(self, item):
@@ -151,6 +151,8 @@ class TransferPath:
             x = getattr(self.path, item)
             if isinstance(x, Path):
                 return TransferPath(x, protocol = self.protocol, location = self.location)
+            elif callable(x):
+                return lambda *args, **kwargs: convert(self, x, *args, **kwargs)
             return x
         except AttributeError as e:
             raise AttributeError(
@@ -159,7 +161,7 @@ class TransferPath:
 
     def __truediv__(self, other):
         return self.__class__(
-            self.path / other, protocol = self.protocol, location = self.location
+            self.path / other if not isinstance(other, TransferPath) else other.path, protocol = self.protocol, location = self.location
         )
 
     @classmethod
@@ -170,23 +172,48 @@ class TransferPath:
     def home(cls):
         return cls(Path.home())
 
+    def __getstate__(self):
+        return self.path, self.location, self.protocol
 
-def transfer_output_files(*paths: os.PathLike) -> None:  # pragma: execute-only
+    def __setstate__(self, state):
+        self.path, self.location, self.protocol = state
+
+
+def convert(self, x, *args, **kwargs):
+    y = x(*args, **kwargs)
+    return TransferPath(y, protocol = self.protocol, location = self.location) if isinstance(y, Path) else y
+
+
+def transfer_output_files(*paths: Union[os.PathLike, Tuple[os.PathLike, TransferPath]]) -> None:  # pragma: execute-only
     """
     Informs HTMap about the existence of output files.
 
     .. attention::
 
-        This function is a no-op when executing locally, so you if you're testing your function it won't do anything.
+        This function is a no-op when executing locally, so you if you're
+        testing your function it won't do anything.
 
     .. attention::
 
-        The files will be **moved** by this function, so they will not be available in their original locations.
+        The files will be **moved** by this function, so they will not be
+        available in their original locations.
+
+    .. note::
+
+        URL-like output transfers that have a destination (as described below)
+        require both the submit and execute-side HTCondor versions to be 8.9.2
+        or later. The actual HTCondor system must be that version or later, not
+        just the Python bindings.
 
     Parameters
     ----------
     paths
         The paths to the output files.
+        Each element may be a single output file
+        (to be transferred via HTCondor file transfer back to the submit node),
+        or an ``(output_file, destination))`` tuple, where the ``destination``
+        is a :class:`TransferPath`. The file will then be transferred to that
+        destination instead of the submit node.
     """
     # no-op if not on execute node
     if os.getenv('HTMAP_ON_EXECUTE') != "1":
@@ -195,9 +222,27 @@ def transfer_output_files(*paths: os.PathLike) -> None:  # pragma: execute-only
     scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
 
     user_transfer_dir = scratch_dir / names.USER_TRANSFER_DIR / os.getenv('HTMAP_COMPONENT')
+    user_url_transfer_dir = scratch_dir / names.USER_URL_TRANSFER_DIR
+    user_transfer_cache = scratch_dir / names.TRANSFER_PLUGIN_CACHE
 
     for path in paths:
+        if isinstance(path, tuple):
+            path, destination = path
+            if utils.HTCONDOR_VERSION_INFO < (8, 9, 2):
+                raise exceptions.InsufficientHTCondorVersion("HTMap URL output transfer requires HTCondor v8.9.2 or later.")
+        else:
+            path, destination = path, None
+
         path = Path(path).absolute()
-        target = user_transfer_dir / path.relative_to(scratch_dir)
+
+        if destination is None:  # condor file transfer
+            target = user_transfer_dir / path.relative_to(scratch_dir)
+        else:  # url file transfer
+            target = user_url_transfer_dir / path.relative_to(scratch_dir)
+            h = str(hash((target, destination)))
+            user_transfer_cache.mkdir(exist_ok = True)
+            with (user_transfer_cache / h).open(mode = 'wb') as f:
+                pickle.dump((target, destination), f)
+
         target.parent.mkdir(exist_ok = True, parents = True)
         shutil.move(path, target)
