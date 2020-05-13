@@ -225,11 +225,13 @@ def transfer_output_files(*paths: Union[os.PathLike, Tuple[os.PathLike, Transfer
     user_url_transfer_dir = scratch_dir / names.USER_URL_TRANSFER_DIR
     user_transfer_cache = scratch_dir / names.TRANSFER_PLUGIN_CACHE
 
+    can_use_url_output_transfer = utils.HTCONDOR_VERSION_INFO >= (8, 9, 2) or utils.HTCONDOR_VERSION_INFO is None
+
     for path in paths:
         if isinstance(path, tuple):
-            path, destination = path
-            if utils.HTCONDOR_VERSION_INFO is None or utils.HTCONDOR_VERSION_INFO < (8, 9, 2):
+            if not can_use_url_output_transfer:
                 raise exceptions.InsufficientHTCondorVersion("HTMap URL output transfer requires HTCondor v8.9.2 or later.")
+            path, destination = path
         else:
             path, destination = path, None
 

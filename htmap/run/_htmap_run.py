@@ -206,9 +206,6 @@ def main(component):
     os.environ['HTMAP_ON_EXECUTE'] = "1"
     os.environ['HTMAP_COMPONENT'] = f"{component}"
 
-    # for k, v in os.environ.items():
-    #     print(k, v)
-
     node_info = get_node_info()
     print_node_info(node_info)
     print()
@@ -220,9 +217,6 @@ def main(component):
     user_transfer_dir.mkdir(exist_ok = True, parents = True)
     Path(TRANSFER_PLUGIN_CACHE).mkdir(exist_ok = True, parents = True)
     Path(TRANSFER_PLUGIN_MARKER).touch(exist_ok = True)
-
-    # print((scratch_dir / '.job.ad').read_text())
-    # print((scratch_dir / '.machine.ad').read_text())
 
     load_checkpoint(scratch_dir, transfer_dir)
 
@@ -250,7 +244,7 @@ def main(component):
         status = 'OK'
 
         print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
-    except Exception as e:
+    except Exception:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
 
         (type, value, trace) = sys.exc_info()
