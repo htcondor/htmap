@@ -18,12 +18,12 @@ import pytest
 import htmap
 
 
-def test_map_is_removed(cli):
+def test_map_exists(cli):
     m = htmap.map(str, range(1))
 
     result = cli(['abort', m.tag])
 
-    assert m.is_removed
+    assert not m.exists
 
 
 def test_remove_multiple_maps(cli):
@@ -34,7 +34,7 @@ def test_remove_multiple_maps(cli):
 
     result = cli(['abort', *(m.tag for m in maps)])
 
-    assert all(m.is_removed for m in maps)
+    assert all(not m.exists for m in maps)
 
 
 def test_remove_all(cli):
@@ -45,7 +45,7 @@ def test_remove_all(cli):
 
     result = cli(['abort', '--all'])
 
-    assert all(m.is_removed for m in maps)
+    assert all(not m.exists for m in maps)
 
 
 def test_remove_multiple_maps_message_has_tags(cli):
