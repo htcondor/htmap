@@ -728,9 +728,12 @@ class Map(collections.abc.Sequence):
 
     def remove(self, force: bool = False) -> None:
         """
-        This command removes a map.
-        All data associated with a removed map is permanently deleted and all
-        components are removed from the HTCondor queue.
+        This command removes a map from the Condor queue. Functionally, this
+        command aborts a job.
+
+        This function will completely remove a map from the Condor
+        queue regardless of job state (running, executing, waiting, etc).
+        All data associated with a removed map is permanently deleted.
 
         Parameters
         ----------
