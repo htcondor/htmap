@@ -3,6 +3,16 @@ FAQ
 
 .. py:currentmodule:: htmap
 
+How do I abort a job?
+---------------------
+
+For example, say you mistakenly launch some jobs, and want want to abort the
+job, fix some input parameters, then relaunch it.
+
+The right CLI command is ``htmap remove foo``, or the HTMap function
+:func:`~htmap.remove`. This mirrors the HTCondor API and will remove the job
+from the job scheduler regardless of state (running, waiting, held, etc).
+
 .. _successful-jobs:
 
 How do I only process completed jobs?
