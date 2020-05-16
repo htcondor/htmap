@@ -370,28 +370,27 @@ def wait(tags, pattern, all):
         return
 
 
-@cli.command(short_help = "Abort maps; all components will be removed from the queue and all data associated with the maps will be permanently deleted.")
+@cli.command(short_help = "Remove maps; all components will be removed from the queue and all data associated with the maps will be permanently deleted.")
 @_multi_tag_args
 @click.option(
     '--force',
     is_flag = True,
     default = False,
-    help = 'Do not wait for HTCondor to abort the map components before removing local data.',
+    help = 'Do not wait for HTCondor to remove the map components before removing local data.',
 )
-def abort(tags, pattern, all, force):
+def remove(tags, pattern, all, force):
     """
-    This command aborts a map.
-
+    This command removes a map.
     All data associated with a removed map is permanently deleted and all
-    components are removed from the HTCondor queue, regardless of what state they're in (running, idle, held, etc).
+    components are removed from the HTCondor queue.
     """
     tags = _get_tags(all, pattern, tags)
 
     for tag in tags:
-        with make_spinner(f'Aborting map {tag} ...') as spinner:
+        with make_spinner(f'Removing map {tag} ...') as spinner:
             _cli_load(tag).remove(force = force)
 
-            spinner.succeed(f'Successfully aborted map {tag}')
+            spinner.succeed(f'Removed map {tag}')
 
 
 @cli.command(short_help = "Hold maps; components will be prevented from running until released.")

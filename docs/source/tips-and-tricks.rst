@@ -60,7 +60,7 @@ want to completely resubmit the map from scratch, without any previous state.
 
 .. code::
 
-   htmap abort foo
+   htmap remove foo
 
 This commands keeps the jobs in the queue, but prevents them from running. This allowed editing them  and lets you edit them live.
 
