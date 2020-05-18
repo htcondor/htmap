@@ -247,7 +247,7 @@ def main(component):
     except Exception:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
 
-        (type, value, trace) = sys.exc_info()
+        type, value, trace = sys.exc_info()
         stack_summ = traceback.StackSummary.from_list(build_frames(trace))
         exc_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip()
 
@@ -261,7 +261,10 @@ def main(component):
         )
         status = 'ERR'
 
+        traceback.print_exc(file = sys.stdout)
         traceback.print_exc(file = sys.stderr)
+
+        print('\n------ MAP COMPONENT ERROR END -------\n')
 
     clean_and_remake_dir(scratch_dir / CHECKPOINT_CURRENT)
     clean_and_remake_dir(transfer_dir)
