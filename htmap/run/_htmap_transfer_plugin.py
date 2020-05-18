@@ -5,6 +5,7 @@ import sys
 import textwrap
 import contextlib
 import pickle
+import traceback
 from pathlib import Path
 
 import htcondor
@@ -266,11 +267,11 @@ if __name__ == "__main__":
         except FileNotFoundError:
             main(args)
     except Exception as e:
-        line_no = sys.exc_info()[-1].tb_lineno
+        tb = traceback.format_exc().replace('\n', ' ')
         write_dict_to_file_as_ad(
             {
                 "TransferSuccess": False,
-                "TransferError": f"HTMap transfer plugin failed: {type(e).__name__}: {e} [on line {line_no}]",
+                "TransferError": f"HTMap transfer plugin failed: {type(e).__name__}: {e} [{tb}]",
             },
             args["outfile"],
         )
