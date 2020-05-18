@@ -56,7 +56,7 @@ def test_map_is_marked_as_removed_after_calling_remove(mapped_doubler):
 
     m.remove()
 
-    assert m.is_removed
+    assert not m.exists
 
 
 @pytest.mark.parametrize(
@@ -98,4 +98,4 @@ def test_can_force_remove_map_without_contacting_schedd(mapped_doubler, mocker):
 
     m.remove(force = True)
 
-    assert m.is_removed
+    assert not m.exists
