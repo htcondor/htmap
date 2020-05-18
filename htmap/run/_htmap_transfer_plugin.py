@@ -135,11 +135,10 @@ def main(args):
 
     deferred_transfers = []
     for output_file, destination in transfers:
-        url = destination.as_url()
-        protocol = determine_protocol(url)
+        protocol = determine_protocol(destination)
         plugin = find_first_plugin(available_methods, protocol)
         print(
-            f"Will transfer {output_file} to {url} using protocol {protocol} implemented by plugin {plugin}"
+            f"Will transfer {output_file} to {destination} using protocol {protocol} implemented by plugin {plugin}"
         )
         deferred_transfers.append(
             DeferredTransfer(
@@ -160,7 +159,7 @@ def main(args):
                 classad.ClassAd(
                     {
                         "LocalFileName": str(transfer.output_file),
-                        "Url": transfer.destination.as_url(),
+                        "Url": transfer.destination,
                     }
                 )
             )
@@ -180,7 +179,7 @@ def main(args):
         )
 
         if run_plugin.returncode != 0:
-            print(f"Plugin {transfer.plugin} failed! It's return code was {run_plugin.returncode}")
+            print(f"Plugin {transfer.plugin} failed! Its return code was {run_plugin.returncode}")
             print(f"Captured stdout:")
             print(run_plugin.stdout.decode())
             print(f"Captured stderr:")
@@ -189,7 +188,7 @@ def main(args):
             outfile.rename(Path(args['outfile']))
             sys.exit(-1)
 
-        print(f"Transferred {transfer.output_file} to {transfer.destination.as_url()} successfully!")
+        print(f"Transferred {transfer.output_file} to {transfer.destination} successfully!")
 
     write_dict_to_file_as_ad(
         {

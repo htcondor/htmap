@@ -242,7 +242,7 @@ def transfer_output_files(*paths: Union[os.PathLike, Tuple[os.PathLike, Transfer
             h = str(hash((target, destination)))
             user_transfer_cache.mkdir(exist_ok = True)
             with (user_transfer_cache / h).open(mode = 'wb') as f:
-                pickle.dump((target, destination), f)
+                pickle.dump((target, destination.as_url()), f)
 
         target.parent.mkdir(exist_ok = True, parents = True)
         shutil.move(path, target)
