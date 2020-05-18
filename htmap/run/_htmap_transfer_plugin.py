@@ -253,16 +253,17 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     try:
-        scratch_dir = Path.cwd()
-        job_ad = classad.parseOne((scratch_dir / ".job.ad").read_text())
-        out, err = scratch_dir / job_ad["Out"], scratch_dir / job_ad["Err"]
-        with out.open(mode = "a") as out_file, err.open(mode = "a") as err_file:
-            with contextlib.redirect_stdout(out_file), contextlib.redirect_stderr(
-                err_file
-            ):
-                print("\n------  TRANSFER PLUGIN OUTPUT  ------\n")
-                print("\n------  TRANSFER PLUGIN ERROR   ------\n", file = sys.stderr)
-                main(args)
+        # scratch_dir = Path.cwd()
+        # job_ad = classad.parseOne((scratch_dir / ".job.ad").read_text())
+        # out, err = scratch_dir / job_ad["Out"], scratch_dir / job_ad["Err"]
+        # with out.open(mode = "a") as out_file, err.open(mode = "a") as err_file:
+        #     with contextlib.redirect_stdout(out_file), contextlib.redirect_stderr(
+        #         err_file
+        #     ):
+        #         print("\n------  TRANSFER PLUGIN OUTPUT  ------\n")
+        #         print("\n------  TRANSFER PLUGIN ERROR   ------\n", file = sys.stderr)
+        #         main(args)
+        main(args)
     except Exception as e:
         write_dict_to_file_as_ad(
             {
