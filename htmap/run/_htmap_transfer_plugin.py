@@ -225,10 +225,16 @@ def determine_protocol(url):
     return provider
 
 
+class NoPluginFound(Exception):
+    pass
+
+
 def find_first_plugin(available_methods, method):
     for plugin, methods in available_methods.items():
         if method in methods:
             return plugin
+
+    raise NoPluginFound(f"No plugin found for {method}. Available methods are {available_methods}.")
 
 
 def write_dict_to_file_as_ad(dict_, path):
