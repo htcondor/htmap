@@ -5,6 +5,7 @@ import sys
 import textwrap
 import contextlib
 import pickle
+import traceback
 from pathlib import Path
 
 import htcondor
@@ -217,7 +218,7 @@ class DeferredTransfer:
 def determine_protocol(url):
     scheme = url.split("://")[0]
     if "+" in scheme:
-        (handle, provider) = scheme.split("+")
+        handle, provider = scheme.split("+")
     else:
         provider = scheme
 
@@ -252,22 +253,24 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     try:
-        # scratch_dir = Path.cwd()
-        # job_ad = classad.parseOne((scratch_dir / ".job.ad").read_text())
-        # out, err = scratch_dir / job_ad["Out"], scratch_dir / job_ad["Err"]
-        # with out.open(mode = "a") as out_file, err.open(mode = "a") as err_file:
-        #     with contextlib.redirect_stdout(out_file), contextlib.redirect_stderr(
-        #         err_file
-        #     ):
-        #         print("\n------  TRANSFER PLUGIN OUTPUT  ------\n")
-        #         print("\n------  TRANSFER PLUGIN ERROR   ------\n", file = sys.stderr)
-        #         main(args)
-        main(args)
+        try:
+            scratch_dir = Path.cwd()
+            job_ad = classad.parseOne((scratch_dir / ".job.ad").read_text())
+            out, err = scratch_dir / job_ad["Out"], scratch_dir / job_ad["Err"]
+            with out.open(mode = "a") as out_file, err.open(mode = "a") as err_file:
+                with contextlib.redirect_stdout(out_file), contextlib.redirect_stderr(
+                    err_file
+                ):
+                    print("\n------  TRANSFER PLUGIN OUTPUT  ------\n")
+                    print("\n------  TRANSFER PLUGIN ERROR   ------\n", file = sys.stderr)
+                    main(args)
+        except FileNotFoundError:
+            main(args)
     except Exception as e:
         write_dict_to_file_as_ad(
             {
                 "TransferSuccess": False,
-                "TransferError": f"HTMap transfer plugin failed: {type(e).__name__}: {e}",
+                "TransferError": f"HTMap transfer plugin failed: {type(e).__name__}: {e}\n{traceback.format_exc()}",
             },
             args["outfile"],
         )
