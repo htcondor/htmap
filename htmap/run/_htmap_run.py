@@ -196,7 +196,7 @@ def load_checkpoint(scratch_dir, transfer_dir):
         old_dir.rename(transfer_dir / curr_dir.name)
 
 
-def clean_and_remake_dir(dir: Path):
+def clean_and_remake_dir(dir: Path) -> None:
     if dir.exists():
         shutil.rmtree(dir)
     dir.mkdir()

@@ -335,11 +335,13 @@ def get_base_descriptors(
         **from_settings,
     }
 
-    merged[REQUIREMENTS] = merge_requirements(
+    merged_requirements = merge_requirements(
         core.get(REQUIREMENTS, None),
         base.get(REQUIREMENTS, None),
         from_settings.get(REQUIREMENTS, None),
     )
+    if merged_requirements is not None:
+        merged[REQUIREMENTS] = merged_requirements
 
     return merged
 
@@ -494,7 +496,7 @@ def _run_delivery_setup_for_transplant(
 
         try:
             shutil.make_archive(
-                base_name = target,
+                base_name = str(target),
                 format = 'gztar',
                 root_dir = py_dir,
             )

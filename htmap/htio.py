@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, List, Tuple, Iterator, Dict, Callable
+from typing import Any, List, Tuple, Iterator, Dict, Callable, Iterable
 import logging
 
 import gzip
@@ -23,7 +23,8 @@ from pathlib import Path
 import cloudpickle
 import htcondor
 
-from htmap import names, exceptions
+from . import names
+from .types import ARGS_AND_KWARGS
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ def save_func(map_dir: Path, func: Callable) -> None:
 
 def save_inputs(
     map_dir: Path,
-    args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
+    args_and_kwargs: Iterable[ARGS_AND_KWARGS],
 ) -> None:
     """
     Save the arguments to the mapped function to the map's input directory.
@@ -83,12 +84,12 @@ def _num_components_path(map_dir: Path) -> Path:
     return map_dir / names.NUM_COMPONENTS
 
 
-def append_cluster_id(map_dir: Path, cluster_id: int):
+def append_cluster_id(map_dir: Path, cluster_id: int) -> None:
     with _cluster_ids_path(map_dir).open(mode = 'a') as file:
         file.write(str(cluster_id) + '\n')
 
 
-def load_cluster_ids(map_dir: Path):
+def load_cluster_ids(map_dir: Path) -> List[int]:
     return [
         int(cid.strip())
         for cid in _cluster_ids_path(map_dir).read_text().splitlines()

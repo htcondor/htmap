@@ -24,7 +24,6 @@ import sys
 import enum
 import re
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 
 from . import exceptions
 
@@ -227,12 +226,6 @@ def pip_freeze() -> str:
     ).stdout.decode('utf-8').strip()
 
 
-def read_events(maps) -> None:
-    """Read the events logs of the given maps using a thread pool."""
-    with ThreadPoolExecutor() as pool:
-        pool.map(lambda map: map._state._read_events(), maps)
-
-
 def is_interactive_session() -> bool:
     import __main__ as main
     return any((
@@ -258,7 +251,7 @@ VERSION_RE = re.compile(
 )
 
 
-def parse_version(v: str) -> Tuple[int, int, int, str, int]:
+def parse_version(v: str) -> Tuple[int, int, int, Optional[str], Optional[int]]:
     match = VERSION_RE.match(v)
     if match is None:
         raise Exception(f"Could not determine version info from {v}")
@@ -283,8 +276,8 @@ BINDINGS_VERSION_INFO = parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(htcondo
 try:
     condor_version = subprocess.run("condor_version", stdout = subprocess.PIPE).stdout.decode()
     HTCONDOR_VERSION_INFO = parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(condor_version).group(0))
-except:
-    logger.warning("Was not able to parse HTCondor version information. Is HTCondor itself installed? (Not just the bindings.)")
-    HTCONDOR_VERSION_INFO = None
+except Exception:
+    logger.warning("Was not able to parse HTCondor version information. Is HTCondor itself installed, not just the bindings? Assuming bindings version for HTCondor version.")
+    HTCONDOR_VERSION_INFO = BINDINGS_VERSION_INFO
 
 CAN_USE_URL_OUTPUT_TRANSFER = HTCONDOR_VERSION_INFO is None or HTCONDOR_VERSION_INFO >= (8, 9, 2)

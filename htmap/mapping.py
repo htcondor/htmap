@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any, List, Generator, Union
+from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any, List, Union
 import logging
 
 import uuid
@@ -24,7 +24,8 @@ from pprint import pformat
 
 import htcondor
 
-from . import htio, tags, exceptions, maps, transfer, options, settings, names, utils
+from . import htio, tags, exceptions, maps, transfer, options, condor, settings, names, utils
+from .types import KWARGS, ARGS_OR_KWARGS, ARGS_AND_KWARGS, ARGS
 
 logger = logging.getLogger(__name__)
 
@@ -50,17 +51,6 @@ def tagfile_to_map_dir(tagfile: Path) -> Path:
 def tag_to_map_dir(tag: str) -> Path:
     """Return the path to the map directory for the given ``tag``."""
     return tagfile_to_map_dir(tags.tag_file_path(tag))
-
-
-def get_schedd():
-    """Get the :class:`htcondor.Schedd` that represents the HTCondor scheduler."""
-    s = settings['HTCONDOR.SCHEDULER']
-    if s is None:
-        return htcondor.Schedd()
-
-    coll = htcondor.Collector(settings['HTCONDOR.COLLECTOR'])
-    schedd_ad = coll.locate(htcondor.DaemonTypes.Schedd, s)
-    return htcondor.Schedd(schedd_ad)
 
 
 def map(
@@ -90,7 +80,7 @@ def map(
         A :class:`htmap.Map` representing the map.
     """
     args = ((arg,) for arg in args)
-    args_and_kwargs = zip(args, itertools.repeat({}))
+    args_and_kwargs: Iterator[ARGS_AND_KWARGS] = zip(args, itertools.repeat({}))
     return create_map(
         tag,
         func,
@@ -101,8 +91,8 @@ def map(
 
 def starmap(
     func: Callable,
-    args: Optional[Iterable[tuple]] = None,
-    kwargs: Optional[Iterable[Dict[str, Any]]] = None,
+    args: Optional[Iterable[ARGS]] = None,
+    kwargs: Optional[Iterable[KWARGS]] = None,
     map_options: Optional[options.MapOptions] = None,
     tag: Optional[str] = None,
 ) -> maps.Map:
@@ -163,7 +153,7 @@ class MapBuilder:
     def __init__(
         self,
         func: Callable,
-        map_options: options.MapOptions = None,
+        map_options: Optional[options.MapOptions] = None,
         tag: Optional[str] = None,
     ):
         self.func = func
@@ -221,7 +211,7 @@ class MapBuilder:
 
 def build_map(
     func: Callable,
-    map_options: options.MapOptions = None,
+    map_options: Optional[options.MapOptions] = None,
     tag: Optional[str] = None,
 ) -> MapBuilder:
     """
@@ -251,7 +241,7 @@ def build_map(
 def create_map(
     tag: Optional[str],
     func: Callable,
-    args_and_kwargs: Iterator[Tuple[Tuple, Dict]],
+    args_and_kwargs: Iterator[ARGS_AND_KWARGS],
     map_options: Optional[options.MapOptions] = None,
 ) -> maps.Map:
     """
@@ -287,7 +277,7 @@ def create_map(
     tags.raise_if_tag_is_invalid(tag)
     tags.raise_if_tag_already_exists(tag)
 
-    logger.debug(f'Creating map {tag}...')
+    logger.debug(f'Creating map {tag} ...')
 
     if map_options is None:
         map_options = options.MapOptions()
@@ -296,17 +286,16 @@ def create_map(
     map_dir = map_dir_path(uid)
     try:
         make_map_dir_and_subdirs(map_dir)
-        htio.save_func(map_dir, func)
 
-        args_and_kwargs, extra_input_files = transform_args_and_kwargs(args_and_kwargs)
-        num_components = len(args_and_kwargs)
+        transformed_args_and_kwargs, extra_input_files = transform_args_and_kwargs(args_and_kwargs)
+        num_components = len(transformed_args_and_kwargs)
         if num_components == 0:
             raise exceptions.EmptyMap("Cannot create a map with zero components")
+
         if map_options.input_files is None and len(extra_input_files) > 0:
             map_options.input_files = [[] for _ in range(len(extra_input_files))]
         for tif, extra in zip(map_options.input_files, extra_input_files):
             tif.extend(extra)
-        htio.save_inputs(map_dir, args_and_kwargs)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
             tag,
@@ -315,12 +304,17 @@ def create_map(
             map_options,
         )
 
-        htio.save_num_components(map_dir, num_components)
-        htio.save_submit(map_dir, submit_obj)
-        htio.save_itemdata(map_dir, itemdata)
-
         logger.debug(f"Submit description for map {tag} is\n{submit_obj}")
-        logger.debug(f"First itemdata for map {tag} is \n{pformat(itemdata[0])}")
+        logger.debug(f"First itemdatum for map {tag} is \n{pformat(itemdata[0])}")
+
+        logger.debug(f"Creating map directory for map {tag} ...")
+        with utils.Timer() as timer:
+            htio.save_func(map_dir, func)
+            htio.save_inputs(map_dir, transformed_args_and_kwargs)
+            htio.save_num_components(map_dir, num_components)
+            htio.save_submit(map_dir, submit_obj)
+            htio.save_itemdata(map_dir, itemdata)
+        logger.debug(f"Created map directory for map {tag} (took {timer.elapsed:.6f} seconds)")
 
         logger.debug(f'Submitting map {tag}...')
 
@@ -375,7 +369,7 @@ def execute_submit(submit_object: htcondor.Submit, itemdata: List[Dict[str, str]
     Execute a map via the scheduler defined by the settings.
     Return the HTCondor cluster ID of the map's jobs.
     """
-    schedd = get_schedd()
+    schedd = condor.get_schedd()
     with schedd.transaction() as txn:
         submit_result = submit_object.queue_with_itemdata(
             txn,
@@ -387,9 +381,9 @@ def execute_submit(submit_object: htcondor.Submit, itemdata: List[Dict[str, str]
 
 
 def zip_args_and_kwargs(
-    args: Iterable[Tuple[Any, ...]],
-    kwargs: Iterable[Dict[str, Any]],
-) -> Generator[Tuple[Tuple[Any, ...], Dict[str, Any]], None, None]:
+    args: Iterable[ARGS],
+    kwargs: Iterable[KWARGS],
+) -> Iterator[ARGS_AND_KWARGS]:
     """
     Combine iterables of arguments and keyword arguments into a zipped,
     filled iterator of arguments and keyword arguments
@@ -412,41 +406,29 @@ def zip_args_and_kwargs(
     args_and_kwargs
         A zipped iterator of tuples (positional arguments) and dictionaries (keyword arguments).
     """
-    iterators: List[Iterator] = [iter(args), iter(kwargs)]
-    fills = {0: (), 1: {}}
-    num_active = 2
-    while True:
-        values = []
-        for i, it in enumerate(iterators):
-            try:
-                values.append(next(it))
-            except StopIteration:
-                num_active -= 1
-                if num_active == 0:
-                    return
-                iterators[i] = itertools.repeat(fills[i])  # replace the iterator
-                values.append(fills[i])  # for this iteration, insert fills[i] manually
-        yield tuple(values)
+    marker = object()
+    for arg, kwarg in itertools.zip_longest(args, kwargs, fillvalue = marker):
+        yield arg if arg is not marker else (), kwarg if kwarg is not marker else {}
 
 
-def transform_args_and_kwargs(args_and_kwargs: Iterator[Tuple[Tuple[Any, ...], Dict[str, Any]]]):
+def transform_args_and_kwargs(args_and_kwargs: Iterator[ARGS_AND_KWARGS]) -> Tuple[List[ARGS_AND_KWARGS], List[List[transfer.TransferPath]]]:
     """
     Perform any pre-processing on the positional and keyword arguments.
 
     Currently checks for input files that should be transferred along with the
     component input.
     """
-    processed = []
+    transformed_args_and_kwargs = []
     input_paths = []
     for args, kwargs in args_and_kwargs:
         transfers: List[transfer.TransferPath] = []
         args = tuple(transform_input_paths(arg, transfers) for arg in args)
         kwargs = {k: transform_input_paths(v, transfers) for k, v in kwargs.items()}
 
-        processed.append((args, kwargs))
+        transformed_args_and_kwargs.append((args, kwargs))
         input_paths.append(sorted(set(transfers)))
 
-    return processed, input_paths
+    return transformed_args_and_kwargs, input_paths
 
 
 def transform_input_paths(
@@ -485,4 +467,3 @@ def transform_input_path(
     """
     transfer_accumulator.append(path)
     return Path('.') / path.name
-

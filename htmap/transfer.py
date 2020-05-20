@@ -89,7 +89,7 @@ class TransferPath:
 
     def __init__(
         self,
-        path: Union["TransferPath", Path, str, os.PathLike],
+        path: Union["TransferPath", os.PathLike],
         protocol: Optional[str] = None,
         location: Optional[str] = None,
     ):
@@ -105,7 +105,7 @@ class TransferPath:
             The location to find a remote file when using a protocol transfer.
             This could be the address of a server, for example.
         """
-        if isinstance(path, self.__class__):
+        if isinstance(path, type(self)):
             protocol = protocol or path.protocol
             location = location or path.location
             path = path.path
@@ -219,11 +219,13 @@ def transfer_output_files(*paths: Union[os.PathLike, Tuple[os.PathLike, Transfer
     if os.getenv('HTMAP_ON_EXECUTE') != "1":
         return
 
-    scratch_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR'))
+    scratch_dir = Path(os.environ['_CONDOR_SCRATCH_DIR'])
 
-    user_transfer_dir = scratch_dir / names.USER_TRANSFER_DIR / os.getenv('HTMAP_COMPONENT')
+    user_transfer_dir = scratch_dir / names.USER_TRANSFER_DIR / os.environ['HTMAP_COMPONENT']
     user_url_transfer_dir = scratch_dir / names.USER_URL_TRANSFER_DIR
     user_transfer_cache = scratch_dir / names.TRANSFER_PLUGIN_CACHE
+
+    destination: Optional[TransferPath]
 
     for path in paths:
         if isinstance(path, tuple):
@@ -245,4 +247,4 @@ def transfer_output_files(*paths: Union[os.PathLike, Tuple[os.PathLike, Transfer
                 pickle.dump((target, destination.as_url()), f)
 
         target.parent.mkdir(exist_ok = True, parents = True)
-        shutil.move(path, target)
+        shutil.move(str(path), str(target))
