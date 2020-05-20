@@ -19,45 +19,40 @@ import pytest
 from pathlib import Path
 
 import htmap
-from htmap import utils
 import htcondor
 
 TIMEOUT = 300
 
 
 @pytest.mark.timeout(TIMEOUT)
-# @pytest.mark.xfail(condition = utils.HTCONDOR_VERSION_INFO < (8, 9, 2), reason = "HTMap requires HTCondor v8.9.2 or later to do URL output transfers.")
-@pytest.mark.skip(reason = "Disabled feature")
 def test_output_transfer_via_file_protocol(tmp_path):
     target = tmp_path / 'foo'
+    destination = htmap.TransferPath(target, protocol = 'file')
 
     def func(_):
         output = Path('remote-foo')
         output.write_text('hi')
 
-        destination = htmap.TransferPath(target, protocol = 'file')
-
-        htmap.transfer_output_files((output, destination))
+        htmap.transfer_output_files(output)
 
         return True
 
-    m = htmap.map(func, [None])
+    m = htmap.map(func, [None], map_options = htmap.MapOptions(output_remaps = {'remote-foo': destination}))
 
     print(m.stdout.get(0))
     print()
     print(m.stderr.get(0))
     print()
 
-    # Looking at the starter log may be helpful if the plugin is failing badly enough
+    # Looking at the starter log may be helpful if the plugin is failing badly enough.
+    # You must set STARTER_LOG_NAME_APPEND=jobid in your HTCondor config for it to work
 
-    # logs = Path(htcondor.param['LOG']) / f"StarterLog.{m._cluster_ids[0]}.0"
-    # log_lines = logs.read_text().splitlines()
-    # for idx, line in enumerate(log_lines):
-    #     if f'{m._cluster_ids[0]}.0' in line:
-    #         break
-    # for line in log_lines[idx:]:
-    #     print(line)
+    # starter_log = Path(htcondor.param['LOG']) / f"StarterLog.{m._cluster_ids[0]}.0"
+    # print(starter_log.read_text())
 
     assert m.get(0)
 
     assert target.read_text() == "hi"
+
+    # make sure we did NOT transfer it back as normal
+    assert 'foo' not in (path.stem for path in m.output_files[0].iterdir())

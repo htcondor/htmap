@@ -23,6 +23,7 @@ TIMEOUT = 300
 
 
 @pytest.mark.usefixtures('delivery_methods')
+@pytest.mark.timeout(TIMEOUT)
 def test_stdout_sees_print():
     m = htmap.map(lambda x: print('foobar'), range(1))
 
@@ -30,13 +31,15 @@ def test_stdout_sees_print():
 
 
 @pytest.mark.usefixtures('delivery_methods')
+@pytest.mark.timeout(TIMEOUT)
 def test_stderr_sees_print():
-    m = htmap.map(lambda x: print('foobar', file = sys.stderr), range(2))
+    m = htmap.map(lambda x: print('foobar', file = sys.stderr), range(1))
 
     assert 'foobar' in m.stderr.get(0)
 
 
 @pytest.mark.usefixtures('delivery_methods')
+@pytest.mark.timeout(TIMEOUT)
 def test_multiple_stdouts():
     m = htmap.map(lambda x: print(x), ['foobar', 'wizbang'])
 
@@ -45,6 +48,7 @@ def test_multiple_stdouts():
 
 
 @pytest.mark.usefixtures('delivery_methods')
+@pytest.mark.timeout(TIMEOUT)
 def test_multiple_stderrs():
     m = htmap.map(lambda x: print(x, file = sys.stderr), ['foobar', 'wizbang'])
 
@@ -53,8 +57,9 @@ def test_multiple_stderrs():
 
 
 @pytest.mark.usefixtures('delivery_methods')
+@pytest.mark.timeout(TIMEOUT)
 def test_iterating_over_multiple_stdouts():
-    s = ['foobar', 'wizbang', 'googaw']
+    s = ['foobar', 'wizbang']
     m = htmap.map(lambda x: print(x), s)
     m.wait()
 
@@ -62,14 +67,16 @@ def test_iterating_over_multiple_stdouts():
 
 
 @pytest.mark.usefixtures('delivery_methods')
+@pytest.mark.timeout(TIMEOUT)
 def test_iterating_over_multiple_stderrs():
-    s = ['foobar', 'wizbang', 'googaw']
+    s = ['foobar', 'wizbang']
     m = htmap.map(lambda x: print(x, file = sys.stderr), s)
     m.wait()
 
     assert all(st in err for st, err in zip(s, m.stderr))
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_stdout_contains():
     m = htmap.map(lambda x: print('foobar'), range(1))
 
@@ -77,6 +84,7 @@ def test_stdout_contains():
     assert 1 not in m.stdout
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_stderr_contains():
     m = htmap.map(lambda x: print('foobar'), range(1))
 

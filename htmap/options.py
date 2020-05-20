@@ -25,6 +25,7 @@ from pathlib import Path
 import htcondor
 
 from . import utils, transfer, exceptions, names, settings
+from .types import TRANSFER_PATH, REMAPS
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,6 @@ BASE_OPTIONS_FUNCTION_BY_DELIVERY = {}
 SETUP_FUNCTION_BY_DELIVERY = {}
 
 REQUIREMENTS = 'requirements'
-
-TRANSFER_PATH = Union[str, Path, transfer.TransferPath]
 
 
 class MapOptions(collections.UserDict):
@@ -65,6 +64,7 @@ class MapOptions(collections.UserDict):
         *,
         fixed_input_files: Optional[Union[TRANSFER_PATH, Iterable[TRANSFER_PATH]]] = None,
         input_files: Optional[Union[Iterable[TRANSFER_PATH], Iterable[Iterable[TRANSFER_PATH]]]] = None,
+        output_remaps: Optional[Union[REMAPS, Iterable[REMAPS]]] = None,
         custom_options: Optional[Dict[str, str]] = None,
         **kwargs: Union[str, Iterable[str]],
     ):
@@ -73,12 +73,23 @@ class MapOptions(collections.UserDict):
         ----------
         fixed_input_files
             A single file, or an iterable of files, to send to all components of the map.
-            Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
-            You can also specify a file to fetch from an URL like ``http://www.full.url/path/to/filename``.
         input_files
             An iterable of single files or iterables of files to map over.
-            Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
-            You can also specify a file to fetch from an URL like ``http://www.full.url/path/to/filename``.
+            This may be useful if you want additional files to be sent to each
+            map component, but don't want them in your mapped function's
+            arguments.
+        output_remaps
+            A dictionary, or an iterable of dictionaries, specifying output
+            transfer remaps. A remapped output file is sent to a specified
+            destination instead of back to the submit machine. If a single
+            dictionary is passed, it will be applied to every map component
+            (in this case, you may want to use the $(component) submit
+            macro to differentiate them).
+            Each dictionary should be a mapping
+            between the **names** (last path component) of output files and their
+            **destinations**, given as :class:`TransferPath`.
+            You must still call :func:`transfer_output_files` for the files to
+            be transferred at all; listing them here *only* sets up the remapping.
         custom_options
             A dictionary of submit descriptors that are *not* built-in HTCondor descriptors.
             These are the descriptors that, if you were writing a submit file, would have a leading ``+`` or ``MY.``.
@@ -141,6 +152,7 @@ class MapOptions(collections.UserDict):
         self.fixed_input_files = fixed_input_files
 
         self.input_files = input_files
+        self.output_remaps = output_remaps
 
     def _check_keyword_arguments(self, kwargs):
         normalized_keys = set(k.lower() for k in kwargs.keys())
@@ -237,9 +249,21 @@ def create_submit_object_and_itemdata(
         ]
         if len(joined) != num_components:
             raise exceptions.MisalignedInputData(f'Length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
-        for d, f in zip(itemdata, joined):
-            d['extra_input_files'] = f
+        for itemdatum, files in zip(itemdata, joined):
+            itemdatum['extra_input_files'] = files
     descriptors['transfer_input_files'] = ','.join(input_files)
+
+    if map_options.output_remaps is not None and any(map_options.output_remaps):
+        # TODO: I would prefer to do this in the base descriptors, but it looks like an "empty" remap triggers strange behavior
+        descriptors["transfer_output_remaps"] = descriptors["transfer_output_remaps"].rstrip("\"") + ' ; $(extra_remaps) "'
+
+        if isinstance(map_options.output_remaps, dict):
+            output_remaps = [map_options.output_remaps] * num_components
+        else:
+            output_remaps = map_options.output_remaps
+
+        for component, (itemdatum, remaps) in enumerate(zip(itemdata, output_remaps)):
+            itemdatum['extra_remaps'] = " ; ".join(f"{Path(names.USER_TRANSFER_DIR) / str(component) / k}={v.as_url()}" for k, v in remaps.items())
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
@@ -296,7 +320,7 @@ def get_base_descriptors(
         f'{names.USER_TRANSFER_DIR}/$(component)',
     ]
     output_remaps = [
-        f'$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}',
+        f'$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}'
     ]
 
     if utils.CAN_USE_URL_OUTPUT_TRANSFER:
