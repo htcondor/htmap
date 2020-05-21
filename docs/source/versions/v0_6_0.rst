@@ -1,0 +1,96 @@
+v0.6.0
+======
+
+.. py:currentmodule:: htmap
+
+
+The big new features in this release are:
+
+* Improved support for input and output
+  file transfer (inputs/outputs can come from/be sent to remote locations, i.e.,
+  not the submit machine).
+* A new delivery method, ``shared``, where HTMap
+  will use the same Python executable detected submit-side when executing (this
+  supports HTCondor pools that use shared filesystems to make a Python
+  installation universally available).
+
+
+New Features/Improvements
+-------------------------
+
+* Add the ``shared`` delivery method, which supports HTCondor pools that use
+  shared filesystems to make Python installations available universally.
+  Suggested by Duncan Macleod.
+  Issues/PRs: :issue:`195`, :issue:`198`, :pr:`200`
+* HTMap now supports getting input files from remote destinations (i.e., not
+  from the submit machine) via existing input file auto-discovery. Just use
+  the revised :class:`TransferPath` in your mapped function arguments, and
+  HTMap will arrange for the file to be transferred to your map component!
+  PR: :pr:`216`
+* HTMap now supports sending output files to destinations that are not the
+  submit machine via HTCondor's ``transfer_output_remaps`` mechanism.
+  Output files can be sent to various locations, such as an S3 service.
+  See the new ``output_remaps`` argument of :class:`MapOptions` and the revised
+  :class:`TransferPath`, as well as the new tutorial
+  :ref:`transferring-output-to-other-places` for more details on how to use
+  this feature.
+  PR: :pr:`216`
+* **Massive** documentation upgrades courtesy of `Scott Sievert <https://github.com/stsievert>`_!
+  Issues/PRs: :issue:`208`, :pr:`191`, :pr:`202`, :pr:`221`
+* The HTMap CLI (normally accessed by running ``htmap``) can now also be
+  accessed by running ``python -m htmap``.
+  Issue: :issue:`190`
+* The HTMap CLI now supports autocompletion on commands and tags.
+  Run ``htmap autocompletion`` from the command line to add the necessary
+  setup to your shell startup script.
+* The HTMap CLI ``logs`` command now has a ``--view`` option which, instead of
+  just printing the path to the HTMap log file, displays its contents.
+
+
+Changed/Deprecated Features
+---------------------------
+
+* :attr:`htmap.Map.exists` has replaced ``htmap.Map.is_removed``.
+  It has exactly the opposite semantics (it is only ``True`` if the map has not
+  been successfully removed).
+  PR: :pr:`221`
+* :class:`htmap.ComponentStatus` is now a subclass of :class:`str`, so
+  (for example) ``"COMPLETED"`` can be used in place of
+  ``htmap.ComponentStatus.COMPLETED``.
+* Item access (``[]``) on ``Map.stdout``, ``Map.stderr``, and ``Map.output_files``
+  is now non-blocking and will raise ``FileNotFound`` exceptions if accessed before
+  available. The blocking API (with a timeout) is still available via the ``get``
+  method.
+* The HTMap CLI ``version`` command now also prints HTCondor Python bindings
+  version information. Added ``htmap --version`` that only prints HTMap version
+  information.
+* Several HTMap CLI commands now support explicit enable/disable flags instead
+  of just one or the other. The default behaviors were not changed.
+* The name of the function used to register delivery methods changed to
+  :func:`register_delivery_method` (from ``register_delivery_mechanism``).
+
+
+Bug Fixes
+---------
+
+* HTMap is now less sensitive to job event logs becoming corrupted.
+* Type hints are now more correct on more functions (but not fully correct on
+  all functions, bear with us!).
+
+
+Known Issues
+------------
+
+* HTMap does not currently allow "directory content transfers", which is an HTCondor
+  feature where naming a directory in ``transfer_input_files`` with a trailing
+  slash transfers the contents of the directory, not the directory itself.
+  (If you try it, the directory itself will be transferred, as if you had not
+  used a trailing slash).
+  Issue: :issue:`215`
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: :issue:`129`

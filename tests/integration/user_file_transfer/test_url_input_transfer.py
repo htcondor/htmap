@@ -13,21 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 
 import pytest
 
+from pathlib import Path
+
 import htmap
 
+TIMEOUT = 300
 
-def test_read_stderr(cli):
-    def test(x):
-        print(x, file = sys.stderr)
 
-    t = 'HELLO WORLD!'
 
-    m = htmap.map(test, [t])
+@pytest.mark.timeout(TIMEOUT)
+@pytest.mark.xfail(reason = "I don't understand yet why this doesn't work...")
+def test_input_transfer_via_file_protocol(tmp_path):
+    f = htmap.TransferPath(__file__, protocol = 'file')
 
-    result = cli(['stderr', m.tag, '0'])
+    MARKER = 12345
+    def test(file):
+        return "MARKER = 12345" in file.read_text()
 
-    assert t in result.stdout
+    m = htmap.map(test, [f])
+
+    assert m.get(0)
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_input_transfer_via_https_protocol(tmp_path):
+    f = htmap.TransferPath("status/200", protocol = 'https', location = "httpbin.org")
+
+    def test(file):
+        return file.read_text() == ""
+
+    m = htmap.map(test, [f])
+
+    assert m.get(0)

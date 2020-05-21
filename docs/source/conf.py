@@ -22,7 +22,7 @@ import htmap
 # -- Project information -----------------------------------------------------
 
 project = 'HTMap'
-copyright = '2018, HTCondor Team, Computer Sciences Department, University of Wisconsin-Madison, WI'
+copyright = '2018-2020, HTCondor Team, Computer Sciences Department, University of Wisconsin-Madison, WI'
 author = 'HTCondor Team'
 
 # The short X.Y version
@@ -49,6 +49,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'nbsphinx',
     'IPython.sphinxext.ipython_console_highlighting',
+    'sphinx_click.ext',
+    'sphinx_issues',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -175,6 +177,7 @@ autodoc_default_options = {"undoc-members": True}
 
 napoleon_use_rtype = False
 
+issues_github_path = "htcondor/htmap"
 
 def setup(app):
     app.add_stylesheet('css/custom.css')

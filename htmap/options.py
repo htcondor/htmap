@@ -24,7 +24,8 @@ from pathlib import Path
 
 import htcondor
 
-from . import utils, exceptions, names, settings
+from . import utils, transfer, exceptions, names, settings
+from .types import TRANSFER_PATH, REMAPS
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +62,9 @@ class MapOptions(collections.UserDict):
     def __init__(
         self,
         *,
-        fixed_input_files: Optional[Union[Union[str, Path], Iterable[Union[str, Path]]]] = None,
-        input_files: Optional[Union[Iterable[Union[str, Path]], Iterable[Iterable[Union[str, Path]]]]] = None,
+        fixed_input_files: Optional[Union[TRANSFER_PATH, Iterable[TRANSFER_PATH]]] = None,
+        input_files: Optional[Union[Iterable[TRANSFER_PATH], Iterable[Iterable[TRANSFER_PATH]]]] = None,
+        output_remaps: Optional[Union[REMAPS, Iterable[REMAPS]]] = None,
         custom_options: Optional[Dict[str, str]] = None,
         **kwargs: Union[str, Iterable[str]],
     ):
@@ -71,12 +73,24 @@ class MapOptions(collections.UserDict):
         ----------
         fixed_input_files
             A single file, or an iterable of files, to send to all components of the map.
-            Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
-            You can also specify a file to fetch from an URL like ``http://www.full.url/path/to/filename``.
         input_files
             An iterable of single files or iterables of files to map over.
-            Local files can be specified as string paths or as actual :class:`pathlib.Path` objects.
-            You can also specify a file to fetch from an URL like ``http://www.full.url/path/to/filename``.
+            This may be useful if you want additional files to be sent to each
+            map component, but don't want them in your mapped function's
+            arguments.
+        output_remaps
+            A dictionary, or an iterable of dictionaries, specifying output
+            transfer remaps. A remapped output file is sent to a specified
+            destination instead of back to the submit machine. If a single
+            dictionary is passed, it will be applied to every map component
+            (in this case, you may want to use the ``$(component)`` submit
+            macro to differentiate them).
+            Each dictionary should be a "mapping"
+            between the **names** (last path component, as a string) of o
+            utput files and their **destinations**, given as a :class:`TransferPath`.
+            You must still call :func:`transfer_output_files` on the files for
+            the them to be transferred at all;
+            listing them here *only* sets up the remapping.
         custom_options
             A dictionary of submit descriptors that are *not* built-in HTCondor descriptors.
             These are the descriptors that, if you were writing a submit file, would have a leading ``+`` or ``MY.``.
@@ -86,6 +100,38 @@ class MapOptions(collections.UserDict):
             Values that are single strings are used for all components of the map.
             Providing an iterable for the value will map that option.
             Certain keywords are reserved for internal use (see the RESERVED_KEYS class attribute).
+
+        Notes
+        -----
+        .. warning::
+           The representation of the values in ``fixed_input_files``,
+           ``input_files``, ``custom_options`` and ``kwargs`` should
+           exactly match the characters in the submit file after the ``=``.
+
+           For example, let's
+           say your job requires this submit file:
+
+           .. code::
+
+              # file: job.submit
+              foo = "bar"
+              aaa = xyz
+              bbb = false
+              ccc = 1
+
+           The ``MapOptions`` that express the same submit options would be:
+
+           .. code:: python
+
+               >>> options = {"foo": '"bar"', "aaa": "xyz", "bbb": "false", "ccc": "1"}
+               >>> print(options["foo"])  # exactly matches the value in the submit file
+               ... "bar"
+               >>> options["foo"] = "\\"bar\\""  # alternative value
+               >>> MapOptions(**options)
+
+           Submit file values with quotes require escaped quotes in the
+           Python string.
+
         """
         self._check_keyword_arguments(kwargs)
 
@@ -96,7 +142,7 @@ class MapOptions(collections.UserDict):
             for key, val in custom_options.items()
         }
         self._check_keyword_arguments(cleaned_custom_options)
-        kwargs = {**kwargs, **{'MY.' + key: val for key, val in cleaned_custom_options.items()}}
+        kwargs = {**kwargs, **{f'MY.{key}': val for key, val in cleaned_custom_options.items()}}
 
         super().__init__(**kwargs)
 
@@ -107,6 +153,7 @@ class MapOptions(collections.UserDict):
         self.fixed_input_files = fixed_input_files
 
         self.input_files = input_files
+        self.output_remaps = output_remaps
 
     def _check_keyword_arguments(self, kwargs):
         normalized_keys = set(k.lower() for k in kwargs.keys())
@@ -153,13 +200,11 @@ def normalize_path(path: Union[str, Path]) -> str:
     Turn input file paths into a format that HTCondor can understand.
     In particular, all local file paths must be turned into posix-style paths (even on Windows!)
     """
-    if isinstance(path, Path):
-        return path.absolute().as_posix()
-
-    if '://' in path:  # i.e., this is an url-like input file path
-        return path
-
-    return normalize_path(Path(path))  # local file path, but as a string
+    if isinstance(path, transfer.TransferPath):
+        return path.as_url()
+    elif isinstance(path, Path) or '://' not in path:
+        return Path(path).absolute().as_posix()
+    return path
 
 
 def create_submit_object_and_itemdata(
@@ -194,19 +239,32 @@ def create_submit_object_and_itemdata(
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
-    if map_options.input_files is not None:
+    # if any of the components have per-component input files, use a submit macro to insert them
+    if map_options.input_files is not None and any(map_options.input_files):
         input_files.append('$(extra_input_files)')
 
         joined = [
-            normalize_path(files) if isinstance(files, (str, Path))  # single file
+            normalize_path(files) if isinstance(files, (str, Path, transfer.TransferPath))  # single file
             else ', '.join(normalize_path(f) for f in files)  # multiple files
             for files in map_options.input_files
         ]
         if len(joined) != num_components:
             raise exceptions.MisalignedInputData(f'Length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
-        for d, f in zip(itemdata, joined):
-            d['extra_input_files'] = f
+        for itemdatum, files in zip(itemdata, joined):
+            itemdatum['extra_input_files'] = files
     descriptors['transfer_input_files'] = ','.join(input_files)
+
+    if map_options.output_remaps is not None and any(map_options.output_remaps):
+        # TODO: I would prefer to do this in the base descriptors, but it looks like an "empty" remap triggers strange behavior
+        descriptors["transfer_output_remaps"] = descriptors["transfer_output_remaps"].rstrip('"') + '; $(extra_remaps) "'
+
+        if isinstance(map_options.output_remaps, dict):
+            output_remaps = [map_options.output_remaps] * num_components
+        else:
+            output_remaps = map_options.output_remaps
+
+        for component, (itemdatum, remaps) in enumerate(zip(itemdata, output_remaps)):
+            itemdatum['extra_remaps'] = " ; ".join(f"{Path(names.USER_TRANSFER_DIR) / str(component) / k}={v.as_url()}" for k, v in remaps.items())
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
@@ -228,15 +286,29 @@ def create_submit_object_and_itemdata(
     return sub, itemdata
 
 
-def register_delivery_mechanism(
+def register_delivery_method(
     name: str,
-    options_func: Callable[[str, Path], dict],
+    descriptors_func: Callable[[str, Path], dict],
     setup_func: Optional[Callable[[str, Path], None]] = None,
 ) -> None:
+    """
+    Register a new delivery method with HTMap.
+    
+    Parameters
+    ----------
+    name
+        The name of the delivery method; this is what the ``DELIVERY_METHOD``
+        should be set to to use this delivery method.
+    descriptors_func
+        The function that provides the HTCondor submit descriptors
+        for this delivery method.
+    setup_func
+        The function that does any setup necessary to running the map.
+    """
     if setup_func is None:
         setup_func = lambda *args: None
 
-    BASE_OPTIONS_FUNCTION_BY_DELIVERY[name] = options_func
+    BASE_OPTIONS_FUNCTION_BY_DELIVERY[name] = descriptors_func
     SETUP_FUNCTION_BY_DELIVERY[name] = setup_func
 
 
@@ -258,6 +330,18 @@ def get_base_descriptors(
     delivery: str,
 ) -> dict:
     map_dir = map_dir.absolute()
+    output_files = [
+        f'{names.TRANSFER_DIR}/',
+        f'{names.USER_TRANSFER_DIR}/$(component)',
+    ]
+    output_remaps = [
+        f'$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}'
+    ]
+
+    if utils.CAN_USE_URL_OUTPUT_TRANSFER:
+        output_files.append(names.TRANSFER_PLUGIN_MARKER)
+        output_remaps.append(f'{names.TRANSFER_PLUGIN_MARKER}=htmap://_')
+
     core = {
         'JobBatchName': tag,
         'log': (map_dir / names.EVENT_LOG).as_posix(),
@@ -266,13 +350,16 @@ def get_base_descriptors(
         'stderr': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDERR_EXT}').as_posix(),
         'should_transfer_files': 'YES',
         'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
-        'transfer_output_files': f'{names.TRANSFER_DIR}/, {names.USER_TRANSFER_DIR}/$(component)',
-        'transfer_output_remaps': f'"$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}"',
+        'transfer_output_files': " , ".join(output_files),
+        'transfer_output_remaps': f'" {" ; ".join(output_remaps)} "',
         'on_exit_hold': 'ExitCode =!= 0',
         'initialdir': f"{(map_dir / names.OUTPUT_FILES_DIR).as_posix()}",
-        '+component': '$(component)',
-        '+IsHTMapJob': 'True',
+        'MY.component': '$(component)',
+        'MY.IsHTMapJob': 'True',
     }
+
+    if utils.CAN_USE_URL_OUTPUT_TRANSFER:
+        core['transfer_plugins'] = f"htmap={(map_dir / names.TRANSFER_PLUGIN).as_posix()}"
 
     try:
         base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
@@ -287,11 +374,13 @@ def get_base_descriptors(
         **from_settings,
     }
 
-    merged[REQUIREMENTS] = merge_requirements(
+    merged_requirements = merge_requirements(
         core.get(REQUIREMENTS, None),
         base.get(REQUIREMENTS, None),
         from_settings.get(REQUIREMENTS, None),
     )
+    if merged_requirements is not None:
+        merged[REQUIREMENTS] = merged_requirements
 
     return merged
 
@@ -315,6 +404,7 @@ def _copy_run_scripts(map_dir: Path):
         run_script_source_dir / names.RUN_SCRIPT,
         run_script_source_dir / names.RUN_WITH_SINGULARITY_SCRIPT,
         run_script_source_dir / names.RUN_WITH_TRANSPLANT_SCRIPT,
+        run_script_source_dir / names.TRANSFER_PLUGIN,
     ]
     for src in run_scripts:
         target = map_dir / src.name
@@ -332,9 +422,9 @@ def _get_base_descriptors_for_assume(
     }
 
 
-register_delivery_mechanism(
+register_delivery_method(
     'assume',
-    options_func = _get_base_descriptors_for_assume,
+    descriptors_func = _get_base_descriptors_for_assume,
 )
 
 
@@ -351,9 +441,30 @@ def _get_base_descriptors_for_docker(
     }
 
 
-register_delivery_mechanism(
+register_delivery_method(
     'docker',
-    options_func = _get_base_descriptors_for_docker,
+    descriptors_func = _get_base_descriptors_for_docker,
+)
+
+
+def _get_base_descriptors_for_shared(
+    tag: str,
+    map_dir: Path,
+) -> dict:
+    return {
+        'universe': 'vanilla',
+        'executable': Path(sys.executable).absolute().as_posix(),
+        'transfer_executable': 'False',
+        'arguments': f'{names.RUN_SCRIPT} $(component)',
+        'transfer_input_files': [
+            (map_dir / names.RUN_SCRIPT).as_posix(),
+        ],
+    }
+
+
+register_delivery_method(
+    'shared',
+    descriptors_func = _get_base_descriptors_for_shared,
 )
 
 
@@ -373,9 +484,9 @@ def _get_base_descriptors_for_singularity(
     }
 
 
-register_delivery_mechanism(
+register_delivery_method(
     'singularity',
-    options_func = _get_base_descriptors_for_singularity,
+    descriptors_func = _get_base_descriptors_for_singularity,
 )
 
 
@@ -424,7 +535,7 @@ def _run_delivery_setup_for_transplant(
 
         try:
             shutil.make_archive(
-                base_name = target,
+                base_name = str(target),
                 format = 'gztar',
                 root_dir = py_dir,
             )
@@ -451,8 +562,8 @@ def _get_transplant_hash(pip_freeze_output: bytes) -> str:
     return h.hexdigest()
 
 
-register_delivery_mechanism(
+register_delivery_method(
     'transplant',
-    options_func = _get_base_descriptors_for_transplant,
+    descriptors_func = _get_base_descriptors_for_transplant,
     setup_func = _run_delivery_setup_for_transplant,
 )

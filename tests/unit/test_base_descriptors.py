@@ -18,12 +18,12 @@ import pytest
 from pathlib import Path
 
 import htmap
-from htmap.options import get_base_descriptors, register_delivery_mechanism, unregister_delivery_mechanism
+from htmap.options import get_base_descriptors, register_delivery_method, unregister_delivery_mechanism
 
 
 @pytest.fixture(scope = 'module', autouse = True)
 def add_null_delivery():
-    register_delivery_mechanism('null', lambda tag, map_dir: {})
+    register_delivery_method('null', lambda tag, map_dir: {})
 
     yield
 

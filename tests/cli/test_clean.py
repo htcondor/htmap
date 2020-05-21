@@ -31,7 +31,7 @@ def test_clean_removes_transient_map(cli):
 
     result = cli(['clean'])
 
-    assert m.is_removed
+    assert not m.exists
 
 
 def test_clean_has_tags_of_all_maps_removed(cli):
@@ -55,7 +55,7 @@ def test_clean_removes_multiple_transient_maps(cli):
 
     result = cli(['clean'])
 
-    assert all(m.is_removed for m in maps)
+    assert all(not m.exists for m in maps)
 
 
 def test_clean_does_not_remove_persistent_map_by_default(cli):
@@ -63,7 +63,7 @@ def test_clean_does_not_remove_persistent_map_by_default(cli):
 
     result = cli(['clean'])
 
-    assert not m.is_removed
+    assert m.exists
 
 
 def test_clean_with_all_removes_persistent_maps(cli):
@@ -71,4 +71,4 @@ def test_clean_with_all_removes_persistent_maps(cli):
 
     result = cli(['clean', '--all'])
 
-    assert m.is_removed
+    assert not m.exists

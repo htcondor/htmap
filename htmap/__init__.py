@@ -45,7 +45,7 @@ from .maps import (
 from .holds import ComponentHold
 from .errors import ComponentError
 from .state import ComponentStatus
-from .options import MapOptions, register_delivery_mechanism
+from .options import MapOptions, register_delivery_method
 from .management import (
     status,
     status_json,
@@ -60,8 +60,7 @@ from .management import (
 )
 from .tags import get_tags
 from .checkpointing import checkpoint
-from .transfer_output import transfer_output_files
-from .transfer_input import TransferPath, TransferWindowsPath, TransferPosixPath
+from .transfer import TransferPath, transfer_output_files
 from . import exceptions
 
 from . import _startup

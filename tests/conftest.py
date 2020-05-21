@@ -15,6 +15,7 @@
 
 import time
 from pathlib import Path
+from copy import copy
 
 import pytest
 
@@ -25,22 +26,35 @@ from htmap._startup import ensure_htmap_dir_exists
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
-htmap.settings['DELIVERY_METHOD'] = 'assume'  # assume is the default for testing
-htmap.settings['WAIT_TIME'] = 0.01
+htmap.settings['DELIVERY_METHOD'] = 'shared'  # shared is the default for all tests that aren't parametric
+htmap.settings['WAIT_TIME'] = 0.1
 htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
+htmap.settings['MAP_OPTIONS.keep_claim_idle'] = '1'
+
+SETTINGS = copy(htmap.settings)
 
 
-@pytest.fixture(scope = 'session', autouse = True)
-def set_transplant_dir(tmpdir_factory):
+@pytest.fixture(scope = 'function', autouse = True)
+def reset_settings():
+    htmap.settings.replace(SETTINGS)
+
+
+@pytest.fixture(scope = 'function', autouse = True)
+def set_transplant_dir(tmpdir_factory, reset_settings):
     path = Path(tmpdir_factory.mktemp('htmap_transplant_dir'))
     htmap.settings['TRANSPLANT.DIR'] = path
+
+
+@pytest.fixture(scope = 'function')
+def delivery_methods(delivery_method, reset_settings):
+    htmap.settings['DELIVERY_METHOD'] = delivery_method
 
 
 def pytest_addoption(parser):
     parser.addoption(
         "--delivery",
         nargs = "+",
-        default = ['assume'],
+        default = ['shared'],  # shared is the default for parametric delivery testing
     )
 
 
@@ -52,16 +66,16 @@ def pytest_generate_tests(metafunc):
         )
 
 
-@pytest.fixture(scope = 'function')
-def delivery_methods(delivery_method):
-    htmap.settings['DELIVERY_METHOD'] = delivery_method
-
-
 @pytest.fixture(scope = 'function', autouse = True)
-def set_htmap_dir(tmpdir_factory):
-    path = Path(tmpdir_factory.mktemp('htmap_dir'))
-    htmap.settings['HTMAP_DIR'] = path
+def set_htmap_dir_and_clean(tmpdir_factory):
+    map_dir = Path(tmpdir_factory.mktemp('htmap_dir'))
+
+    htmap.settings['HTMAP_DIR'] = map_dir
     ensure_htmap_dir_exists()
+
+    yield
+
+    htmap.clean(all = True)
 
 
 @pytest.fixture(scope = 'session')

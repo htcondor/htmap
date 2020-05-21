@@ -22,3 +22,9 @@ def test_version(cli):
     result = cli(['version'])
 
     assert htmap.version() in result.output
+
+
+def test_dash_dash_version(cli):
+    result = cli(['--version'])
+
+    assert htmap.version() in result.output

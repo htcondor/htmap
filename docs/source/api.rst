@@ -149,14 +149,10 @@ Additionally, default map options can be set globally via ``settings['MAP_OPTION
 .. autoclass:: htmap.MapOptions
    :members:
 
-Input File Transfer
+File Transfer
 -------------------
 
 .. autoclass:: htmap.TransferPath
-
-
-Output File Transfer
---------------------
 
 .. autofunction:: htmap.transfer_output_files
 
@@ -194,6 +190,10 @@ These functions are useful for generating machine-readable status information.
 
 .. autofunction:: htmap.status_csv
 
+Delivery Methods
+----------------
+
+.. autofunction:: htmap.register_delivery_method
 
 Transplant Installs
 +++++++++++++++++++

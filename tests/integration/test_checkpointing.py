@@ -20,35 +20,10 @@ import pytest
 
 import htmap
 
-
-@pytest.mark.timeout(120)
-def test_checkpoint_file_exists_after_restart():
-    @htmap.mapped
-    def test(_):
-        checkpoint_path = Path('chk')
-
-        if checkpoint_path.exists():
-            return True
-
-        checkpoint_path.touch()
-        htmap.checkpoint(checkpoint_path)
-
-        time.sleep(30)
-
-        return False
-
-    m = test.map([None])
-
-    while m.component_statuses[0] is not htmap.ComponentStatus.RUNNING:
-        time.sleep(.1)
-
-    time.sleep(5)
-    m.vacate()
-
-    assert m.get(0, timeout = 60) is True
+TIMEOUT = 300
 
 
-@pytest.mark.timeout(120)
+@pytest.mark.timeout(TIMEOUT)
 def test_checkpoint_file_has_expected_contents_after_restart():
     @htmap.mapped
     def test(_):
@@ -72,4 +47,4 @@ def test_checkpoint_file_has_expected_contents_after_restart():
     time.sleep(5)
     m.vacate()
 
-    assert m.get(0, timeout = 60) is True
+    assert m.get(0)

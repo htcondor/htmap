@@ -5,17 +5,16 @@ data_file = /tmp/htmap-test-coverage
 
 include =
     htmap/*
+    tests/*
 
 omit =
-    tests/*
     htmap/run/*
-    htmap/checkpointing.py
-    htmap/transfer_output.py
 
 [report]
 exclude_lines =
     pragma: no cover
     pragma: unreachable
+    pragma: execute-only
     def __repr__
     def __str__
     raise NotImplementedError

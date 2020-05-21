@@ -39,15 +39,19 @@ SUBMIT = 'submit'
 ITEMDATA = 'itemdata'
 TRANSIENT_MARKER = 'transient'
 MAP_STATE = 'map_state'
-RUN_SCRIPT = 'run.py'
-RUN_WITH_TRANSPLANT_SCRIPT = 'run_with_transplant.sh'
-RUN_WITH_SINGULARITY_SCRIPT = 'run_with_singularity.sh'
+RUN_SCRIPT = '_htmap_run.py'
+RUN_WITH_TRANSPLANT_SCRIPT = '_htmap_run_with_transplant.sh'
+RUN_WITH_SINGULARITY_SCRIPT = '_htmap_run_with_singularity.sh'
+TRANSFER_PLUGIN = "_htmap_transfer_plugin.py"
 
 # execute-side directory names
-# these are NOT referenced by the run.py script, so you need to change the names
+# these are NOT referenced by the _htmap_run.py script, so you need to change the names
 # there as well if you change them here
 TRANSFER_DIR = '_htmap_transfer'
 USER_TRANSFER_DIR = '_htmap_user_transfer'
 CHECKPOINT_PREP = '_htmap_prep_checkpoint'
 CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
 CHECKPOINT_OLD = '_htmap_old_checkpoint'
+TRANSFER_PLUGIN_CACHE = "_htmap_transfer_plugin_cache"
+USER_URL_TRANSFER_DIR = '_htmap_user_url_transfer'
+TRANSFER_PLUGIN_MARKER = "_htmap_do_output_transfer"
