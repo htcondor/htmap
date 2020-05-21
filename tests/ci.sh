@@ -15,3 +15,5 @@ pytest --version
 echo
 
 pytest -n 4 --cov --durations=20
+
+chmod -R +r .
