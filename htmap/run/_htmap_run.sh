@@ -2,4 +2,4 @@
 
 set -e
 
-python run.py $1
+python _run.py $1

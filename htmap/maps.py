@@ -32,7 +32,7 @@ from tqdm import tqdm
 import htcondor
 import classad
 
-from . import htio, state, tags, errors, holds, mapping, settings, utils, names, exceptions
+from . import htio, state, tags, errors, holds, mapping, condor, settings, utils, names, exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ def _protect_map_after_remove(result_class):
 
 
 # this set is used in Map.load to make Maps singletons
-MAPS: Set['Map'] = weakref.WeakSet()
+MAPS = weakref.WeakSet()
 
 
 def maps_by_tag() -> Dict[str, 'Map']:
@@ -67,7 +67,7 @@ def maps_by_tag() -> Dict[str, 'Map']:
     Don't try to cache the results of this function; always get it fresh.
     This lets it smoothly handle retagging.
     """
-    return {map.tag: map for map in MAPS}
+    return {m.tag: m for m in MAPS}
 
 
 @_protect_map_after_remove
@@ -167,7 +167,7 @@ class Map(collections.abc.Sequence):
         """The length of a :class:`Map` is the number of components it contains."""
         return self._num_components
 
-    def __contains__(self, component: int) -> bool:
+    def __contains__(self, component: Any) -> bool:
         return component in range(self._num_components)
 
     @property
@@ -208,7 +208,7 @@ class Map(collections.abc.Sequence):
         return self._user_output_files_dir / str(component)
 
     @property
-    def components(self) -> Tuple[int]:
+    def components(self) -> Tuple[int, ...]:
         """Return a tuple containing the component indices for the :class:`htmap.Map`."""
         return tuple(range(self._num_components))
 
@@ -338,7 +338,7 @@ class Map(collections.abc.Sequence):
         If the component actually failed, raise :class:`MapComponentError`.
         """
         if component not in range(0, len(self)):
-            raise IndexError(f'Tried to get output for component {component}, but map {self.map} only has {len(self.map)} components')
+            raise IndexError(f'Tried to get output for component {component}, but map {self.tag} only has {len(self)} components')
 
         self._wait_for_component(component, timeout)
 
@@ -414,7 +414,7 @@ class Map(collections.abc.Sequence):
         """
         return self._load_error(component, timeout = timeout)
 
-    def __iter__(self) -> Iterable[Any]:
+    def __iter__(self) -> Iterator[Any]:
         """
         Iterating over the :class:`htmap.Map` yields the outputs in the same order as the inputs,
         waiting on each individual output to become available.
@@ -563,7 +563,7 @@ class Map(collections.abc.Sequence):
 
         req = self._requirements(requirements)
 
-        schedd = mapping.get_schedd()
+        schedd = condor.get_schedd()
         q = schedd.xquery(
             requirements = req,
             projection = projection,
@@ -718,7 +718,7 @@ class Map(collections.abc.Sequence):
         if not self.is_active:
             return classad.ClassAd()
 
-        schedd = mapping.get_schedd()
+        schedd = condor.get_schedd()
         req = self._requirements(requirements)
         a = schedd.act(action, req)
 
@@ -872,7 +872,7 @@ class Map(collections.abc.Sequence):
         if not self.is_active:
             return
 
-        schedd = mapping.get_schedd()
+        schedd = condor.get_schedd()
         schedd.edit(self._requirements(requirements), attr, value)
 
         logger.debug(f'Set attribute {attr} for map {self.tag} to {value}')
@@ -911,7 +911,7 @@ class Map(collections.abc.Sequence):
         """
         self._edit('RequestDisk', str(disk))
 
-    def _submit(self, components: Optional[Iterable[int]] = None):
+    def _submit(self, components: Optional[Iterable[int]] = None) -> None:
         if components is None:
             components = self.components
 
@@ -931,7 +931,7 @@ class Map(collections.abc.Sequence):
         try:
             htio.append_cluster_id(self._map_dir, new_cluster_id)
         except BaseException as e:
-            mapping.get_schedd().act(htcondor.JobAction.Remove, f"ClusterId=={new_cluster_id}")
+            condor.get_schedd().act(htcondor.JobAction.Remove, f"ClusterId=={new_cluster_id}")
 
         logger.debug(f'Submitted {len(sliced_itemdata)} components (out of {self._num_components}) from map {self.tag}')
 
@@ -1076,13 +1076,13 @@ class MapStdX(collections.abc.Sequence):
     def __len__(self):
         return len(self.map)
 
-    def __getitem__(self, component: int) -> str:
+    def __getitem__(self, component: Any) -> str:
         try:
             return self.get(component, timeout = 0)
         except exceptions.TimeoutError as e:
             raise FileNotFoundError(f"Standard output/error for component {component} of map {self.map.tag} is not available yet.") from e
 
-    def __contains__(self, component: int) -> bool:
+    def __contains__(self, component: Any) -> bool:
         return component in self.map
 
     def get(

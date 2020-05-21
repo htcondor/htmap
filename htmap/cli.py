@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, List, Collection
+from typing import Optional, List, Collection, Tuple
 
 import logging
 import sys
@@ -27,8 +27,7 @@ from pathlib import Path
 import htcondor
 import htmap
 from htmap import names, __version__
-from htmap.management import _status
-from htmap.utils import read_events
+from htmap.management import _status, read_events
 
 import click
 from click_didyoumean import DYMGroup
@@ -622,14 +621,14 @@ def rerun():
     pass
 
 
-@rerun.command()
+@rerun.command(name = 'components')
 @tag
 @click.argument(
     'components',
     nargs = -1,
     type = int,
 )
-def components(tag, components):
+def rerun_components(tag, components):
     """
     Rerun selected components from a single map.
 
@@ -740,9 +739,9 @@ def info():
     click.echo(htmap.transplant_info())
 
 
-@transplants.command()
+@transplants.command(name = 'remove')
 @click.argument('index')
-def remove(index):
+def remove_transplant(index):
     """Remove a transplant install by index."""
     try:
         index = int(index)
@@ -983,15 +982,15 @@ def _cli_load(tag: str) -> htmap.Map:
             sys.exit(1)
 
 
-def _get_tags(all: bool, pattern: List[str], tags: List[str]) -> List[str]:
+def _get_tags(all: bool, pattern: List[str], tags: List[str]) -> Tuple[str, ...]:
     if all:
-        tags = htmap.get_tags()
+        tags = list(htmap.get_tags())
     elif len(pattern) > 0:
         tags += _get_tags_from_patterns(pattern)
 
     _check_tags(tags)
 
-    return tags
+    return tuple(tags)
 
 
 def _get_tags_from_patterns(patterns: List[str]) -> List[str]:

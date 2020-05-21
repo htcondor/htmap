@@ -32,7 +32,9 @@ USER_TRANSFER_DIR = '_htmap_user_transfer'
 CHECKPOINT_PREP = '_htmap_prep_checkpoint'
 CHECKPOINT_CURRENT = '_htmap_current_checkpoint'
 CHECKPOINT_OLD = '_htmap_old_checkpoint'
-
+TRANSFER_PLUGIN_CACHE = "_htmap_transfer_plugin_cache"
+USER_URL_TRANSFER_DIR = '_htmap_user_url_transfer'
+TRANSFER_PLUGIN_MARKER = "_htmap_do_output_transfer"
 
 # import cloudpickle goes in the functions that need it directly
 # so that errors are raised later
@@ -79,9 +81,13 @@ def print_node_info(node_info):
 
 
 def get_python_info():
+    if sys.executable == '':
+        raise Exception("Was not able to determine Python executable.")
+
+    v = sys.version_info
     return (
         sys.executable,
-        f"{'.'.join(str(x) for x in sys.version_info[:3])} {sys.version_info[3]}",
+        "{}.{}.{}".format(v.major, v.minor, v.micro),
         pip_freeze(),
     )
 
@@ -94,16 +100,40 @@ def print_python_info(python_info):
 
 
 def pip_freeze() -> str:
-    return subprocess.run(
+    freeze = subprocess.run(
         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
         stdout = subprocess.PIPE,
-    ).stdout.decode('utf-8').strip()
+        stderr = subprocess.PIPE,
+    )
+
+    if freeze.returncode != 0:
+        raise Exception("Failed to get pip freeze due to:\n{}".format(freeze.stderr.decode('utf-8')))
+
+    return freeze.stdout.decode('utf-8').strip()
 
 
-def print_dir_contents(contents):
-    print('Working directory contents:')
-    for path in contents:
-        print('  ' + str(path))
+def print_dir_contents(root):
+    msg = '\n'.join(_yield_dir_contents_tree(root))
+    print(msg)
+
+
+def _yield_dir_contents_tree(root, prefix = ""):
+    contents = list(root.iterdir())
+    for idx, path in enumerate(sorted(contents)):
+        if idx < len(contents) - 1:
+            tree = "|-"
+            next_prefix = prefix + "|  "
+        else:
+            tree = "\\-"
+            next_prefix = prefix + "   "
+
+        yield f"{prefix}{tree} {'* ' if path.is_dir() else ''}{path.name}"
+
+        if path.is_dir():
+            yield from _yield_dir_contents_tree(
+                path,
+                prefix = next_prefix,
+            )
 
 
 def print_run_info(component, func, args, kwargs):
@@ -176,7 +206,7 @@ def load_checkpoint(scratch_dir, transfer_dir):
         old_dir.rename(transfer_dir / curr_dir.name)
 
 
-def clean_and_remake_dir(dir: Path):
+def clean_and_remake_dir(dir: Path) -> None:
     if dir.exists():
         shutil.rmtree(dir)
     dir.mkdir()
@@ -195,19 +225,21 @@ def main(component):
     transfer_dir.mkdir(exist_ok = True)
     user_transfer_dir = scratch_dir / USER_TRANSFER_DIR / os.getenv('HTMAP_COMPONENT')
     user_transfer_dir.mkdir(exist_ok = True, parents = True)
+    Path(TRANSFER_PLUGIN_CACHE).mkdir(exist_ok = True, parents = True)
+    Path(TRANSFER_PLUGIN_MARKER).touch(exist_ok = True)
 
     load_checkpoint(scratch_dir, transfer_dir)
 
-    contents = list(scratch_dir.iterdir())
-    print_dir_contents(contents)
+    print("Scratch directory contents before run:")
+    print_dir_contents(scratch_dir)
     print()
 
     try:
         python_info = get_python_info()
         print_python_info(python_info)
-    except Exception as e:
+    except Exception:
+        print("Failed to get information on Python due to:\n{}".format(traceback.format_exc()))
         python_info = None
-        print(e)
     print()
 
     try:
@@ -222,10 +254,10 @@ def main(component):
         status = 'OK'
 
         print('\n-----  MAP COMPONENT OUTPUT END  -----\n')
-    except Exception as e:
+    except Exception:
         print('\n-------  MAP COMPONENT ERROR  --------\n')
 
-        (type, value, trace) = sys.exc_info()
+        type, value, trace = sys.exc_info()
         stack_summ = traceback.StackSummary.from_list(build_frames(trace))
         exc_msg = textwrap.dedent('\n'.join(traceback.format_exception_only(type, value))).rstrip()
 
@@ -239,13 +271,20 @@ def main(component):
         )
         status = 'ERR'
 
+        traceback.print_exc(file = sys.stdout)
         traceback.print_exc(file = sys.stderr)
+
+        print('\n------ MAP COMPONENT ERROR END -------\n')
 
     clean_and_remake_dir(scratch_dir / CHECKPOINT_CURRENT)
     clean_and_remake_dir(transfer_dir)
     save_output(component, status, result_or_error, transfer_dir)
 
     print('Finished executing component at {}'.format(datetime.datetime.utcnow()))
+    print()
+
+    print("Scratch directory contents after run:")
+    print_dir_contents(scratch_dir)
 
 
 if __name__ == '__main__':

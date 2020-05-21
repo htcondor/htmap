@@ -25,6 +25,7 @@ import io
 import textwrap
 import shutil
 import uuid
+from concurrent.futures.thread import ThreadPoolExecutor
 
 from . import maps, tags, mapping, utils, state, names, settings, exceptions
 
@@ -193,7 +194,7 @@ def _status(
 
     headers = ['Tag']
     if include_state:
-        utils.read_events(maps)
+        read_events(maps)
         headers += [str(d) for d in state.ComponentStatus.display_statuses()]
     if include_meta:
         headers += ['Local Data', 'Max Memory', 'Max Runtime', 'Total Runtime']
@@ -247,7 +248,7 @@ def status_json(
     maps = sorted(maps, key = lambda m: m.tag)
 
     if include_state:
-        utils.read_events(maps)
+        read_events(maps)
 
     j = {}
     for map in maps:
@@ -308,7 +309,7 @@ def status_csv(
     maps = sorted(maps, key = lambda m: m.tag)
 
     if include_state:
-        utils.read_events(maps)
+        read_events(maps)
 
     rows = []
     for map in maps:
@@ -400,3 +401,9 @@ def transplant_info() -> str:
         entries.append(entry)
 
     return utils.rstr('\n\n'.join(entries))
+
+
+def read_events(maps: Iterable[maps.Map]) -> None:
+    """Read the events logs of the given maps using a thread pool."""
+    with ThreadPoolExecutor() as pool:
+        pool.map(lambda m: m._state._read_events(), maps)

@@ -19,7 +19,7 @@ ARG PYTHON_VERSION=3.6
 FROM python:${PYTHON_VERSION}
 
 # build config
-ARG HTCONDOR_VERSION=8.8
+ARG HTCONDOR_VERSION=8.9
 
 # switch to root to do root-level config
 USER root
@@ -29,7 +29,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # install utils and dependencies
 RUN apt-get update \
- && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc \
+ && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/* \
  && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \

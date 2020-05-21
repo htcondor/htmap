@@ -44,7 +44,7 @@ def checkpoint(*paths: os.PathLike) -> None:
     if os.getenv('HTMAP_ON_EXECUTE') != "1":
         return
 
-    transfer_dir = Path(os.getenv('_CONDOR_SCRATCH_DIR')) / names.TRANSFER_DIR
+    transfer_dir = Path(os.environ['_CONDOR_SCRATCH_DIR']) / names.TRANSFER_DIR
 
     # this is not the absolute safest method
     # but it's good enough for government work

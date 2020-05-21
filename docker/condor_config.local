@@ -4,8 +4,13 @@ use ROLE: CentralManager
 use ROLE: Submit
 use ROLE: Execute
 
+# Logging setup
+#ALL_DEBUG = D_ALL
+#TOOL_DEBUG = D_ALL
+STARTER_LOG_NAME_APPEND=jobid
+
 # Edit paths so all state gets stored in user home directory
-LOCAL_DIR=$ENV(HOME)/.condor/state
+LOCAL_DIR=$ENV(HOME)/.condor/local
 LOCK=$(LOCAL_DIR)/lock
 LOG=$(LOCAL_DIR)/log
 RUN=$(LOCAL_DIR)/run

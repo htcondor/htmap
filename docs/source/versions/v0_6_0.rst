@@ -1,12 +1,26 @@
 v0.6.0
 ======
 
+.. py:currentmodule:: htmap
+
+
 New Features/Improvements
 -------------------------
 
 * Add the ``shared`` delivery method, which supports HTCondor pools that use
   shared filesystems to make Python installations available universally.
   Issues: :issue:`195` and :issue:`198`
+* HTMap now supports getting input files from remote destinations (i.e., not
+  from the submit machine) via existing input file auto-discovery. Just use
+  the revised :class:`TransferPath` in your mapped function arguments, and
+  HTMap will arrange for the file to be transferred to your map component!
+* HTMap now supports sending output files to destinations that are not the
+  submit machine via HTCondor's ``transfer_output_remaps`` mechanism.
+  Output files can be sent to various locations, such as an S3 service.
+  See the new ``output_remaps`` argument of :class:`MapOptions` and the revised
+  :class:`TransferPath`, as well as the new tutorial
+  :ref:`transferring-output-to-other-places` for more details on how to use
+  this feature.
 * Massive documentation upgrade courtesy of `Scott Sievert <https://github.com/stsievert>`_!
   Issues/PRs: :issue:`208`, :pr:`191`, and :pr:`202`
 * The HTMap CLI (normally accessed by running ``htmap``) can now also be

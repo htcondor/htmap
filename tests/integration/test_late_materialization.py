@@ -38,7 +38,7 @@ def late_noop():
 # to reproduce locally, and has never impacted any actual users.
 # Marked non-strict xfail for now; hope to revisit in the future.
 @pytest.mark.timeout(TIMEOUT)
-@pytest.mark.xfail(strict = False)
+@pytest.mark.xfail(strict = False, reason = "Flaky on CI on HTCondor v8.8.8")
 def test_wait_with_late_materialization(late_noop):
     m = late_noop.map(range(3))
     time.sleep(.1)

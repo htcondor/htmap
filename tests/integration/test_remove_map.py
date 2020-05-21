@@ -83,7 +83,7 @@ def test_failure_to_contact_schedd_when_removing_map_reraises_underlying_excepti
     m = mapped_doubler.map(range(1))
 
     # simulate failing to get the schedd for some reason
-    mocker.patch('htmap.mapping.get_schedd', side_effect = FileNotFoundError("poison"))
+    mocker.patch('htmap.condor.get_schedd', side_effect = FileNotFoundError("poison"))
 
     with pytest.raises(FileNotFoundError):
         m.remove()
@@ -94,7 +94,7 @@ def test_can_force_remove_map_without_contacting_schedd(mapped_doubler, mocker):
     m = mapped_doubler.map(range(1))
 
     # simulate failing to get the schedd for some reason
-    mocker.patch('htmap.mapping.get_schedd', side_effect = FileNotFoundError("poison"))
+    mocker.patch('htmap.condor.get_schedd', side_effect = FileNotFoundError("poison"))
 
     m.remove(force = True)
 

@@ -47,10 +47,9 @@ Advanced Tutorials
 
 :doc:`recipes/docker-image-cookbook`
    How to build HTMap-compatible Docker images.
-   Yes, this single recipe is an entire cookbook!
 
 :doc:`recipes/output-files`
-   How to move arbitrary files back to the submit node.
+   How to move arbitrary files back to the submit machine, or to other locations.
 
 :doc:`recipes/wrapping-external-programs`
    How to send input and output to an external (i.e., non-Python) program from inside a mapped function.
