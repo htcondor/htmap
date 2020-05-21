@@ -52,7 +52,23 @@ This command shows the status of each job for various tags:
    htmap status --live  # See live display of info on each job (and their tags)
 
 This might indicate that 4 jobs in tag ``foo`` are completed and 2 are idle (or
-waiting to be run).  These commands will show more information about individual
+waiting to be run).
+
+This command completely deletes the map with tag ``foo``, including removing
+any jobs that are in any state (running, idle, held, whatever). Use this if you
+want to completely resubmit the map from scratch, without any previous state.
+
+.. code::
+
+   htmap remove foo
+
+This commands keeps the jobs in the queue, but prevents them from running. This allowed editing them  and lets you edit them live.
+
+.. code::
+
+   htmap hold foo
+
+These commands will show more information about individual
 maps and map components:
 
 .. code::

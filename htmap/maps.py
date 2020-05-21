@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 def _protector(method):
     @functools.wraps(method)
     def _protect(self, *args, **kwargs):
-        if self.is_removed:
+        if not self.exists:
             raise exceptions.MapWasRemoved(f'Cannot call {method} for map {self.tag} because it has been removed')
         return method(self, *args, **kwargs)
 
@@ -728,9 +728,12 @@ class Map(collections.abc.Sequence):
 
     def remove(self, force: bool = False) -> None:
         """
-        This command removes a map.
-        All data associated with a removed map is permanently deleted and all
-        components are removed from the HTCondor queue.
+        This command removes a map from the Condor queue. Functionally, this
+        command aborts a job.
+
+        This function will completely remove a map from the Condor
+        queue regardless of job state (running, executing, waiting, etc).
+        All data associated with a removed map is permanently deleted.
 
         Parameters
         ----------
@@ -799,8 +802,12 @@ class Map(collections.abc.Sequence):
         logger.error(f'Failed to remove map directory for map {self.tag}, run htmap.clean() to try to remove later')
 
     @property
-    def is_removed(self) -> bool:
-        return not self._map_dir.exists()
+    def exists(self) -> bool:
+        """
+        True if and only if files related to the tag exist on the
+        scheduler node.
+        """
+        return self._map_dir.exists()
 
     def hold(self) -> None:
         """
