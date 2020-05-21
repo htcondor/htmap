@@ -31,19 +31,19 @@ logger = logging.getLogger(__name__)
 
 def save_object(obj: Any, path: Path) -> None:
     """Serialize a Python object (including "objects", like functions) to a file at the given ``path``."""
-    with gzip.open(path, mode = 'wb') as file:
+    with gzip.open(path, mode="wb") as file:
         cloudpickle.dump(obj, file)
 
 
 def load_object(path: Path) -> Any:
     """Deserialize an object from the file at the given ``path``."""
-    with gzip.open(path, mode = 'rb') as file:
+    with gzip.open(path, mode="rb") as file:
         return cloudpickle.load(file)
 
 
 def load_objects(path: Path) -> Iterator[Any]:
     """Deserialize a stream of objects from the file at the given ``path``."""
-    with gzip.open(path, mode = 'rb') as file:
+    with gzip.open(path, mode="rb") as file:
         while True:
             yield cloudpickle.load(file)
 
@@ -53,21 +53,18 @@ def save_func(map_dir: Path, func: Callable) -> None:
     path = map_dir / names.FUNC
     save_object(func, path)
 
-    logger.debug(f'Saved function to {path}')
+    logger.debug(f"Saved function to {path}")
 
 
-def save_inputs(
-    map_dir: Path,
-    args_and_kwargs: Iterable[ARGS_AND_KWARGS],
-) -> None:
+def save_inputs(map_dir: Path, args_and_kwargs: Iterable[ARGS_AND_KWARGS],) -> None:
     """
     Save the arguments to the mapped function to the map's input directory.
     """
     base_path = map_dir / names.INPUTS_DIR
     for component, a_and_k in enumerate(args_and_kwargs):
-        save_object(a_and_k, base_path / f'{component}.{names.INPUT_EXT}')
+        save_object(a_and_k, base_path / f"{component}.{names.INPUT_EXT}")
 
-    logger.debug(f'Saved args and kwargs in {base_path}')
+    logger.debug(f"Saved args and kwargs in {base_path}")
 
 
 def save_num_components(map_dir: Path, num_components: int) -> None:
@@ -85,14 +82,13 @@ def _num_components_path(map_dir: Path) -> Path:
 
 
 def append_cluster_id(map_dir: Path, cluster_id: int) -> None:
-    with _cluster_ids_path(map_dir).open(mode = 'a') as file:
-        file.write(str(cluster_id) + '\n')
+    with _cluster_ids_path(map_dir).open(mode="a") as file:
+        file.write(str(cluster_id) + "\n")
 
 
 def load_cluster_ids(map_dir: Path) -> List[int]:
     return [
-        int(cid.strip())
-        for cid in _cluster_ids_path(map_dir).read_text().splitlines()
+        int(cid.strip()) for cid in _cluster_ids_path(map_dir).read_text().splitlines()
     ]
 
 
@@ -103,20 +99,17 @@ def _cluster_ids_path(map_dir: Path) -> Path:
 def save_submit(map_dir: Path, submit: htcondor.Submit) -> None:
     """Save a dictionary that represents the map's :class:`htcondor.Submit` object."""
     path = _submit_path(map_dir)
-    with path.open(mode = 'w') as f:
+    with path.open(mode="w") as f:
         json.dump(
-            dict(submit),
-            f,
-            indent = 4,
-            separators = (', ', ': '),
+            dict(submit), f, indent=4, separators=(", ", ": "),
         )
 
-    logger.debug(f'Saved submit object to {path}')
+    logger.debug(f"Saved submit object to {path}")
 
 
 def load_submit(map_dir: Path) -> htcondor.Submit:
     """Load an :class:`htcondor.Submit` object that was saved using :func:`save_submit`."""
-    with _submit_path(map_dir).open(mode = 'r') as f:
+    with _submit_path(map_dir).open(mode="r") as f:
         return htcondor.Submit(json.load(f))
 
 
@@ -127,20 +120,17 @@ def _submit_path(map_dir: Path) -> Path:
 def save_itemdata(map_dir: Path, itemdata: List[dict]) -> None:
     """Save the map's itemdata as a list of JSON dictionaries."""
     path = _itemdata_path(map_dir)
-    with path.open(mode = 'w') as f:
+    with path.open(mode="w") as f:
         json.dump(
-            itemdata,
-            f,
-            indent = None,
-            separators = (',', ':'),
+            itemdata, f, indent=None, separators=(",", ":"),
         )  # most compact representation
 
-    logger.debug(f'Saved itemdata to {path}')
+    logger.debug(f"Saved itemdata to {path}")
 
 
 def load_itemdata(map_dir: Path) -> List[dict]:
     """Load itemdata that was saved using :func:`save_itemdata`."""
-    with _itemdata_path(map_dir).open(mode = 'r') as f:
+    with _itemdata_path(map_dir).open(mode="r") as f:
         return json.load(f)
 
 

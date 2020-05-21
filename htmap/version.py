@@ -17,12 +17,12 @@ from typing import Tuple, Optional
 
 from . import utils
 
-__version__ = '0.6.0'
+__version__ = "0.6.0"
 
 
 def version() -> str:
     """Return a string containing human-readable version information."""
-    return f'HTMap version {__version__}'
+    return f"HTMap version {__version__}"
 
 
 def version_info() -> Tuple[int, int, int, Optional[str], Optional[int]]:
