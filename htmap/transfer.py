@@ -29,24 +29,49 @@ from . import names, utils, exceptions
 @functools.total_ordering
 class TransferPath:
     """
-    A :class:`TransferPath`, when used as an argument to a mapped function,
-    tells HTMap to arrange for the specified files/directories to be transferred
-    to the execute machine.
+    A :class:`TransferPath` describes the location of a file or directory.
+    If the ``protocol`` and ``location`` are both ``None``, it describes a
+    location on the local filesystem. If either are given, it describes
+    a remote location.
 
-    Transfer paths are recognized as long as they are either:
+    When used as an argument to a mapped function, a :class:`TransferPath`
+    tells HTMap to arrange for the specified files/directories to be transferred
+    to the execute machine from some location, which may be the local filesystem
+    on the submit machine or some remote location like an HTTP address or an
+    S3 server.
+
+    Transfer paths are recognized in mapped function inputs as long as they are
+    either:
 
     #. Arguments or keyword arguments of the mapped function.
     #. Stored inside a primitive container (tuple, list, set, dictionary value)
        that is an argument or keyword argument of the mapped function. Nested
        containers are inspected recursively.
 
-    When the function runs execute-side, it will receive
+    When the mapped function runs execute-side, it will receive
     (instead of this object) a normal :class:`pathlib.Path` object pointing to
     the execute-side path of the file/directory.
+
+    :class:`TransferPath` is also used to specify the locations for output files
+    to be sent, if they are not to be returned to the submit machine.
+    For example, output files could be sent to an S3 server.
+    See the ``output_remaps`` argument of :class:`MapOptions` for more details
+    on "remapped" output file transfer.
 
     Where appropriate, :class:`TransferPath` has the same interface as a
     :class:`pathlib.Path`. See the examples for some ways to leverage this API
     to efficiently construct transfer paths.
+
+    .. attention::
+
+        You may need to pass additional submit descriptors to your map
+        to actually be able to use input/output transfers for certain protocols.
+        For example, to transfer to and from an S3 server, you also need to pass
+        ``aws_access_key_id_file`` and ``aws_secret_access_key_file``.
+        See the
+        `condor_submit documentation <https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html>`_
+        for more details.
+
 
     Examples
     --------
@@ -64,7 +89,7 @@ class TransferPath:
         transfer_path = htmap.TransferPath("/foo/bar/baz.txt")
 
     Get a file from an HTTP server, located at
-    at ``http://htmap.readthedocs.io/en/latest/_static/htmap-logo.svg``:
+    ``http://htmap.readthedocs.io/en/latest/_static/htmap-logo.svg``:
 
     .. code-block::
 
@@ -152,7 +177,7 @@ class TransferPath:
             if isinstance(x, Path):
                 return TransferPath(x, protocol = self.protocol, location = self.location)
             elif callable(x):
-                return lambda *args, **kwargs: convert(self, x, *args, **kwargs)
+                return lambda *args, **kwargs: _convert(self, x, *args, **kwargs)
             return x
         except AttributeError as e:
             raise AttributeError(
@@ -179,12 +204,12 @@ class TransferPath:
         self.path, self.location, self.protocol = state
 
 
-def convert(self, x, *args, **kwargs):
+def _convert(self, x, *args, **kwargs):
     y = x(*args, **kwargs)
     return TransferPath(y, protocol = self.protocol, location = self.location) if isinstance(y, Path) else y
 
 
-def transfer_output_files(*paths: Union[os.PathLike, Tuple[os.PathLike, TransferPath]]) -> None:  # pragma: execute-only
+def transfer_output_files(*paths: os.PathLike) -> None:  # pragma: execute-only
     """
     Informs HTMap about the existence of output files.
 
@@ -198,22 +223,10 @@ def transfer_output_files(*paths: Union[os.PathLike, Tuple[os.PathLike, Transfer
         The files will be **moved** by this function, so they will not be
         available in their original locations.
 
-    .. note::
-
-        URL-like output transfers that have a destination (as described below)
-        require both the submit and execute-side HTCondor versions to be 8.9.2
-        or later. The actual HTCondor system must be that version or later, not
-        just the Python bindings.
-
     Parameters
     ----------
     paths
         The paths to the output files.
-        Each element may be a single output file
-        (to be transferred via HTCondor file transfer back to the submit node),
-        or an ``(output_file, destination))`` tuple, where the ``destination``
-        is a :class:`TransferPath`. The file will then be transferred to that
-        destination instead of the submit node.
     """
     # no-op if not on execute node
     if os.getenv('HTMAP_ON_EXECUTE') != "1":

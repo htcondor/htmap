@@ -83,13 +83,14 @@ class MapOptions(collections.UserDict):
             transfer remaps. A remapped output file is sent to a specified
             destination instead of back to the submit machine. If a single
             dictionary is passed, it will be applied to every map component
-            (in this case, you may want to use the $(component) submit
+            (in this case, you may want to use the ``$(component)`` submit
             macro to differentiate them).
-            Each dictionary should be a mapping
-            between the **names** (last path component) of output files and their
-            **destinations**, given as :class:`TransferPath`.
-            You must still call :func:`transfer_output_files` for the files to
-            be transferred at all; listing them here *only* sets up the remapping.
+            Each dictionary should be a "mapping"
+            between the **names** (last path component, as a string) of o
+            utput files and their **destinations**, given as a :class:`TransferPath`.
+            You must still call :func:`transfer_output_files` on the files for
+            the them to be transferred at all;
+            listing them here *only* sets up the remapping.
         custom_options
             A dictionary of submit descriptors that are *not* built-in HTCondor descriptors.
             These are the descriptors that, if you were writing a submit file, would have a leading ``+`` or ``MY.``.

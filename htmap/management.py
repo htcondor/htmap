@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from concurrent.futures.thread import ThreadPoolExecutor
+
 from typing import Tuple, Iterable, Dict, Union, NamedTuple, Callable, List, Optional
 import logging
 
@@ -25,6 +25,7 @@ import io
 import textwrap
 import shutil
 import uuid
+from concurrent.futures.thread import ThreadPoolExecutor
 
 from . import maps, tags, mapping, utils, state, names, settings, exceptions
 
