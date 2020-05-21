@@ -1,7 +1,7 @@
 # HTMap
 
 [![Documentation Status](https://readthedocs.org/projects/htmap/badge/?version=latest)](https://htmap.readthedocs.io/en/latest/?badge=latest)
-[![Build Status](https://travis-ci.org/htcondor/htmap.svg?branch=master)](https://travis-ci.org/htcondor/htmap)
+[![Build Status](https://travis-ci.com/htcondor/htmap.svg?branch=master)](https://travis-ci.com/htcondor/htmap)
 [![codecov](https://codecov.io/gh/htcondor/htmap/branch/master/graph/badge.svg)](https://codecov.io/gh/htcondor/htmap)
 
 **Jump right in to the tutorials with Binder!** 
