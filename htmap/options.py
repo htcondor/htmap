@@ -255,7 +255,7 @@ def create_submit_object_and_itemdata(
 
     if map_options.output_remaps is not None and any(map_options.output_remaps):
         # TODO: I would prefer to do this in the base descriptors, but it looks like an "empty" remap triggers strange behavior
-        descriptors["transfer_output_remaps"] = descriptors["transfer_output_remaps"].rstrip("\"") + ' ; $(extra_remaps) "'
+        descriptors["transfer_output_remaps"] = descriptors["transfer_output_remaps"].rstrip('"') + '; $(extra_remaps) "'
 
         if isinstance(map_options.output_remaps, dict):
             output_remaps = [map_options.output_remaps] * num_components

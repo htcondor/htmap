@@ -81,9 +81,13 @@ def print_node_info(node_info):
 
 
 def get_python_info():
+    if sys.executable == '':
+        raise Exception("Was not able to determine Python executable.")
+
+    v = sys.version_info
     return (
         sys.executable,
-        f"{'.'.join(str(x) for x in sys.version_info[:3])} {sys.version_info[3]}",
+        "{}.{}.{}".format(v.major, v.minor, v.micro),
         pip_freeze(),
     )
 
@@ -96,10 +100,16 @@ def print_python_info(python_info):
 
 
 def pip_freeze() -> str:
-    return subprocess.run(
+    freeze = subprocess.run(
         [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
         stdout = subprocess.PIPE,
-    ).stdout.decode('utf-8').strip()
+        stderr = subprocess.PIPE,
+    )
+
+    if freeze.returncode != 0:
+        raise Exception("Failed to get pip freeze due to:\n{}".format(freeze.stderr.decode('utf-8')))
+
+    return freeze.stdout.decode('utf-8').strip()
 
 
 def print_dir_contents(root):
@@ -227,9 +237,9 @@ def main(component):
     try:
         python_info = get_python_info()
         print_python_info(python_info)
-    except Exception as e:
+    except Exception:
+        print("Failed to get information on Python due to:\n{}".format(traceback.format_exc()))
         python_info = None
-        print(e)
     print()
 
     try:
