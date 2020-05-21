@@ -618,9 +618,11 @@ class Map(collections.abc.Sequence):
            from time import sleep
            import htmap
 
+
            def job(x):
                sleep(x)
                return 1 / x
+
 
            m = htmap.map(job, [0, 2, 4, 6, 8], tag="foo")
 

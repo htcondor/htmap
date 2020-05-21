@@ -25,8 +25,8 @@ Each script uses these commands:
 
 * Submission: HTMap's Python API is primarily used here, possibly through
   :func:`map`.
-* Monitoring: CLI usage is heavy here. 
-  ``htmap status`` is a good way to view a summary. 
+* Monitoring: CLI usage is heavy here.
+  ``htmap status`` is a good way to view a summary.
   If any of the jobs fail, diagnose why with
   commands like ``htmap reasons`` or ``htmap errors``.
 * Collection: the completed jobs are collected (as mentioned in
@@ -116,9 +116,11 @@ Here's a brief example: checking whether integers are even.
 
     import htmap
 
+
     @htmap.mapped
     def is_even(x: int) -> bool:
         return x % 2 == 0
+
 
     result = is_even.map(range(10))
 
@@ -143,9 +145,11 @@ Here's a brief example: grouping integer by whether they are even or not.
     import collections
     import htmap
 
+
     @htmap.mapped
     def is_even(x: int) -> bool:
         return x % 2 == 0
+
 
     def groupby(result):
         groups = collections.defaultdict(list)
@@ -154,6 +158,7 @@ Here's a brief example: grouping integer by whether they are even or not.
             groups[output].append(input)
 
         return groups
+
 
     result = is_even.map(range(10))
 

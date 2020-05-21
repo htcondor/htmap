@@ -211,29 +211,36 @@ These functions help you manage your transplant installs.
 Settings
 --------
 
-HTMap exposes configurable settings through ``htmap.settings``, which is an instance of the class :class:`htmap.settings.Settings`.
+HTMap exposes configurable settings through ``htmap.settings``,
+which is an instance of the class :class:`htmap.settings.Settings`.
 This settings object manages a lookup chain of dictionaries.
 The settings object created during startup contains two dictionaries.
-The lowest level contains HTMap's default settings, and the next level up is constructed from a settings file at ``~/.htmaprc``.
+The lowest level contains HTMap's default settings, and the next level up is
+constructed from a settings file at ``~/.htmaprc``.
 If that file does not exist, an empty dictionary is used instead.
 The file should be formatted in `TOML <https://github.com/toml-lang/toml>`_.
 
 Alternate settings could be stored in other files or constructed at runtime.
-HTMap provides tools for saving, loading, merging, prepending, and appending settings to each other.
-Each map is search in order, so earlier settings can flexibly override later settings.
+HTMap provides tools for saving, loading, merging, prepending, and appending
+settings to each other.
+Each map is search in order, so earlier settings can flexibly override later
+settings.
 
 .. warning::
 
-   To entirely replace your settings, do **not** do ``htmap.settings = <new settings object>``.
+   To entirely replace your settings, do **not** do
+   ``htmap.settings = <new settings object>``.
    Instead, use the :meth:`htmap.settings.Settings.replace` method.
-   Replacing the settings by assignment breaks the internal linking between the settings objects and its dependencies.
+   Replacing the settings by assignment breaks the internal linking between the
+   settings objects and its dependencies.
 
 .. hint::
 
    These may be helpful when constructing fresh settings:
 
    * HTMap's base settings are available as ``htmap.BASE_SETTINGS``.
-   * The settings loaded from ``~/.htmaprc`` are available as ``htmap.USER_SETTINGS``.
+   * The settings loaded from ``~/.htmaprc`` are available as
+     ``htmap.USER_SETTINGS``.
 
 .. autoclass:: htmap.settings.Settings
    :members:
@@ -252,12 +259,14 @@ Here's an example of how to set up basic console logging:
     import logging
     import sys
 
-    logger = logging.getLogger('htmap')
+    logger = logging.getLogger("htmap")
     logger.setLevel(logging.DEBUG)
 
-    handler = logging.StreamHandler(stream = sys.stdout)
+    handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
 
     logger.addHandler(handler)
 

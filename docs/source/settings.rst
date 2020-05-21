@@ -38,9 +38,9 @@ The equivalent runtime Python commands to set those settings would be
 
     import htmap
 
-    htmap.settings['DELIVERY_METHOD'] = 'docker'
-    htmap.settings['MAP_OPTIONS.REQUEST_MEMORY'] = '250MB'
-    htmap.settings['DOCKER.IMAGE'] = 'python:latest'
+    htmap.settings["DELIVERY_METHOD"] = "docker"
+    htmap.settings["MAP_OPTIONS.REQUEST_MEMORY"] = "250MB"
+    htmap.settings["DOCKER.IMAGE"] = "python:latest"
 
 
 Settings

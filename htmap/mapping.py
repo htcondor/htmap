@@ -143,7 +143,7 @@ class MapBuilder:
 
     .. code-block:: python
 
-        with htmap.build_map(tag = 'pow', func = lambda x, p: x ** p) as builder:
+        with htmap.build_map(tag="pow", func=lambda x, p: x ** p) as builder:
             for x in range(1, 4):
                 builder(x, x)
 

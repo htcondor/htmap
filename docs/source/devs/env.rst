@@ -3,6 +3,26 @@ Development Environment
 
 .. py:currentmodule:: htmap
 
+Repository Setup
+----------------
+
+You can get HTMap's source code by cloning the git repository:
+``git clone https://github.com/htcondor/htmap``.
+If you are planning on submitting a pull request, you should instead
+clone your own `fork <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_
+of the repository.
+
+After cloning the repository, install the development dependencies listed in
+``requirements-dev.txt`` using your Python package manager.
+If you are using ``pip``, you would run ``pip install -r requirements-dev.txt``.
+
+One of the dependencies you just installed is ``pre-commit``. ``pre-commit``
+runs a series of checks whenever you try to commit. You should "install" the
+pre-commit hooks by running ``pre-commit install`` in the repository root.
+
+Development Container
+---------------------
+
 HTMap's test suite relies on a properly set-up environment.
 The simplest way to get that environment is to use the Dockerfile in
 ``docker/Dockerfile`` to produce a **development container**.

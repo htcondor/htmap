@@ -125,7 +125,7 @@ class MapOptions(collections.UserDict):
 
            The ``MapOptions`` that express the same submit options would be:
 
-           .. code:: python
+           .. code:: pycon
 
                >>> options = {"foo": '"bar"', "aaa": "xyz", "bbb": "false", "ccc": "1"}
                >>> print(options["foo"])  # exactly matches the value in the submit file
@@ -302,7 +302,7 @@ def register_delivery_method(
 ) -> None:
     """
     Register a new delivery method with HTMap.
-    
+
     Parameters
     ----------
     name

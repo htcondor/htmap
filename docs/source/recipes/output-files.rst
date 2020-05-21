@@ -17,12 +17,13 @@ The file itself will be the output of our function.
     import itertools
     from pathlib import Path
 
+
     @htmap.mapped
     def repeat(string, number):
-        output_path = Path('repeated.txt')
+        output_path = Path("repeated.txt")
 
-        with output_path.open(mode = 'w') as f:
-            f.write(' '.join(itertools.repeat(string, number)))
+        with output_path.open(mode="w") as f:
+            f.write(" ".join(itertools.repeat(string, number)))
 
 This would work great locally, producing a file named ``repeated.txt`` in
 the directory we ran the code from.
@@ -33,9 +34,9 @@ In fact, the map will appear to be spectacularly useless:
 .. code-block:: python
 
     with repeat.build_map() as mb:
-        mb('foo', 5)
-        mb('wiz', 3)
-        mb('bam', 2)
+        mb("foo", 5)
+        mb("wiz", 3)
+        mb("bam", 2)
 
     repeated = mb.map
 
@@ -56,12 +57,13 @@ after we create the file:
     import itertools
     from pathlib import Path
 
+
     @htmap.mapped
     def repeat(string, number):
-        output_path = Path('repeated.txt')
+        output_path = Path("repeated.txt")
 
-        with output_path.open(mode = 'w') as f:
-            f.write(' '.join(itertools.repeat(string, number)))
+        with output_path.open(mode="w") as f:
+            f.write(" ".join(itertools.repeat(string, number)))
 
         htmap.transfer_output_files(output_path)  # identical, except for this line
 
@@ -75,14 +77,14 @@ directories containing the output files from each component, like so:
 .. code-block:: python
 
     with repeat.build_map() as mb:
-        mb('foo', 5)
-        mb('wiz', 3)
-        mb('bam', 2)
+        mb("foo", 5)
+        mb("wiz", 3)
+        mb("bam", 2)
 
     repeated = mb.map
 
     for component, base in enumerate(repeated.output_files):
-        path = base / 'repeated.txt'
+        path = base / "repeated.txt"
         print(component, path.read_text())
 
     # 0 foo foo foo foo foo
@@ -121,8 +123,12 @@ To do so, we also create an ``output_file`` destination, and tell HTMap to
     input_file = bucket / "in.txt"
     output_file = bucket / "out.txt"
 
-    print(input_file)  # TransferPath(path='my-bucket/in.txt', protocol='s3', location='s3-server.example.com')
-    print(output_file)  # TransferPath(path='my-bucket/out.txt', protocol='s3', location='s3-server.example.com')
+    print(
+        input_file
+    )  # TransferPath(path='my-bucket/in.txt', protocol='s3', location='s3-server.example.com')
+    print(
+        output_file
+    )  # TransferPath(path='my-bucket/out.txt', protocol='s3', location='s3-server.example.com')
 
     map = htmap.map(
         move_file,
