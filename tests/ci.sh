@@ -14,8 +14,7 @@ echo "pytest version"
 pytest --version
 echo
 
-chmod -R 777 .
-
 pytest -n 4 --cov --durations=20
 
-chmod -R 777 .
+coverage xml -o /tmp/coverage.xml
+codecov -X gcov -t 492519e2-1bcf-4e8a-8a3e-e28be5d9de8d -f /tmp/coverage.xml
