@@ -44,11 +44,11 @@ def test_map_dir_does_not_exist_after_remove_shortcut(mapped_doubler):
 
 def test_remove_shortcut_on_nonexistent_map_dir_raises():
     with pytest.raises(htmap.exceptions.TagNotFound):
-        htmap.remove('no-such-tag', not_exist_ok = False)
+        htmap.remove("no-such-tag", not_exist_ok=False)
 
 
 def test_remove_shortcut_on_nonexistent_map_dir_fails_silently_if_not_exist_ok_set():
-    htmap.remove('no-such-tag', not_exist_ok = True)
+    htmap.remove("no-such-tag", not_exist_ok=True)
 
 
 def test_map_is_marked_as_removed_after_calling_remove(mapped_doubler):
@@ -60,11 +60,11 @@ def test_map_is_marked_as_removed_after_calling_remove(mapped_doubler):
 
 
 @pytest.mark.parametrize(
-    'method',
+    "method",
     [
         key
-        for key, val in inspect.getmembers(htmap.Map, predicate = inspect.isfunction)
-        if not key.startswith('_')
+        for key, val in inspect.getmembers(htmap.Map, predicate=inspect.isfunction)
+        if not key.startswith("_")
     ],
 )
 def test_calling_public_methods_after_remove_raises(method, mapped_doubler):
@@ -79,11 +79,13 @@ def test_calling_public_methods_after_remove_raises(method, mapped_doubler):
 
 
 @pytest.mark.issue(186)
-def test_failure_to_contact_schedd_when_removing_map_reraises_underlying_exception(mapped_doubler, mocker):
+def test_failure_to_contact_schedd_when_removing_map_reraises_underlying_exception(
+    mapped_doubler, mocker
+):
     m = mapped_doubler.map(range(1))
 
     # simulate failing to get the schedd for some reason
-    mocker.patch('htmap.condor.get_schedd', side_effect = FileNotFoundError("poison"))
+    mocker.patch("htmap.condor.get_schedd", side_effect=FileNotFoundError("poison"))
 
     with pytest.raises(FileNotFoundError):
         m.remove()
@@ -94,8 +96,8 @@ def test_can_force_remove_map_without_contacting_schedd(mapped_doubler, mocker):
     m = mapped_doubler.map(range(1))
 
     # simulate failing to get the schedd for some reason
-    mocker.patch('htmap.condor.get_schedd', side_effect = FileNotFoundError("poison"))
+    mocker.patch("htmap.condor.get_schedd", side_effect=FileNotFoundError("poison"))
 
-    m.remove(force = True)
+    m.remove(force=True)
 
     assert not m.exists

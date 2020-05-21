@@ -13,7 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Union, Iterable, Any, Mapping, MutableMapping, Callable, Dict, Tuple
+from typing import (
+    Optional,
+    Union,
+    Iterable,
+    Any,
+    Mapping,
+    MutableMapping,
+    Callable,
+    Dict,
+    Tuple,
+)
 import logging
 
 import os
@@ -58,19 +68,21 @@ def wait_for_path_to_exist(
         The time to wait between checks.
     """
     timeout = timeout_to_seconds(timeout)
-    wait_time = timeout_to_seconds(wait_time) or .01  # minimum wait time
+    wait_time = timeout_to_seconds(wait_time) or 0.01  # minimum wait time
 
     start_time = time.time()
     while not path.exists():
         if timeout is not None and (timeout <= 0 or time.time() > start_time + timeout):
-            raise exceptions.TimeoutError(f'Timeout while waiting for {path} to exist')
+            raise exceptions.TimeoutError(f"Timeout while waiting for {path} to exist")
         time.sleep(wait_time)
 
 
 Timeout = Optional[Union[int, float, datetime.timedelta]]
 
 
-def timeout_to_seconds(timeout: Optional[Union[int, float, datetime.timedelta]]) -> Optional[float]:
+def timeout_to_seconds(
+    timeout: Optional[Union[int, float, datetime.timedelta]]
+) -> Optional[float]:
     """
     Coerce a timeout given as a :class:`datetime.timedelta` or an :class:`int` to a number of seconds as a :class:`float`.
     ``None`` is passed through.
@@ -152,17 +164,20 @@ def table(
     for row in processed_rows:
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
 
-    header = header_fmt('  '.join(getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)).rstrip())
+    header = header_fmt(
+        "  ".join(
+            getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)
+        ).rstrip()
+    )
 
     lines = (
-        row_fmt('  '.join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods)))
+        row_fmt(
+            "  ".join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods))
+        )
         for row in processed_rows
     )
 
-    output = '\n'.join((
-        header,
-        *lines,
-    ))
+    output = "\n".join((header, *lines,))
 
     return rstr(output)
 
@@ -197,7 +212,7 @@ def get_dir_size(path: Path, safe: bool = True) -> int:
     size = 0
     for entry in os.scandir(path):
         try:
-            if entry.is_file(follow_symlinks = False):
+            if entry.is_file(follow_symlinks=False):
                 size += entry.stat().st_size
             elif entry.is_dir():
                 size += get_dir_size(Path(entry.path))
@@ -205,49 +220,57 @@ def get_dir_size(path: Path, safe: bool = True) -> int:
             if safe:
                 raise e
             else:
-                logger.error(f'Path {entry} vanished while using it')
+                logger.error(f"Path {entry} vanished while using it")
     return size
 
 
 def num_bytes_to_str(num_bytes: Union[int, float]) -> str:
     """Return a number of bytes as a human-readable string."""
-    for unit in ('B', 'KB', 'MB', 'GB'):
+    for unit in ("B", "KB", "MB", "GB"):
         if num_bytes < 1024:
-            return f'{num_bytes:.1f} {unit}'
+            return f"{num_bytes:.1f} {unit}"
         num_bytes /= 1024
-    return f'{num_bytes:.1f} TB'
+    return f"{num_bytes:.1f} TB"
 
 
 def pip_freeze() -> str:
     """Return the text of a ``pip --freeze`` call."""
-    return subprocess.run(
-        [sys.executable, '-m', 'pip', 'freeze', '--disable-pip-version-check'],
-        stdout = subprocess.PIPE,
-    ).stdout.decode('utf-8').strip()
+    return (
+        subprocess.run(
+            [sys.executable, "-m", "pip", "freeze", "--disable-pip-version-check"],
+            stdout=subprocess.PIPE,
+        )
+        .stdout.decode("utf-8")
+        .strip()
+    )
 
 
 def is_interactive_session() -> bool:
     import __main__ as main
-    return any((
-        bool(getattr(sys, 'ps1', sys.flags.interactive)),  # console sessions
-        not hasattr(main, '__file__'),  # jupyter-like notebooks
-    ))
+
+    return any(
+        (
+            bool(getattr(sys, "ps1", sys.flags.interactive)),  # console sessions
+            not hasattr(main, "__file__"),  # jupyter-like notebooks
+        )
+    )
 
 
 def enable_debug_logging():
-    logger = logging.getLogger('htmap')
+    logger = logging.getLogger("htmap")
     logger.setLevel(logging.DEBUG)
 
-    handler = logging.StreamHandler(stream = sys.stdout)
+    handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
 
     logger.addHandler(handler)
 
 
 VERSION_RE = re.compile(
-    r'^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$',
-    re.VERBOSE | re.ASCII,
+    r"^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$", re.VERBOSE | re.ASCII,
 )
 
 
@@ -269,15 +292,23 @@ def parse_version(v: str) -> Tuple[int, int, int, Optional[str], Optional[int]]:
     return out
 
 
-EXTRACT_HTCONDOR_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)", flags = re.ASCII)
+EXTRACT_HTCONDOR_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)", flags=re.ASCII)
 
-BINDINGS_VERSION_INFO = parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0))
+BINDINGS_VERSION_INFO = parse_version(
+    EXTRACT_HTCONDOR_VERSION_RE.search(htcondor.version()).group(0)
+)
 
 try:
-    condor_version = subprocess.run("condor_version", stdout = subprocess.PIPE).stdout.decode()
-    HTCONDOR_VERSION_INFO = parse_version(EXTRACT_HTCONDOR_VERSION_RE.search(condor_version).group(0))
+    condor_version = subprocess.run(
+        "condor_version", stdout=subprocess.PIPE
+    ).stdout.decode()
+    HTCONDOR_VERSION_INFO = parse_version(
+        EXTRACT_HTCONDOR_VERSION_RE.search(condor_version).group(0)
+    )
 except Exception:
-    logger.warning("Was not able to parse HTCondor version information. Is HTCondor itself installed, not just the bindings? Assuming bindings version for HTCondor version.")
+    logger.warning(
+        "Was not able to parse HTCondor version information. Is HTCondor itself installed, not just the bindings? Assuming bindings version for HTCondor version."
+    )
     HTCONDOR_VERSION_INFO = BINDINGS_VERSION_INFO
 
 # CAN_USE_URL_OUTPUT_TRANSFER = HTCONDOR_VERSION_INFO >= (8, 9, 2)

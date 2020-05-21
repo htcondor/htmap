@@ -25,7 +25,7 @@ def untagged_map_is_transient(mapped_doubler):
 
 
 def tagged_map_is_not_transient(mapped_doubler):
-    m = mapped_doubler.map(range(1), tag = 'tagged')
+    m = mapped_doubler.map(range(1), tag="tagged")
 
     assert not m.is_transient
 
@@ -35,7 +35,7 @@ def retagged_map_becomes_not_transient(mapped_doubler):
 
     assert m.is_transient
 
-    m.retag('new-tag')
+    m.retag("new-tag")
 
     assert not m.is_transient
 
@@ -51,7 +51,7 @@ def can_set_transient_false(mapped_doubler):
 
 
 def can_set_transient_true(mapped_doubler):
-    m = mapped_doubler.map(range(1), tag = 'tagged')
+    m = mapped_doubler.map(range(1), tag="tagged")
 
     assert not m.is_transient
 

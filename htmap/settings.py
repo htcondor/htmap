@@ -50,7 +50,7 @@ class Settings:
 
     def __getitem__(self, key: str):
         try:
-            path = key.split('.')
+            path = key.split(".")
             r = self.to_dict()
             for component in path:
                 r = r[component]
@@ -70,7 +70,7 @@ class Settings:
     def __setitem__(self, key: str, value):
         old = self.get(key)  # for log message below
 
-        *path, final = key.split('.')
+        *path, final = key.split(".")
         m = self.maps[0]
         for component in path:
             try:
@@ -81,18 +81,20 @@ class Settings:
 
         m[final] = value
 
-        logger.debug(f'Setting {key} changed from {old if old is not None else "<missing>"} to {value}')
+        logger.debug(
+            f'Setting {key} changed from {old if old is not None else "<missing>"} to {value}'
+        )
 
     def to_dict(self) -> dict:
         """Return a single dictionary with all of the settings in this :class:`Settings`, merged according to the lookup rules."""
         return functools.reduce(nested_merge, reversed(self.maps), {})
 
-    def replace(self, other: 'Settings') -> None:
+    def replace(self, other: "Settings") -> None:
         """Change the settings of this :class:`Settings` to be the settings from another :class:`Settings`."""
         self.maps = other.maps
-        logger.debug('Settings were replaced')
+        logger.debug("Settings were replaced")
 
-    def append(self, other: Union['Settings', dict]) -> None:
+    def append(self, other: Union["Settings", dict]) -> None:
         """
         Add a map to the end of the search (i.e., it will be searched last, and be overridden by anything before it).
 
@@ -106,7 +108,7 @@ class Settings:
         else:
             self.maps.append(other)
 
-    def prepend(self, other: Union['Settings', dict]) -> None:
+    def prepend(self, other: Union["Settings", dict]) -> None:
         """
         Add a map to the beginning of the search (i.e., it will be searched first, and override anything after it).
 
@@ -121,70 +123,69 @@ class Settings:
             self.maps.insert(0, other)
 
     @classmethod
-    def from_settings(cls, *settings: 'Settings') -> 'Settings':
+    def from_settings(cls, *settings: "Settings") -> "Settings":
         """Construct a new :class:`Settings` from another :class:`Settings`."""
         return cls(*itertools.chain.from_iterable(s.maps for s in settings))
 
     @classmethod
-    def load(cls, path: Path) -> 'Settings':
+    def load(cls, path: Path) -> "Settings":
         """Load a :class:`Settings` from a file at the given path."""
         with path.open() as file:
             return cls(toml.load(file))
 
     def save(self, path: Path) -> None:
         """Save this :class:`Settings` to a file at the given path."""
-        with path.open(mode = 'w') as file:
+        with path.open(mode="w") as file:
             toml.dump(self.maps[0], file)
 
-        logger.debug(f'Saved settings to {path}')
+        logger.debug(f"Saved settings to {path}")
 
     def __str__(self) -> str:
         return utils.rstr(toml.dumps(self.to_dict()))
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}>'
+        return f"<{self.__class__.__name__}>"
 
 
-htmap_dir = Path(os.getenv('HTMAP_DIR', Path.home() / '.htmap'))
-default_docker_image = f'htcondor/htmap-exec:v{__version__}'
-BASE_SETTINGS = Settings(dict(
-    HTMAP_DIR = htmap_dir.as_posix(),
-    DELIVERY_METHOD = os.getenv('HTMAP_DELIVERY_METHOD', 'docker'),
-    WAIT_TIME = 1,
-    CLI = dict(
-        IS_CLI = False,
-        SPINNERS_ON = True,
-    ),
-    HTCONDOR = dict(
-        SCHEDULER = os.getenv('HTMAP_CONDOR_SCHEDULER', None),
-        COLLECTOR = os.getenv('HTMAP_CONDOR_COLLECTOR', None),
-    ),
-    MAP_OPTIONS = dict(
-        request_cpus = "1",
-        request_memory = '128MB',
-        request_disk = '1GB',
-        keep_claim_idle = '30',
-    ),
-    DOCKER = dict(
-        IMAGE = os.getenv('HTMAP_DOCKER_IMAGE', default_docker_image),
-    ),
-    SINGULARITY = dict(
-        IMAGE = os.getenv('HTMAP_SINGULARITY_IMAGE', f'docker://{default_docker_image}'),
-    ),
-    TRANSPLANT = dict(
-        DIR = (htmap_dir / 'transplants').as_posix(),
-        ALTERNATE_INPUT_PATH = None,
-        ASSUME_EXISTS = False,
-    ),
-))
+htmap_dir = Path(os.getenv("HTMAP_DIR", Path.home() / ".htmap"))
+default_docker_image = f"htcondor/htmap-exec:v{__version__}"
+BASE_SETTINGS = Settings(
+    dict(
+        HTMAP_DIR=htmap_dir.as_posix(),
+        DELIVERY_METHOD=os.getenv("HTMAP_DELIVERY_METHOD", "docker"),
+        WAIT_TIME=1,
+        CLI=dict(IS_CLI=False, SPINNERS_ON=True,),
+        HTCONDOR=dict(
+            SCHEDULER=os.getenv("HTMAP_CONDOR_SCHEDULER", None),
+            COLLECTOR=os.getenv("HTMAP_CONDOR_COLLECTOR", None),
+        ),
+        MAP_OPTIONS=dict(
+            request_cpus="1",
+            request_memory="128MB",
+            request_disk="1GB",
+            keep_claim_idle="30",
+        ),
+        DOCKER=dict(IMAGE=os.getenv("HTMAP_DOCKER_IMAGE", default_docker_image),),
+        SINGULARITY=dict(
+            IMAGE=os.getenv(
+                "HTMAP_SINGULARITY_IMAGE", f"docker://{default_docker_image}"
+            ),
+        ),
+        TRANSPLANT=dict(
+            DIR=(htmap_dir / "transplants").as_posix(),
+            ALTERNATE_INPUT_PATH=None,
+            ASSUME_EXISTS=False,
+        ),
+    )
+)
 
-USER_SETTINGS_PATH = Path.home() / '.htmaprc'
+USER_SETTINGS_PATH = Path.home() / ".htmaprc"
 try:
     USER_SETTINGS = Settings.load(USER_SETTINGS_PATH)
-    logger.debug(f'Loaded user settings from {USER_SETTINGS_PATH}')
+    logger.debug(f"Loaded user settings from {USER_SETTINGS_PATH}")
 except FileNotFoundError:
     USER_SETTINGS = Settings()
-    logger.debug(f'No user settings at {USER_SETTINGS_PATH}')
+    logger.debug(f"No user settings at {USER_SETTINGS_PATH}")
 
 settings = Settings.from_settings(Settings(), USER_SETTINGS, BASE_SETTINGS)
 

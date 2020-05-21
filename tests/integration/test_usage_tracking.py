@@ -24,7 +24,7 @@ def test_memory_usage_is_nonzero_after_map_complete():
     # need it run for at least 5 seconds for it generate an image size event
     m = htmap.map(lambda x: time.sleep(10), [None])
 
-    m.wait(timeout = 180)
+    m.wait(timeout=180)
     print(m.memory_usage)
 
     assert all(x > 0 for x in m.memory_usage)

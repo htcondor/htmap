@@ -25,36 +25,24 @@ def test_merge_nothing():
 
 
 def test_merge_one():
-    req = merge_requirements(
-        'HasPie == true',
-    )
+    req = merge_requirements("HasPie == true",)
 
-    assert req == '(HasPie == true)'
+    assert req == "(HasPie == true)"
 
 
 def test_merge_two():
-    req = merge_requirements(
-        'HasPie == true',
-        'HasCake == false',
-    )
+    req = merge_requirements("HasPie == true", "HasCake == false",)
 
-    assert req == '(HasPie == true) && (HasCake == false)'
+    assert req == "(HasPie == true) && (HasCake == false)"
 
 
 def test_merge_three():
-    req = merge_requirements(
-        'HasPie == true',
-        'HasCake == false',
-        'IsHappy == true',
-    )
+    req = merge_requirements("HasPie == true", "HasCake == false", "IsHappy == true",)
 
-    assert req == '(HasPie == true) && (HasCake == false) && (IsHappy == true)'
+    assert req == "(HasPie == true) && (HasCake == false) && (IsHappy == true)"
 
 
 def test_merge_with_none():
-    req = merge_requirements(
-        'HasPie == true',
-        None,
-    )
+    req = merge_requirements("HasPie == true", None,)
 
-    assert req == '(HasPie == true)'
+    assert req == "(HasPie == true)"

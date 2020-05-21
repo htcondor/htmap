@@ -27,12 +27,12 @@ TIMEOUT = 300
 def test_checkpoint_file_has_expected_contents_after_restart():
     @htmap.mapped
     def test(_):
-        checkpoint_path = Path('chk')
+        checkpoint_path = Path("chk")
 
         if checkpoint_path.exists():
-            return checkpoint_path.read_text() == 'foobar'
+            return checkpoint_path.read_text() == "foobar"
 
-        checkpoint_path.write_text('foobar')
+        checkpoint_path.write_text("foobar")
         htmap.checkpoint(checkpoint_path)
 
         time.sleep(30)
@@ -42,7 +42,7 @@ def test_checkpoint_file_has_expected_contents_after_restart():
     m = test.map([None])
 
     while m.component_statuses[0] is not htmap.ComponentStatus.RUNNING:
-        time.sleep(.1)
+        time.sleep(0.1)
 
     time.sleep(5)
     m.vacate()

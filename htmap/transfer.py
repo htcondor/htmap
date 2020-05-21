@@ -137,7 +137,9 @@ class TransferPath:
 
         # you can't have a location without a protocol
         if location is not None and protocol is None:
-            raise ValueError(f"If a {self.__class__.__name__} has a location, it must have a protocol as well.")
+            raise ValueError(
+                f"If a {self.__class__.__name__} has a location, it must have a protocol as well."
+            )
 
         self.path = Path(path)
         self.protocol = protocol
@@ -175,7 +177,7 @@ class TransferPath:
         try:
             x = getattr(self.path, item)
             if isinstance(x, Path):
-                return TransferPath(x, protocol = self.protocol, location = self.location)
+                return TransferPath(x, protocol=self.protocol, location=self.location)
             elif callable(x):
                 return lambda *args, **kwargs: _convert(self, x, *args, **kwargs)
             return x
@@ -186,7 +188,9 @@ class TransferPath:
 
     def __truediv__(self, other):
         return self.__class__(
-            self.path / other if not isinstance(other, TransferPath) else other.path, protocol = self.protocol, location = self.location
+            self.path / other if not isinstance(other, TransferPath) else other.path,
+            protocol=self.protocol,
+            location=self.location,
         )
 
     @classmethod
@@ -206,7 +210,11 @@ class TransferPath:
 
 def _convert(self, x, *args, **kwargs):
     y = x(*args, **kwargs)
-    return TransferPath(y, protocol = self.protocol, location = self.location) if isinstance(y, Path) else y
+    return (
+        TransferPath(y, protocol=self.protocol, location=self.location)
+        if isinstance(y, Path)
+        else y
+    )
 
 
 def transfer_output_files(*paths: os.PathLike) -> None:  # pragma: execute-only
@@ -229,12 +237,14 @@ def transfer_output_files(*paths: os.PathLike) -> None:  # pragma: execute-only
         The paths to the output files.
     """
     # no-op if not on execute node
-    if os.getenv('HTMAP_ON_EXECUTE') != "1":
+    if os.getenv("HTMAP_ON_EXECUTE") != "1":
         return
 
-    scratch_dir = Path(os.environ['_CONDOR_SCRATCH_DIR'])
+    scratch_dir = Path(os.environ["_CONDOR_SCRATCH_DIR"])
 
-    user_transfer_dir = scratch_dir / names.USER_TRANSFER_DIR / os.environ['HTMAP_COMPONENT']
+    user_transfer_dir = (
+        scratch_dir / names.USER_TRANSFER_DIR / os.environ["HTMAP_COMPONENT"]
+    )
     user_url_transfer_dir = scratch_dir / names.USER_URL_TRANSFER_DIR
     user_transfer_cache = scratch_dir / names.TRANSFER_PLUGIN_CACHE
 
@@ -243,7 +253,9 @@ def transfer_output_files(*paths: os.PathLike) -> None:  # pragma: execute-only
     for path in paths:
         if isinstance(path, tuple):
             if not utils.CAN_USE_URL_OUTPUT_TRANSFER:
-                raise exceptions.InsufficientHTCondorVersion("HTMap URL output transfer requires HTCondor v8.9.2 or later.")
+                raise exceptions.InsufficientHTCondorVersion(
+                    "HTMap URL output transfer requires HTCondor v8.9.2 or later."
+                )
             path, destination = path
         else:
             path, destination = path, None
@@ -255,9 +267,9 @@ def transfer_output_files(*paths: os.PathLike) -> None:  # pragma: execute-only
         else:  # url file transfer
             target = user_url_transfer_dir / path.relative_to(scratch_dir)
             h = str(hash((target, destination)))
-            user_transfer_cache.mkdir(exist_ok = True)
-            with (user_transfer_cache / h).open(mode = 'wb') as f:
+            user_transfer_cache.mkdir(exist_ok=True)
+            with (user_transfer_cache / h).open(mode="wb") as f:
                 pickle.dump((target, destination.as_url()), f)
 
-        target.parent.mkdir(exist_ok = True, parents = True)
+        target.parent.mkdir(exist_ok=True, parents=True)
         shutil.move(str(path), str(target))

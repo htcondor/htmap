@@ -24,9 +24,9 @@ import htcondor
 TIMEOUT = 300
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope="function")
 def late_noop():
-    @htmap.mapped(map_options = htmap.MapOptions(max_idle = "1"))
+    @htmap.mapped(map_options=htmap.MapOptions(max_idle="1"))
     def noop(_):
         time.sleep(1)
         return True
@@ -38,10 +38,10 @@ def late_noop():
 # to reproduce locally, and has never impacted any actual users.
 # Marked non-strict xfail for now; hope to revisit in the future.
 @pytest.mark.timeout(TIMEOUT)
-@pytest.mark.xfail(strict = False, reason = "Flaky on CI on HTCondor v8.8.8")
+@pytest.mark.xfail(strict=False, reason="Flaky on CI on HTCondor v8.8.8")
 def test_wait_with_late_materialization(late_noop):
     m = late_noop.map(range(3))
-    time.sleep(.1)
+    time.sleep(0.1)
 
     cid = m._cluster_ids[0]
 
@@ -62,7 +62,7 @@ def test_wait_with_late_materialization(late_noop):
     try:
         m.wait()
     except Exception as e:
-        sched_log = Path.home() / '.condor' / 'state' / 'log' / 'SchedLog'
+        sched_log = Path.home() / ".condor" / "state" / "log" / "SchedLog"
 
         sched_log_lines = sched_log.read_text().splitlines()
         for idx, line in enumerate(sched_log_lines):

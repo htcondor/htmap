@@ -22,7 +22,7 @@ import htmap
 import htcondor
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope="function")
 def hold_before_error():
     map = htmap.map(lambda x: 1 / x, [1, 0])
 
@@ -30,16 +30,19 @@ def hold_before_error():
     cluster_id = map._cluster_ids[0]
     schedd.act(htcondor.JobAction.Hold, f"(ClusterID == {cluster_id}) && (ProcID == 0)")
 
-    map.wait(holds_ok = True, errors_ok = True)
+    map.wait(holds_ok=True, errors_ok=True)
 
-    assert map.component_statuses == [htmap.ComponentStatus.HELD, htmap.ComponentStatus.ERRORED]
+    assert map.component_statuses == [
+        htmap.ComponentStatus.HELD,
+        htmap.ComponentStatus.ERRORED,
+    ]
 
     yield map
 
     map.remove()
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope="function")
 def error_before_hold():
     map = htmap.map(lambda x: 1 / x, [0, 1])
 
@@ -47,9 +50,12 @@ def error_before_hold():
     cluster_id = map._cluster_ids[0]
     schedd.act(htcondor.JobAction.Hold, f"(ClusterID == {cluster_id}) && (ProcID == 1)")
 
-    map.wait(holds_ok = True, errors_ok = True)
+    map.wait(holds_ok=True, errors_ok=True)
 
-    assert map.component_statuses == [htmap.ComponentStatus.ERRORED, htmap.ComponentStatus.HELD]
+    assert map.component_statuses == [
+        htmap.ComponentStatus.ERRORED,
+        htmap.ComponentStatus.HELD,
+    ]
 
     yield map
 

@@ -20,10 +20,10 @@ import pytest
 import htmap
 
 
-@pytest.mark.usefixtures('delivery_methods')
+@pytest.mark.usefixtures("delivery_methods")
 def test_env_var_is_set_on_execute():
     @htmap.mapped
     def check(x):
-        return os.getenv('HTMAP_ON_EXECUTE') == "1"
+        return os.getenv("HTMAP_ON_EXECUTE") == "1"
 
     assert list(check.map([0]))[0]  # that's the return value of check

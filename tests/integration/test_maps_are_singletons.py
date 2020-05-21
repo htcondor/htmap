@@ -19,8 +19,8 @@ import htmap
 
 
 def test_loaded_map_is_same_object_as_previously_created_map():
-    map = htmap.map(lambda x: x, range(1), tag = 'singleton')
+    map = htmap.map(lambda x: x, range(1), tag="singleton")
 
-    recovered = htmap.load('singleton')
+    recovered = htmap.load("singleton")
 
     assert recovered is map

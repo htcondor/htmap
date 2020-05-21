@@ -20,12 +20,12 @@ import pytest
 import htmap
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope="function")
 def map_with_held_component(mapped_doubler):
     m = mapped_doubler.map(range(1))
     m.hold()
 
-    m.wait(holds_ok = True)
+    m.wait(holds_ok=True)
 
     yield m
 
@@ -34,7 +34,7 @@ def map_with_held_component(mapped_doubler):
 
 def test_waiting_on_held_component_raises(map_with_held_component):
     with pytest.raises(htmap.exceptions.MapComponentHeld):
-        map_with_held_component.wait(timeout = 180)
+        map_with_held_component.wait(timeout=180)
 
 
 def test_accessing_held_component_raises(map_with_held_component):
@@ -63,4 +63,4 @@ def test_held_then_released_component_not_in_hold_reasons(map_with_held_componen
     map_with_held_component.release()
 
     while not len(map_with_held_component.holds) == 0:
-        time.sleep(.1)
+        time.sleep(0.1)

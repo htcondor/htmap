@@ -27,15 +27,15 @@ TIMEOUT = 300
 
 @pytest.mark.timeout(TIMEOUT)
 # @pytest.mark.xfail(condition = utils.HTCONDOR_VERSION_INFO < (8, 9, 2), reason = "HTMap requires HTCondor v8.9.2 or later to do URL output transfers.")
-@pytest.mark.skip(reason = "Disabled feature")
+@pytest.mark.skip(reason="Disabled feature")
 def test_output_transfer_via_file_protocol(tmp_path):
-    target = tmp_path / 'foo'
+    target = tmp_path / "foo"
 
     def func(_):
-        output = Path('remote-foo')
-        output.write_text('hi')
+        output = Path("remote-foo")
+        output.write_text("hi")
 
-        destination = htmap.TransferPath(target, protocol = 'file')
+        destination = htmap.TransferPath(target, protocol="file")
 
         htmap.transfer_output_files((output, destination))
 

@@ -21,11 +21,7 @@ from htmap import htio
 
 
 def test_option_set_on_mapped_function_is_inherited():
-    @htmap.mapped(
-        map_options = htmap.MapOptions(
-            request_memory = '123MB',
-        )
-    )
+    @htmap.mapped(map_options=htmap.MapOptions(request_memory="123MB",))
     def double(x):
         return 2 * x
 
@@ -33,25 +29,16 @@ def test_option_set_on_mapped_function_is_inherited():
 
     sub = htio.load_submit(m._map_dir)
 
-    assert sub['request_memory'] == '123MB'
+    assert sub["request_memory"] == "123MB"
 
 
 def test_option_set_on_mapped_function_is_overridden():
-    @htmap.mapped(
-        map_options = htmap.MapOptions(
-            request_memory = '123MB',
-        )
-    )
+    @htmap.mapped(map_options=htmap.MapOptions(request_memory="123MB",))
     def double(x):
         return 2 * x
 
-    m = double.map(
-        range(1),
-        map_options = htmap.MapOptions(
-            request_memory = '456MB',
-        )
-    )
+    m = double.map(range(1), map_options=htmap.MapOptions(request_memory="456MB",))
 
     sub = htio.load_submit(m._map_dir)
 
-    assert sub['request_memory'] == '456MB'
+    assert sub["request_memory"] == "456MB"

@@ -23,13 +23,13 @@ import htmap
 TIMEOUT = 300
 
 
-
 @pytest.mark.timeout(TIMEOUT)
-@pytest.mark.xfail(reason = "I don't understand yet why this doesn't work...")
+@pytest.mark.xfail(reason="I don't understand yet why this doesn't work...")
 def test_input_transfer_via_file_protocol(tmp_path):
-    f = htmap.TransferPath(__file__, protocol = 'file')
+    f = htmap.TransferPath(__file__, protocol="file")
 
     MARKER = 12345
+
     def test(file):
         return "MARKER = 12345" in file.read_text()
 
@@ -40,7 +40,7 @@ def test_input_transfer_via_file_protocol(tmp_path):
 
 @pytest.mark.timeout(TIMEOUT)
 def test_input_transfer_via_https_protocol(tmp_path):
-    f = htmap.TransferPath("status/200", protocol = 'https', location = "httpbin.org")
+    f = htmap.TransferPath("status/200", protocol="https", location="httpbin.org")
 
     def test(file):
         return file.read_text() == ""

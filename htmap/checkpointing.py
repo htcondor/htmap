@@ -41,10 +41,10 @@ def checkpoint(*paths: os.PathLike) -> None:
         The paths to the checkpoint files.
     """
     # no-op if not on execute node
-    if os.getenv('HTMAP_ON_EXECUTE') != "1":
+    if os.getenv("HTMAP_ON_EXECUTE") != "1":
         return
 
-    transfer_dir = Path(os.environ['_CONDOR_SCRATCH_DIR']) / names.TRANSFER_DIR
+    transfer_dir = Path(os.environ["_CONDOR_SCRATCH_DIR"]) / names.TRANSFER_DIR
 
     # this is not the absolute safest method
     # but it's good enough for government work
@@ -54,7 +54,7 @@ def checkpoint(*paths: os.PathLike) -> None:
     old_dir = transfer_dir / names.CHECKPOINT_OLD
 
     for d in (prep_dir, curr_dir, old_dir):
-        d.mkdir(parents = True, exist_ok = True)
+        d.mkdir(parents=True, exist_ok=True)
 
     for path in paths:
         path = Path(path)

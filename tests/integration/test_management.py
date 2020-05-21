@@ -21,31 +21,31 @@ import htmap
 
 
 def test_get_tags(mapped_doubler):
-    mapped_doubler.map(range(1), tag = 'a')
-    mapped_doubler.map(range(1), tag = 'b')
-    mapped_doubler.map(range(1), tag = 'c')
+    mapped_doubler.map(range(1), tag="a")
+    mapped_doubler.map(range(1), tag="b")
+    mapped_doubler.map(range(1), tag="c")
 
-    assert set(htmap.get_tags()) == {'a', 'b', 'c'}
+    assert set(htmap.get_tags()) == {"a", "b", "c"}
 
 
 @pytest.mark.parametrize(
-    'tags, pattern, expected',
+    "tags, pattern, expected",
     [
-        (('a', 'b', 'c'), None, ('a', 'b', 'c')),  # None = no filter
-        (('a', 'b', 'c'), 'a', ('a',)),
-        (('a', 'b', 'c'), '?', ('a', 'b', 'c')),
-        (('a', 'b', 'c'), '[ab]', ('a', 'b')),
-        (('a', 'b', 'c'), '[!ab]', ('c',)),
-        (('a', 'b', 'c'), '??', ()),
-        (('a', 'b', 'cc'), '??', ('cc',)),
-        (('a1', 'b1', 'c1'), '?1', ('a1','b1','c1')),
-        (('a1', 'bbb1', 'cc1'), '*1', ('a1', 'bbb1','cc1')),
-        (('A',), 'a', ()),  # case-sensitive
-    ]
+        (("a", "b", "c"), None, ("a", "b", "c")),  # None = no filter
+        (("a", "b", "c"), "a", ("a",)),
+        (("a", "b", "c"), "?", ("a", "b", "c")),
+        (("a", "b", "c"), "[ab]", ("a", "b")),
+        (("a", "b", "c"), "[!ab]", ("c",)),
+        (("a", "b", "c"), "??", ()),
+        (("a", "b", "cc"), "??", ("cc",)),
+        (("a1", "b1", "c1"), "?1", ("a1", "b1", "c1")),
+        (("a1", "bbb1", "cc1"), "*1", ("a1", "bbb1", "cc1")),
+        (("A",), "a", ()),  # case-sensitive
+    ],
 )
 def test_get_tag_with_pattern(mapped_doubler, tags, pattern, expected):
     for tag in tags:
-        mapped_doubler.map(range(1), tag = tag)
+        mapped_doubler.map(range(1), tag=tag)
 
     assert set(htmap.get_tags(pattern)) == set(expected)
 
@@ -72,26 +72,25 @@ def test_clean_removes_all_transient_maps(mapped_doubler):
 
 def test_clean_without_maps_dir_doesnt_raise_exception():
     shutil.rmtree(
-        str((htmap.settings['HTMAP_DIR'] / 'maps').absolute()),
-        ignore_errors = True,
+        str((htmap.settings["HTMAP_DIR"] / "maps").absolute()), ignore_errors=True,
     )
 
     htmap.clean()
 
 
 def test_clean_only_removes_transient_maps(mapped_doubler):
-    mapped_doubler.map(range(1), tag = 'not-me')
+    mapped_doubler.map(range(1), tag="not-me")
     mapped_doubler.map(range(1))
 
     htmap.clean()
 
-    assert htmap.get_tags() == ('not-me',)
+    assert htmap.get_tags() == ("not-me",)
 
 
 def test_clean_all_cleans_all_maps(mapped_doubler):
-    mapped_doubler.map(range(1), tag = 'yes-me')
+    mapped_doubler.map(range(1), tag="yes-me")
     mapped_doubler.map(range(1))
 
-    htmap.clean(all = True)
+    htmap.clean(all=True)
 
     assert len(htmap.get_tags()) == 0

@@ -20,29 +20,29 @@ import htmap
 
 def test_all_errors_if_no_limit(cli):
     m = htmap.map(lambda x: 1 / x, [0] * 2)
-    m.wait(timeout = 180, errors_ok = True)
+    m.wait(timeout=180, errors_ok=True)
 
-    result = cli(['errors', m.tag])
+    result = cli(["errors", m.tag])
 
-    for txt in ['component 0', 'component 1']:
+    for txt in ["component 0", "component 1"]:
         assert txt in result.output
 
 
 def test_all_errors_if_zero_limit(cli):
     m = htmap.map(lambda x: 1 / x, [0] * 2)
-    m.wait(timeout = 180, errors_ok = True)
+    m.wait(timeout=180, errors_ok=True)
 
-    result = cli(['errors', '--limit', '0', m.tag])
+    result = cli(["errors", "--limit", "0", m.tag])
 
-    for txt in ['component 0', 'component 1']:
+    for txt in ["component 0", "component 1"]:
         assert txt in result.output
 
 
 def test_one_error_if_limit_one(cli):
     m = htmap.map(lambda x: 1 / x, [0] * 2)
-    m.wait(timeout = 180, errors_ok = True)
+    m.wait(timeout=180, errors_ok=True)
 
-    result = cli(['errors', '--limit', '1', m.tag])
+    result = cli(["errors", "--limit", "1", m.tag])
 
-    assert 'component 0' in result.output
-    assert 'component 1' not in result.output
+    assert "component 0" in result.output
+    assert "component 1" not in result.output

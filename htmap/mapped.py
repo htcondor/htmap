@@ -23,9 +23,7 @@ logger = logging.getLogger(__name__)
 
 class MappedFunction:
     def __init__(
-        self,
-        func: Callable,
-        map_options: Optional[options.MapOptions] = None
+        self, func: Callable, map_options: Optional[options.MapOptions] = None
     ):
         """
         Parameters
@@ -42,10 +40,12 @@ class MappedFunction:
             map_options = options.MapOptions()
         self.map_options = map_options
 
-        logger.debug(f'Created mapped function for {self.func} with options {self.map_options}')
+        logger.debug(
+            f"Created mapped function for {self.func} with options {self.map_options}"
+        )
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})'
+        return f"{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})"
 
     def __call__(self, *args, **kwargs):
         """Call the function as normal, locally."""
@@ -62,10 +62,10 @@ class MappedFunction:
             map_options = options.MapOptions()
 
         return mapping.map(
-            func = self.func,
-            args = args,
-            tag = tag,
-            map_options = options.MapOptions.merge(map_options, self.map_options),
+            func=self.func,
+            args=args,
+            tag=tag,
+            map_options=options.MapOptions.merge(map_options, self.map_options),
         )
 
     def starmap(
@@ -80,11 +80,11 @@ class MappedFunction:
             map_options = options.MapOptions()
 
         return mapping.starmap(
-            func = self.func,
-            args = args,
-            kwargs = kwargs,
-            tag = tag,
-            map_options = options.MapOptions.merge(map_options, self.map_options),
+            func=self.func,
+            args=args,
+            kwargs=kwargs,
+            tag=tag,
+            map_options=options.MapOptions.merge(map_options, self.map_options),
         )
 
     def build_map(
@@ -97,13 +97,15 @@ class MappedFunction:
             map_options = options.MapOptions()
 
         return mapping.build_map(
-            func = self.func,
-            tag = tag,
-            map_options = options.MapOptions.merge(map_options, self.map_options),
+            func=self.func,
+            tag=tag,
+            map_options=options.MapOptions.merge(map_options, self.map_options),
         )
 
 
-def mapped(map_options: Optional[options.MapOptions] = None) -> Union[Callable, MappedFunction]:
+def mapped(
+    map_options: Optional[options.MapOptions] = None,
+) -> Union[Callable, MappedFunction]:
     """
     A decorator that wraps a function in an :class:`MappedFunction`,
     which provides an interface for mapping functions calls out to an HTCondor cluster.
@@ -120,6 +122,7 @@ def mapped(map_options: Optional[options.MapOptions] = None) -> Union[Callable, 
         A :class:`MappedFunction` that wraps the function (or a wrapper function that does the wrapping).
     """
     if map_options is None:  # call with parens but no args
+
         def wrapper(func: Callable) -> MappedFunction:
             return MappedFunction(func)
 
@@ -129,9 +132,12 @@ def mapped(map_options: Optional[options.MapOptions] = None) -> Union[Callable, 
         return MappedFunction(map_options)
 
     elif isinstance(map_options, options.MapOptions):  # call with map options
+
         def wrapper(func: Callable) -> MappedFunction:
-            return MappedFunction(func, map_options = map_options)
+            return MappedFunction(func, map_options=map_options)
 
         return wrapper
 
-    raise TypeError('incorrect use of @mapped decorator: argument should be a callable or a MapOptions, or no argument')
+    raise TypeError(
+        "incorrect use of @mapped decorator: argument should be a callable or a MapOptions, or no argument"
+    )

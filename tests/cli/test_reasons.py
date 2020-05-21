@@ -19,24 +19,24 @@ import htmap
 
 
 def test_retag(cli):
-    m = htmap.map(str, range(1), tag = 'old')
+    m = htmap.map(str, range(1), tag="old")
 
-    result = cli(['retag', 'old', 'new'])
+    result = cli(["retag", "old", "new"])
 
-    assert m.tag == 'new'
+    assert m.tag == "new"
 
 
 def test_retag_message_has_old_tag(cli):
-    m = htmap.map(str, range(1), tag = 'old')
+    m = htmap.map(str, range(1), tag="old")
 
-    result = cli(['retag', 'old', 'new'])
+    result = cli(["retag", "old", "new"])
 
-    assert 'old' in result.output
+    assert "old" in result.output
 
 
 def test_retag_message_has_new_tag(cli):
-    m = htmap.map(str, range(1), tag = 'old')
+    m = htmap.map(str, range(1), tag="old")
 
-    result = cli(['retag', 'old', 'new'])
+    result = cli(["retag", "old", "new"])
 
-    assert 'new' in result.output
+    assert "new" in result.output

@@ -23,11 +23,9 @@ THIS_DIR = Path(__file__).parent
 
 def find_version():
     """Grab the version out of htmap/version.py without importing it."""
-    version_file_text = (THIS_DIR / 'htmap' / 'version.py').read_text()
+    version_file_text = (THIS_DIR / "htmap" / "version.py").read_text()
     version_match = re.search(
-        r"^__version__ = ['\"]([^'\"]*)['\"]",
-        version_file_text,
-        re.M,
+        r"^__version__ = ['\"]([^'\"]*)['\"]", version_file_text, re.M,
     )
     if version_match:
         return version_match.group(1)
@@ -35,16 +33,16 @@ def find_version():
 
 
 setup(
-    name = 'htmap',
-    version = find_version(),
-    author = 'Josh Karpel',
-    author_email = 'josh.karpel@gmail.com',
-    description = 'High-Throughput Computing in Python, powered by HTCondor',
-    long_description = Path('README.md').read_text(),
-    long_description_content_type = "text/markdown",
-    url = 'https://github.com/htcondor/htmap',
-    license = 'ASL 2.0',
-    classifiers = [
+    name="htmap",
+    version=find_version(),
+    author="Josh Karpel",
+    author_email="josh.karpel@gmail.com",
+    description="High-Throughput Computing in Python, powered by HTCondor",
+    long_description=Path("README.md").read_text(),
+    long_description_content_type="text/markdown",
+    url="https://github.com/htcondor/htmap",
+    license="ASL 2.0",
+    classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3",
@@ -57,17 +55,8 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Topic :: System :: Distributed Computing",
     ],
-    packages = [
-        'htmap',
-        'htmap.run',
-    ],
-    package_data = {
-        '': ['*.sh'],
-    },
-    entry_points = {
-        'console_scripts': [
-            'htmap = htmap.cli:cli',
-        ],
-    },
-    install_requires = Path('requirements.txt').read_text().splitlines(),
+    packages=["htmap", "htmap.run",],
+    package_data={"": ["*.sh"],},
+    entry_points={"console_scripts": ["htmap = htmap.cli:cli",],},
+    install_requires=Path("requirements.txt").read_text().splitlines(),
 )
