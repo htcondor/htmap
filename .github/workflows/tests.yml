@@ -10,6 +10,9 @@ jobs:
       matrix:
         python-version: [3.6, 3.7, 3.8]
         htcondor-version: [8.8, 8.9]
+        exclude:
+          - htcondor-version: 8.8
+            python-version: 3.8
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image for testing
