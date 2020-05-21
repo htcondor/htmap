@@ -4,16 +4,29 @@ v0.6.0
 .. py:currentmodule:: htmap
 
 
+The big new features in this release are:
+
+* Improved support for input and output
+  file transfer (inputs/outputs can come from/be sent to remote locations, i.e.,
+  not the submit machine).
+* A new delivery method, ``shared``, where HTMap
+  will use the same Python executable detected submit-side when executing (this
+  supports HTCondor pools that use shared filesystems to make a Python
+  installation universally available).
+
+
 New Features/Improvements
 -------------------------
 
 * Add the ``shared`` delivery method, which supports HTCondor pools that use
   shared filesystems to make Python installations available universally.
-  Issues: :issue:`195` and :issue:`198`
+  Suggested by Duncan Macleod.
+  Issues/PRs: :issue:`195`, :issue:`198`, :pr:`200`
 * HTMap now supports getting input files from remote destinations (i.e., not
   from the submit machine) via existing input file auto-discovery. Just use
   the revised :class:`TransferPath` in your mapped function arguments, and
   HTMap will arrange for the file to be transferred to your map component!
+  PR: :pr:`216`
 * HTMap now supports sending output files to destinations that are not the
   submit machine via HTCondor's ``transfer_output_remaps`` mechanism.
   Output files can be sent to various locations, such as an S3 service.
@@ -21,8 +34,9 @@ New Features/Improvements
   :class:`TransferPath`, as well as the new tutorial
   :ref:`transferring-output-to-other-places` for more details on how to use
   this feature.
-* Massive documentation upgrade courtesy of `Scott Sievert <https://github.com/stsievert>`_!
-  Issues/PRs: :issue:`208`, :pr:`191`, and :pr:`202`
+  PR: :pr:`216`
+* **Massive** documentation upgrades courtesy of `Scott Sievert <https://github.com/stsievert>`_!
+  Issues/PRs: :issue:`208`, :pr:`191`, :pr:`202`, :pr:`221`
 * The HTMap CLI (normally accessed by running ``htmap``) can now also be
   accessed by running ``python -m htmap``.
   Issue: :issue:`190`
@@ -36,6 +50,13 @@ New Features/Improvements
 Changed/Deprecated Features
 ---------------------------
 
+* :attr:`htmap.Map.exists` has replaced ``htmap.Map.is_removed``.
+  It has exactly the opposite semantics (it is only ``True`` if the map has not
+  been successfully removed).
+  PR: :pr:`221`
+* :class:`htmap.ComponentStatus` is now a subclass of :class:`str`, so
+  (for example) ``"COMPLETED"`` can be used in place of
+  ``htmap.ComponentStatus.COMPLETED``.
 * Item access (``[]``) on ``Map.stdout``, ``Map.stderr``, and ``Map.output_files``
   is now non-blocking and will raise ``FileNotFound`` exceptions if accessed before
   available. The blocking API (with a timeout) is still available via the ``get``
@@ -45,11 +66,16 @@ Changed/Deprecated Features
   information.
 * Several HTMap CLI commands now support explicit enable/disable flags instead
   of just one or the other. The default behaviors were not changed.
+* The name of the function used to register delivery methods changed to
+  :func:`register_delivery_method` (from ``register_delivery_mechanism``).
 
 
 Bug Fixes
 ---------
 
+* HTMap is now less sensitive to job event logs becoming corrupted.
+* Type hints are now more correct on more functions (but not fully correct on
+  all functions, bear with us!).
 
 
 Known Issues

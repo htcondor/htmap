@@ -22,7 +22,7 @@ import htmap
 # -- Project information -----------------------------------------------------
 
 project = 'HTMap'
-copyright = '2018, HTCondor Team, Computer Sciences Department, University of Wisconsin-Madison, WI'
+copyright = '2018-2020, HTCondor Team, Computer Sciences Department, University of Wisconsin-Madison, WI'
 author = 'HTCondor Team'
 
 # The short X.Y version

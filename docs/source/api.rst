@@ -190,6 +190,10 @@ These functions are useful for generating machine-readable status information.
 
 .. autofunction:: htmap.status_csv
 
+Delivery Methods
+----------------
+
+.. autofunction:: htmap.register_delivery_method
 
 Transplant Installs
 +++++++++++++++++++

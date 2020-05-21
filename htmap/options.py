@@ -288,13 +288,27 @@ def create_submit_object_and_itemdata(
 
 def register_delivery_method(
     name: str,
-    options_func: Callable[[str, Path], dict],
+    descriptors_func: Callable[[str, Path], dict],
     setup_func: Optional[Callable[[str, Path], None]] = None,
 ) -> None:
+    """
+    Register a new delivery method with HTMap.
+    
+    Parameters
+    ----------
+    name
+        The name of the delivery method; this is what the ``DELIVERY_METHOD``
+        should be set to to use this delivery method.
+    descriptors_func
+        The function that provides the HTCondor submit descriptors
+        for this delivery method.
+    setup_func
+        The function that does any setup necessary to running the map.
+    """
     if setup_func is None:
         setup_func = lambda *args: None
 
-    BASE_OPTIONS_FUNCTION_BY_DELIVERY[name] = options_func
+    BASE_OPTIONS_FUNCTION_BY_DELIVERY[name] = descriptors_func
     SETUP_FUNCTION_BY_DELIVERY[name] = setup_func
 
 
@@ -410,7 +424,7 @@ def _get_base_descriptors_for_assume(
 
 register_delivery_method(
     'assume',
-    options_func = _get_base_descriptors_for_assume,
+    descriptors_func = _get_base_descriptors_for_assume,
 )
 
 
@@ -429,7 +443,7 @@ def _get_base_descriptors_for_docker(
 
 register_delivery_method(
     'docker',
-    options_func = _get_base_descriptors_for_docker,
+    descriptors_func = _get_base_descriptors_for_docker,
 )
 
 
@@ -450,7 +464,7 @@ def _get_base_descriptors_for_shared(
 
 register_delivery_method(
     'shared',
-    options_func = _get_base_descriptors_for_shared,
+    descriptors_func = _get_base_descriptors_for_shared,
 )
 
 
@@ -472,7 +486,7 @@ def _get_base_descriptors_for_singularity(
 
 register_delivery_method(
     'singularity',
-    options_func = _get_base_descriptors_for_singularity,
+    descriptors_func = _get_base_descriptors_for_singularity,
 )
 
 
@@ -550,6 +564,6 @@ def _get_transplant_hash(pip_freeze_output: bytes) -> str:
 
 register_delivery_method(
     'transplant',
-    options_func = _get_base_descriptors_for_transplant,
+    descriptors_func = _get_base_descriptors_for_transplant,
     setup_func = _run_delivery_setup_for_transplant,
 )

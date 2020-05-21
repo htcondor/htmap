@@ -45,7 +45,7 @@ class MappedFunction:
         logger.debug(f'Created mapped function for {self.func} with options {self.map_options}')
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
+        return f'{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})'
 
     def __call__(self, *args, **kwargs):
         """Call the function as normal, locally."""

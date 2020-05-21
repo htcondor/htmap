@@ -110,3 +110,4 @@ venv.bak/
 !htmap-exec/singularity.d/*
 
 prof/
+docs/source/tutorials/*.txt

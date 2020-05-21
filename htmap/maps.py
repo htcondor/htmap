@@ -804,8 +804,8 @@ class Map(collections.abc.Sequence):
     @property
     def exists(self) -> bool:
         """
-        True if and only if files related to the tag exist on the
-        scheduler node.
+        ``True`` if and only if the map has **not** been successfully removed.
+        Otherwise, ``False``.
         """
         return self._map_dir.exists()
 

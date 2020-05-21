@@ -8,15 +8,15 @@ Installation
 * On Windows, there's an added dependency of HTCondor (to get access to the
   HTCondor Python bindings). After that, use the ``pip install --no-deps``.
 
-Most of the tutorials will run on Binder.
+The introductory tutorials can be run on Binder,
+requiring no setup on your part.
 
 Basic usage only requires installation of HTMap "submit-side". Anything more
-complex with HTMap like checkpointing or file transfers will require
+advanced like checkpointing or output file transfers will require
 installation on the execute nodes. For more information and to ensure your code
-will run execute-side see :doc:`dependencies`.
-
-To get the latest development version of HTMap, run ``pip install
-git+https://github.com/htcondor/htmap.git`` instead.
+will run correctly execute-side see :doc:`dependencies`.
 
 You may need to append ``--user`` to the ``pip`` command if you do not have
-permission to install packages directly into the Python you are using.
+permission to install packages directly into the
+Python installation you are using.
+Recent versions of ``pip`` will do this automatically when necessary.

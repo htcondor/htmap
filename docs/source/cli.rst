@@ -3,7 +3,11 @@
 CLI Reference
 =============
 
-View the available sub-commands with this command:
+HTMap provides a command line tool called ``htmap`` that exposes a subset
+of functionality focused around monitoring long-running maps without needing
+to run Python yourself.
+
+View the available sub-commands by running:
 
 .. code:: shell
 

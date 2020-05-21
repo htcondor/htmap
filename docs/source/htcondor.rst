@@ -1,34 +1,42 @@
 Using HTCondor with HTMap
 =========================
 
-HTMap is only a Python wrapper to the HTCondor API. That means the vast
-majority of the HTCondor functionality is available.  Here's a brief overview
-of how to use HTCondor with HTMap:
+HTMap is a Python wrapper over the underlying HTCondor API. That means the vast
+majority of the HTCondor functionality is available. This page is a
+brief overview of how HTMap uses HTCondor to run your maps.
+It may be helpful for debugging, or for cross-referencing your
+HTMap and HTCondor knowledge.
+
 
 Component and Job States
--------------------------------------
+------------------------
 Each HTMap map component is represented by an HTCondor job.
-Map components will usually be in one of four states:
+Map components will usually be in one of four HTCondor job states:
 
-* **Idle**: the job/component has not started running yet; it is waiting to be assigned resources to execute on.
+* **Idle**: the job/component has not started running yet; it is waiting to be
+  assigned resources to execute on.
 * **Running**: the job/component is running on an execute machine.
-* **Held**: HTCondor has decided that it can't run the job/component, but that you (the user) might be able to fix the problem. The job will try to run again if it released.
-* **Completed**: the job/component has finished running, and HTMap has collected its output.
+* **Held**: HTCondor has decided that it can't run the job/component,
+  but that you (the user) might be able to fix the problem.
+  The job will try to run again if it released.
+* **Completed**: the job/component has finished running, and HTMap has
+  collected its output. These jobs will likely leave the HTCondor queue soon.
 
 For more detail, see the relevant HTCondor documentation:
 
 * https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#checking-on-the-progress-of-jobs
 * https://htcondor.readthedocs.io/en/latest/admin-manual/policy-configuration.html#machine-states
 
-Requesting commonly used resources
-----------------------------------
+Requesting Resources
+--------------------
 
-HTCondor's default configuration can be limiting -- what if your job requires
-more memory or more disk space? HTCondor jobs can request resources, and
+The default resources provisioned for your map component can be limiting --
+what if your job requires more memory or more disk space?
+HTCondor jobs can request resources, and
 HTMap supports those requests via :class:`~htmap.MapOptions`.
 
 :class:`~htmap.MapOptions` accepts many of the same keys that `condor_submit`_
-accepts.  Some of the more commonly requested keys are:
+accepts.  Some of the more commonly requested resources are:
 
 * ``request_memory``. Possible values are like ``"1MB`` for 1MB, or ``"2GB"`` for 2GB of
   memory.
@@ -49,8 +57,8 @@ might be used:
    )
    htmap.map(..., map_options=options)
 
-When it's mentioned that "the option ``foo`` needs to be set" (possibly in a
-submit file), this corresponds to adding the option in the appropriate place in
+When it's mentioned that "the option ``foo`` needs to be set" in a
+submit file, this corresponds to adding the option in the appropriate place in
 :class:`~htmap.MapOptions`.
 
 .. _configuration variables: https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html
@@ -70,18 +78,18 @@ with your site's documentation to see if they have any GPU documentation.
 .. _Jobs that use GPUs: http://chtc.cs.wisc.edu/gpu-jobs
 .. _Run Machine Learning Jobs on the HTC system: http://chtc.cs.wisc.edu/machine-learning-htc
 
-Shell commands
---------------
+Command Line Tools
+------------------
 
 HTMap tries to expose a complete interface for submitting and managing jobs,
 but not for examining the state of your HTCondor pool itself.
-Here are some HTCondor shell commands that you may find useful:
+Here are some HTCondor commands that you may find useful:
 
-* `condor_q`_: seeing the jobs submitted to the scheduler (aliased to
-  :func:`htmap.status`)
-* `condor_status`_: seeing resources the different machines have
+* `condor_q`_: seeing the jobs submitted to the scheduler (similar to
+  :func:`htmap.status`).
+* `condor_status`_: seeing resources the different machines have.
 
-The links go an HTML version of the man pages; their also visible with ``man``
+The links go an HTML version of the man pages; they are also visible with ``man``
 (e.g., ``man condor_q``).  Here's a list of possibly useful commands:
 
 .. code:: shell

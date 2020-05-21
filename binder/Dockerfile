@@ -17,6 +17,9 @@ FROM htcondor/htc-minimal-notebook:latest
 
 USER root
 
+RUN echo '#!/bin/bash\nfind ${HOME}/tutorials -name '\''*.ipynb'\'' -and -not -iname '\''*-checkpoint.ipynb'\''' > /usr/bin/find_notebooks \
+ && chmod +x /usr/bin/find_notebooks
+
 # Use the repository version of HTMap, not whatever was in the htc-notebook.
 COPY . ${HOME}/htmap
 RUN chown -R ${NB_UID}:${NB_GID} ${HOME}/htmap

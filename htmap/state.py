@@ -125,7 +125,10 @@ class MapState:
                 if utils.BINDINGS_VERSION_INFO >= (8, 9, 3):
                     self.save()
 
-    def _handle_events(self):
+    def _handle_events(self) -> int:
+        """
+        Process new events and return the number of new events processed.
+        """
         handled_events = 0
 
         for event in self._event_reader:
