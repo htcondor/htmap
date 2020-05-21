@@ -19,7 +19,7 @@ install:
   - travis_retry docker build -t htmap-test:$TRAVIS_BUILD_ID --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=${TRAVIS_PYTHON_VERSION} .
 
 script:
-  - docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test:$TRAVIS_BUILD_ID tests/ci.sh
+  - docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test:$TRAVIS_BUILD_ID bash tests/ci.sh
 
 after_success:
   - codecov -X gcov
