@@ -14,6 +14,8 @@ echo "pytest version"
 pytest --version
 echo
 
+chmod -R 777 .
+
 pytest -n 4 --cov --durations=20
 
-chmod -R +r .
+chmod -R 777 .
