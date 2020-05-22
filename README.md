@@ -1,8 +1,13 @@
 # HTMap
 
+[![PyPI version](https://badge.fury.io/py/htmap.svg)](https://badge.fury.io/py/htmap)
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/htmap/badges/version.svg)](https://anaconda.org/conda-forge/htmap)
+
 [![Documentation Status](https://readthedocs.org/projects/htmap/badge/?version=latest)](https://htmap.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.com/htcondor/htmap.svg?branch=master)](https://travis-ci.com/htcondor/htmap)
 [![codecov](https://codecov.io/gh/htcondor/htmap/branch/master/graph/badge.svg)](https://codecov.io/gh/htcondor/htmap)
+![GitHub issues](https://img.shields.io/github/issues/htcondor/htmap)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/htcondor/htmap)
 
 **Jump right in to the tutorials with Binder!**
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/htcondor/htmap/master?urlpath=lab%2Ftree%2Ffirst-steps.ipynb)
