@@ -20,6 +20,3 @@ install:
 
 script:
   - docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test:$TRAVIS_BUILD_ID bash tests/ci.sh
-
-after_success:
-  - codecov -X gcov
