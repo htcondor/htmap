@@ -17,7 +17,5 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the Docker image for testing
       run: docker build -t htmap-test:$GITHUB_RUN_ID --file docker/Dockerfile --build-arg HTCONDOR_VERSION=${{ matrix.htcondor-version }} --build-arg PYTHON_VERSION=${{ matrix.python-version }} .
-    - name: Run tests inside the Docker image
+    - name: Run tests inside the Docker image (and upload coverage)
       run: docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test:$GITHUB_RUN_ID bash tests/ci.sh
-#    - name: Upload coverage
-#      run: codecov -t ${{ secrets.CODECOV_TOKEN }}
