@@ -2,17 +2,22 @@
 
 set -e
 
-echo "condor version"
+printf "\n-----\n"
+
+echo "HTCondor version:"
 condor_version
+
 echo
 
-echo "python bindings version"
+echo "HTCondor Python bindings version:"
 python -c "import htcondor; print(htcondor.version())"
+
 echo
 
-echo "pytest version"
+echo "pytest version:"
 pytest --version
-echo
+
+printf "\n-----\n"
 
 pytest -n 4 --cov --durations=20
 
