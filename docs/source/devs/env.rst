@@ -9,7 +9,8 @@ Repository Setup
 You can get HTMap's source code by cloning the git repository:
 ``git clone https://github.com/htcondor/htmap``.
 If you are planning on submitting a pull request, you should instead
-clone your own `fork <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_
+clone your own
+`fork <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_
 of the repository.
 
 After cloning the repository, install the development dependencies listed in
@@ -19,6 +20,10 @@ If you are using ``pip``, you would run ``pip install -r requirements-dev.txt``.
 One of the dependencies you just installed is ``pre-commit``. ``pre-commit``
 runs a series of checks whenever you try to commit. You should "install" the
 pre-commit hooks by running ``pre-commit install`` in the repository root.
+You can run the checks manually at any time by running ``pre-commit``.
+
+**Do not commit to the repository before running ``pre-commit install``!**
+
 
 Development Container
 ---------------------
