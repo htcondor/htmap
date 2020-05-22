@@ -5,6 +5,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/htmap/badge/?version=latest)](https://htmap.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.com/htcondor/htmap.svg?branch=master)](https://travis-ci.com/htcondor/htmap)
+![Tests](https://github.com/htcondor/htmap/workflows/Tests/badge.svg)
 [![codecov](https://codecov.io/gh/htcondor/htmap/branch/master/graph/badge.svg)](https://codecov.io/gh/htcondor/htmap)
 ![GitHub issues](https://img.shields.io/github/issues/htcondor/htmap)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/htcondor/htmap)
