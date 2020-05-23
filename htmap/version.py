@@ -15,9 +15,15 @@
 
 from typing import Tuple, Optional
 
+try:
+    from importlib import metadata
+except ImportError:
+    # Running on pre-3.8 Python; use importlib-metadata package
+    import importlib_metadata as metadata
+
 from . import utils
 
-__version__ = "0.6.0"
+__version__ = metadata.version("htmap")
 
 
 def version() -> str:
