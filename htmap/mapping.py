@@ -211,9 +211,7 @@ class MapBuilder:
 
 
 def build_map(
-    func: Callable,
-    map_options: Optional[options.MapOptions] = None,
-    tag: Optional[str] = None,
+    func: Callable, map_options: Optional[options.MapOptions] = None, tag: Optional[str] = None,
 ) -> MapBuilder:
     """
     Return a :class:`MapBuilder` for the given function.
@@ -284,9 +282,7 @@ def create_map(
     try:
         make_map_dir_and_subdirs(map_dir)
 
-        transformed_args_and_kwargs, extra_input_files = transform_args_and_kwargs(
-            args_and_kwargs
-        )
+        transformed_args_and_kwargs, extra_input_files = transform_args_and_kwargs(args_and_kwargs)
         num_components = len(transformed_args_and_kwargs)
         if num_components == 0:
             raise exceptions.EmptyMap("Cannot create a map with zero components")
@@ -310,9 +306,7 @@ def create_map(
             htio.save_num_components(map_dir, num_components)
             htio.save_submit(map_dir, submit_obj)
             htio.save_itemdata(map_dir, itemdata)
-        logger.debug(
-            f"Created map directory for map {tag} (took {timer.elapsed:.6f} seconds)"
-        )
+        logger.debug(f"Created map directory for map {tag} (took {timer.elapsed:.6f} seconds)")
 
         logger.debug(f"Submitting map {tag}...")
 
@@ -359,9 +353,7 @@ def make_map_dir_and_subdirs(map_dir: Path) -> None:
     logger.debug(f"Created map directory {map_dir} and subdirectories")
 
 
-def execute_submit(
-    submit_object: htcondor.Submit, itemdata: List[Dict[str, str]]
-) -> int:
+def execute_submit(submit_object: htcondor.Submit, itemdata: List[Dict[str, str]]) -> int:
     """
     Execute a map via the scheduler defined by the settings.
     Return the HTCondor cluster ID of the map's jobs.
@@ -446,8 +438,7 @@ def transform_input_paths(
         )
     elif isinstance(object_to_check, dict):
         return {
-            k: transform_input_paths(v, transfer_accumulator)
-            for k, v in object_to_check.items()
+            k: transform_input_paths(v, transfer_accumulator) for k, v in object_to_check.items()
         }
 
     return object_to_check

@@ -59,14 +59,14 @@ USER ${USER}
 
 # copy testing configs into place
 COPY docker/condor_config.local /etc/condor/condor_config.local
-COPY --chown=${USER}:${USER} docker/.htmaprc /home/${USER}/
+COPY --chown=mapper:mapper docker/.htmaprc /home/${USER}/
 
 # set default entrypoint and command
 # the entrypoint is critical: it starts HTCondor in the container
 ENTRYPOINT ["/home/mapper/htmap/docker/entrypoint.sh"]
 CMD ["bash"]
 
-COPY --chown=${USER}:${USER} . /home/${USER}/htmap
+COPY --chown=mapper:mapper . /home/${USER}/htmap
 RUN python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.*
 
 WORKDIR /home/${USER}/htmap

@@ -78,9 +78,7 @@ class MapState:
 
         self._jobid_to_component: Dict[Tuple[int, int], int] = {}
 
-        self._component_statuses = [
-            ComponentStatus.UNMATERIALIZED for _ in self.map.components
-        ]
+        self._component_statuses = [ComponentStatus.UNMATERIALIZED for _ in self.map.components]
         self._holds: Dict[int, holds.ComponentHold] = {}
         self._memory_usage = [0 for _ in self.map.components]
         self._runtime = [datetime.timedelta(0) for _ in self.map.components]
@@ -115,9 +113,7 @@ class MapState:
         with self._event_reader_lock:  # no thread can be in here at the same time as another
             if self._event_reader is None:
                 logger.debug(f"Created event log reader for map {self.map.tag}")
-                self._event_reader = htcondor.JobEventLog(
-                    self._event_log_path.as_posix()
-                ).events(0)
+                self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
             with utils.Timer() as timer:
                 handled_events = self._handle_events()
@@ -127,9 +123,7 @@ class MapState:
                     f"Processed {handled_events} events for map {self.map.tag} (took {timer.elapsed:.6f} seconds)"
                 )
 
-                self.map._local_data = (
-                    None  # invalidate cache if any events were received
-                )
+                self.map._local_data = None  # invalidate cache if any events were received
 
                 if utils.BINDINGS_VERSION_INFO >= (8, 9, 3):
                     self.save()
@@ -148,9 +142,7 @@ class MapState:
                 continue
 
             if event.type is htcondor.JobEventType.SUBMIT:
-                self._jobid_to_component[(event.cluster, event.proc)] = int(
-                    event["LogNotes"]
-                )
+                self._jobid_to_component[(event.cluster, event.proc)] = int(event["LogNotes"])
 
             # this lookup is safe because the SUBMIT event always comes first
             # ... but it can happen if the event log is corrupted somehow
@@ -242,9 +234,7 @@ class MapState:
 
 
 def parse_runtime(runtime_string: str) -> datetime.timedelta:
-    (_, usr_days, usr_hms), (_, sys_days, sys_hms) = [
-        s.split() for s in runtime_string.split(",")
-    ]
+    (_, usr_days, usr_hms), (_, sys_days, sys_hms) = [s.split() for s in runtime_string.split(",")]
 
     usr_h, usr_m, usr_s = usr_hms.split(":")
     sys_h, sys_m, sys_s = sys_hms.split(":")

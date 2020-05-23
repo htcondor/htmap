@@ -160,16 +160,11 @@ BASE_SETTINGS = Settings(
             COLLECTOR=os.getenv("HTMAP_CONDOR_COLLECTOR", None),
         ),
         MAP_OPTIONS=dict(
-            request_cpus="1",
-            request_memory="128MB",
-            request_disk="1GB",
-            keep_claim_idle="30",
+            request_cpus="1", request_memory="128MB", request_disk="1GB", keep_claim_idle="30",
         ),
         DOCKER=dict(IMAGE=os.getenv("HTMAP_DOCKER_IMAGE", default_docker_image),),
         SINGULARITY=dict(
-            IMAGE=os.getenv(
-                "HTMAP_SINGULARITY_IMAGE", f"docker://{default_docker_image}"
-            ),
+            IMAGE=os.getenv("HTMAP_SINGULARITY_IMAGE", f"docker://{default_docker_image}"),
         ),
         TRANSPLANT=dict(
             DIR=(htmap_dir / "transplants").as_posix(),

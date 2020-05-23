@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, List, Tuple, Iterator, Dict, Callable, Iterable
+from typing import Any, List, Iterator, Callable, Iterable
 import logging
 
 import gzip
@@ -87,9 +87,7 @@ def append_cluster_id(map_dir: Path, cluster_id: int) -> None:
 
 
 def load_cluster_ids(map_dir: Path) -> List[int]:
-    return [
-        int(cid.strip()) for cid in _cluster_ids_path(map_dir).read_text().splitlines()
-    ]
+    return [int(cid.strip()) for cid in _cluster_ids_path(map_dir).read_text().splitlines()]
 
 
 def _cluster_ids_path(map_dir: Path) -> Path:

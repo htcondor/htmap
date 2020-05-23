@@ -139,9 +139,7 @@ def _extract_status_data(
     if include_state:
         sc = collections.Counter(map.component_statuses)
 
-        sd.update(
-            {str(k): str(sc[k]) for k in state.ComponentStatus.display_statuses()}
-        )
+        sd.update({str(k): str(sc[k]) for k in state.ComponentStatus.display_statuses()})
 
     if include_meta:
         sd["Local Data"] = utils.num_bytes_to_str(map.local_data)
@@ -196,9 +194,7 @@ def _status(
         headers += ["Local Data", "Max Memory", "Max Runtime", "Total Runtime"]
 
     rows = [
-        _extract_status_data(
-            map, include_state=include_state, include_meta=include_meta
-        )
+        _extract_status_data(map, include_state=include_state, include_meta=include_meta)
         for map in maps
     ]
 
@@ -320,9 +316,7 @@ def status_csv(
             row["local_disk_usage"] = utils.get_dir_size(mapping.map_dir_path(map.tag))
             row["max_memory_usage"] = max(map.memory_usage) * 1024 * 1024
             row["max_runtime"] = max(map.runtime).total_seconds()
-            row["total_runtime"] = sum(
-                map.runtime, datetime.timedelta()
-            ).total_seconds()
+            row["total_runtime"] = sum(map.runtime, datetime.timedelta()).total_seconds()
 
         rows.append(row)
 
@@ -373,9 +367,7 @@ class Transplant(NamedTuple):
     def remove(self):
         self.path.with_suffix(".pip").unlink()
         self.path.unlink()
-        logger.info(
-            f"Removed transplant install {self.hash}, which was created at {self.created}"
-        )
+        logger.info(f"Removed transplant install {self.hash}, which was created at {self.created}")
 
 
 def transplants() -> Tuple[Transplant, ...]:
@@ -395,11 +387,7 @@ def transplant_info() -> str:
     entries = []
     for q, t in enumerate(transplants()):
         packages = "\n".join(
-            textwrap.wrap(
-                ", ".join(t.packages),
-                subsequent_indent=" " * 4,
-                break_long_words=False,
-            )
+            textwrap.wrap(", ".join(t.packages), subsequent_indent=" " * 4, break_long_words=False,)
         )
         entry = f"# {q}\nHash: {t.hash}\nCreated at: {t.created}\nPackages: {packages}"
         entries.append(entry)

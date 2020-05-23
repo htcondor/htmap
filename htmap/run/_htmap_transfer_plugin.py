@@ -99,9 +99,7 @@ def print_capabilities():
 
 
 def main(args):
-    transfers = [
-        pickle.load(f.open("rb")) for f in Path(TRANSFER_PLUGIN_CACHE).iterdir()
-    ]
+    transfers = [pickle.load(f.open("rb")) for f in Path(TRANSFER_PLUGIN_CACHE).iterdir()]
 
     print(f"Found {len(transfers)} URL transfers to process.\n")
 
@@ -109,8 +107,7 @@ def main(args):
         print("Nothing to do!")
 
         write_dict_to_file_as_ad(
-            {"TransferSuccess": True, "TransferFileName": "", "TransferUrl": "",},
-            args["outfile"],
+            {"TransferSuccess": True, "TransferFileName": "", "TransferUrl": "",}, args["outfile"],
         )
         return
 
@@ -118,9 +115,7 @@ def main(args):
 
     available_methods = {
         plugin: classad.parseOne(
-            subprocess.run([plugin, "-classad"], stdout=subprocess.PIPE).stdout.decode(
-                "utf-8"
-            )
+            subprocess.run([plugin, "-classad"], stdout=subprocess.PIPE).stdout.decode("utf-8")
         )["SupportedMethods"].split(",")
         for plugin in reversed(builtin_plugins)
     }
@@ -138,9 +133,7 @@ def main(args):
             f"Will transfer {output_file} to {destination} using protocol {protocol} implemented by plugin {plugin}"
         )
         deferred_transfers.append(
-            DeferredTransfer(
-                output_file=output_file, destination=destination, plugin=plugin
-            )
+            DeferredTransfer(output_file=output_file, destination=destination, plugin=plugin)
         )
 
     # TODO: group transfers by plugin
@@ -154,10 +147,7 @@ def main(args):
         infile.write_text(
             str(
                 classad.ClassAd(
-                    {
-                        "LocalFileName": str(transfer.output_file),
-                        "Url": transfer.destination,
-                    }
+                    {"LocalFileName": str(transfer.output_file), "Url": transfer.destination,}
                 )
             )
         )
@@ -171,14 +161,10 @@ def main(args):
             "-upload",
         ]
         print(f"Invoking {' '.join(cmd)}")
-        run_plugin = subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
+        run_plugin = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
 
         if run_plugin.returncode != 0:
-            print(
-                f"Plugin {transfer.plugin} failed! Its return code was {run_plugin.returncode}"
-            )
+            print(f"Plugin {transfer.plugin} failed! Its return code was {run_plugin.returncode}")
             print(f"Captured stdout:")
             print(run_plugin.stdout.decode())
             print(f"Captured stderr:")
@@ -187,13 +173,10 @@ def main(args):
             outfile.rename(Path(args["outfile"]))
             sys.exit(-1)
 
-        print(
-            f"Transferred {transfer.output_file} to {transfer.destination} successfully!"
-        )
+        print(f"Transferred {transfer.output_file} to {transfer.destination} successfully!")
 
     write_dict_to_file_as_ad(
-        {"TransferSuccess": True, "TransferFileName": "", "TransferUrl": "",},
-        args["outfile"],
+        {"TransferSuccess": True, "TransferFileName": "", "TransferUrl": "",}, args["outfile"],
     )
 
 
@@ -230,9 +213,7 @@ def find_first_plugin(available_methods, method):
         if method in methods:
             return plugin
 
-    raise NoPluginFound(
-        f"No plugin found for {method}. Available methods are {available_methods}."
-    )
+    raise NoPluginFound(f"No plugin found for {method}. Available methods are {available_methods}.")
 
 
 def write_dict_to_file_as_ad(dict_, path):
@@ -262,9 +243,7 @@ if __name__ == "__main__":
             job_ad = classad.parseOne((scratch_dir / ".job.ad").read_text())
             out, err = scratch_dir / job_ad["Out"], scratch_dir / job_ad["Err"]
             with out.open(mode="a") as out_file, err.open(mode="a") as err_file:
-                with contextlib.redirect_stdout(out_file), contextlib.redirect_stderr(
-                    err_file
-                ):
+                with contextlib.redirect_stdout(out_file), contextlib.redirect_stderr(err_file):
                     print("\n------  TRANSFER PLUGIN OUTPUT  ------\n")
                     print("\n------  TRANSFER PLUGIN ERROR   ------\n", file=sys.stderr)
                     main(args)

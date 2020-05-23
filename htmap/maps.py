@@ -19,10 +19,8 @@ from typing import (
     Iterable,
     Any,
     Optional,
-    Callable,
     Iterator,
     Dict,
-    Set,
     Mapping,
     MutableMapping,
 )
@@ -122,9 +120,7 @@ class Map(collections.abc.Sequence):
         except (FileNotFoundError, exceptions.InsufficientHTCondorVersion):
             self._state = state.MapState(self)
         except IOError as e:
-            logger.debug(
-                f"Failed to read existing map state for map {self.tag} because: {repr(e)}"
-            )
+            logger.debug(f"Failed to read existing map state for map {self.tag} because: {repr(e)}")
             self._state = state.MapState(self)
 
         self._local_data: Optional[int] = None
@@ -237,9 +233,7 @@ class Map(collections.abc.Sequence):
     @property
     def is_done(self) -> bool:
         """``True`` if all of the output is available for this map."""
-        return all(
-            cs is state.ComponentStatus.COMPLETED for cs in self.component_statuses
-        )
+        return all(cs is state.ComponentStatus.COMPLETED for cs in self.component_statuses)
 
     @property
     def is_active(self) -> bool:
@@ -280,9 +274,7 @@ class Map(collections.abc.Sequence):
 
         try:
             if show_progress_bar:
-                pbar = tqdm(
-                    desc=self.tag, total=len(self), unit="component", ascii=True,
-                )
+                pbar = tqdm(desc=self.tag, total=len(self), unit="component", ascii=True,)
 
                 previous_pbar_len = 0
 
@@ -293,9 +285,7 @@ class Map(collections.abc.Sequence):
                 ok_statuses.add(state.ComponentStatus.ERRORED)
 
             while True:
-                num_incomplete = sum(
-                    cs not in ok_statuses for cs in self.component_statuses
-                )
+                num_incomplete = sum(cs not in ok_statuses for cs in self.component_statuses)
                 if show_progress_bar:
                     pbar_len = self._num_components - num_incomplete
                     pbar.update(pbar_len - previous_pbar_len)
@@ -321,9 +311,7 @@ class Map(collections.abc.Sequence):
             if show_progress_bar:
                 pbar.close()
 
-    def _wait_for_component(
-        self, component: int, timeout: utils.Timeout = None
-    ) -> None:
+    def _wait_for_component(self, component: int, timeout: utils.Timeout = None) -> None:
         """
         Wait for a map component to terminate, which could either be because it
         completes successfully or encounters an error during execution.
@@ -388,9 +376,7 @@ class Map(collections.abc.Sequence):
         else:
             raise exceptions.InvalidOutputStatus(f"Output status {status} is not valid")
 
-    def _load_error(
-        self, component: int, timeout: utils.Timeout = None,
-    ) -> errors.ComponentError:
+    def _load_error(self, component: int, timeout: utils.Timeout = None,) -> errors.ComponentError:
         """
         Try to load a map component as if it failed.
         If the component actually succeeded, raise :class:`ExpectedError`.
@@ -404,9 +390,7 @@ class Map(collections.abc.Sequence):
                 f"Tried to load component {component} as an error, but it succeeded"
             )
         elif status == "ERR":
-            return errors.ComponentError._from_raw_error(
-                self, next(status_and_raw_error)
-            )
+            return errors.ComponentError._from_raw_error(self, next(status_and_raw_error))
         else:
             raise exceptions.InvalidOutputStatus(f"Output status {status} is not valid")
 
@@ -430,9 +414,7 @@ class Map(collections.abc.Sequence):
         """Return the output associated with the input index. Does not block."""
         return self.get(item, timeout=0)
 
-    def get_err(
-        self, component: int, timeout: utils.Timeout = None,
-    ) -> errors.ComponentError:
+    def get_err(self, component: int, timeout: utils.Timeout = None,) -> errors.ComponentError:
         """
         Return the error associated with the input component index.
         If the component actually succeeded, this will raise :class:`htmap.exceptions.ExpectedError`.
@@ -563,9 +545,7 @@ class Map(collections.abc.Sequence):
         return base + extra
 
     def _query(
-        self,
-        requirements: Optional[str] = None,
-        projection: Optional[List[str]] = None,
+        self, requirements: Optional[str] = None, projection: Optional[List[str]] = None,
     ) -> Iterator[classad.ClassAd]:
         """
         Perform a _query against the HTCondor cluster to get information about the map jobs.
@@ -644,16 +624,14 @@ class Map(collections.abc.Sequence):
             status_to_components[status].append(component)
 
         return {
-            status: tuple(sorted(components))
-            for status, components in status_to_components.items()
+            status: tuple(sorted(components)) for status, components in status_to_components.items()
         }
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
         counts = collections.Counter(self.component_statuses)
         stat = " | ".join(
-            f"{str(js)} = {counts[js]}"
-            for js in state.ComponentStatus.display_statuses()
+            f"{str(js)} = {counts[js]}" for js in state.ComponentStatus.display_statuses()
         )
         msg = f"{self.__class__.__name__} {self.tag} ({len(self)} components): {stat}"
 
@@ -671,15 +649,10 @@ class Map(collections.abc.Sequence):
         Return a string containing a formatted table describing any held components.
         """
         headers = ["Component", "Code", "Hold Reason"]
-        rows = [
-            (component, hold.code, hold.reason)
-            for component, hold in self.holds.items()
-        ]
+        rows = [(component, hold.code, hold.reason) for component, hold in self.holds.items()]
 
         return utils.table(
-            headers=headers,
-            rows=rows,
-            alignment={"Component": "ljust", "Hold Reason": "ljust",},
+            headers=headers, rows=rows, alignment={"Component": "ljust", "Hold Reason": "ljust",},
         )
 
     @property
@@ -759,9 +732,7 @@ class Map(collections.abc.Sequence):
         req = self._requirements(requirements)
         a = schedd.act(action, req)
 
-        logger.debug(
-            f'Acted on map {self.tag} (requirements = "{req}") with action {action}'
-        )
+        logger.debug(f'Acted on map {self.tag} (requirements = "{req}") with action {action}')
 
         return a
 
@@ -823,9 +794,7 @@ class Map(collections.abc.Sequence):
         # move the tagfile to the removed tags dir
         # renamed by uid to prevent duplicates
         removed_tagfile = (
-            Path(settings["HTMAP_DIR"])
-            / names.REMOVED_TAGS_DIR
-            / self._tag_file_path.read_text()
+            Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR / self._tag_file_path.read_text()
         )
         self._tag_file_path.rename(removed_tagfile)
         logger.debug(f"Moved tag file for map {self.tag} to the removed tags directory")
@@ -968,9 +937,7 @@ class Map(collections.abc.Sequence):
         components = sorted(components)
 
         itemdata = htio.load_itemdata(self._map_dir)
-        sliced_itemdata = [
-            item for item in itemdata if int(item["component"]) in components
-        ]
+        sliced_itemdata = [item for item in itemdata if int(item["component"]) in components]
 
         submit_obj = htio.load_submit(self._map_dir)
 
@@ -980,9 +947,7 @@ class Map(collections.abc.Sequence):
         try:
             htio.append_cluster_id(self._map_dir, new_cluster_id)
         except BaseException as e:
-            condor.get_schedd().act(
-                htcondor.JobAction.Remove, f"ClusterId=={new_cluster_id}"
-            )
+            condor.get_schedd().act(htcondor.JobAction.Remove, f"ClusterId=={new_cluster_id}")
 
         logger.debug(
             f"Submitted {len(sliced_itemdata)} components (out of {self._num_components}) from map {self.tag}"
@@ -1017,8 +982,7 @@ class Map(collections.abc.Sequence):
         cant_be_rerun = {
             c
             for c, status in enumerate(self.component_statuses)
-            if status
-            not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
+            if status not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
         }
         intersection = components.intersection(cant_be_rerun)
         if len(intersection) != 0:
@@ -1051,9 +1015,7 @@ class Map(collections.abc.Sequence):
             The ``tag`` to assign to the map.
         """
         if tag == self.tag:
-            raise exceptions.CannotRetagMap(
-                "Cannot retag a map to the same tag it already has"
-            )
+            raise exceptions.CannotRetagMap("Cannot retag a map to the same tag it already has")
 
         try:
             tags.raise_if_tag_is_invalid(tag)

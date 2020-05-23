@@ -80,9 +80,7 @@ def wait_for_path_to_exist(
 Timeout = Optional[Union[int, float, datetime.timedelta]]
 
 
-def timeout_to_seconds(
-    timeout: Optional[Union[int, float, datetime.timedelta]]
-) -> Optional[float]:
+def timeout_to_seconds(timeout: Optional[Union[int, float, datetime.timedelta]]) -> Optional[float]:
     """
     Coerce a timeout given as a :class:`datetime.timedelta` or an :class:`int` to a number of seconds as a :class:`float`.
     ``None`` is passed through.
@@ -165,15 +163,11 @@ def table(
         lengths = [max(curr, len(entry)) for curr, entry in zip(lengths, row)]
 
     header = header_fmt(
-        "  ".join(
-            getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)
-        ).rstrip()
+        "  ".join(getattr(h, a)(l) for h, l, a in zip(headers, lengths, align_methods)).rstrip()
     )
 
     lines = (
-        row_fmt(
-            "  ".join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods))
-        )
+        row_fmt("  ".join(getattr(f, a)(l) for f, l, a in zip(row, lengths, align_methods)))
         for row in processed_rows
     )
 
@@ -262,16 +256,12 @@ def enable_debug_logging():
 
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    )
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 
     logger.addHandler(handler)
 
 
-VERSION_RE = re.compile(
-    r"^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$", re.VERBOSE | re.ASCII,
-)
+VERSION_RE = re.compile(r"^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$", re.VERBOSE | re.ASCII,)
 
 
 def parse_version(v: str) -> Tuple[int, int, int, Optional[str], Optional[int]]:
@@ -299,9 +289,7 @@ BINDINGS_VERSION_INFO = parse_version(
 )
 
 try:
-    condor_version = subprocess.run(
-        "condor_version", stdout=subprocess.PIPE
-    ).stdout.decode()
+    condor_version = subprocess.run("condor_version", stdout=subprocess.PIPE).stdout.decode()
     HTCONDOR_VERSION_INFO = parse_version(
         EXTRACT_HTCONDOR_VERSION_RE.search(condor_version).group(0)
     )

@@ -243,11 +243,7 @@ def main(component):
         python_info = get_python_info()
         print_python_info(python_info)
     except Exception:
-        print(
-            "Failed to get information on Python due to:\n{}".format(
-                traceback.format_exc()
-            )
-        )
+        print("Failed to get information on Python due to:\n{}".format(traceback.format_exc()))
         python_info = None
     print()
 
@@ -268,9 +264,7 @@ def main(component):
 
         type, value, trace = sys.exc_info()
         stack_summ = traceback.StackSummary.from_list(build_frames(trace))
-        exc_msg = textwrap.dedent(
-            "\n".join(traceback.format_exception_only(type, value))
-        ).rstrip()
+        exc_msg = textwrap.dedent("\n".join(traceback.format_exception_only(type, value))).rstrip()
 
         result_or_error = ExecutionError(
             component=component,

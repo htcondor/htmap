@@ -87,9 +87,7 @@ def raise_if_tag_is_invalid(tag: str) -> None:
         raise exceptions.InvalidTag("The tag must be a non-empty string")
     invalid_chars = set(tag).intersection(INVALID_TAG_CHARACTERS)
     if len(invalid_chars) != 0:
-        raise exceptions.InvalidTag(
-            f"These characters in tag {tag} are not valid: {invalid_chars}"
-        )
+        raise exceptions.InvalidTag(f"These characters in tag {tag} are not valid: {invalid_chars}")
 
 
 ADJECTIVES = (

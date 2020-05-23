@@ -109,9 +109,7 @@ class ComponentError:
                 continue
             row = []
             row.append(
-                self._indent(
-                    f'File "{frame.filename}", line {frame.lineno}, in {frame.name}\n'
-                )
+                self._indent(f'File "{frame.filename}", line {frame.lineno}, in {frame.name}\n')
             )
             if frame.line:
                 row.append(self._indent(f"{frame.line.strip()}\n", multiple=2))
