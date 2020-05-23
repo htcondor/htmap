@@ -37,8 +37,7 @@ def test_timeout_on_nonexistent_path(timeout):
 
 
 @pytest.mark.parametrize(
-    "timeout, expected",
-    [(1, 1.0), (0.1, 0.1), (timedelta(seconds=2.3), 2.3), (None, None),],
+    "timeout, expected", [(1, 1.0), (0.1, 0.1), (timedelta(seconds=2.3), 2.3), (None, None),],
 )
 def test_timeout_to_seconds(timeout, expected):
     assert timeout_to_seconds(timeout) == expected

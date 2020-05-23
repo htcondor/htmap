@@ -27,8 +27,7 @@ def test_unknown_delivery_method_raises():
 
 
 @pytest.mark.parametrize(
-    "method, universe",
-    [("assume", "vanilla"), ("docker", "docker"), ("transplant", "vanilla"),],
+    "method, universe", [("assume", "vanilla"), ("docker", "docker"), ("transplant", "vanilla"),],
 )
 def test_delivery_methods_have_correct_universe(method, universe):
     descriptors = get_base_descriptors("foo", Path.cwd(), method)

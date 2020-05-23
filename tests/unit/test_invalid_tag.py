@@ -29,15 +29,7 @@ def test_bad_tags(tag):
 
 @pytest.mark.parametrize(
     "tag",
-    [
-        "joe",
-        "bob",
-        "map_1",
-        "data_from_the_guy",
-        "hello-1",
-        "test-abc",
-        "test__01__underscores",
-    ],
+    ["joe", "bob", "map_1", "data_from_the_guy", "hello-1", "test-abc", "test__01__underscores",],
 )
 def test_good_tags(tag):
     raise_if_tag_is_invalid(tag)

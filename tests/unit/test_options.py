@@ -60,9 +60,7 @@ def test_single_shared_input_file(tmp_path):
     num_components = 1
     map_options = htmap.MapOptions(fixed_input_files=["foo.txt"],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     assert "foo.txt" in sub["transfer_input_files"]
 
@@ -72,9 +70,7 @@ def test_single_shared_input_file_can_be_single_str(tmp_path):
     num_components = 1
     map_options = htmap.MapOptions(fixed_input_files="foo.txt",)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     assert "foo.txt" in sub["transfer_input_files"]
 
@@ -84,9 +80,7 @@ def test_two_shared_input_files(tmp_path):
     num_components = 1
     map_options = htmap.MapOptions(fixed_input_files=["foo.txt", "bar.txt"],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     assert "foo.txt" in sub["transfer_input_files"]
     assert "bar.txt" in sub["transfer_input_files"]
@@ -97,9 +91,7 @@ def test_list_of_list_of_str_input_files(tmp_path):
     num_components = 3
     map_options = htmap.MapOptions(input_files=[["foo.txt"], ["bar.txt"], ["buz.txt"]],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {"component": "0", "extra_input_files": Path("foo.txt").absolute().as_posix()},
@@ -115,9 +107,7 @@ def test_list_of_str_input_files(tmp_path):
     num_components = 3
     map_options = htmap.MapOptions(input_files=["foo.txt", "bar.txt", "buz.txt"],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {"component": "0", "extra_input_files": Path("foo.txt").absolute().as_posix()},
@@ -131,13 +121,9 @@ def test_list_of_str_input_files(tmp_path):
 def test_list_of_path_input_files(tmp_path):
     tag = "foo"
     num_components = 3
-    map_options = htmap.MapOptions(
-        input_files=[Path("foo.txt"), Path("bar.txt"), Path("buz.txt")],
-    )
+    map_options = htmap.MapOptions(input_files=[Path("foo.txt"), Path("bar.txt"), Path("buz.txt")],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {"component": "0", "extra_input_files": Path("foo.txt").absolute().as_posix()},
@@ -159,17 +145,12 @@ def test_list_of_transfer_path_input_files(tmp_path):
         ],
     )
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {"component": "0", "extra_input_files": "file:///foo.txt"},
         {"component": "1", "extra_input_files": "s3://s3.server.com/bar.txt"},
-        {
-            "component": "2",
-            "extra_input_files": (Path.cwd() / "buz.txt").absolute().as_posix(),
-        },
+        {"component": "2", "extra_input_files": (Path.cwd() / "buz.txt").absolute().as_posix(),},
     ]
 
     assert itemdata == expected
@@ -189,9 +170,7 @@ def test_list_of_list_of_transfer_path_input_files(tmp_path):
         ],
     )
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {"component": "0", "extra_input_files": "file:///foo.txt"},
@@ -199,10 +178,7 @@ def test_list_of_list_of_transfer_path_input_files(tmp_path):
             "component": "1",
             "extra_input_files": f"s3://s3.server.com/bar.txt, {(Path.cwd() / 'wiz.txt').absolute().as_posix()}",
         },
-        {
-            "component": "2",
-            "extra_input_files": (Path.cwd() / "buz.txt").absolute().as_posix(),
-        },
+        {"component": "2", "extra_input_files": (Path.cwd() / "buz.txt").absolute().as_posix(),},
     ]
 
     assert itemdata == expected
@@ -219,9 +195,7 @@ def test_list_of_list_of_path_input_files(tmp_path):
         ],
     )
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {
@@ -272,9 +246,7 @@ def test_list_request_memory(tmp_path):
     num_components = 2
     map_options = htmap.MapOptions(request_memory=["239MB", "136MB"],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {"component": "0", "itemdata_for_request_memory": "239MB"},
@@ -289,9 +261,7 @@ def test_list_request_disk(tmp_path):
     num_components = 2
     map_options = htmap.MapOptions(request_disk=["239MB", "136MB"],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {"component": "0", "itemdata_for_request_disk": "239MB"},
@@ -306,9 +276,7 @@ def test_generic_itemdata(tmp_path):
     num_components = 3
     map_options = htmap.MapOptions(stooge=["larry", "moe", "curly"],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     expected = [
         {"component": "0", "itemdata_for_stooge": "larry"},
@@ -374,9 +342,7 @@ def test_url_in_fixed_input_files(tmp_path):
     url = "http://www.baz.test"
     map_options = htmap.MapOptions(fixed_input_files=[url],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     assert url in sub["transfer_input_files"]
 
@@ -387,9 +353,7 @@ def test_url_in_input_files(tmp_path):
     url = "http://www.baz.test"
     map_options = htmap.MapOptions(input_files=[url],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     assert url in itemdata[0]["extra_input_files"]
 
@@ -401,9 +365,7 @@ def test_two_urls_in_input_files(tmp_path):
     url_2 = "http://www.bong.test"
     map_options = htmap.MapOptions(input_files=[(url_1, url_2)],)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     assert url_1 in itemdata[0]["extra_input_files"]
     assert url_2 in itemdata[0]["extra_input_files"]
@@ -414,17 +376,13 @@ def test_unknown_delivery_mechanism_for_base_descriptors_raises(tmp_path):
         get_base_descriptors("foo", tmp_path, delivery="unknown")
 
 
-@pytest.mark.parametrize(
-    "key", ["foo", "+foo", "my.foo", "MY.foo", "mY.foo", "My.foo",]
-)
+@pytest.mark.parametrize("key", ["foo", "+foo", "my.foo", "MY.foo", "mY.foo", "My.foo",])
 def test_custom_options(key, tmp_path):
     tag = "test"
     num_components = 1
     map_options = htmap.MapOptions(custom_options={key: "bar"},)
 
-    sub, itemdata = create_submit_object_and_itemdata(
-        tag, tmp_path, num_components, map_options,
-    )
+    sub, itemdata = create_submit_object_and_itemdata(tag, tmp_path, num_components, map_options,)
 
     assert "MY.foo" in sub.keys()
 

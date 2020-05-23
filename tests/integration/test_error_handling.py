@@ -68,9 +68,7 @@ def test_error_report_includes_input_files():
     def dummy(x):
         raise Exception
 
-    m = htmap.map(
-        dummy, [0], map_options=htmap.MapOptions(fixed_input_files=Path(__file__),)
-    )
+    m = htmap.map(dummy, [0], map_options=htmap.MapOptions(fixed_input_files=Path(__file__),))
     err = m.get_err(0)
 
     assert "test_error_handling.py" in err.report()

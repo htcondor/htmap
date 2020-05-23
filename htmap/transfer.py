@@ -162,9 +162,7 @@ class TransferPath:
         return (
             self.protocol or "",
             self.location or "",
-            self.path.as_posix()
-            if self.protocol is not None
-            else self.path.absolute().as_posix(),
+            self.path.as_posix() if self.protocol is not None else self.path.absolute().as_posix(),
             "",
             "",
         )
@@ -182,9 +180,7 @@ class TransferPath:
                 return lambda *args, **kwargs: _convert(self, x, *args, **kwargs)
             return x
         except AttributeError as e:
-            raise AttributeError(
-                f"'{self.__class__.__name__}' has no attribute '{item}'"
-            )
+            raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{item}'")
 
     def __truediv__(self, other):
         return self.__class__(
@@ -242,9 +238,7 @@ def transfer_output_files(*paths: os.PathLike) -> None:  # pragma: execute-only
 
     scratch_dir = Path(os.environ["_CONDOR_SCRATCH_DIR"])
 
-    user_transfer_dir = (
-        scratch_dir / names.USER_TRANSFER_DIR / os.environ["HTMAP_COMPONENT"]
-    )
+    user_transfer_dir = scratch_dir / names.USER_TRANSFER_DIR / os.environ["HTMAP_COMPONENT"]
     user_url_transfer_dir = scratch_dir / names.USER_URL_TRANSFER_DIR
     user_transfer_cache = scratch_dir / names.TRANSFER_PLUGIN_CACHE
 

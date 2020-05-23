@@ -52,9 +52,7 @@ def make_spinner(*args, **kwargs):
 
 
 color = click.option(
-    "--color/--no-color",
-    default=True,
-    help="Toggle colorized output (defaults to colorized).",
+    "--color/--no-color", default=True, help="Toggle colorized output (defaults to colorized).",
 )
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -62,11 +60,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 @click.group(context_settings=CONTEXT_SETTINGS, cls=DYMGroup)
 @click.option(
-    "--verbose",
-    "-v",
-    is_flag=True,
-    default=False,
-    help="Show log messages as the CLI runs.",
+    "--verbose", "-v", is_flag=True, default=False, help="Show log messages as the CLI runs.",
 )
 @click.version_option(
     version=__version__, prog_name="HTMap", message="%(prog)s version %(version)s",
@@ -91,9 +85,7 @@ def _start_htmap_logger():
     handler = logging.StreamHandler(stream=sys.stderr)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s ~ %(levelname)s ~ %(name)s:%(lineno)d ~ %(message)s"
-        )
+        logging.Formatter("%(asctime)s ~ %(levelname)s ~ %(name)s:%(lineno)d ~ %(message)s")
     )
 
     htmap_logger.addHandler(handler)
@@ -139,9 +131,7 @@ def _map_fg(map: htmap.Map) -> Optional[str]:
 
     if sc[htmap.state.ComponentStatus.REMOVED] > 0:
         return "magenta"
-    elif (
-        sc[htmap.state.ComponentStatus.HELD] + sc[htmap.state.ComponentStatus.ERRORED]
-    ) > 0:
+    elif (sc[htmap.state.ComponentStatus.HELD] + sc[htmap.state.ComponentStatus.ERRORED]) > 0:
         return "red"
     elif sc[htmap.state.ComponentStatus.COMPLETED] == len(map):
         return "green"
@@ -187,17 +177,14 @@ def status(state, meta, format, live, color):
         sys.exit(1)
 
     maps = sorted(
-        (_cli_load(tag) for tag in htmap.get_tags()),
-        key=lambda m: (m.is_transient, m.tag),
+        (_cli_load(tag) for tag in htmap.get_tags()), key=lambda m: (m.is_transient, m.tag),
     )
     for map in maps:
         if state:
             with make_spinner(text=f"Reading component statuses for map {map.tag}..."):
                 map.component_statuses
         if meta:
-            with make_spinner(
-                text=f"Determining local data usage for map {map.tag}..."
-            ):
+            with make_spinner(text=f"Determining local data usage for map {map.tag}..."):
                 map.local_data
 
     shared_kwargs = dict(include_state=state, include_meta=meta,)
@@ -233,15 +220,11 @@ def status(state, meta, format, live, color):
                 maps,
                 **shared_kwargs,
                 header_fmt=_HEADER_FMT if color else None,
-                row_fmt=_RowFmt(maps)
-                if color
-                else None,  # don't cache, must pass fresh each time
+                row_fmt=_RowFmt(maps) if color else None,  # don't cache, must pass fresh each time
             )
 
             move = f"\033[{len(prev_len_lines)}A\r"
-            clear = (
-                "\n".join(" " * len(click.unstyle(line)) for line in prev_lines) + "\n"
-            )
+            clear = "\n".join(" " * len(click.unstyle(line)) for line in prev_lines) + "\n"
 
             sys.stdout.write(move + clear + move)
             click.echo(msg)
@@ -301,11 +284,7 @@ def _read_tags_from_stdin(ctx, param, value):
 
 
 def _autocomplete_tag(ctx, args, incomplete):
-    return sorted(
-        tag
-        for tag in htmap.get_tags()
-        if tag.startswith(incomplete) and tag not in args
-    )
+    return sorted(tag for tag in htmap.get_tags() if tag.startswith(incomplete) and tag not in args)
 
 
 TOTAL_WIDTH = 80
@@ -341,17 +320,13 @@ def wait(tags, pattern, all):
     if len(tags) == 0:
         return
 
-    maps = sorted(
-        (_cli_load(tag) for tag in tags), key=lambda m: (m.is_transient, m.tag)
-    )
+    maps = sorted((_cli_load(tag) for tag in tags), key=lambda m: (m.is_transient, m.tag))
     with make_spinner(text="Reading map component statuses..."):
         read_events(maps)
 
     try:
         longest_tag_len = max(len(tag) for tag in tags)
-        bar_width = min(
-            shutil.get_terminal_size().columns, TOTAL_WIDTH - (longest_tag_len + 1)
-        )
+        bar_width = min(shutil.get_terminal_size().columns, TOTAL_WIDTH - (longest_tag_len + 1))
 
         click.echo("\n" * (len(maps) - 1))
         while any(not map.is_done for map in maps):
@@ -360,14 +335,10 @@ def wait(tags, pattern, all):
                 sc = collections.Counter(map.component_statuses)
 
                 bar_lens = {
-                    status: _calculate_bar_component_len(
-                        sc[status], len(map), bar_width
-                    )
+                    status: _calculate_bar_component_len(sc[status], len(map), bar_width)
                     for status, _ in STATUS_AND_COLOR
                 }
-                bar_lens[htmap.ComponentStatus.IDLE] += bar_width - sum(
-                    bar_lens.values()
-                )
+                bar_lens[htmap.ComponentStatus.IDLE] += bar_width - sum(bar_lens.values())
 
                 bar = "".join(
                     [
@@ -418,9 +389,7 @@ def remove(tags, pattern, all, force):
             spinner.succeed(f"Removed map {tag}")
 
 
-@cli.command(
-    short_help="Hold maps; components will be prevented from running until released."
-)
+@cli.command(short_help="Hold maps; components will be prevented from running until released.")
 @_multi_tag_args
 def hold(tags, pattern, all):
     """
@@ -497,9 +466,7 @@ def resume(tags, pattern, all):
             spinner.succeed(f"Resumed map {tag}")
 
 
-@cli.command(
-    short_help="Vacate maps; components will give up claimed resources and become idle."
-)
+@cli.command(short_help="Vacate maps; components will give up claimed resources and become idle.")
 @_multi_tag_args
 def vacate(tags, pattern, all):
     """
@@ -538,8 +505,7 @@ def reasons(tags, pattern, all):
         if len(m.holds) == 0:
             continue
         name = click.style(
-            f'Map {m.tag} ({len(m.holds)} hold{"s" if len(m.holds) > 1 else ""})',
-            bold=True,
+            f'Map {m.tag} ({len(m.holds)} hold{"s" if len(m.holds) > 1 else ""})', bold=True,
         )
         reps.append(f"{name}\n{m.hold_report()}")
 
@@ -736,8 +702,7 @@ def settings(user):
             txt = path.read_text(encoding="utf-8")
         except FileNotFoundError:
             click.echo(
-                f"ERROR: you do not have a ~/.htmaprc file ({path} was not found)",
-                err=True,
+                f"ERROR: you do not have a ~/.htmaprc file ({path} was not found)", err=True,
             )
             sys.exit(1)
         click.echo(txt)
@@ -777,9 +742,7 @@ def remove_transplant(index):
     try:
         transplant = htmap.transplants()[index]
     except IndexError:
-        click.echo(
-            f"ERROR: could not find a transplant install with index {index}", err=True
-        )
+        click.echo(f"ERROR: could not find a transplant install with index {index}", err=True)
         click.echo(f"Your transplant installs are:")
         click.echo(htmap.transplant_info())
         sys.exit(1)
@@ -952,10 +915,7 @@ def autocompletion(shell, force, destination):
     the autocompletion-enabling command runs in your shell configuration file.
     """
     cmd, dst = {
-        "bash": (
-            r'eval "$(_HTMAP_COMPLETE=source_bash htmap)"',
-            Path.home() / ".bashrc",
-        ),
+        "bash": (r'eval "$(_HTMAP_COMPLETE=source_bash htmap)"', Path.home() / ".bashrc",),
         "zsh": (r'eval "$(_HTMAP_COMPLETE=source_zsh htmap)"', Path.home() / ".zshrc",),
         "fish": (
             r"eval (env _HTMAP_COMPLETE=source_fish htmap)",

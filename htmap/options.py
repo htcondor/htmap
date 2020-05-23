@@ -62,9 +62,7 @@ class MapOptions(collections.UserDict):
     def __init__(
         self,
         *,
-        fixed_input_files: Optional[
-            Union[TRANSFER_PATH, Iterable[TRANSFER_PATH]]
-        ] = None,
+        fixed_input_files: Optional[Union[TRANSFER_PATH, Iterable[TRANSFER_PATH]]] = None,
         input_files: Optional[
             Union[Iterable[TRANSFER_PATH], Iterable[Iterable[TRANSFER_PATH]]]
         ] = None,
@@ -351,12 +349,8 @@ def get_base_descriptors(tag: str, map_dir: Path, delivery: str,) -> dict:
         "JobBatchName": tag,
         "log": (map_dir / names.EVENT_LOG).as_posix(),
         "submit_event_notes": "$(component)",
-        "stdout": (
-            map_dir / names.JOB_LOGS_DIR / f"$(component).{names.STDOUT_EXT}"
-        ).as_posix(),
-        "stderr": (
-            map_dir / names.JOB_LOGS_DIR / f"$(component).{names.STDERR_EXT}"
-        ).as_posix(),
+        "stdout": (map_dir / names.JOB_LOGS_DIR / f"$(component).{names.STDOUT_EXT}").as_posix(),
+        "stderr": (map_dir / names.JOB_LOGS_DIR / f"$(component).{names.STDERR_EXT}").as_posix(),
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
         "transfer_output_files": " , ".join(output_files),
@@ -368,9 +362,7 @@ def get_base_descriptors(tag: str, map_dir: Path, delivery: str,) -> dict:
     }
 
     if utils.CAN_USE_URL_OUTPUT_TRANSFER:
-        core[
-            "transfer_plugins"
-        ] = f"htmap={(map_dir / names.TRANSFER_PLUGIN).as_posix()}"
+        core["transfer_plugins"] = f"htmap={(map_dir / names.TRANSFER_PLUGIN).as_posix()}"
 
     try:
         base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
@@ -535,9 +527,7 @@ def _run_delivery_setup_for_transplant(tag: str, map_dir: Path,) -> None:
         pip_path = zip_path.with_name(f"{target.stem}.pip")
         pip_path.write_bytes(pip_freeze)
 
-        logger.debug(
-            f"Created zipped Python install for transplant, stored at {zip_path}"
-        )
+        logger.debug(f"Created zipped Python install for transplant, stored at {zip_path}")
 
 
 def _get_pip_freeze() -> bytes:

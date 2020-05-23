@@ -34,9 +34,7 @@ def test_fixed_input_files_are_transferred_as_list_of_paths(tmp_path):
     def test(_):
         return Path("f1").read_text() == "f1" and Path("f2").read_text() == "f2"
 
-    m = htmap.map(
-        test, [None], map_options=htmap.MapOptions(fixed_input_files=[f1, f2])
-    )
+    m = htmap.map(test, [None], map_options=htmap.MapOptions(fixed_input_files=[f1, f2]))
 
     assert m.get(0)
 
@@ -94,9 +92,7 @@ def test_transfer_directory_as_string(tmp_path):
     def test(_):
         return Path("dir/f1").read_text() == "f1" and Path("dir/f2").read_text() == "f2"
 
-    m = htmap.map(
-        test, [None], map_options=htmap.MapOptions(fixed_input_files=[dir.as_posix()])
-    )
+    m = htmap.map(test, [None], map_options=htmap.MapOptions(fixed_input_files=[dir.as_posix()]))
 
     assert m.get(0)
 
@@ -139,9 +135,7 @@ def test_transfer_directory_contents_as_string(tmp_path):
         return Path("f1").read_text() == "f1" and Path("f2").read_text() == "f2"
 
     m = htmap.map(
-        test,
-        [None],
-        map_options=htmap.MapOptions(fixed_input_files=[dir.as_posix() + "/"]),
+        test, [None], map_options=htmap.MapOptions(fixed_input_files=[dir.as_posix() + "/"]),
     )
 
     assert m.get(0)

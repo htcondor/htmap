@@ -22,9 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class MappedFunction:
-    def __init__(
-        self, func: Callable, map_options: Optional[options.MapOptions] = None
-    ):
+    def __init__(self, func: Callable, map_options: Optional[options.MapOptions] = None):
         """
         Parameters
         ----------
@@ -40,9 +38,7 @@ class MappedFunction:
             map_options = options.MapOptions()
         self.map_options = map_options
 
-        logger.debug(
-            f"Created mapped function for {self.func} with options {self.map_options}"
-        )
+        logger.debug(f"Created mapped function for {self.func} with options {self.map_options}")
 
     def __repr__(self):
         return f"{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})"
@@ -88,9 +84,7 @@ class MappedFunction:
         )
 
     def build_map(
-        self,
-        tag: Optional[str] = None,
-        map_options: Optional[options.MapOptions] = None,
+        self, tag: Optional[str] = None, map_options: Optional[options.MapOptions] = None,
     ) -> mapping.MapBuilder:
         """As :func:`htmap.build_map`, but the ``func`` argument is the mapped function."""
         if map_options is None:
@@ -103,9 +97,7 @@ class MappedFunction:
         )
 
 
-def mapped(
-    map_options: Optional[options.MapOptions] = None,
-) -> Union[Callable, MappedFunction]:
+def mapped(map_options: Optional[options.MapOptions] = None,) -> Union[Callable, MappedFunction]:
     """
     A decorator that wraps a function in an :class:`MappedFunction`,
     which provides an interface for mapping functions calls out to an HTCondor cluster.

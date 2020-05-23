@@ -44,9 +44,7 @@ def test_output_remap_via_file_protocol(tmp_path):
         return True
 
     m = htmap.map(
-        func,
-        [None],
-        map_options=htmap.MapOptions(output_remaps={"remote-foo": destination}),
+        func, [None], map_options=htmap.MapOptions(output_remaps={"remote-foo": destination}),
     )
 
     print(m.stdout.get(0))

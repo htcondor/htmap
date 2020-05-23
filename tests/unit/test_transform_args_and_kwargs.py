@@ -49,12 +49,7 @@ def test_transform_input_path(path, expected_path):
             [[TransferPath.cwd() / "foo.txt"]],
         ),
         (
-            [
-                (
-                    (TransferPath.cwd() / "foo.txt",),
-                    {"k": TransferPath.cwd() / "bar.txt"},
-                )
-            ],
+            [((TransferPath.cwd() / "foo.txt",), {"k": TransferPath.cwd() / "bar.txt"},)],
             [((Path(".") / "foo.txt",), {"k": Path(".") / "bar.txt"})],
             [[TransferPath.cwd() / "foo.txt", TransferPath.cwd() / "bar.txt"]],
         ),
@@ -65,9 +60,7 @@ def test_transform_input_path(path, expected_path):
         ),
     ],
 )
-def test_transform_args_and_kwargs(
-    args_and_kwargs, expected_processed, expected_input_paths
-):
+def test_transform_args_and_kwargs(args_and_kwargs, expected_processed, expected_input_paths):
     processed, input_paths = transform_args_and_kwargs(args_and_kwargs)
 
     print(input_paths)
