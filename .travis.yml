@@ -3,6 +3,10 @@ dist: xenial
 services:
   - docker
 
+cache:
+  directories:
+  - $HOME/.cache/pre-commit
+
 language: python
 python:
   - "3.6"
