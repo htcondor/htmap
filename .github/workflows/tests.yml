@@ -21,7 +21,7 @@ jobs:
           python-version: 3.8
       - name: Install and run pre-commit
         run: |
-          python -m pip install
+          python -m pip install pre-commit
           pre-commit run --all-files
       - name: Build the Docker image for testing
         run: docker build -t htmap-test:$GITHUB_RUN_ID --file docker/Dockerfile --build-arg HTCONDOR_VERSION=${{ matrix.htcondor-version }} --build-arg PYTHON_VERSION=${{ matrix.python-version }} .
