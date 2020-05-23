@@ -14,10 +14,16 @@ jobs:
           - htcondor-version: 8.8
             python-version: 3.8
     steps:
-    - uses: actions/checkout@v2
-    - name: Check pre-commit
-      run: pre-commit run --all-files
-    - name: Build the Docker image for testing
-      run: docker build -t htmap-test:$GITHUB_RUN_ID --file docker/Dockerfile --build-arg HTCONDOR_VERSION=${{ matrix.htcondor-version }} --build-arg PYTHON_VERSION=${{ matrix.python-version }} .
-    - name: Run tests inside the Docker image (and upload coverage)
-      run: docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test:$GITHUB_RUN_ID bash tests/ci.sh
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8 for pre-commit (not for testing)
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install and run pre-commit
+        run: |
+          python -m pip install
+          pre-commit run --all-files
+      - name: Build the Docker image for testing
+        run: docker build -t htmap-test:$GITHUB_RUN_ID --file docker/Dockerfile --build-arg HTCONDOR_VERSION=${{ matrix.htcondor-version }} --build-arg PYTHON_VERSION=${{ matrix.python-version }} .
+      - name: Run tests inside the Docker image (and upload coverage)
+        run: docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test:$GITHUB_RUN_ID bash tests/ci.sh
