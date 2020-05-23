@@ -7,13 +7,16 @@ language: python
 python:
   - "3.6"
   - "3.7"
-#  - "3.8"
+  - "3.8"
 env:
   - HTCONDOR_VERSION=8.8
   - HTCONDOR_VERSION=8.9
 
 jobs:
   fast_finish: false
+  exclude:
+    - python: "3.8"
+      env: HTCONDOR_VERSION=8.8
 
 before_install:
   - python -m pip install pre-commit
