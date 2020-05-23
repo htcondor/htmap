@@ -19,7 +19,7 @@ repos:
       - id: check-case-conflict
       - id: forbid-new-submodules
   - repo: https://github.com/psf/black
-    rev: stable
+    rev: 19.10b0
     hooks:
       - id: black
   - repo: https://github.com/asottile/blacken-docs
