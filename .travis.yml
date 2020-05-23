@@ -15,6 +15,10 @@ env:
 jobs:
   fast_finish: false
 
+before_install:
+  - python -m pip install pre-commit
+  - pre-commit run --all-files
+
 install:
   - travis_retry docker build -t htmap-test:$TRAVIS_BUILD_ID --file docker/Dockerfile --build-arg HTCONDOR_VERSION --build-arg PYTHON_VERSION=${TRAVIS_PYTHON_VERSION} .
 
