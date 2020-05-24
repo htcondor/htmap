@@ -26,3 +26,7 @@ repos:
     rev: v1.7.0
     hooks:
       - id: blacken-docs
+  - repo: https://github.com/IamTheFij/docker-pre-commit
+    rev: v2.0.0
+    hooks:
+      - id: hadolint
