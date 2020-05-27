@@ -20,68 +20,68 @@ import htmap.tags
 
 
 def test_tag_changes_on_same_map_object():
-    m = htmap.map(str, range(1), tag = 'old')
+    m = htmap.map(str, range(1), tag="old")
 
-    m.retag('new')
+    m.retag("new")
 
-    assert m.tag == 'new'
+    assert m.tag == "new"
 
 
 def test_new_tag_in_tags(mapped_doubler):
-    m = mapped_doubler.map(range(2), tag = 'old')
-    m.wait(timeout = 180)
+    m = mapped_doubler.map(range(2), tag="old")
+    m.wait(timeout=180)
 
-    m.retag('new')
+    m.retag("new")
 
-    assert 'new' in htmap.get_tags()
+    assert "new" in htmap.get_tags()
 
 
 def test_old_tag_not_in_tags(mapped_doubler):
-    m = mapped_doubler.map(range(2), tag = 'old')
-    m.wait(timeout = 180)
+    m = mapped_doubler.map(range(2), tag="old")
+    m.wait(timeout=180)
 
-    m.retag('new')
+    m.retag("new")
 
-    assert 'old' not in htmap.get_tags()
+    assert "old" not in htmap.get_tags()
 
 
 def test_retag_raises_if_new_tag_already_exists(mapped_doubler):
-    m = mapped_doubler.map(range(1), tag = 'old')
-    m.wait(timeout = 180)
+    m = mapped_doubler.map(range(1), tag="old")
+    m.wait(timeout=180)
 
-    mapped_doubler.map(range(1), tag = 'target')
+    mapped_doubler.map(range(1), tag="target")
 
     with pytest.raises(htmap.exceptions.CannotRetagMap):
-        m.retag('target')
+        m.retag("target")
 
 
 def test_complete_then_retag_then_rerun(mapped_doubler):
-    m = mapped_doubler.map(range(1), tag = 'old')
-    m.wait(timeout = 180)
+    m = mapped_doubler.map(range(1), tag="old")
+    m.wait(timeout=180)
 
-    m.retag('new')
+    m.retag("new")
     m.rerun()
 
     assert list(m) == [0]
 
 
 def test_can_be_recovered_after_retag(mapped_doubler):
-    m = mapped_doubler.map(range(1), tag = 'old')
+    m = mapped_doubler.map(range(1), tag="old")
 
-    m.retag('new')
+    m.retag("new")
 
-    htmap.load('new')
+    htmap.load("new")
 
 
 def test_retag_while_running(mapped_doubler):
     m = mapped_doubler.map(range(5))
-    m.retag('new')
+    m.retag("new")
 
     assert list(m) == [0, 2, 4, 6, 8]
 
 
 def cannot_retag_to_same_tag():
-    m = htmap.map(str, range(1), tag = 'same-tag')
+    m = htmap.map(str, range(1), tag="same-tag")
 
     with pytest.raises(htmap.exceptions.CannotRetagMap):
-        m.retag('same-tag')
+        m.retag("same-tag")

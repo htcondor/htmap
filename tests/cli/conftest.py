@@ -22,7 +22,7 @@ from click.testing import CliRunner
 from htmap.cli import cli as htmap_cli
 
 
-@pytest.fixture(scope = 'session')
+@pytest.fixture(scope="session")
 def cli():
     runner = CliRunner()
 

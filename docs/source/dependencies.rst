@@ -230,7 +230,7 @@ At runtime:
 
 .. code-block:: python
 
-    htmap.settings["DELIVERY_METHOD"] = 'assume'
+    htmap.settings["DELIVERY_METHOD"] = "assume"
 
 In this mode, HTMap assumes that a Python installation with all Python
 dependencies is already present.
@@ -251,7 +251,7 @@ At runtime:
 
 .. code-block:: python
 
-    htmap.settings["DELIVERY_METHOD"] = 'transplant'
+    htmap.settings["DELIVERY_METHOD"] = "transplant"
 
 If you are running HTMap from a standalone Python install
 (like an Anaconda installation),

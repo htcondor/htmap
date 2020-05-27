@@ -15,10 +15,14 @@ That means that the general structure of a checkpointing function should look li
 
     def function(inputs):
         try:
+            ...
             # attempt to reload from a checkpoint file
-        except (FileNotFoundError, ...):  # any errors that indicate that the checkpoint doesn't exist, is corrupt, etc.
+        except (
+            FileNotFoundError,
+            ...,
+        ):  # catch any errors that indicate that the checkpoint doesn't exist, is corrupt, etc.
             # initialize from input data
-
+            ...
         # do work
 
 Your work must be written such that it doesn't care where it starts.
@@ -28,6 +32,7 @@ For example, a simulation that proceeds in 100 steps like this:
 .. code-block:: python
 
     import htmap
+
 
     @htmap.mapped
     def function(initial_state):
@@ -42,6 +47,7 @@ would need to become something like
 .. code-block:: python
 
     import htmap
+
 
     @htmap.mapped
     def function(initial_state):
@@ -80,18 +86,18 @@ Here's the function, along with some code to run it and prove that it checkpoint
 
     @htmap.mapped
     def counter(num_steps):
-        checkpoint_path = Path('checkpoint')
+        checkpoint_path = Path("checkpoint")
         try:
             step = int(checkpoint_path.read_text())
-            print('loaded checkpoint!')
+            print("loaded checkpoint!")
         except FileNotFoundError:
             step = 0
-            print('starting from scratch')
+            print("starting from scratch")
 
         while True:
             time.sleep(1)
             step += 1
-            print(f'completed step {step}')
+            print(f"completed step {step}")
 
             if step >= num_steps:
                 break
@@ -110,12 +116,12 @@ Here's the function, along with some code to run it and prove that it checkpoint
         time.sleep(1)
 
     # let it run for 10 seconds
-    print('component has started, letting it run...')
+    print("component has started, letting it run...")
     time.sleep(10)
 
     # vacate it (force it off current execute resource)
     map.vacate()
-    print('vacated map')
+    print("vacated map")
 
     # wait until it starts up again and finishes
     while map.component_statuses[0] is not htmap.ComponentStatus.COMPLETED:
@@ -199,8 +205,10 @@ For example, using the ``datetime`` library:
 
     import htmap
 
+
     def now():
         return datetime.datetime.utcnow()
+
 
     @htmap.mapped
     def function(inputs):
@@ -211,7 +219,7 @@ For example, using the ``datetime`` library:
         while not_done:
             # do a unit of work
 
-            if now() > latest_checkpoint_at + datetime.timedelta(hours = 1):
+            if now() > latest_checkpoint_at + datetime.timedelta(hours=1):
                 # write checkpoint
                 latest_checkpoint_at = now()
 

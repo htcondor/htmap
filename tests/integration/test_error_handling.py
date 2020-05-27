@@ -33,7 +33,7 @@ def test_waiting_on_errored_component_raises(mapped_div_by_x):
     m = mapped_div_by_x.map([0])
 
     with pytest.raises(htmap.exceptions.MapComponentError):
-        m.wait(timeout = 180)
+        m.wait(timeout=180)
 
 
 def test_iterating_over_errored_component_raises(mapped_div_by_x):
@@ -51,33 +51,27 @@ def test_error_report_has_exception_type():
 
     err = m.get_err(0)
 
-    assert 'ZeroDivisionError' in err.report()
+    assert "ZeroDivisionError" in err.report()
 
 
 def test_error_report_has_exception_message():
     def bad(x):
-        raise Exception('foobar')
+        raise Exception("foobar")
 
     m = htmap.map(bad, [0])
     err = m.get_err(0)
 
-    assert 'foobar' in err.report()
+    assert "foobar" in err.report()
 
 
 def test_error_report_includes_input_files():
     def dummy(x):
         raise Exception
 
-    m = htmap.map(
-        dummy,
-        [0],
-        map_options = htmap.MapOptions(
-            fixed_input_files = Path(__file__),
-        )
-    )
+    m = htmap.map(dummy, [0], map_options=htmap.MapOptions(fixed_input_files=Path(__file__),))
     err = m.get_err(0)
 
-    assert 'test_error_handling.py' in err.report()
+    assert "test_error_handling.py" in err.report()
 
 
 def test_correct_number_of_errors():

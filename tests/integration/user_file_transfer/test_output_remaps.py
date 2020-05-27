@@ -27,20 +27,25 @@ TIMEOUT = 300
 
 
 @pytest.mark.timeout(TIMEOUT)
-@pytest.mark.xfail(condition = utils.HTCONDOR_VERSION_INFO < (8, 9), reason = "I don't understand yet why this doesn't work on 8.8...")
+@pytest.mark.xfail(
+    condition=utils.HTCONDOR_VERSION_INFO < (8, 9),
+    reason="I don't understand yet why this doesn't work on 8.8...",
+)
 def test_output_remap_via_file_protocol(tmp_path):
-    target = tmp_path / 'foo'
-    destination = htmap.TransferPath(target, protocol = 'file')
+    target = tmp_path / "foo"
+    destination = htmap.TransferPath(target, protocol="file")
 
     def func(_):
-        output = Path('remote-foo')
-        output.write_text('hi')
+        output = Path("remote-foo")
+        output.write_text("hi")
 
         htmap.transfer_output_files(output)
 
         return True
 
-    m = htmap.map(func, [None], map_options = htmap.MapOptions(output_remaps = {'remote-foo': destination}))
+    m = htmap.map(
+        func, [None], map_options=htmap.MapOptions(output_remaps={"remote-foo": destination}),
+    )
 
     print(m.stdout.get(0))
     print()
@@ -58,4 +63,4 @@ def test_output_remap_via_file_protocol(tmp_path):
     assert target.read_text() == "hi"
 
     # make sure we did NOT transfer it back as normal
-    assert 'foo' not in (path.stem for path in m.output_files[0].iterdir())
+    assert "foo" not in (path.stem for path in m.output_files[0].iterdir())

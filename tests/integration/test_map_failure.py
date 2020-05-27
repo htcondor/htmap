@@ -25,7 +25,7 @@ def test_exception_inside_submit_removes_map_dir(mocker, doubler):
     def bad_execute_submit(*args, **kwargs):
         raise Marker()
 
-    mocker.patch('htmap.mapping.execute_submit', bad_execute_submit)
+    mocker.patch("htmap.mapping.execute_submit", bad_execute_submit)
 
     with pytest.raises(Marker):
         mapping.map(doubler, range(10))

@@ -25,53 +25,48 @@ ARG HTCONDOR_VERSION=8.9
 USER root
 
 # environment setup
-ENV DEBIAN_FRONTEND=noninteractive
-
-# install utils and dependencies
-RUN apt-get update \
- && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace \
- && apt-get -y clean \
- && rm -rf /var/lib/apt/lists/* \
- && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
- && locale-gen
-
-ENV LC_ALL=en_US.UTF-8 \
+ENV DEBIAN_FRONTEND=noninteractive \
+    LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8
 
+# install utils and dependencies
 # install HTCondor version specified in config
-RUN wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg.key | apt-key add - \
+RUN : \
+ && apt-get update \
+ && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace \
+ && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+ && locale-gen \
+ && wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg.key | apt-key add - \
  && echo "deb http://research.cs.wisc.edu/htcondor/debian/${HTCONDOR_VERSION}/buster buster contrib" >> /etc/apt/sources.list.d/htcondor.list \
  && apt-get -y update \
  && apt-get -y install --no-install-recommends htcondor \
  && apt-get -y clean \
- && rm -rf /var/lib/apt/lists/*
-
-# copy entrypoint into place and make executable
-COPY docker/entrypoint.sh /.entrypoint.sh
-RUN chmod +x /.entrypoint.sh
+ && rm -rf /var/lib/apt/lists/* \
+ && :
 
 # create a user, set their PATH and PYTHONPATH
-ENV SUBMIT_USER=mapper \
+ENV USER=mapper \
     PATH="/home/mapper/.local/bin:${PATH}" \
     PYTHONPATH="/home/mapper/htmap:${PYTHONPATH}"
-RUN groupadd ${SUBMIT_USER} \
- && useradd -m -g ${SUBMIT_USER} ${SUBMIT_USER}
+RUN : \
+ && groupadd ${USER} \
+ && useradd -m -g ${USER} ${USER} \
+ && :
 
 # switch to the user, don't need root anymore
-USER ${SUBMIT_USER}
-
-# install dependencies and debugging tools early for docker build caching
-COPY requirements* /tmp/
-RUN python -m pip install --user --no-cache-dir -r /tmp/requirements-dev.txt -r /tmp/requirements-docs.txt ipython \
- && python -m pip install --user --no-cache-dir --upgrade htcondor==${HTCONDOR_VERSION}.*
+USER ${USER}
 
 # copy testing configs into place
 COPY docker/condor_config.local /etc/condor/condor_config.local
-COPY --chown=mapper:mapper docker/.htmaprc /home/${SUBMIT_USER}/
+COPY --chown=mapper:mapper docker/.htmaprc /home/${USER}/
 
 # set default entrypoint and command
 # the entrypoint is critical: it starts HTCondor in the container
-WORKDIR /home/${SUBMIT_USER}/htmap
-ENTRYPOINT ["/.entrypoint.sh"]
+ENTRYPOINT ["/home/mapper/htmap/docker/entrypoint.sh"]
 CMD ["bash"]
+
+COPY --chown=mapper:mapper . /home/${USER}/htmap
+RUN python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.*
+
+WORKDIR /home/${USER}/htmap

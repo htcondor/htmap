@@ -9,8 +9,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 develop-eggs/
-build/
 dist/
+build/
 downloads/
 eggs/
 .eggs/
@@ -65,7 +65,6 @@ instance/
 
 # Sphinx documentation
 docs/_build/
-docs/build
 
 # PyBuilder
 target/
@@ -104,9 +103,10 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# Editors
 .idea/
-
-Dockerfile
-dr
+.vscode/
 
 !htmap-exec/singularity.d/*
+
+dr

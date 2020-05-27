@@ -19,16 +19,16 @@ from htmap import utils
 
 
 @pytest.mark.parametrize(
-    'num_bytes, expected',
+    "num_bytes, expected",
     [
-        (100, '100.0 B'),
-        (1024, '1.0 KB'),
-        (2048, '2.0 KB'),
-        (2049, '2.0 KB'),
-        (1024 * 1024 * 1024 * .5, '512.0 MB'),
-        (1024 * 1024 * 1024, '1.0 GB'),
-        (1024 * 1024 * 1024 * 1024 * .25, '256.0 GB'),
-    ]
+        (100, "100.0 B"),
+        (1024, "1.0 KB"),
+        (2048, "2.0 KB"),
+        (2049, "2.0 KB"),
+        (1024 * 1024 * 1024 * 0.5, "512.0 MB"),
+        (1024 * 1024 * 1024, "1.0 GB"),
+        (1024 * 1024 * 1024 * 1024 * 0.25, "256.0 GB"),
+    ],
 )
 def test_num_bytes_to_str(num_bytes, expected):
     assert expected == utils.num_bytes_to_str(num_bytes)

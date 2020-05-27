@@ -16,11 +16,7 @@
 
 import logging as _logging
 
-from .version import (
-    __version__,
-    version,
-    version_info
-)
+from .version import __version__, version, version_info
 
 from .settings import settings, USER_SETTINGS, BASE_SETTINGS
 

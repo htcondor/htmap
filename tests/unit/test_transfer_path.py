@@ -37,5 +37,4 @@ def test_as_url(transfer_path, expected):
 
 def test_must_have_protocol_if_has_location():
     with pytest.raises(ValueError):
-        TransferPath('foo.txt', location = 'foo.bar.com')
-
+        TransferPath("foo.txt", location="foo.bar.com")

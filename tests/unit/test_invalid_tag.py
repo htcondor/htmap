@@ -20,14 +20,7 @@ from htmap.tags import INVALID_TAG_CHARACTERS, raise_if_tag_is_invalid
 
 
 @pytest.mark.parametrize(
-    'tag',
-    sorted(list(INVALID_TAG_CHARACTERS)) + [
-        '/abc',
-        '/def.',
-        'def/',
-        '\\\\',
-        '',
-    ]
+    "tag", sorted(list(INVALID_TAG_CHARACTERS)) + ["/abc", "/def.", "def/", "\\\\", "",]
 )
 def test_bad_tags(tag):
     with pytest.raises(htmap.exceptions.InvalidTag):
@@ -35,16 +28,8 @@ def test_bad_tags(tag):
 
 
 @pytest.mark.parametrize(
-    'tag',
-    [
-        'joe',
-        'bob',
-        'map_1',
-        'data_from_the_guy',
-        'hello-1',
-        'test-abc',
-        'test__01__underscores',
-    ]
+    "tag",
+    ["joe", "bob", "map_1", "data_from_the_guy", "hello-1", "test-abc", "test__01__underscores",],
 )
 def test_good_tags(tag):
     raise_if_tag_is_invalid(tag)

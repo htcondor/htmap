@@ -23,30 +23,25 @@ from htmap.options import get_base_descriptors
 
 def test_unknown_delivery_method_raises():
     with pytest.raises(htmap.exceptions.UnknownPythonDeliveryMethod):
-        get_base_descriptors('foo', Path.cwd(), 'definitely-not-real')
+        get_base_descriptors("foo", Path.cwd(), "definitely-not-real")
 
 
 @pytest.mark.parametrize(
-    'method, universe',
-    [
-        ('assume', 'vanilla'),
-        ('docker', 'docker'),
-        ('transplant', 'vanilla'),
-    ]
+    "method, universe", [("assume", "vanilla"), ("docker", "docker"), ("transplant", "vanilla"),],
 )
 def test_delivery_methods_have_correct_universe(method, universe):
-    descriptors = get_base_descriptors('foo', Path.cwd(), method)
+    descriptors = get_base_descriptors("foo", Path.cwd(), method)
 
-    assert descriptors['universe'] == universe
+    assert descriptors["universe"] == universe
 
 
 def test_docker_delivery_has_docker_image_descriptor_set():
-    descriptors = get_base_descriptors('foo', Path.cwd(), 'docker')
+    descriptors = get_base_descriptors("foo", Path.cwd(), "docker")
 
-    descriptors['docker_image']  # will KeyError if not set
+    descriptors["docker_image"]  # will KeyError if not set
 
 
 def test_transplant_delivery_uses_run_with_transplant_script():
-    descriptors = get_base_descriptors('foo', Path.cwd(), 'transplant')
+    descriptors = get_base_descriptors("foo", Path.cwd(), "transplant")
 
-    assert 'run_with_transplant' in descriptors['executable']
+    assert "run_with_transplant" in descriptors["executable"]

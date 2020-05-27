@@ -13,7 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, List, Iterable, Any, Optional, Callable, Iterator, Dict, Set, Mapping, MutableMapping
+from typing import (
+    Tuple,
+    List,
+    Iterable,
+    Any,
+    Optional,
+    Iterator,
+    Dict,
+    Mapping,
+    MutableMapping,
+)
 import logging
 
 import datetime
@@ -32,7 +42,19 @@ from tqdm import tqdm
 import htcondor
 import classad
 
-from . import htio, state, tags, errors, holds, mapping, condor, settings, utils, names, exceptions
+from . import (
+    htio,
+    state,
+    tags,
+    errors,
+    holds,
+    mapping,
+    condor,
+    settings,
+    utils,
+    names,
+    exceptions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +63,9 @@ def _protector(method):
     @functools.wraps(method)
     def _protect(self, *args, **kwargs):
         if not self.exists:
-            raise exceptions.MapWasRemoved(f'Cannot call {method} for map {self.tag} because it has been removed')
+            raise exceptions.MapWasRemoved(
+                f"Cannot call {method} for map {self.tag} because it has been removed"
+            )
         return method(self, *args, **kwargs)
 
     return _protect
@@ -49,8 +73,8 @@ def _protector(method):
 
 def _protect_map_after_remove(result_class):
     # decorate all public instance methods
-    for key, member in inspect.getmembers(result_class, predicate = inspect.isfunction):
-        if not key.startswith('_'):
+    for key, member in inspect.getmembers(result_class, predicate=inspect.isfunction):
+        if not key.startswith("_"):
             setattr(result_class, key, _protector(member))
 
     return result_class
@@ -60,7 +84,7 @@ def _protect_map_after_remove(result_class):
 MAPS = weakref.WeakSet()
 
 
-def maps_by_tag() -> Dict[str, 'Map']:
+def maps_by_tag() -> Dict[str, "Map"]:
     """
     Get the current mapping of tags to map objects.
 
@@ -84,10 +108,7 @@ class Map(collections.abc.Sequence):
     """
 
     def __init__(
-        self,
-        *,
-        tag: str,
-        map_dir: Path,
+        self, *, tag: str, map_dir: Path,
     ):
         self.tag = tag
 
@@ -119,7 +140,7 @@ class Map(collections.abc.Sequence):
         return htio.load_num_components(self._map_dir)
 
     @classmethod
-    def load(cls, tag: str) -> 'Map':
+    def load(cls, tag: str) -> "Map":
         """
         Load a :class:`Map` by looking up its ``tag``.
 
@@ -141,15 +162,12 @@ class Map(collections.abc.Sequence):
         except KeyError:
             map_dir = mapping.tag_to_map_dir(tag)
 
-            logger.debug(f'Loaded map {tag} from {map_dir}')
+            logger.debug(f"Loaded map {tag} from {map_dir}")
 
-            return cls(
-                tag = tag,
-                map_dir = map_dir,
-            )
+            return cls(tag=tag, map_dir=map_dir,)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(tag = {self.tag})'
+        return f"{self.__class__.__name__}(tag = {self.tag})"
 
     def __gt__(self, other):
         return self.tag > other.tag
@@ -185,20 +203,20 @@ class Map(collections.abc.Sequence):
         return self._map_dir / names.OUTPUTS_DIR
 
     def _input_file_path(self, component: int) -> Path:
-        return self._inputs_dir / f'{component}.{names.INPUT_EXT}'
+        return self._inputs_dir / f"{component}.{names.INPUT_EXT}"
 
     def _output_file_path(self, component: int) -> Path:
-        return self._outputs_dir / f'{component}.{names.OUTPUT_EXT}'
+        return self._outputs_dir / f"{component}.{names.OUTPUT_EXT}"
 
     @property
     def _job_logs_dir(self) -> Path:
         return self._map_dir / names.JOB_LOGS_DIR
 
     def _stdout_file_path(self, component: int) -> Path:
-        return self._job_logs_dir / f'{component}.{names.STDOUT_EXT}'
+        return self._job_logs_dir / f"{component}.{names.STDOUT_EXT}"
 
     def _stderr_file_path(self, component: int) -> Path:
-        return self._job_logs_dir / f'{component}.{names.STDERR_EXT}'
+        return self._job_logs_dir / f"{component}.{names.STDERR_EXT}"
 
     @property
     def _user_output_files_dir(self):
@@ -220,7 +238,10 @@ class Map(collections.abc.Sequence):
     @property
     def is_active(self) -> bool:
         """``True`` if any map components are not complete (or errored!)."""
-        return any(cs not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED) for cs in self.component_statuses)
+        return any(
+            cs not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
+            for cs in self.component_statuses
+        )
 
     def wait(
         self,
@@ -253,12 +274,7 @@ class Map(collections.abc.Sequence):
 
         try:
             if show_progress_bar:
-                pbar = tqdm(
-                    desc = self.tag,
-                    total = len(self),
-                    unit = 'component',
-                    ascii = True,
-                )
+                pbar = tqdm(desc=self.tag, total=len(self), unit="component", ascii=True,)
 
                 previous_pbar_len = 0
 
@@ -269,10 +285,7 @@ class Map(collections.abc.Sequence):
                 ok_statuses.add(state.ComponentStatus.ERRORED)
 
             while True:
-                num_incomplete = sum(
-                    cs not in ok_statuses
-                    for cs in self.component_statuses
-                )
+                num_incomplete = sum(cs not in ok_statuses for cs in self.component_statuses)
                 if show_progress_bar:
                     pbar_len = self._num_components - num_incomplete
                     pbar.update(pbar_len - previous_pbar_len)
@@ -282,14 +295,18 @@ class Map(collections.abc.Sequence):
 
                 for component, status in enumerate(self.component_statuses):
                     if status is state.ComponentStatus.HELD and not holds_ok:
-                        raise exceptions.MapComponentHeld(f'Component {component} of map {self.tag} was held. Reason: {self.holds[component]}')
+                        raise exceptions.MapComponentHeld(
+                            f"Component {component} of map {self.tag} was held. Reason: {self.holds[component]}"
+                        )
                     elif status is state.ComponentStatus.ERRORED and not errors_ok:
-                        raise exceptions.MapComponentError(f'Component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}')
+                        raise exceptions.MapComponentError(
+                            f"Component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}"
+                        )
 
                 if timeout is not None and time.time() - timeout > start_time:
-                    raise exceptions.TimeoutError(f'Timeout while waiting for {self}')
+                    raise exceptions.TimeoutError(f"Timeout while waiting for {self}")
 
-                time.sleep(settings['WAIT_TIME'])
+                time.sleep(settings["WAIT_TIME"])
         finally:
             if show_progress_bar:
                 pbar.close()
@@ -303,59 +320,63 @@ class Map(collections.abc.Sequence):
         start_time = time.time()
         while True:
             component_status = self.component_statuses[component]
-            if component_status in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED):
+            if component_status in (
+                state.ComponentStatus.COMPLETED,
+                state.ComponentStatus.ERRORED,
+            ):
                 break
             elif component_status is state.ComponentStatus.HELD:
-                raise exceptions.MapComponentHeld(f'Component {component} of map {self.tag} is held: {self.holds[component]}')
+                raise exceptions.MapComponentHeld(
+                    f"Component {component} of map {self.tag} is held: {self.holds[component]}"
+                )
 
             if timeout is not None and (time.time() >= start_time + timeout):
                 if timeout <= 0:
-                    raise exceptions.OutputNotFound(f'Output for component {component} of map {self.tag} not found')
+                    raise exceptions.OutputNotFound(
+                        f"Output for component {component} of map {self.tag} not found"
+                    )
                 else:
-                    raise exceptions.TimeoutError(f'Timed out while waiting for component {component} of map {self.tag}')
+                    raise exceptions.TimeoutError(
+                        f"Timed out while waiting for component {component} of map {self.tag}"
+                    )
 
-            time.sleep(settings['WAIT_TIME'])
+            time.sleep(settings["WAIT_TIME"])
 
     def _load_input(self, component: int) -> Tuple[Tuple[Any], Dict[str, Any]]:
         return htio.load_object(self._input_file_path(component))
 
-    def _peek_status(
-        self,
-        component: int,
-    ) -> str:
+    def _peek_status(self, component: int,) -> str:
         try:
             return htio.load_object(self._output_file_path(component))
         except FileNotFoundError as e:
-            raise exceptions.OutputNotFound(f'Output for component {component} of map {self.tag} not found') from e
+            raise exceptions.OutputNotFound(
+                f"Output for component {component} of map {self.tag} not found"
+            ) from e
 
-    def _load_output(
-        self,
-        component: int,
-        timeout: utils.Timeout = None,
-    ) -> Any:
+    def _load_output(self, component: int, timeout: utils.Timeout = None,) -> Any:
         """
         Try to load a map component as if it succeeded.
         If the component actually failed, raise :class:`MapComponentError`.
         """
         if component not in range(0, len(self)):
-            raise IndexError(f'Tried to get output for component {component}, but map {self.tag} only has {len(self)} components')
+            raise IndexError(
+                f"Tried to get output for component {component}, but map {self.tag} only has {len(self)} components"
+            )
 
         self._wait_for_component(component, timeout)
 
         status_and_result = htio.load_objects(self._output_file_path(component))
         status = next(status_and_result)
-        if status == 'OK':
+        if status == "OK":
             return next(status_and_result)
-        elif status == 'ERR':
-            raise exceptions.MapComponentError(f'Component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}')
+        elif status == "ERR":
+            raise exceptions.MapComponentError(
+                f"Component {component} of map {self.tag} encountered error while executing. Error report:\n{self._load_error(component).report()}"
+            )
         else:
-            raise exceptions.InvalidOutputStatus(f'Output status {status} is not valid')
+            raise exceptions.InvalidOutputStatus(f"Output status {status} is not valid")
 
-    def _load_error(
-        self,
-        component: int,
-        timeout: utils.Timeout = None,
-    ) -> errors.ComponentError:
+    def _load_error(self, component: int, timeout: utils.Timeout = None,) -> errors.ComponentError:
         """
         Try to load a map component as if it failed.
         If the component actually succeeded, raise :class:`ExpectedError`.
@@ -364,18 +385,16 @@ class Map(collections.abc.Sequence):
 
         status_and_raw_error = htio.load_objects(self._output_file_path(component))
         status = next(status_and_raw_error)
-        if status == 'OK':
-            raise exceptions.ExpectedError(f'Tried to load component {component} as an error, but it succeeded')
-        elif status == 'ERR':
+        if status == "OK":
+            raise exceptions.ExpectedError(
+                f"Tried to load component {component} as an error, but it succeeded"
+            )
+        elif status == "ERR":
             return errors.ComponentError._from_raw_error(self, next(status_and_raw_error))
         else:
-            raise exceptions.InvalidOutputStatus(f'Output status {status} is not valid')
+            raise exceptions.InvalidOutputStatus(f"Output status {status} is not valid")
 
-    def get(
-        self,
-        component: int,
-        timeout: utils.Timeout = None,
-    ) -> Any:
+    def get(self, component: int, timeout: utils.Timeout = None,) -> Any:
         """
         Return the output associated with the input component index.
         If the component experienced an execution error, this will raise :class:`htmap.exceptions.MapComponentError`.
@@ -389,17 +408,13 @@ class Map(collections.abc.Sequence):
             How long to wait for the output to exist before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
         """
-        return self._load_output(component, timeout = timeout)
+        return self._load_output(component, timeout=timeout)
 
     def __getitem__(self, item: int) -> Any:
         """Return the output associated with the input index. Does not block."""
-        return self.get(item, timeout = 0)
+        return self.get(item, timeout=0)
 
-    def get_err(
-        self,
-        component: int,
-        timeout: utils.Timeout = None,
-    ) -> errors.ComponentError:
+    def get_err(self, component: int, timeout: utils.Timeout = None,) -> errors.ComponentError:
         """
         Return the error associated with the input component index.
         If the component actually succeeded, this will raise :class:`htmap.exceptions.ExpectedError`.
@@ -412,7 +427,7 @@ class Map(collections.abc.Sequence):
             How long to wait for the output to exist before raising a :class:`htmap.exceptions.TimeoutError`.
             If ``None``, wait forever.
         """
-        return self._load_error(component, timeout = timeout)
+        return self._load_error(component, timeout=timeout)
 
     def __iter__(self) -> Iterator[Any]:
         """
@@ -421,10 +436,7 @@ class Map(collections.abc.Sequence):
         """
         yield from self.iter()
 
-    def iter(
-        self,
-        timeout: utils.Timeout = None,
-    ) -> Iterator[Any]:
+    def iter(self, timeout: utils.Timeout = None,) -> Iterator[Any]:
         """
         Returns an iterator over the output of the :class:`htmap.Map` in the same order as the inputs,
         waiting on each individual output to become available.
@@ -436,11 +448,10 @@ class Map(collections.abc.Sequence):
             If ``None``, wait forever.
         """
         for component in self.components:
-            yield self._load_output(component, timeout = timeout)
+            yield self._load_output(component, timeout=timeout)
 
     def iter_with_inputs(
-        self,
-        timeout: utils.Timeout = None,
+        self, timeout: utils.Timeout = None,
     ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
         Returns an iterator over the inputs and output of the :class:`htmap.Map` in the same order as the inputs,
@@ -453,14 +464,11 @@ class Map(collections.abc.Sequence):
             If ``None``, wait forever.
         """
         for component in self.components:
-            output = self._load_output(component, timeout = timeout)
+            output = self._load_output(component, timeout=timeout)
             input = self._load_input(component)
             yield input, output
 
-    def iter_as_available(
-        self,
-        timeout: utils.Timeout = None,
-    ) -> Iterator[Any]:
+    def iter_as_available(self, timeout: utils.Timeout = None,) -> Iterator[Any]:
         """
         Returns an iterator over the output of the :class:`htmap.Map`,
         yielding individual outputs as they become available.
@@ -480,20 +488,19 @@ class Map(collections.abc.Sequence):
         while len(remaining_indices) > 0:
             for component in copy(remaining_indices):
                 try:
-                    output = self._load_output(component, timeout = 0)
+                    output = self._load_output(component, timeout=0)
                     remaining_indices.remove(component)
                     yield output
                 except exceptions.OutputNotFound:
                     pass
 
             if timeout is not None and time.time() > start_time + timeout:
-                raise exceptions.TimeoutError('Timed out while waiting for more output')
+                raise exceptions.TimeoutError("Timed out while waiting for more output")
 
-            time.sleep(settings['WAIT_TIME'])
+            time.sleep(settings["WAIT_TIME"])
 
     def iter_as_available_with_inputs(
-        self,
-        timeout: utils.Timeout = None,
+        self, timeout: utils.Timeout = None,
     ) -> Iterator[Tuple[Tuple[tuple, Dict[str, Any]], Any]]:
         """
         Returns an iterator over the inputs and output of the :class:`htmap.Map`,
@@ -514,7 +521,7 @@ class Map(collections.abc.Sequence):
         while len(remaining_indices) > 0:
             for component in copy(remaining_indices):
                 try:
-                    output = self._load_output(component, timeout = 0)
+                    output = self._load_output(component, timeout=0)
                     input = self._load_input(component)
                     remaining_indices.remove(component)
                     yield input, output
@@ -522,9 +529,9 @@ class Map(collections.abc.Sequence):
                     pass
 
             if timeout is not None and time.time() > start_time + timeout:
-                raise exceptions.TimeoutError('Timed out while waiting for more output')
+                raise exceptions.TimeoutError("Timed out while waiting for more output")
 
-            time.sleep(settings['WAIT_TIME'])
+            time.sleep(settings["WAIT_TIME"])
 
     def iter_inputs(self) -> Iterator[Any]:
         """Returns an iterator over the inputs of the :class:`htmap.Map`."""
@@ -533,14 +540,12 @@ class Map(collections.abc.Sequence):
     def _requirements(self, requirements: Optional[str] = None) -> str:
         """Build an HTCondor requirements expression that captures all of the ``cluster_id`` for this map."""
         base = f"({' || '.join(f'ClusterId=={cid}' for cid in self._cluster_ids)})"
-        extra = f' && {requirements}' if requirements is not None else ''
+        extra = f" && {requirements}" if requirements is not None else ""
 
         return base + extra
 
     def _query(
-        self,
-        requirements: Optional[str] = None,
-        projection: Optional[List[str]] = None,
+        self, requirements: Optional[str] = None, projection: Optional[List[str]] = None,
     ) -> Iterator[classad.ClassAd]:
         """
         Perform a _query against the HTCondor cluster to get information about the map jobs.
@@ -564,12 +569,11 @@ class Map(collections.abc.Sequence):
         req = self._requirements(requirements)
 
         schedd = condor.get_schedd()
-        q = schedd.xquery(
-            requirements = req,
-            projection = projection,
-        )
+        q = schedd.xquery(requirements=req, projection=projection,)
 
-        logger.debug(f'Queried for map {self.tag} (requirements = "{req}") with projection {projection}')
+        logger.debug(
+            f'Queried for map {self.tag} (requirements = "{req}") with projection {projection}'
+        )
 
         yield from q
 
@@ -594,9 +598,11 @@ class Map(collections.abc.Sequence):
            from time import sleep
            import htmap
 
+
            def job(x):
                sleep(x)
                return 1 / x
+
 
            m = htmap.map(job, [0, 2, 4, 6, 8], tag="foo")
 
@@ -611,17 +617,23 @@ class Map(collections.abc.Sequence):
                print(result)  # prints "2", "4", "6", and "8"
 
         """
-        status_to_components: MutableMapping[state.ComponentStatus, List[int]] = collections.defaultdict(list)
+        status_to_components: MutableMapping[
+            state.ComponentStatus, List[int]
+        ] = collections.defaultdict(list)
         for component, status in enumerate(self.component_statuses):
             status_to_components[status].append(component)
 
-        return {status: tuple(sorted(components)) for status, components in status_to_components.items()}
+        return {
+            status: tuple(sorted(components)) for status, components in status_to_components.items()
+        }
 
     def status(self) -> str:
         """Return a string containing the number of jobs in each status."""
         counts = collections.Counter(self.component_statuses)
-        stat = ' | '.join(f'{str(js)} = {counts[js]}' for js in state.ComponentStatus.display_statuses())
-        msg = f'{self.__class__.__name__} {self.tag} ({len(self)} components): {stat}'
+        stat = " | ".join(
+            f"{str(js)} = {counts[js]}" for js in state.ComponentStatus.display_statuses()
+        )
+        msg = f"{self.__class__.__name__} {self.tag} ({len(self)} components): {stat}"
 
         return utils.rstr(msg)
 
@@ -636,19 +648,11 @@ class Map(collections.abc.Sequence):
         """
         Return a string containing a formatted table describing any held components.
         """
-        headers = ['Component', 'Code', 'Hold Reason']
-        rows = [
-            (component, hold.code, hold.reason)
-            for component, hold in self.holds.items()
-        ]
+        headers = ["Component", "Code", "Hold Reason"]
+        rows = [(component, hold.code, hold.reason) for component, hold in self.holds.items()]
 
         return utils.table(
-            headers = headers,
-            rows = rows,
-            alignment = {
-                'Component': 'ljust',
-                'Hold Reason': 'ljust',
-            }
+            headers=headers, rows=rows, alignment={"Component": "ljust", "Hold Reason": "ljust",},
         )
 
     @property
@@ -661,9 +665,11 @@ class Map(collections.abc.Sequence):
         for idx in self.components:
             try:
                 err[idx] = self.get_err(idx)
-            except (exceptions.OutputNotFound,
-                    exceptions.ExpectedError,
-                    exceptions.MapComponentHeld) as e:
+            except (
+                exceptions.OutputNotFound,
+                exceptions.ExpectedError,
+                exceptions.MapComponentHeld,
+            ) as e:
                 pass
 
         return err
@@ -674,11 +680,13 @@ class Map(collections.abc.Sequence):
         """
         for idx in self.components:
             try:
-                yield self.get_err(idx, timeout = 0).report()
-            except (exceptions.OutputNotFound,
-                    exceptions.ExpectedError,
-                    exceptions.TimeoutError,
-                    exceptions.MapComponentHeld) as e:
+                yield self.get_err(idx, timeout=0).report()
+            except (
+                exceptions.OutputNotFound,
+                exceptions.ExpectedError,
+                exceptions.TimeoutError,
+                exceptions.MapComponentHeld,
+            ) as e:
                 pass
 
     @property
@@ -703,16 +711,18 @@ class Map(collections.abc.Sequence):
         """Return the number of bytes stored on the local disk by the map."""
         # this cache is invalidated by the state reader loop when appropriate
         if self._local_data is None:
-            logger.debug(f"Getting map directory size for map {self.tag} (map directory is {self._map_dir})")
+            logger.debug(
+                f"Getting map directory size for map {self.tag} (map directory is {self._map_dir})"
+            )
             with utils.Timer() as timer:
-                self._local_data = utils.get_dir_size(self._map_dir, safe = False)
-            logger.debug(f"Map directory size for map {self.tag} is {utils.num_bytes_to_str(self._local_data)} (took {timer.elapsed:.6f} seconds)")
+                self._local_data = utils.get_dir_size(self._map_dir, safe=False)
+            logger.debug(
+                f"Map directory size for map {self.tag} is {utils.num_bytes_to_str(self._local_data)} (took {timer.elapsed:.6f} seconds)"
+            )
         return self._local_data
 
     def _act(
-        self,
-        action: htcondor.JobAction,
-        requirements: Optional[str] = None,
+        self, action: htcondor.JobAction, requirements: Optional[str] = None,
     ) -> classad.ClassAd:
         """Perform an action on all of the jobs associated with this map."""
         if not self.is_active:
@@ -746,12 +756,14 @@ class Map(collections.abc.Sequence):
             if not force:
                 raise e
 
-            logger.exception(f"Encountered error while force-removing map {self.tag}; ignoring and moving to cleanup step")
+            logger.exception(
+                f"Encountered error while force-removing map {self.tag}; ignoring and moving to cleanup step"
+            )
 
-        self._cleanup_local_data(force = force)
+        self._cleanup_local_data(force=force)
         MAPS.remove(self)
 
-        logger.info(f'Removed map {self.tag}')
+        logger.info(f"Removed map {self.tag}")
 
     def _remove_from_queue(self) -> classad.ClassAd:
         return self._act(htcondor.JobAction.Remove)
@@ -768,7 +780,8 @@ class Map(collections.abc.Sequence):
         """
         if not force:
             while not all(
-                cs in (
+                cs
+                in (
                     state.ComponentStatus.REMOVED,
                     state.ComponentStatus.COMPLETED,
                     state.ComponentStatus.ERRORED,
@@ -780,26 +793,32 @@ class Map(collections.abc.Sequence):
 
         # move the tagfile to the removed tags dir
         # renamed by uid to prevent duplicates
-        removed_tagfile = Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR / self._tag_file_path.read_text()
+        removed_tagfile = (
+            Path(settings["HTMAP_DIR"]) / names.REMOVED_TAGS_DIR / self._tag_file_path.read_text()
+        )
         self._tag_file_path.rename(removed_tagfile)
-        logger.debug(f'Moved tag file for map {self.tag} to the removed tags directory')
+        logger.debug(f"Moved tag file for map {self.tag} to the removed tags directory")
 
         # 5 attempts to remove the map directory
         for _ in range(5):
             try:
                 shutil.rmtree(self._map_dir)
-                logger.debug(f'Removed map directory for map {self.tag}')
+                logger.debug(f"Removed map directory for map {self.tag}")
 
                 # only delete the tagfile after removing the map dir
                 # if we don't get here, htmap.clean() will look for the "removed"
                 # tagfile in the removed tags dir and cleanup
                 removed_tagfile.unlink()
-                logger.debug(f'Removed tag file for map {self.tag}')
+                logger.debug(f"Removed tag file for map {self.tag}")
                 return  # break out of the loop
             except OSError:
-                logger.exception(f'Failed to remove map directory for map {self.tag}, retrying in {settings["WAIT_TIME"]} seconds')
+                logger.exception(
+                    f'Failed to remove map directory for map {self.tag}, retrying in {settings["WAIT_TIME"]} seconds'
+                )
                 time.sleep(settings["WAIT_TIME"])
-        logger.error(f'Failed to remove map directory for map {self.tag}, run htmap.clean() to try to remove later')
+        logger.error(
+            f"Failed to remove map directory for map {self.tag}, run htmap.clean() to try to remove later"
+        )
 
     @property
     def exists(self) -> bool:
@@ -821,7 +840,7 @@ class Map(collections.abc.Sequence):
         run again.
         """
         self._act(htcondor.JobAction.Hold)
-        logger.debug(f'Held map {self.tag}')
+        logger.debug(f"Held map {self.tag}")
 
     def release(self) -> None:
         """
@@ -833,7 +852,7 @@ class Map(collections.abc.Sequence):
         then use this command to allow the components to run again.
         """
         self._act(htcondor.JobAction.Release)
-        logger.debug(f'Released map {self.tag}')
+        logger.debug(f"Released map {self.tag}")
 
     def pause(self) -> None:
         """
@@ -844,7 +863,7 @@ class Map(collections.abc.Sequence):
         (see the :func:`Map.resume` command).
         """
         self._act(htcondor.JobAction.Suspend)
-        logger.debug(f'paused map {self.tag}')
+        logger.debug(f"paused map {self.tag}")
 
     def resume(self) -> None:
         """
@@ -853,7 +872,7 @@ class Map(collections.abc.Sequence):
         claimed resources.
         """
         self._act(htcondor.JobAction.Continue)
-        logger.debug(f'Resumed map {self.tag}')
+        logger.debug(f"Resumed map {self.tag}")
 
     def vacate(self) -> None:
         """
@@ -866,7 +885,7 @@ class Map(collections.abc.Sequence):
         reason.
         """
         self._act(htcondor.JobAction.Vacate)
-        logger.debug(f'Vacated map {self.tag}')
+        logger.debug(f"Vacated map {self.tag}")
 
     def _edit(self, attr: str, value: str, requirements: Optional[str] = None) -> None:
         if not self.is_active:
@@ -875,7 +894,7 @@ class Map(collections.abc.Sequence):
         schedd = condor.get_schedd()
         schedd.edit(self._requirements(requirements), attr, value)
 
-        logger.debug(f'Set attribute {attr} for map {self.tag} to {value}')
+        logger.debug(f"Set attribute {attr} for map {self.tag} to {value}")
 
     def set_memory(self, memory: int) -> None:
         """
@@ -892,7 +911,7 @@ class Map(collections.abc.Sequence):
         memory
             The amount of memory (RAM) to request, as an integer number of MB.
         """
-        self._edit('RequestMemory', str(memory))
+        self._edit("RequestMemory", str(memory))
 
     def set_disk(self, disk: int) -> None:
         """
@@ -909,7 +928,7 @@ class Map(collections.abc.Sequence):
         disk
             The amount of disk space to request, as an integer number of KB.
         """
-        self._edit('RequestDisk', str(disk))
+        self._edit("RequestDisk", str(disk))
 
     def _submit(self, components: Optional[Iterable[int]] = None) -> None:
         if components is None:
@@ -918,14 +937,11 @@ class Map(collections.abc.Sequence):
         components = sorted(components)
 
         itemdata = htio.load_itemdata(self._map_dir)
-        sliced_itemdata = [item for item in itemdata if int(item['component']) in components]
+        sliced_itemdata = [item for item in itemdata if int(item["component"]) in components]
 
         submit_obj = htio.load_submit(self._map_dir)
 
-        new_cluster_id = mapping.execute_submit(
-            submit_obj,
-            sliced_itemdata,
-        )
+        new_cluster_id = mapping.execute_submit(submit_obj, sliced_itemdata,)
 
         # if we fail to write the cluster id for any reason, abort the submit
         try:
@@ -933,7 +949,9 @@ class Map(collections.abc.Sequence):
         except BaseException as e:
             condor.get_schedd().act(htcondor.JobAction.Remove, f"ClusterId=={new_cluster_id}")
 
-        logger.debug(f'Submitted {len(sliced_itemdata)} components (out of {self._num_components}) from map {self.tag}')
+        logger.debug(
+            f"Submitted {len(sliced_itemdata)} components (out of {self._num_components}) from map {self.tag}"
+        )
 
     def rerun(self, components: Optional[Iterable[int]] = None) -> None:
         """
@@ -957,15 +975,20 @@ class Map(collections.abc.Sequence):
         legal_components = set(self.components)
         bad_components = components.difference(legal_components)
         if len(bad_components) > 0:
-            raise exceptions.CannotRerunComponents(f'Cannot rerun components {bad_components} because they are not in the map')
+            raise exceptions.CannotRerunComponents(
+                f"Cannot rerun components {bad_components} because they are not in the map"
+            )
 
         cant_be_rerun = {
-            c for c, status in enumerate(self.component_statuses)
+            c
+            for c, status in enumerate(self.component_statuses)
             if status not in (state.ComponentStatus.COMPLETED, state.ComponentStatus.ERRORED)
         }
         intersection = components.intersection(cant_be_rerun)
         if len(intersection) != 0:
-            raise exceptions.CannotRerunComponents(f'Cannot rerun components {sorted(intersection)} of map {self.tag} because they are not complete')
+            raise exceptions.CannotRerunComponents(
+                f"Cannot rerun components {sorted(intersection)} of map {self.tag} because they are not complete"
+            )
 
         for path in (self._output_file_path(c) for c in components):
             try:
@@ -973,9 +996,9 @@ class Map(collections.abc.Sequence):
             except FileNotFoundError:
                 pass
         for path in (self.output_files[c] for c in components):
-            shutil.rmtree(path, ignore_errors = True)
+            shutil.rmtree(path, ignore_errors=True)
 
-        self._submit(components = components)
+        self._submit(components=components)
 
     def retag(self, tag: str) -> None:
         """
@@ -992,16 +1015,18 @@ class Map(collections.abc.Sequence):
             The ``tag`` to assign to the map.
         """
         if tag == self.tag:
-            raise exceptions.CannotRetagMap('Cannot retag a map to the same tag it already has')
+            raise exceptions.CannotRetagMap("Cannot retag a map to the same tag it already has")
 
         try:
             tags.raise_if_tag_is_invalid(tag)
             tags.raise_if_tag_already_exists(tag)
         except (exceptions.InvalidTag, exceptions.TagAlreadyExists) as e:
-            raise exceptions.CannotRetagMap(f'Cannot retag map because of previous exception: {e}') from e
+            raise exceptions.CannotRetagMap(
+                f"Cannot retag map because of previous exception: {e}"
+            ) from e
 
         submit_obj = htio.load_submit(self._map_dir)
-        submit_obj['JobBatchName'] = tag
+        submit_obj["JobBatchName"] = tag
         htio.save_submit(self._map_dir, submit_obj)
 
         # self._edit('JobBatchName', tag)  # todo: this doesn't seem to work as expected
@@ -1023,14 +1048,14 @@ class Map(collections.abc.Sequence):
         return self._transient_marker.exists()
 
     def _make_transient(self):
-        self._transient_marker.touch(exist_ok = True)
+        self._transient_marker.touch(exist_ok=True)
 
     def _make_persistent(self):
         if self.is_transient:
             self._transient_marker.unlink()
 
     @property
-    def stdout(self) -> 'MapStdOut':
+    def stdout(self) -> "MapStdOut":
         """
         A sequence containing the ``stdout`` for each map component.
         You can index into it (with a component index) to get the
@@ -1040,7 +1065,7 @@ class Map(collections.abc.Sequence):
         return self._stdout
 
     @property
-    def stderr(self) -> 'MapStdErr':
+    def stderr(self) -> "MapStdErr":
         """
         A sequence containing the ``stderr`` for each map component.
         You can index into it (with a component index) to get the
@@ -1050,7 +1075,7 @@ class Map(collections.abc.Sequence):
         return self._stderr
 
     @property
-    def output_files(self) -> 'MapOutputFiles':
+    def output_files(self) -> "MapOutputFiles":
         """
         A sequence containing the path to the directory containing the
         output files for each map component.
@@ -1078,18 +1103,16 @@ class MapStdX(collections.abc.Sequence):
 
     def __getitem__(self, component: Any) -> str:
         try:
-            return self.get(component, timeout = 0)
+            return self.get(component, timeout=0)
         except exceptions.TimeoutError as e:
-            raise FileNotFoundError(f"Standard output/error for component {component} of map {self.map.tag} is not available yet.") from e
+            raise FileNotFoundError(
+                f"Standard output/error for component {component} of map {self.map.tag} is not available yet."
+            ) from e
 
     def __contains__(self, component: Any) -> bool:
         return component in self.map
 
-    def get(
-        self,
-        component: int,
-        timeout: utils.Timeout = None,
-    ) -> str:
+    def get(self, component: int, timeout: utils.Timeout = None,) -> str:
         """
         Return a string containing the stdout/stderr from a single map component.
 
@@ -1107,13 +1130,13 @@ class MapStdX(collections.abc.Sequence):
             The standard output/error of the map component.
         """
         if component not in range(0, len(self)):
-            raise IndexError(f'Tried to get stdout/err file for component {component}, but map {self.map} only has {len(self.map)} components')
+            raise IndexError(
+                f"Tried to get stdout/err file for component {component}, but map {self.map} only has {len(self.map)} components"
+            )
 
-        path = getattr(self.map, f'_{self._func}_file_path')(component)
+        path = getattr(self.map, f"_{self._func}_file_path")(component)
         utils.wait_for_path_to_exist(
-            path,
-            timeout = timeout,
-            wait_time = settings['WAIT_TIME'],
+            path, timeout=timeout, wait_time=settings["WAIT_TIME"],
         )
         return utils.rstr(path.read_text())
 
@@ -1125,7 +1148,7 @@ class MapStdOut(MapStdX):
     attribute instead.
     """
 
-    _func = 'stdout'
+    _func = "stdout"
 
 
 class MapStdErr(MapStdX):
@@ -1135,7 +1158,7 @@ class MapStdErr(MapStdX):
     attribute instead.
     """
 
-    _func = 'stderr'
+    _func = "stderr"
 
 
 class MapOutputFiles:
@@ -1153,18 +1176,16 @@ class MapOutputFiles:
 
     def __getitem__(self, component: int) -> Path:
         try:
-            return self.get(component, timeout = 0)
+            return self.get(component, timeout=0)
         except exceptions.TimeoutError as e:
-            raise FileNotFoundError(f"The output file directory for component {component} of map {self.map.tag} is not available yet.") from e
+            raise FileNotFoundError(
+                f"The output file directory for component {component} of map {self.map.tag} is not available yet."
+            ) from e
 
     def __contains__(self, component: int) -> bool:
         return component in self.map
 
-    def get(
-        self,
-        component: int,
-        timeout: utils.Timeout = None,
-    ) -> Path:
+    def get(self, component: int, timeout: utils.Timeout = None,) -> Path:
         """
         Return the :class:`pathlib.Path` to the directory containing the output
         files for the given component.
@@ -1183,12 +1204,12 @@ class MapOutputFiles:
             The path to the directory containing the output files for the given component.
         """
         if component not in range(0, len(self)):
-            raise IndexError(f'Tried to get output files for component {component}, but map {self.map} only has {len(self.map)} components')
+            raise IndexError(
+                f"Tried to get output files for component {component}, but map {self.map} only has {len(self.map)} components"
+            )
 
         path = self.map._user_output_files_path(component)
         utils.wait_for_path_to_exist(
-            path,
-            timeout = timeout,
-            wait_time = settings['WAIT_TIME'],
+            path, timeout=timeout, wait_time=settings["WAIT_TIME"],
         )
         return path

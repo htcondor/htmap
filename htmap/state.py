@@ -33,18 +33,19 @@ class ComponentStatus(utils.StrEnum):
     An enumeration of the possible statuses that a map component can be in.
     These are mostly identical to the HTCondor job statuses of the same name.
     """
-    UNKNOWN = 'UNKNOWN'
-    UNMATERIALIZED = 'UNMATERIALIZED'
-    IDLE = 'IDLE'
-    RUNNING = 'RUNNING'
-    REMOVED = 'REMOVED'
-    COMPLETED = 'COMPLETED'
-    HELD = 'HELD'
-    SUSPENDED = 'SUSPENDED'
-    ERRORED = 'ERRORED'
+
+    UNKNOWN = "UNKNOWN"
+    UNMATERIALIZED = "UNMATERIALIZED"
+    IDLE = "IDLE"
+    RUNNING = "RUNNING"
+    REMOVED = "REMOVED"
+    COMPLETED = "COMPLETED"
+    HELD = "HELD"
+    SUSPENDED = "SUSPENDED"
+    ERRORED = "ERRORED"
 
     @classmethod
-    def display_statuses(cls) -> Tuple['ComponentStatus', ...]:
+    def display_statuses(cls) -> Tuple["ComponentStatus", ...]:
         return (
             cls.HELD,
             cls.ERRORED,
@@ -111,14 +112,16 @@ class MapState:
     def _read_events(self):
         with self._event_reader_lock:  # no thread can be in here at the same time as another
             if self._event_reader is None:
-                logger.debug(f'Created event log reader for map {self.map.tag}')
+                logger.debug(f"Created event log reader for map {self.map.tag}")
                 self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
 
             with utils.Timer() as timer:
                 handled_events = self._handle_events()
 
             if handled_events > 0:
-                logger.debug(f"Processed {handled_events} events for map {self.map.tag} (took {timer.elapsed:.6f} seconds)")
+                logger.debug(
+                    f"Processed {handled_events} events for map {self.map.tag} (took {timer.elapsed:.6f} seconds)"
+                )
 
                 self.map._local_data = None  # invalidate cache if any events were received
 
@@ -139,28 +142,29 @@ class MapState:
                 continue
 
             if event.type is htcondor.JobEventType.SUBMIT:
-                self._jobid_to_component[(event.cluster, event.proc)] = int(event['LogNotes'])
+                self._jobid_to_component[(event.cluster, event.proc)] = int(event["LogNotes"])
 
             # this lookup is safe because the SUBMIT event always comes first
             # ... but it can happen if the event log is corrupted somehow
             try:
                 component = self._jobid_to_component[(event.cluster, event.proc)]
             except KeyError as e:
-                raise exceptions.CorruptEventLog(f"Found an event for a job that we never saw a submit event for:\n{event}") from e
+                raise exceptions.CorruptEventLog(
+                    f"Found an event for a job that we never saw a submit event for:\n{event}"
+                ) from e
 
             if event.type is htcondor.JobEventType.IMAGE_SIZE:
                 self._memory_usage[component] = max(
-                    self._memory_usage[component],
-                    int(event.get('MemoryUsage', 0)),
+                    self._memory_usage[component], int(event.get("MemoryUsage", 0)),
                 )
             elif event.type is htcondor.JobEventType.JOB_TERMINATED:
-                self._runtime[component] = parse_runtime(event['RunRemoteUsage'])
+                self._runtime[component] = parse_runtime(event["RunRemoteUsage"])
             elif event.type is htcondor.JobEventType.JOB_RELEASED:
                 self._holds.pop(component, None)
             elif event.type is htcondor.JobEventType.JOB_HELD:
                 h = holds.ComponentHold(
-                    code = int(event['HoldReasonCode']),
-                    reason = event.get('HoldReason', 'UNKNOWN').strip(),
+                    code=int(event["HoldReasonCode"]),
+                    reason=event.get("HoldReason", "UNKNOWN").strip(),
                 )
                 self._holds[component] = h
 
@@ -171,15 +175,19 @@ class MapState:
                 try:
                     exec_status = self.map._peek_status(component)
                 except exceptions.OutputNotFound:
-                    logger.warning(f'Output was not found for component {component} for map {self.map.tag}, marking as errored')
-                    exec_status = 'ERR'
+                    logger.warning(
+                        f"Output was not found for component {component} for map {self.map.tag}, marking as errored"
+                    )
+                    exec_status = "ERR"
 
-                if exec_status == 'ERR':
+                if exec_status == "ERR":
                     new_status = ComponentStatus.ERRORED
 
             if new_status is not None:
                 if new_status is self._component_statuses[component]:
-                    logger.warning(f'Component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})')
+                    logger.warning(
+                        f"Component {component} of map {self.map.tag} tried to transition into the state it is already in ({new_status})"
+                    )
                 else:
                     # this log is commented-out because its very verbose
                     # might be helpful when debugging
@@ -190,10 +198,10 @@ class MapState:
 
     def save(self) -> Path:
         final_path = self.map._map_dir / names.MAP_STATE
-        working_path = final_path.with_suffix('.working')
+        working_path = final_path.with_suffix(".working")
 
-        with working_path.open(mode = 'wb') as f:
-            pickle.dump(self, f, protocol = -1)
+        with working_path.open(mode="wb") as f:
+            pickle.dump(self, f, protocol=-1)
 
         working_path.rename(final_path)
 
@@ -204,17 +212,19 @@ class MapState:
     @staticmethod
     def load(map):
         if utils.BINDINGS_VERSION_INFO < (8, 9, 3):
-            raise exceptions.InsufficientHTCondorVersion("Map state can only be saved with HTCondor 8.9.3 or greater")
+            raise exceptions.InsufficientHTCondorVersion(
+                "Map state can only be saved with HTCondor 8.9.3 or greater"
+            )
 
-        with (map._map_dir / names.MAP_STATE).open(mode = 'rb') as f:
+        with (map._map_dir / names.MAP_STATE).open(mode="rb") as f:
             state = pickle.load(f)
         state.map = map
         return state
 
     def __getstate__(self):
         d = self.__dict__.copy()
-        d.pop('_event_reader_lock')
-        d.pop('map')
+        d.pop("_event_reader_lock")
+        d.pop("map")
         return d
 
     def __setstate__(self, state):
@@ -224,22 +234,16 @@ class MapState:
 
 
 def parse_runtime(runtime_string: str) -> datetime.timedelta:
-    (_, usr_days, usr_hms), (_, sys_days, sys_hms) = [s.split() for s in runtime_string.split(',')]
+    (_, usr_days, usr_hms), (_, sys_days, sys_hms) = [s.split() for s in runtime_string.split(",")]
 
-    usr_h, usr_m, usr_s = usr_hms.split(':')
-    sys_h, sys_m, sys_s = sys_hms.split(':')
+    usr_h, usr_m, usr_s = usr_hms.split(":")
+    sys_h, sys_m, sys_s = sys_hms.split(":")
 
     usr_time = datetime.timedelta(
-        days = int(usr_days),
-        hours = int(usr_h),
-        minutes = int(usr_m),
-        seconds = int(usr_s),
+        days=int(usr_days), hours=int(usr_h), minutes=int(usr_m), seconds=int(usr_s),
     )
     sys_time = datetime.timedelta(
-        days = int(sys_days),
-        hours = int(sys_h),
-        minutes = int(sys_m),
-        seconds = int(sys_s),
+        days=int(sys_days), hours=int(sys_h), minutes=int(sys_m), seconds=int(sys_s),
     )
 
     return usr_time + sys_time

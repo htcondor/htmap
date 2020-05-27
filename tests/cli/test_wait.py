@@ -21,7 +21,7 @@ import htmap
 def test_map_is_done_after_wait(cli):
     m = htmap.map(str, range(1))
 
-    result = cli(['wait', m.tag])
+    result = cli(["wait", m.tag])
 
     assert result.exit_code == 0
     assert m.is_done
@@ -33,7 +33,7 @@ def test_maps_are_done_after_wait(cli):
         htmap.map(str, range(1)),
     ]
 
-    result = cli(['wait', *(m.tag for m in maps)])
+    result = cli(["wait", *(m.tag for m in maps)])
 
     assert result.exit_code == 0
     assert all(m.is_done for m in maps)
@@ -45,7 +45,7 @@ def test_maps_are_done_after_wait_using_all(cli):
         htmap.map(str, range(1)),
     ]
 
-    result = cli(['wait', '--all'])
+    result = cli(["wait", "--all"])
 
     assert result.exit_code == 0
     assert all(m.is_done for m in maps)
@@ -57,7 +57,7 @@ def test_maps_wait_message_has_all_tags(cli):
         htmap.map(str, range(1)),
     ]
 
-    result = cli(['wait', *(m.tag for m in maps)])
+    result = cli(["wait", *(m.tag for m in maps)])
 
     assert result.exit_code == 0
     assert all(m.tag in result.output for m in maps)
@@ -69,13 +69,13 @@ def test_maps_wait_message_has_all_tags_using_all(cli):
         htmap.map(str, range(1)),
     ]
 
-    result = cli(['wait', '--all'])
+    result = cli(["wait", "--all"])
 
     assert result.exit_code == 0
     assert all(m.tag in result.output for m in maps)
 
 
 def test_can_wait_with_no_maps(cli):
-    result = cli(['wait', '--all'])
+    result = cli(["wait", "--all"])
 
     assert result.exit_code == 0

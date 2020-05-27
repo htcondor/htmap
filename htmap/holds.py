@@ -30,7 +30,7 @@ class ComponentHold:
         self.reason = reason
 
     def __str__(self):
-        return f'[{self.code}] {self.reason}'
+        return f"[{self.code}] {self.reason}"
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}(code = {self.code}, reason = {self.reason}>'
+        return f"<{self.__class__.__name__}(code = {self.code}, reason = {self.reason}>"

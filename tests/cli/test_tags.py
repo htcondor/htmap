@@ -21,7 +21,7 @@ import htmap
 def test_tags_finds_tag(cli):
     m = htmap.map(str, range(1))
 
-    result = cli(['tags'])
+    result = cli(["tags"])
 
     assert m.tag in result.output
 
@@ -33,6 +33,6 @@ def test_tags_finds_tags(cli):
         htmap.map(str, range(1)),
     ]
 
-    result = cli(['tags'])
+    result = cli(["tags"])
 
     assert all(m.tag in result.output for m in maps)

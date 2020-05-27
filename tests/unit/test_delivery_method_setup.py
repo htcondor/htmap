@@ -23,4 +23,4 @@ from htmap.options import run_delivery_setup
 
 def test_unknown_delivery_method_for_delivery_setup_raises(tmp_path):
     with pytest.raises(htmap.exceptions.UnknownPythonDeliveryMethod):
-        run_delivery_setup('foo', tmp_path, 'definitely-not-real')
+        run_delivery_setup("foo", tmp_path, "definitely-not-real")

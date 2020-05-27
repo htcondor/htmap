@@ -26,59 +26,60 @@ from htmap._startup import ensure_htmap_dir_exists
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)
-htmap.settings['DELIVERY_METHOD'] = 'shared'  # shared is the default for all tests that aren't parametric
-htmap.settings['WAIT_TIME'] = 0.1
-htmap.settings['MAP_OPTIONS.request_memory'] = '10MB'
-htmap.settings['MAP_OPTIONS.keep_claim_idle'] = '1'
+htmap.settings[
+    "DELIVERY_METHOD"
+] = "shared"  # shared is the default for all tests that aren't parametric
+htmap.settings["WAIT_TIME"] = 0.1
+htmap.settings["MAP_OPTIONS.request_memory"] = "10MB"
+htmap.settings["MAP_OPTIONS.keep_claim_idle"] = "1"
 
 SETTINGS = copy(htmap.settings)
 
 
-@pytest.fixture(scope = 'function', autouse = True)
+@pytest.fixture(scope="function", autouse=True)
 def reset_settings():
     htmap.settings.replace(SETTINGS)
 
 
-@pytest.fixture(scope = 'function', autouse = True)
+@pytest.fixture(scope="function", autouse=True)
 def set_transplant_dir(tmpdir_factory, reset_settings):
-    path = Path(tmpdir_factory.mktemp('htmap_transplant_dir'))
-    htmap.settings['TRANSPLANT.DIR'] = path
+    path = Path(tmpdir_factory.mktemp("htmap_transplant_dir"))
+    htmap.settings["TRANSPLANT.DIR"] = path
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope="function")
 def delivery_methods(delivery_method, reset_settings):
-    htmap.settings['DELIVERY_METHOD'] = delivery_method
+    htmap.settings["DELIVERY_METHOD"] = delivery_method
 
 
 def pytest_addoption(parser):
     parser.addoption(
         "--delivery",
-        nargs = "+",
-        default = ['shared'],  # shared is the default for parametric delivery testing
+        nargs="+",
+        default=["shared"],  # shared is the default for parametric delivery testing
     )
 
 
 def pytest_generate_tests(metafunc):
-    if 'delivery_methods' in metafunc.fixturenames:
+    if "delivery_methods" in metafunc.fixturenames:
         metafunc.parametrize(
-            'delivery_method',
-            metafunc.config.getoption('delivery'),
+            "delivery_method", metafunc.config.getoption("delivery"),
         )
 
 
-@pytest.fixture(scope = 'function', autouse = True)
+@pytest.fixture(scope="function", autouse=True)
 def set_htmap_dir_and_clean(tmpdir_factory):
-    map_dir = Path(tmpdir_factory.mktemp('htmap_dir'))
+    map_dir = Path(tmpdir_factory.mktemp("htmap_dir"))
 
-    htmap.settings['HTMAP_DIR'] = map_dir
+    htmap.settings["HTMAP_DIR"] = map_dir
     ensure_htmap_dir_exists()
 
     yield
 
-    htmap.clean(all = True)
+    htmap.clean(all=True)
 
 
-@pytest.fixture(scope = 'session')
+@pytest.fixture(scope="session")
 def doubler():
     def doubler(x):
         return 2 * x
@@ -86,27 +87,27 @@ def doubler():
     return doubler
 
 
-@pytest.fixture(scope = 'session')
+@pytest.fixture(scope="session")
 def mapped_doubler(doubler):
     mapper = htmap.mapped(doubler)
     return mapper
 
 
-@pytest.fixture(scope = 'session')
+@pytest.fixture(scope="session")
 def power():
-    def power(x = 0, p = 2):
+    def power(x=0, p=2):
         return x ** p
 
     return power
 
 
-@pytest.fixture(scope = 'session')
+@pytest.fixture(scope="session")
 def mapped_power(power):
     mapper = htmap.mapped(power)
     return mapper
 
 
-@pytest.fixture(scope = 'session')
+@pytest.fixture(scope="session")
 def never_returns():
     def never(_):
         while True:
@@ -115,14 +116,14 @@ def never_returns():
     return never
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope="function")
 def map_that_never_finishes(never_returns):
     m = htmap.map(never_returns, [None])
     yield m
     m.remove()
 
 
-@pytest.fixture(scope = 'session')
+@pytest.fixture(scope="session")
 def mapped_exception():
     @htmap.mapped
     def fail(x):

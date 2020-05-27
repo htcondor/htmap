@@ -35,10 +35,10 @@ def test_rerun(mapped_doubler):
 
 @pytest.mark.timeout(TIMEOUT)
 def test_load_then_rerun(mapped_doubler):
-    m = mapped_doubler.map([1], tag = 'load-then-rerun')
+    m = mapped_doubler.map([1], tag="load-then-rerun")
     m.wait()
 
-    loaded = htmap.load('load-then-rerun')
+    loaded = htmap.load("load-then-rerun")
     loaded.rerun()
 
     assert list(loaded) == [2]
@@ -46,21 +46,21 @@ def test_load_then_rerun(mapped_doubler):
 
 @pytest.mark.timeout(TIMEOUT)
 def test_rerun_out_of_range_component_raises(mapped_doubler):
-    m = mapped_doubler.map([1], tag = 'load-then-rerun')
+    m = mapped_doubler.map([1], tag="load-then-rerun")
     m.wait()
 
     with pytest.raises(htmap.exceptions.CannotRerunComponents):
         m.rerun([5])
 
 
-@pytest.fixture(scope = 'function')
+@pytest.fixture(scope="function")
 def sleepy_doubler_that_writes_a_file():
     @htmap.mapped
     def sleepy_double(x):
         time.sleep(1)
         r = x * 2
-        p = Path('foo')
-        p.write_text('hi')
+        p = Path("foo")
+        p.write_text("hi")
         htmap.transfer_output_files(p)
         return r
 
@@ -69,7 +69,7 @@ def sleepy_doubler_that_writes_a_file():
 
 @pytest.mark.timeout(TIMEOUT)
 def test_rerun_removes_current_output_file(sleepy_doubler_that_writes_a_file):
-    m = sleepy_doubler_that_writes_a_file.map([1], tag = 'load-then-rerun')
+    m = sleepy_doubler_that_writes_a_file.map([1], tag="load-then-rerun")
 
     m.wait()
 
@@ -83,13 +83,13 @@ def test_rerun_removes_current_output_file(sleepy_doubler_that_writes_a_file):
 
 @pytest.mark.timeout(TIMEOUT)
 def test_rerun_removes_current_user_output_file(sleepy_doubler_that_writes_a_file):
-    m = sleepy_doubler_that_writes_a_file.map([1], tag = 'load-then-rerun')
+    m = sleepy_doubler_that_writes_a_file.map([1], tag="load-then-rerun")
 
     m.wait()
 
-    assert (m.output_files.get(0) / 'foo').read_text() == 'hi'
+    assert (m.output_files.get(0) / "foo").read_text() == "hi"
 
     m.rerun()
 
     with pytest.raises(FileNotFoundError):
-        (m.output_files[0] / 'foo').read_text()
+        (m.output_files[0] / "foo").read_text()

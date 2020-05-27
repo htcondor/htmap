@@ -18,8 +18,10 @@ Running a map over a Python function is as easy as
 
     import htmap
 
+
     def double(x):
         return 2 * x
+
 
     doubled = list(htmap.map(double, range(10)))
     print(doubled)
@@ -95,4 +97,3 @@ Happy mapping!
 
    version-history
    devs
-

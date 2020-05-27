@@ -24,7 +24,18 @@ from pprint import pformat
 
 import htcondor
 
-from . import htio, tags, exceptions, maps, transfer, options, condor, settings, names, utils
+from . import (
+    htio,
+    tags,
+    exceptions,
+    maps,
+    transfer,
+    options,
+    condor,
+    settings,
+    names,
+    utils,
+)
 from .types import KWARGS, ARGS_OR_KWARGS, ARGS_AND_KWARGS, ARGS
 
 logger = logging.getLogger(__name__)
@@ -32,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 def maps_dir_path() -> Path:
     """The path to the directory where map directories are stored."""
-    return Path(settings['HTMAP_DIR']) / names.MAPS_DIR
+    return Path(settings["HTMAP_DIR"]) / names.MAPS_DIR
 
 
 def map_dir_path(uid: Union[uuid.UUID, str]) -> Path:
@@ -43,7 +54,7 @@ def map_dir_path(uid: Union[uuid.UUID, str]) -> Path:
 def tagfile_to_map_dir(tagfile: Path) -> Path:
     """Return the path to the map directory associated with the given ``tag`` file."""
     if not tagfile.exists():
-        raise exceptions.TagNotFound(f'The tag {tagfile.stem} was not found')
+        raise exceptions.TagNotFound(f"The tag {tagfile.stem} was not found")
     uid = uuid.UUID(tagfile.read_text())
     return map_dir_path(uid)
 
@@ -81,12 +92,7 @@ def map(
     """
     args = ((arg,) for arg in args)
     args_and_kwargs: Iterator[ARGS_AND_KWARGS] = zip(args, itertools.repeat({}))
-    return create_map(
-        tag,
-        func,
-        args_and_kwargs,
-        map_options = map_options,
-    )
+    return create_map(tag, func, args_and_kwargs, map_options=map_options,)
 
 
 def starmap(
@@ -125,12 +131,7 @@ def starmap(
         kwargs = ()
 
     args_and_kwargs = zip_args_and_kwargs(args, kwargs)
-    return create_map(
-        tag,
-        func,
-        args_and_kwargs,
-        map_options = map_options,
-    )
+    return create_map(tag, func, args_and_kwargs, map_options=map_options,)
 
 
 class MapBuilder:
@@ -142,7 +143,7 @@ class MapBuilder:
 
     .. code-block:: python
 
-        with htmap.build_map(tag = 'pow', func = lambda x, p: x ** p) as builder:
+        with htmap.build_map(tag="pow", func=lambda x, p: x ** p) as builder:
             for x in range(1, 4):
                 builder(x, x)
 
@@ -165,29 +166,29 @@ class MapBuilder:
 
         self._map = None
 
-        logger.debug(f'Initialized map builder for map {tag} for {self.func}')
+        logger.debug(f"Initialized map builder for map {tag} for {self.func}")
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>'
+        return f"<{self.__class__.__name__}(func = {self.func}, map_options = {self.map_options})>"
 
-    def __enter__(self) -> 'MapBuilder':
+    def __enter__(self) -> "MapBuilder":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # if an exception is raised in the with, re-raise without submitting jobs
         if exc_type is not None:
-            logger.exception(f'Map builder for map {self.tag} aborted due to')
+            logger.exception(f"Map builder for map {self.tag} aborted due to")
             return False
 
         self._map = starmap(
-            tag = self.tag,
-            func = self.func,
-            args = self.args,
-            kwargs = self.kwargs,
-            map_options = self.map_options
+            tag=self.tag,
+            func=self.func,
+            args=self.args,
+            kwargs=self.kwargs,
+            map_options=self.map_options,
         )
 
-        logger.debug(f'Finished executing map builder for map {self.tag}')
+        logger.debug(f"Finished executing map builder for map {self.tag}")
 
     def __call__(self, *args: Any, **kwargs: Any) -> None:
         """Adds the given inputs to the map."""
@@ -201,7 +202,7 @@ class MapBuilder:
         Will raise :class:`htmap.exceptions.NoMapYet` when accessed until the ``with`` block for this :class:`MapBuilder` completes.
         """
         if self._map is None:
-            raise exceptions.NoMapYet('Map does not exist until after with block')
+            raise exceptions.NoMapYet("Map does not exist until after with block")
         return self._map
 
     def __len__(self) -> int:
@@ -210,9 +211,7 @@ class MapBuilder:
 
 
 def build_map(
-    func: Callable,
-    map_options: Optional[options.MapOptions] = None,
-    tag: Optional[str] = None,
+    func: Callable, map_options: Optional[options.MapOptions] = None, tag: Optional[str] = None,
 ) -> MapBuilder:
     """
     Return a :class:`MapBuilder` for the given function.
@@ -231,11 +230,7 @@ def build_map(
     map_builder :
         A :class:`MapBuilder` for the given function.
     """
-    return MapBuilder(
-        func = func,
-        map_options = map_options,
-        tag = tag,
-    )
+    return MapBuilder(func=func, map_options=map_options, tag=tag,)
 
 
 def create_map(
@@ -277,7 +272,7 @@ def create_map(
     tags.raise_if_tag_is_invalid(tag)
     tags.raise_if_tag_already_exists(tag)
 
-    logger.debug(f'Creating map {tag} ...')
+    logger.debug(f"Creating map {tag} ...")
 
     if map_options is None:
         map_options = options.MapOptions()
@@ -298,10 +293,7 @@ def create_map(
             tif.extend(extra)
 
         submit_obj, itemdata = options.create_submit_object_and_itemdata(
-            tag,
-            map_dir,
-            num_components,
-            map_options,
+            tag, map_dir, num_components, map_options,
         )
 
         logger.debug(f"Submit description for map {tag} is\n{submit_obj}")
@@ -316,14 +308,11 @@ def create_map(
             htio.save_itemdata(map_dir, itemdata)
         logger.debug(f"Created map directory for map {tag} (took {timer.elapsed:.6f} seconds)")
 
-        logger.debug(f'Submitting map {tag}...')
+        logger.debug(f"Submitting map {tag}...")
 
         tags.tag_file_path(tag).write_text(str(uid))
 
-        m = maps.Map(
-            tag = tag,
-            map_dir = map_dir,
-        )
+        m = maps.Map(tag=tag, map_dir=map_dir,)
 
         if transient:
             m._make_transient()
@@ -331,20 +320,20 @@ def create_map(
         m._submit()
 
         if utils.is_interactive_session():
-            print(f'Created map {m.tag} with {len(m)} components')
+            print(f"Created map {m.tag} with {len(m)} components")
 
         return m
     except BaseException as e:
         # something went wrong during submission, and the job is malformed
         # so delete the entire map directory
         # the condor bindings should prevent any jobs from being submitted
-        logger.exception(f'Map submission for map {tag} aborted due to: {e}')
+        logger.exception(f"Map submission for map {tag} aborted due to: {e}")
         try:
             tags.tag_file_path(tag).unlink()
         except FileNotFoundError:
             pass
         shutil.rmtree(str(map_dir.absolute()))
-        logger.debug(f'Removed malformed map directory {map_dir}')
+        logger.debug(f"Removed malformed map directory {map_dir}")
         raise e
 
 
@@ -359,9 +348,9 @@ MAP_SUBDIR_NAMES = (
 def make_map_dir_and_subdirs(map_dir: Path) -> None:
     """Create the input, output, and log subdirectories inside the map directory."""
     for path in (map_dir / d for d in MAP_SUBDIR_NAMES):
-        path.mkdir(parents = True, exist_ok = True)
+        path.mkdir(parents=True, exist_ok=True)
 
-    logger.debug(f'Created map directory {map_dir} and subdirectories')
+    logger.debug(f"Created map directory {map_dir} and subdirectories")
 
 
 def execute_submit(submit_object: htcondor.Submit, itemdata: List[Dict[str, str]]) -> int:
@@ -371,18 +360,13 @@ def execute_submit(submit_object: htcondor.Submit, itemdata: List[Dict[str, str]
     """
     schedd = condor.get_schedd()
     with schedd.transaction() as txn:
-        submit_result = submit_object.queue_with_itemdata(
-            txn,
-            1,
-            iter(itemdata),
-        )
+        submit_result = submit_object.queue_with_itemdata(txn, 1, iter(itemdata),)
 
         return submit_result.cluster()
 
 
 def zip_args_and_kwargs(
-    args: Iterable[ARGS],
-    kwargs: Iterable[KWARGS],
+    args: Iterable[ARGS], kwargs: Iterable[KWARGS],
 ) -> Iterator[ARGS_AND_KWARGS]:
     """
     Combine iterables of arguments and keyword arguments into a zipped,
@@ -407,11 +391,13 @@ def zip_args_and_kwargs(
         A zipped iterator of tuples (positional arguments) and dictionaries (keyword arguments).
     """
     marker = object()
-    for arg, kwarg in itertools.zip_longest(args, kwargs, fillvalue = marker):
+    for arg, kwarg in itertools.zip_longest(args, kwargs, fillvalue=marker):
         yield arg if arg is not marker else (), kwarg if kwarg is not marker else {}
 
 
-def transform_args_and_kwargs(args_and_kwargs: Iterator[ARGS_AND_KWARGS]) -> Tuple[List[ARGS_AND_KWARGS], List[List[transfer.TransferPath]]]:
+def transform_args_and_kwargs(
+    args_and_kwargs: Iterator[ARGS_AND_KWARGS],
+) -> Tuple[List[ARGS_AND_KWARGS], List[List[transfer.TransferPath]]]:
     """
     Perform any pre-processing on the positional and keyword arguments.
 
@@ -432,8 +418,7 @@ def transform_args_and_kwargs(args_and_kwargs: Iterator[ARGS_AND_KWARGS]) -> Tup
 
 
 def transform_input_paths(
-    object_to_check: Any,
-    transfer_accumulator: List[transfer.TransferPath],
+    object_to_check: Any, transfer_accumulator: List[transfer.TransferPath],
 ) -> Any:
     """
     Descends recursively through primitive containers or top-level function
@@ -448,16 +433,19 @@ def transform_input_paths(
 
     # look inside built-in containers recursively
     elif isinstance(object_to_check, (list, tuple, set)):
-        return type(object_to_check)(transform_input_paths(c, transfer_accumulator) for c in object_to_check)
+        return type(object_to_check)(
+            transform_input_paths(c, transfer_accumulator) for c in object_to_check
+        )
     elif isinstance(object_to_check, dict):
-        return {k: transform_input_paths(v, transfer_accumulator) for k, v in object_to_check.items()}
+        return {
+            k: transform_input_paths(v, transfer_accumulator) for k, v in object_to_check.items()
+        }
 
     return object_to_check
 
 
 def transform_input_path(
-    path: transfer.TransferPath,
-    transfer_accumulator: List[transfer.TransferPath],
+    path: transfer.TransferPath, transfer_accumulator: List[transfer.TransferPath],
 ) -> Path:
     """
     Helper function which replaces :class:`htmap.TransferPath` with a
@@ -466,4 +454,4 @@ def transform_input_path(
     input transfer manifest.
     """
     transfer_accumulator.append(path)
-    return Path('.') / path.name
+    return Path(".") / path.name

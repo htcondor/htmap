@@ -42,7 +42,7 @@ accepts.  Some of the more commonly requested resources are:
   memory.
 * ``request_cpus``. Possible values are like ``"1"`` for 1 CPU, or ``"2"`` for 2 CPUs.
 * ``request_disk`` to request an amount of disk space. Possible values are like ``"10GB"`` for 10GB, or ``"1TB"`` for 1 terabyte.
-  
+
 If any of the resource requests are not set, the default values set by your HTCondor cluster administrator will be used.
 
 These would be set with :class:`~htmap.MapOptions`. For example, this code
@@ -50,11 +50,7 @@ might be used:
 
 .. code:: python
 
-   options = htmap.MapOptions(
-       request_cpus="1",
-       request_disk="10GB",
-       request_memory="4GB",
-   )
+   options = htmap.MapOptions(request_cpus="1", request_disk="10GB", request_memory="4GB",)
    htmap.map(..., map_options=options)
 
 When it's mentioned that "the option ``foo`` needs to be set" in a

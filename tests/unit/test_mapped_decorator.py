@@ -35,7 +35,7 @@ def test_decorator_with_parens():
 
 
 def test_decorator_with_map_options():
-    @htmap.mapped(map_options = htmap.MapOptions())
+    @htmap.mapped(map_options=htmap.MapOptions())
     def foo(x):
         return x
 
@@ -48,4 +48,4 @@ def test_can_still_call_wrapped_function_as_normal(mapped_doubler):
 
 def test_bad_call_raises():
     with pytest.raises(TypeError):
-        htmap.mapped('foo')
+        htmap.mapped("foo")

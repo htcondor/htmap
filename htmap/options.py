@@ -32,38 +32,40 @@ logger = logging.getLogger(__name__)
 BASE_OPTIONS_FUNCTION_BY_DELIVERY = {}
 SETUP_FUNCTION_BY_DELIVERY = {}
 
-REQUIREMENTS = 'requirements'
+REQUIREMENTS = "requirements"
 
 
 class MapOptions(collections.UserDict):
     RESERVED_KEYS = {
-        'jobbatchname',
-        'universe',
-        'arguments',
-        'executable',
-        'transfer_executable',
-        'log',
-        'submit_event_notes',
-        'stdout',
-        'stderr',
-        'when_to_transfer_output',
-        'transfer_output_files',
-        'transfer_output_remaps',
-        'transfer_input_files',
-        'should_transfer_files',
-        'component',
-        '+component',
-        'MY.component',
-        'IsHTMapJob',
-        '+IsHTMapJob',
-        'MY.IsHTMapJob',
+        "jobbatchname",
+        "universe",
+        "arguments",
+        "executable",
+        "transfer_executable",
+        "log",
+        "submit_event_notes",
+        "stdout",
+        "stderr",
+        "when_to_transfer_output",
+        "transfer_output_files",
+        "transfer_output_remaps",
+        "transfer_input_files",
+        "should_transfer_files",
+        "component",
+        "+component",
+        "MY.component",
+        "IsHTMapJob",
+        "+IsHTMapJob",
+        "MY.IsHTMapJob",
     }
 
     def __init__(
         self,
         *,
         fixed_input_files: Optional[Union[TRANSFER_PATH, Iterable[TRANSFER_PATH]]] = None,
-        input_files: Optional[Union[Iterable[TRANSFER_PATH], Iterable[Iterable[TRANSFER_PATH]]]] = None,
+        input_files: Optional[
+            Union[Iterable[TRANSFER_PATH], Iterable[Iterable[TRANSFER_PATH]]]
+        ] = None,
         output_remaps: Optional[Union[REMAPS, Iterable[REMAPS]]] = None,
         custom_options: Optional[Dict[str, str]] = None,
         **kwargs: Union[str, Iterable[str]],
@@ -121,7 +123,7 @@ class MapOptions(collections.UserDict):
 
            The ``MapOptions`` that express the same submit options would be:
 
-           .. code:: python
+           .. code:: pycon
 
                >>> options = {"foo": '"bar"', "aaa": "xyz", "bbb": "false", "ccc": "1"}
                >>> print(options["foo"])  # exactly matches the value in the submit file
@@ -138,11 +140,14 @@ class MapOptions(collections.UserDict):
         if custom_options is None:
             custom_options = {}
         cleaned_custom_options = {
-            key.lower().replace('+', '').replace('my.', ''): val
+            key.lower().replace("+", "").replace("my.", ""): val
             for key, val in custom_options.items()
         }
         self._check_keyword_arguments(cleaned_custom_options)
-        kwargs = {**kwargs, **{f'MY.{key}': val for key, val in cleaned_custom_options.items()}}
+        kwargs = {
+            **kwargs,
+            **{f"MY.{key}": val for key, val in cleaned_custom_options.items()},
+        }
 
         super().__init__(**kwargs)
 
@@ -160,13 +165,15 @@ class MapOptions(collections.UserDict):
         reserved_keys_in_kwargs = normalized_keys.intersection(self.RESERVED_KEYS)
         if len(reserved_keys_in_kwargs) != 0:
             if len(reserved_keys_in_kwargs) == 1:
-                s = 'is a reserved keyword'
+                s = "is a reserved keyword"
             else:
-                s = 'are reserved keywords'
-            raise exceptions.ReservedOptionKeyword(f'{",".join(reserved_keys_in_kwargs)} {s} and cannot be used')
+                s = "are reserved keywords"
+            raise exceptions.ReservedOptionKeyword(
+                f'{",".join(reserved_keys_in_kwargs)} {s} and cannot be used'
+            )
 
     @classmethod
-    def merge(cls, *others: 'MapOptions') -> 'MapOptions':
+    def merge(cls, *others: "MapOptions") -> "MapOptions":
         """
         Merge any number of :class:`MapOptions` together, like a :class:`collections.ChainMap`.
         Options closer to the left take priority.
@@ -202,61 +209,56 @@ def normalize_path(path: Union[str, Path]) -> str:
     """
     if isinstance(path, transfer.TransferPath):
         return path.as_url()
-    elif isinstance(path, Path) or '://' not in path:
+    elif isinstance(path, Path) or "://" not in path:
         return Path(path).absolute().as_posix()
     return path
 
 
 def create_submit_object_and_itemdata(
-    tag: str,
-    map_dir: Path,
-    num_components: int,
-    map_options: MapOptions,
+    tag: str, map_dir: Path, num_components: int, map_options: MapOptions,
 ) -> Tuple[htcondor.Submit, List[Dict[str, str]]]:
     run_delivery_setup(
-        tag,
-        map_dir,
-        settings['DELIVERY_METHOD'],
+        tag, map_dir, settings["DELIVERY_METHOD"],
     )
 
-    descriptors = get_base_descriptors(
-        tag,
-        map_dir,
-        settings['DELIVERY_METHOD'],
-    )
+    descriptors = get_base_descriptors(tag, map_dir, settings["DELIVERY_METHOD"],)
 
     descriptors[REQUIREMENTS] = merge_requirements(
-        descriptors.get(REQUIREMENTS, None),
-        map_options.get(REQUIREMENTS, None),
+        descriptors.get(REQUIREMENTS, None), map_options.get(REQUIREMENTS, None),
     )
 
-    itemdata = [{'component': str(idx)} for idx in range(num_components)]
+    itemdata = [{"component": str(idx)} for idx in range(num_components)]
 
-    input_files = descriptors.get('transfer_input_files', [])
+    input_files = descriptors.get("transfer_input_files", [])
     input_files += [
         (map_dir / names.FUNC).as_posix(),
-        (map_dir / names.INPUTS_DIR / f'$(component).{names.INPUT_EXT}').as_posix(),
+        (map_dir / names.INPUTS_DIR / f"$(component).{names.INPUT_EXT}").as_posix(),
     ]
     input_files.extend(normalize_path(f) for f in map_options.fixed_input_files)
 
     # if any of the components have per-component input files, use a submit macro to insert them
     if map_options.input_files is not None and any(map_options.input_files):
-        input_files.append('$(extra_input_files)')
+        input_files.append("$(extra_input_files)")
 
         joined = [
-            normalize_path(files) if isinstance(files, (str, Path, transfer.TransferPath))  # single file
-            else ', '.join(normalize_path(f) for f in files)  # multiple files
+            normalize_path(files)
+            if isinstance(files, (str, Path, transfer.TransferPath))  # single file
+            else ", ".join(normalize_path(f) for f in files)  # multiple files
             for files in map_options.input_files
         ]
         if len(joined) != num_components:
-            raise exceptions.MisalignedInputData(f'Length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})')
+            raise exceptions.MisalignedInputData(
+                f"Length of input_files does not match length of input (len(input_files) = {len(input_files)}, len(inputs) = {num_components})"
+            )
         for itemdatum, files in zip(itemdata, joined):
-            itemdatum['extra_input_files'] = files
-    descriptors['transfer_input_files'] = ','.join(input_files)
+            itemdatum["extra_input_files"] = files
+    descriptors["transfer_input_files"] = ",".join(input_files)
 
     if map_options.output_remaps is not None and any(map_options.output_remaps):
         # TODO: I would prefer to do this in the base descriptors, but it looks like an "empty" remap triggers strange behavior
-        descriptors["transfer_output_remaps"] = descriptors["transfer_output_remaps"].rstrip('"') + '; $(extra_remaps) "'
+        descriptors["transfer_output_remaps"] = (
+            descriptors["transfer_output_remaps"].rstrip('"') + '; $(extra_remaps) "'
+        )
 
         if isinstance(map_options.output_remaps, dict):
             output_remaps = [map_options.output_remaps] * num_components
@@ -264,17 +266,22 @@ def create_submit_object_and_itemdata(
             output_remaps = map_options.output_remaps
 
         for component, (itemdatum, remaps) in enumerate(zip(itemdata, output_remaps)):
-            itemdatum['extra_remaps'] = " ; ".join(f"{Path(names.USER_TRANSFER_DIR) / str(component) / k}={v.as_url()}" for k, v in remaps.items())
+            itemdatum["extra_remaps"] = " ; ".join(
+                f"{Path(names.USER_TRANSFER_DIR) / str(component) / k}={v.as_url()}"
+                for k, v in remaps.items()
+            )
 
     for opt_key, opt_value in map_options.items():
         if not isinstance(opt_value, str):  # implies it is iterable
-            itemdata_key = f'itemdata_for_{opt_key}'
+            itemdata_key = f"itemdata_for_{opt_key}"
             opt_value = tuple(opt_value)
             if len(opt_value) != num_components:
-                raise exceptions.MisalignedInputData(f'Length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})')
+                raise exceptions.MisalignedInputData(
+                    f"Length of {opt_key} does not match length of input (len({opt_key}) = {len(opt_value)}, len(inputs) = {num_components})"
+                )
             for dct, v in zip(itemdata, opt_value):
                 dct[itemdata_key] = v
-            descriptors[opt_key] = f'$({itemdata_key})'
+            descriptors[opt_key] = f"$({itemdata_key})"
         else:
             descriptors[opt_key] = opt_value
 
@@ -293,7 +300,7 @@ def register_delivery_method(
 ) -> None:
     """
     Register a new delivery method with HTMap.
-    
+
     Parameters
     ----------
     name
@@ -321,18 +328,14 @@ def merge_requirements(*requirements: Optional[str]) -> Optional[str]:
     requirements = [req for req in requirements if req is not None]
     if len(requirements) == 0:
         return None
-    return ' && '.join(f'({req})' for req in requirements)
+    return " && ".join(f"({req})" for req in requirements)
 
 
-def get_base_descriptors(
-    tag: str,
-    map_dir: Path,
-    delivery: str,
-) -> dict:
+def get_base_descriptors(tag: str, map_dir: Path, delivery: str,) -> dict:
     map_dir = map_dir.absolute()
     output_files = [
-        f'{names.TRANSFER_DIR}/',
-        f'{names.USER_TRANSFER_DIR}/$(component)',
+        f"{names.TRANSFER_DIR}/",
+        f"{names.USER_TRANSFER_DIR}/$(component)",
     ]
     output_remaps = [
         f'$(component).{names.OUTPUT_EXT}={(map_dir / names.OUTPUTS_DIR / f"$(component).{names.OUTPUT_EXT}").as_posix()}'
@@ -340,33 +343,35 @@ def get_base_descriptors(
 
     if utils.CAN_USE_URL_OUTPUT_TRANSFER:
         output_files.append(names.TRANSFER_PLUGIN_MARKER)
-        output_remaps.append(f'{names.TRANSFER_PLUGIN_MARKER}=htmap://_')
+        output_remaps.append(f"{names.TRANSFER_PLUGIN_MARKER}=htmap://_")
 
     core = {
-        'JobBatchName': tag,
-        'log': (map_dir / names.EVENT_LOG).as_posix(),
-        'submit_event_notes': '$(component)',
-        'stdout': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDOUT_EXT}').as_posix(),
-        'stderr': (map_dir / names.JOB_LOGS_DIR / f'$(component).{names.STDERR_EXT}').as_posix(),
-        'should_transfer_files': 'YES',
-        'when_to_transfer_output': 'ON_EXIT_OR_EVICT',
-        'transfer_output_files': " , ".join(output_files),
-        'transfer_output_remaps': f'" {" ; ".join(output_remaps)} "',
-        'on_exit_hold': 'ExitCode =!= 0',
-        'initialdir': f"{(map_dir / names.OUTPUT_FILES_DIR).as_posix()}",
-        'MY.component': '$(component)',
-        'MY.IsHTMapJob': 'True',
+        "JobBatchName": tag,
+        "log": (map_dir / names.EVENT_LOG).as_posix(),
+        "submit_event_notes": "$(component)",
+        "stdout": (map_dir / names.JOB_LOGS_DIR / f"$(component).{names.STDOUT_EXT}").as_posix(),
+        "stderr": (map_dir / names.JOB_LOGS_DIR / f"$(component).{names.STDERR_EXT}").as_posix(),
+        "should_transfer_files": "YES",
+        "when_to_transfer_output": "ON_EXIT_OR_EVICT",
+        "transfer_output_files": " , ".join(output_files),
+        "transfer_output_remaps": f'" {" ; ".join(output_remaps)} "',
+        "on_exit_hold": "ExitCode =!= 0",
+        "initialdir": f"{(map_dir / names.OUTPUT_FILES_DIR).as_posix()}",
+        "MY.component": "$(component)",
+        "MY.IsHTMapJob": "True",
     }
 
     if utils.CAN_USE_URL_OUTPUT_TRANSFER:
-        core['transfer_plugins'] = f"htmap={(map_dir / names.TRANSFER_PLUGIN).as_posix()}"
+        core["transfer_plugins"] = f"htmap={(map_dir / names.TRANSFER_PLUGIN).as_posix()}"
 
     try:
         base = BASE_OPTIONS_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
     except KeyError:
-        raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
+        raise exceptions.UnknownPythonDeliveryMethod(
+            f"'{delivery}' is not a known delivery mechanism"
+        )
 
-    from_settings = settings.get('MAP_OPTIONS', default = {})
+    from_settings = settings.get("MAP_OPTIONS", default={})
 
     merged = {
         **core,
@@ -385,21 +390,19 @@ def get_base_descriptors(
     return merged
 
 
-def run_delivery_setup(
-    tag: str,
-    map_dir: Path,
-    delivery: str,
-) -> None:
+def run_delivery_setup(tag: str, map_dir: Path, delivery: str,) -> None:
     _copy_run_scripts(map_dir)
 
     try:
         SETUP_FUNCTION_BY_DELIVERY[delivery](tag, map_dir)
     except KeyError:
-        raise exceptions.UnknownPythonDeliveryMethod(f"'{delivery}' is not a known delivery mechanism")
+        raise exceptions.UnknownPythonDeliveryMethod(
+            f"'{delivery}' is not a known delivery mechanism"
+        )
 
 
 def _copy_run_scripts(map_dir: Path):
-    run_script_source_dir = Path(__file__).parent / 'run'
+    run_script_source_dir = Path(__file__).parent / "run"
     run_scripts = [
         run_script_source_dir / names.RUN_SCRIPT,
         run_script_source_dir / names.RUN_WITH_SINGULARITY_SCRIPT,
@@ -411,149 +414,124 @@ def _copy_run_scripts(map_dir: Path):
         shutil.copy2(src, target)
 
 
-def _get_base_descriptors_for_assume(
-    tag: str,
-    map_dir: Path,
-) -> dict:
+def _get_base_descriptors_for_assume(tag: str, map_dir: Path,) -> dict:
     return {
-        'universe': 'vanilla',
-        'executable': (map_dir / names.RUN_SCRIPT).as_posix(),
-        'arguments': '$(component)',
+        "universe": "vanilla",
+        "executable": (map_dir / names.RUN_SCRIPT).as_posix(),
+        "arguments": "$(component)",
     }
 
 
 register_delivery_method(
-    'assume',
-    descriptors_func = _get_base_descriptors_for_assume,
+    "assume", descriptors_func=_get_base_descriptors_for_assume,
 )
 
 
-def _get_base_descriptors_for_docker(
-    tag: str,
-    map_dir: Path,
-) -> dict:
+def _get_base_descriptors_for_docker(tag: str, map_dir: Path,) -> dict:
     return {
-        'universe': 'docker',
-        'docker_image': settings['DOCKER.IMAGE'],
-        'executable': (map_dir / names.RUN_SCRIPT).as_posix(),
-        'arguments': '$(component)',
-        'transfer_executable': 'True',
+        "universe": "docker",
+        "docker_image": settings["DOCKER.IMAGE"],
+        "executable": (map_dir / names.RUN_SCRIPT).as_posix(),
+        "arguments": "$(component)",
+        "transfer_executable": "True",
     }
 
 
 register_delivery_method(
-    'docker',
-    descriptors_func = _get_base_descriptors_for_docker,
+    "docker", descriptors_func=_get_base_descriptors_for_docker,
 )
 
 
-def _get_base_descriptors_for_shared(
-    tag: str,
-    map_dir: Path,
-) -> dict:
+def _get_base_descriptors_for_shared(tag: str, map_dir: Path,) -> dict:
     return {
-        'universe': 'vanilla',
-        'executable': Path(sys.executable).absolute().as_posix(),
-        'transfer_executable': 'False',
-        'arguments': f'{names.RUN_SCRIPT} $(component)',
-        'transfer_input_files': [
-            (map_dir / names.RUN_SCRIPT).as_posix(),
-        ],
+        "universe": "vanilla",
+        "executable": Path(sys.executable).absolute().as_posix(),
+        "transfer_executable": "False",
+        "arguments": f"{names.RUN_SCRIPT} $(component)",
+        "transfer_input_files": [(map_dir / names.RUN_SCRIPT).as_posix(),],
     }
 
 
 register_delivery_method(
-    'shared',
-    descriptors_func = _get_base_descriptors_for_shared,
+    "shared", descriptors_func=_get_base_descriptors_for_shared,
 )
 
 
-def _get_base_descriptors_for_singularity(
-    tag: str,
-    map_dir: Path,
-) -> dict:
+def _get_base_descriptors_for_singularity(tag: str, map_dir: Path,) -> dict:
     return {
-        'universe': 'vanilla',
-        REQUIREMENTS: 'HasSingularity == true',
-        'executable': (map_dir / names.RUN_WITH_SINGULARITY_SCRIPT).as_posix(),
-        'transfer_input_files': [
-            (map_dir / names.RUN_SCRIPT).as_posix(),
-        ],
-        'arguments': f'{settings["SINGULARITY.IMAGE"]} $(component)',
-        'transfer_executable': 'True',
+        "universe": "vanilla",
+        REQUIREMENTS: "HasSingularity == true",
+        "executable": (map_dir / names.RUN_WITH_SINGULARITY_SCRIPT).as_posix(),
+        "transfer_input_files": [(map_dir / names.RUN_SCRIPT).as_posix(),],
+        "arguments": f'{settings["SINGULARITY.IMAGE"]} $(component)',
+        "transfer_executable": "True",
     }
 
 
 register_delivery_method(
-    'singularity',
-    descriptors_func = _get_base_descriptors_for_singularity,
+    "singularity", descriptors_func=_get_base_descriptors_for_singularity,
 )
 
 
-def _get_base_descriptors_for_transplant(
-    tag: str,
-    map_dir: Path,
-) -> dict:
+def _get_base_descriptors_for_transplant(tag: str, map_dir: Path,) -> dict:
     pip_freeze = _get_pip_freeze()
     h = _get_transplant_hash(pip_freeze)
-    tif_path = settings.get('TRANSPLANT.ALTERNATE_INPUT_PATH')
+    tif_path = settings.get("TRANSPLANT.ALTERNATE_INPUT_PATH")
     if tif_path is None:
-        tif_path = (Path(settings['TRANSPLANT.DIR']) / h).as_posix()
+        tif_path = (Path(settings["TRANSPLANT.DIR"]) / h).as_posix()
 
     return {
-        'universe': 'vanilla',
-        'executable': (map_dir / names.RUN_WITH_TRANSPLANT_SCRIPT).as_posix(),
-        'arguments': f'$(component) {h}',
-        'transfer_input_files': [
-            (map_dir / names.RUN_SCRIPT).as_posix(),
-            tif_path,
-        ],
+        "universe": "vanilla",
+        "executable": (map_dir / names.RUN_WITH_TRANSPLANT_SCRIPT).as_posix(),
+        "arguments": f"$(component) {h}",
+        "transfer_input_files": [(map_dir / names.RUN_SCRIPT).as_posix(), tif_path,],
     }
 
 
-def _run_delivery_setup_for_transplant(
-    tag: str,
-    map_dir: Path,
-) -> None:
-    if not settings.get('TRANSPLANT.ASSUME_EXISTS', False):
-        if 'usr' in sys.executable:
-            raise exceptions.CannotTransplantPython('System Python installations cannot be transplanted')
-        if sys.platform == 'win32':
-            raise exceptions.CannotTransplantPython('Transplant delivery does not work from Windows')
+def _run_delivery_setup_for_transplant(tag: str, map_dir: Path,) -> None:
+    if not settings.get("TRANSPLANT.ASSUME_EXISTS", False):
+        if "usr" in sys.executable:
+            raise exceptions.CannotTransplantPython(
+                "System Python installations cannot be transplanted"
+            )
+        if sys.platform == "win32":
+            raise exceptions.CannotTransplantPython(
+                "Transplant delivery does not work from Windows"
+            )
 
         py_dir = Path(sys.executable).parent.parent
         pip_freeze = _get_pip_freeze()
 
-        target = Path(settings['TRANSPLANT.DIR']) / _get_transplant_hash(pip_freeze)
-        zip_path = target.with_name(f'{target.stem}.tar.gz')
+        target = Path(settings["TRANSPLANT.DIR"]) / _get_transplant_hash(pip_freeze)
+        zip_path = target.with_name(f"{target.stem}.tar.gz")
 
         if zip_path.exists():  # cached version already exists
-            logger.debug(f'Using cached zipped python install at {zip_path}')
+            logger.debug(f"Using cached zipped python install at {zip_path}")
             return
 
-        logger.debug(f'Creating zipped Python install for transplant from {py_dir} in {target.parent} ...')
+        logger.debug(
+            f"Creating zipped Python install for transplant from {py_dir} in {target.parent} ..."
+        )
 
         try:
             shutil.make_archive(
-                base_name = str(target),
-                format = 'gztar',
-                root_dir = py_dir,
+                base_name=str(target), format="gztar", root_dir=py_dir,
             )
         except BaseException as e:
             zip_path.unlink()
-            logger.debug(f'Removed partial zipped Python install at {target}')
+            logger.debug(f"Removed partial zipped Python install at {target}")
             raise e
 
         zip_path.rename(target)
 
-        pip_path = zip_path.with_name(f'{target.stem}.pip')
+        pip_path = zip_path.with_name(f"{target.stem}.pip")
         pip_path.write_bytes(pip_freeze)
 
-        logger.debug(f'Created zipped Python install for transplant, stored at {zip_path}')
+        logger.debug(f"Created zipped Python install for transplant, stored at {zip_path}")
 
 
 def _get_pip_freeze() -> bytes:
-    return utils.pip_freeze().encode('utf-8')
+    return utils.pip_freeze().encode("utf-8")
 
 
 def _get_transplant_hash(pip_freeze_output: bytes) -> str:
@@ -563,7 +541,7 @@ def _get_transplant_hash(pip_freeze_output: bytes) -> str:
 
 
 register_delivery_method(
-    'transplant',
-    descriptors_func = _get_base_descriptors_for_transplant,
-    setup_func = _run_delivery_setup_for_transplant,
+    "transplant",
+    descriptors_func=_get_base_descriptors_for_transplant,
+    setup_func=_run_delivery_setup_for_transplant,
 )

@@ -1,0 +1,21 @@
+name: tests
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+        htcondor-version: [8.8, 8.9]
+        exclude:
+          - htcondor-version: 8.8
+            python-version: 3.8
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the Docker image for testing
+        run: docker build -t htmap-test:$GITHUB_RUN_ID --file docker/Dockerfile --build-arg HTCONDOR_VERSION=${{ matrix.htcondor-version }} --build-arg PYTHON_VERSION=${{ matrix.python-version }} .
+      - name: Run tests inside the Docker image (and upload coverage)
+        run: docker run --mount type=bind,src="$PWD",dst=/home/mapper/htmap htmap-test:$GITHUB_RUN_ID bash tests/ci.sh

@@ -13,23 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# hadolint ignore=DL3007
 FROM htcondor/htc-minimal-notebook:latest
 
 USER root
 
-RUN echo '#!/bin/bash\nfind ${HOME}/tutorials -name '\''*.ipynb'\'' -and -not -iname '\''*-checkpoint.ipynb'\''' > /usr/bin/find_notebooks \
- && chmod +x /usr/bin/find_notebooks
+COPY binder/find_notebooks /usr/bin/find_notebooks
+RUN chmod +x /usr/bin/find_notebooks
 
 # Use the repository version of HTMap, not whatever was in the htc-notebook.
 COPY . ${HOME}/htmap
-RUN chown -R ${NB_UID}:${NB_GID} ${HOME}/htmap
+RUN chown -R "${NB_UID}":"${NB_GID}" "${HOME}"/htmap
 
 USER ${NB_UID}:${NB_GID}
 
 # Install HTMap and strip any run results out of the tutorial notebooks.
-RUN cp -r ${HOME}/htmap/docs/source/tutorials ${HOME}/tutorials \
- && pip install --no-cache-dir nbstripout \
- && nbstripout ${HOME}/tutorials/* \
- && pip install --no-cache-dir --upgrade -e ${HOME}/htmap
+# hadolint ignore=DL3013,SC2046
+RUN : \
+ && cp -r "${HOME}"/htmap/docs/source/tutorials "${HOME}"/tutorials \
+ && pip install --no-cache-dir --upgrade -e "${HOME}"/htmap[docs] \
+ && nbstripout $(find_notebooks) \
+ && :
 
 WORKDIR ${HOME}/tutorials

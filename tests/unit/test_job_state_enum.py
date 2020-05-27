@@ -19,15 +19,15 @@ import htmap
 
 
 @pytest.mark.parametrize(
-    'key, get_via',
+    "key, get_via",
     [
         ("COMPLETED", "COMPLETED"),
         (htmap.ComponentStatus.COMPLETED, "COMPLETED"),
         ("COMPLETED", htmap.ComponentStatus.COMPLETED),
         (htmap.ComponentStatus.COMPLETED, htmap.ComponentStatus.COMPLETED),
-     ]
+    ],
 )
 def test_use_as_key(key, get_via):
-    d = {key: 'val'}
+    d = {key: "val"}
 
-    assert d[get_via] == 'val'
+    assert d[get_via] == "val"

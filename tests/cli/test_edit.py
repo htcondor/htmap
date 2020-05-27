@@ -22,35 +22,33 @@ def test_edit_memory_has_memory_in_msg(cli):
     m = htmap.map(str, range(1))
     m.hold()
 
-    result = cli(['edit', 'memory', m.tag, f'1'])
+    result = cli(["edit", "memory", m.tag, f"1"])
 
-    assert 'memory' in result.output
+    assert "memory" in result.output
 
 
 @pytest.mark.parametrize(
-    'unit',
-    ['MB', 'GB'],
+    "unit", ["MB", "GB"],
 )
 def test_edit_memory_unit_in_msg(cli, unit):
     m = htmap.map(str, range(1))
     m.hold()
 
-    result = cli(['edit', 'memory', m.tag, f'1', '--unit', unit])
+    result = cli(["edit", "memory", m.tag, f"1", "--unit", unit])
 
     assert unit in result.output
 
 
 @pytest.mark.parametrize(
-    'unit',
-    ['giraffe', '0', 'foasd', ''],
+    "unit", ["giraffe", "0", "foasd", ""],
 )
 def test_edit_memory_rejects_bad_units(cli, unit):
     m = htmap.map(str, range(1))
     m.hold()
 
-    result = cli(['edit', 'memory', m.tag, f'1', '--unit', unit])
+    result = cli(["edit", "memory", m.tag, f"1", "--unit", unit])
 
-    assert 'invalid choice' in result.output
+    assert "invalid choice" in result.output
     assert result.exit_code != 0
 
 
@@ -58,33 +56,31 @@ def test_edit_disk_has_disk_in_msg(cli):
     m = htmap.map(str, range(1))
     m.hold()
 
-    result = cli(['edit', 'disk', m.tag, f'1'])
+    result = cli(["edit", "disk", m.tag, f"1"])
 
-    assert 'disk' in result.output
+    assert "disk" in result.output
 
 
 @pytest.mark.parametrize(
-    'unit',
-    ['KB', 'MB', 'GB'],
+    "unit", ["KB", "MB", "GB"],
 )
 def test_edit_disk_unit_in_msg(cli, unit):
     m = htmap.map(str, range(1))
     m.hold()
 
-    result = cli(['edit', 'disk', m.tag, f'1', '--unit', unit])
+    result = cli(["edit", "disk", m.tag, f"1", "--unit", unit])
 
     assert unit in result.output
 
 
 @pytest.mark.parametrize(
-    'unit',
-    ['giraffe', '0', 'foasd', ''],
+    "unit", ["giraffe", "0", "foasd", ""],
 )
 def test_edit_disk_rejects_bad_units(cli, unit):
     m = htmap.map(str, range(1))
     m.hold()
 
-    result = cli(['edit', 'disk', m.tag, f'1', '--unit', unit])
+    result = cli(["edit", "disk", m.tag, f"1", "--unit", unit])
 
-    assert 'invalid choice' in result.output
+    assert "invalid choice" in result.output
     assert result.exit_code != 0
