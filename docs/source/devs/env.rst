@@ -13,9 +13,19 @@ clone your own
 `fork <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_
 of the repository.
 
-After cloning the repository, install the development dependencies listed in
-``requirements-dev.txt`` using your Python package manager.
-If you are using ``pip``, you would run ``pip install -r requirements-dev.txt``.
+After cloning the repository,
+install the development dependencies using your Python package manager.
+If you are using ``pip``, you would run
+``pip install -e .[tests,docs]`` from the repository root.
+The dependencies (development and otherwise) are listed in ``setup.cfg``.
+
+.. warning::
+
+    The HTCondor Python bindings are currently only available via PyPI on Linux.
+    On Windows you must install HTCondor itself to get them on.
+    On Mac, you're out of luck.
+    Install ``pre-commit`` manually, then use the development container to run
+    the test suite/build the documentation.
 
 One of the dependencies you just installed is ``pre-commit``. ``pre-commit``
 runs a series of checks whenever you try to commit. You should "install" the
