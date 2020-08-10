@@ -67,6 +67,6 @@ ENTRYPOINT ["/home/mapper/htmap/docker/entrypoint.sh"]
 CMD ["bash"]
 
 COPY --chown=mapper:mapper . /home/${USER}/htmap
-RUN python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.*
+RUN python -m pip install --user --no-cache-dir --disable-pip-version-check --use-feature=2020-resolver "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.*
 
 WORKDIR /home/${USER}/htmap
