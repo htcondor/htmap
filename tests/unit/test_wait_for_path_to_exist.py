@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 from datetime import timedelta
 from pathlib import Path
 
+import pytest
+
 import htmap
-from htmap.utils import wait_for_path_to_exist, timeout_to_seconds
+from htmap.utils import timeout_to_seconds, wait_for_path_to_exist
 
 
 def test_returns_when_path_does_exist():

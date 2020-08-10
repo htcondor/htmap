@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 import time
 from pathlib import Path
+
+import pytest
 
 import htmap
 

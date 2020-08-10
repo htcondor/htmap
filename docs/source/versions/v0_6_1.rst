@@ -1,0 +1,28 @@
+v0.6.1
+======
+
+.. py:currentmodule:: htmap
+
+
+This version is a drop-in replacement for v0.6.0, except that it relaxes the
+version requirements for several dependencies to accommodate upcoming changes
+to the
+`pip dependency resolver <https://pyfound.blogspot.com/2020/03/new-pip-resolver-to-roll-out-this-year.html>`_.
+
+
+Known Issues
+------------
+
+* HTMap does not currently allow "directory content transfers", which is an HTCondor
+  feature where naming a directory in ``transfer_input_files`` with a trailing
+  slash transfers the contents of the directory, not the directory itself.
+  (If you try it, the directory itself will be transferred, as if you had not
+  used a trailing slash).
+  Issue: :issue:`215`
+* Execution errors that result in the job being terminated but no output being
+  produced are still not handled entirely gracefully. Right now, the component
+  state will just show as ``ERRORED``, but there won't be an actual error report.
+* Map component state may become corrupted when a map is manually vacated.
+  Force-removal may be needed to clean up maps if HTCondor and HTMap disagree
+  about the state of their components.
+  Issue: :issue:`129`

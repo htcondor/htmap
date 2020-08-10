@@ -13,48 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import (
-    Tuple,
-    List,
-    Iterable,
-    Any,
-    Optional,
-    Iterator,
-    Dict,
-    Mapping,
-    MutableMapping,
-)
-import logging
-
-import datetime
-import shutil
-import time
-import functools
-import inspect
 import collections
 import collections.abc
+import datetime
+import functools
+import inspect
+import logging
+import shutil
+import time
 import weakref
 from copy import copy
 from pathlib import Path
+from typing import Any, Dict, Iterable, Iterator, List, Mapping, MutableMapping, Optional, Tuple
 
+import classad
+import htcondor
 from tqdm import tqdm
 
-import htcondor
-import classad
-
-from . import (
-    htio,
-    state,
-    tags,
-    errors,
-    holds,
-    mapping,
-    condor,
-    settings,
-    utils,
-    names,
-    exceptions,
-)
+from . import condor, errors, exceptions, holds, htio, mapping, names, settings, state, tags, utils
 
 logger = logging.getLogger(__name__)
 

@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Dict, Union, Optional, Callable, Any
 import logging
+from typing import Any, Callable, Dict, Iterable, Optional, Union
 
-from . import mapping, options, maps
+from . import mapping, maps, options
 
 logger = logging.getLogger(__name__)
 
