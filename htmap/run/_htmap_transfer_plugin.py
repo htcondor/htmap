@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
+import contextlib
+import pickle
 import subprocess
 import sys
 import textwrap
-import contextlib
-import pickle
 import traceback
 from pathlib import Path
 
-import htcondor
 import classad
+import htcondor
 
 TRANSFER_PLUGIN_CACHE = "_htmap_transfer_plugin_cache"
 USER_URL_TRANSFER_DIR = "_htmap_user_url_transfer"

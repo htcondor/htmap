@@ -14,15 +14,14 @@
 # limitations under the License.
 
 import time
-from pathlib import Path
 from copy import copy
+from pathlib import Path
 
 import pytest
 
 import htmap
-from htmap.settings import BASE_SETTINGS
-
 from htmap._startup import ensure_htmap_dir_exists
+from htmap.settings import BASE_SETTINGS
 
 # start with base settings (ignore user settings for tests)
 htmap.settings.replace(BASE_SETTINGS)

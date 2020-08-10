@@ -6,3 +6,9 @@ build-backend = "setuptools.build_meta"
 line-length = 100
 target-version = ['py36', 'py37', 'py38']
 include = '\.pyi?$'
+
+[tool.isort]
+known_third_party = ["classad", "click", "click_didyoumean", "cloudpickle", "halo", "htcondor", "pytest", "setuptools", "sphinx_rtd_theme", "spinners", "toml", "tqdm"]
+line_length = 100
+multi_line_output = "VERTICAL_HANGING_INDENT"
+include_trailing_comma = true

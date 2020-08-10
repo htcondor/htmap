@@ -16,7 +16,6 @@
 import functools
 
 import pytest
-
 from click.testing import CliRunner
 
 from htmap.cli import cli as htmap_cli

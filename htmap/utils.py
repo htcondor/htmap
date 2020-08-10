@@ -13,32 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import (
-    Optional,
-    Union,
-    Iterable,
-    Any,
-    Mapping,
-    MutableMapping,
-    Callable,
-    Dict,
-    Tuple,
-)
-import logging
-
-import os
-import time
 import datetime
+import enum
+import logging
+import os
+import re
 import subprocess
 import sys
-import enum
-import re
+import time
 from pathlib import Path
-
-from . import exceptions
+from typing import Any, Callable, Dict, Iterable, Mapping, MutableMapping, Optional, Tuple, Union
 
 import htcondor
 from classad import ClassAd
+
+from . import exceptions
 
 MutableMapping.register(ClassAd)
 

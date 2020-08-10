@@ -1,9 +1,9 @@
-import os
 import logging
+import os
 from logging import handlers
 from pathlib import Path
 
-from . import settings, names
+from . import names, settings
 
 logger = logging.getLogger("htmap")
 
