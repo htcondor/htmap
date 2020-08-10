@@ -5,7 +5,7 @@ services:
 
 cache:
   directories:
-  - $HOME/.cache/pre-commit
+    - $HOME/.cache/pre-commit
 
 language: python
 python:

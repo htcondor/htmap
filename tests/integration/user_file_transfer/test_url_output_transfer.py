@@ -14,13 +14,13 @@
 # limitations under the License.
 
 
-import pytest
-
 from pathlib import Path
+
+import htcondor
+import pytest
 
 import htmap
 from htmap import utils
-import htcondor
 
 TIMEOUT = 300
 

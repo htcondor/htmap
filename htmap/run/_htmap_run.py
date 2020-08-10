@@ -15,16 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+import getpass
+import gzip
 import os
 import shutil
-import sys
 import socket
-import datetime
-import gzip
+import subprocess
+import sys
 import textwrap
 import traceback
-import subprocess
-import getpass
 from pathlib import Path
 
 TRANSFER_DIR = "_htmap_transfer"

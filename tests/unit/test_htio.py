@@ -13,11 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 from pathlib import Path
 
 import htcondor
+import pytest
 
 from htmap import htio
 

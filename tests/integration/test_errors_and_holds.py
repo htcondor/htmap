@@ -15,11 +15,10 @@
 
 from pathlib import Path
 
+import htcondor
 import pytest
 
 import htmap
-
-import htcondor
 
 
 @pytest.fixture(scope="function")

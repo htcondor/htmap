@@ -13,27 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, List, Collection, Tuple
-
+import collections
+import functools
 import logging
+import random
+import shutil
 import sys
 import time
-import collections
-import random
-import functools
-import shutil
 from pathlib import Path
-
-import htcondor
-import htmap
-from htmap import names, __version__
-from htmap.management import _status, read_events
+from typing import Collection, List, Optional, Tuple
 
 import click
+import htcondor
 from click_didyoumean import DYMGroup
-
 from halo import Halo
 from spinners import Spinners
+
+import htmap
+from htmap import __version__, names
+from htmap.management import _status, read_events
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

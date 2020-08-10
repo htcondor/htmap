@@ -13,15 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
-
+import fnmatch
 import random
 import string
 from pathlib import Path
-from typing import Tuple
-import fnmatch
+from typing import Optional, Tuple
 
-from htmap import names, settings, exceptions
+from htmap import exceptions, names, settings
 
 
 def tags_dir() -> Path:

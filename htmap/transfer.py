@@ -13,17 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional, Union, Tuple
-
-import os
-import shutil
 import functools
+import os
 import pickle
-
+import shutil
 from pathlib import Path
+from typing import Optional, Tuple, Union
 from urllib.parse import urlunsplit
 
-from . import names, utils, exceptions
+from . import exceptions, names, utils
 
 
 @functools.total_ordering

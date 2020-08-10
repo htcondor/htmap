@@ -16,10 +16,10 @@
 from pathlib import Path
 
 import pytest
-from tests.conftest import exception_msg
 
 import htmap
 from htmap.options import create_submit_object_and_itemdata, get_base_descriptors
+from tests.conftest import exception_msg
 
 
 def test_one_reserved_kwarg_raises():

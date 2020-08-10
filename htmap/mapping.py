@@ -13,30 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, Iterable, Dict, Optional, Callable, Iterator, Any, List, Union
-import logging
-
-import uuid
-import shutil
-from pathlib import Path
 import itertools
+import logging
+import shutil
+import uuid
+from pathlib import Path
 from pprint import pformat
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 import htcondor
 
-from . import (
-    htio,
-    tags,
-    exceptions,
-    maps,
-    transfer,
-    options,
-    condor,
-    settings,
-    names,
-    utils,
-)
-from .types import KWARGS, ARGS_OR_KWARGS, ARGS_AND_KWARGS, ARGS
+from . import condor, exceptions, htio, maps, names, options, settings, tags, transfer, utils
+from .types import ARGS, ARGS_AND_KWARGS, ARGS_OR_KWARGS, KWARGS
 
 logger = logging.getLogger(__name__)
 

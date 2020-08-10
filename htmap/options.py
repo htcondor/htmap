@@ -13,19 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Iterable, Optional, Callable, Dict, List, Tuple
-import logging
-
-import sys
-import shutil
 import collections
 import hashlib
+import logging
+import shutil
+import sys
 from pathlib import Path
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import htcondor
 
-from . import utils, transfer, exceptions, names, settings
-from .types import TRANSFER_PATH, REMAPS
+from . import exceptions, names, settings, transfer, utils
+from .types import REMAPS, TRANSFER_PATH
 
 logger = logging.getLogger(__name__)
 

@@ -13,16 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 from pathlib import Path
 
+import pytest
+
 from htmap import TransferPath
-from htmap.mapping import (
-    transform_args_and_kwargs,
-    transform_input_paths,
-    transform_input_path,
-)
+from htmap.mapping import transform_args_and_kwargs, transform_input_path, transform_input_paths
 
 
 @pytest.mark.parametrize(

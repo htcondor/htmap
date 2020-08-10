@@ -13,14 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union, Any, Optional
-import logging
-
-import os
-import itertools
 import functools
-from pathlib import Path
+import itertools
+import logging
+import os
 from copy import copy
+from pathlib import Path
+from typing import Any, Optional, Union
 
 import toml
 
