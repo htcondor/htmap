@@ -161,7 +161,10 @@ class Map(collections.abc.Sequence):
         ]
         return "\n".join(both)
 
-    def _repr_html_table(self):
+    def _repr_header_(self):
+        return "<th> TAG </th><th> HELD </th><th> ERRORED </th><th> IDLE </th><th> RUNNING </th><th> COMPLETED </th><th> Local Data </th><th> Max Memory </th><th> Max Runtime </th><th> Total Runtime </th>"
+
+    def _repr_grid_(self):
         sc = collections.Counter(self.component_statuses)
         row: Dict[str, Union[str, int, float]] = {"tag": self.tag}
 
@@ -180,24 +183,27 @@ class Map(collections.abc.Sequence):
         max_runtime = str(max(self.runtime))
         total_runtime = str(sum(self.runtime, datetime.timedelta()))
 
+        return "<th> {} </th><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td>".format(
+            tag,
+            held,
+            errored,
+            idle,
+            running,
+            completed,
+            local_data,
+            max_memory,
+            max_runtime,
+            total_runtime,
+        )
+
+    def _repr_html_table(self):
         table = [
             "<table>",
             "  <thead>",
-            "    <tr><th> TAG </th><th> HELD </th><th> ERRORED </th><th> IDLE </th><th> RUNNING </th><th> COMPLETED </th><th> Local Data </th><th> Max Memory </th><th> Max Runtime </th><th> Total Runtime </th></tr>",
+            "    <tr>{}</tr>".format(self._repr_header_()),
             "  </thead>",
             "  <tbody>",
-            "    <tr><th> {} </th><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td></tr>".format(
-                tag,
-                held,
-                errored,
-                idle,
-                running,
-                completed,
-                local_data,
-                max_memory,
-                max_runtime,
-                total_runtime,
-            ),
+            "    <tr>{}</tr>".format(self._repr_grid_()),
             "  </tbody>",
             "</table>",
         ]
