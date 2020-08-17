@@ -990,8 +990,18 @@ class Map(collections.abc.Sequence):
         # if we fail to write the cluster id for any reason, abort the submit
         try:
             htio.append_cluster_id(self._map_dir, new_cluster_id)
-        except BaseException as e:
-            condor.get_schedd().act(htcondor.JobAction.Remove, f"ClusterId=={new_cluster_id}")
+        except BaseException as write_exception:
+            logger.exception(
+                f"Failed to write new cluster id {new_cluster_id} for map {self.tag}, aborting submission"
+            )
+            try:
+                condor.get_schedd().act(htcondor.JobAction.Remove, f"ClusterId=={new_cluster_id}")
+            except BaseException as remove_exception:
+                logger.exception(
+                    f"Was not able to abort submission of cluster id {new_cluster_id} for map {self.tag}"
+                )
+                raise remove_exception
+            raise write_exception
 
         logger.debug(
             f"Submitted {len(sliced_itemdata)} components (out of {self._num_components}) from map {self.tag}"
