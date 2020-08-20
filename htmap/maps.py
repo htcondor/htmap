@@ -143,67 +143,50 @@ class Map(collections.abc.Sequence):
             return cls(tag=tag, map_dir=map_dir,)
 
     def _repr_html_(self):
-
-        table = self._repr_html_table()
-        grid = ""
-
-        both = [
-            "<table>",
-            "<tr>",
-            "<td>",
-            table,
-            "</td>",
-            "<td>",
-            grid,
-            "</td>",
-            "</tr>",
-            "</table>",
-        ]
-        return "\n".join(both)
+        return self._repr_html_table()
 
     def _repr_header_(self):
         return "<th> TAG </th><th> HELD </th><th> ERRORED </th><th> IDLE </th><th> RUNNING </th><th> COMPLETED </th><th> Local Data </th><th> Max Memory </th><th> Max Runtime </th><th> Total Runtime </th>"
 
     def _repr_grid_(self):
         sc = collections.Counter(self.component_statuses)
-        row: Dict[str, Union[str, int, float]] = {"tag": self.tag}
 
-        for status in state.ComponentStatus.display_statuses():
-            row[status.value.lower()] = sc[status]
-
-        tag = row["tag"]
-        held = row["held"]
-        errored = row["errored"]
-        idle = row["idle"]
-        running = row["running"]
-        completed = row["completed"]
+        tag = self.tag
+        held = sc["held"]
+        errored = sc["errored"]
+        idle = sc["idle"]
+        running = sc["running"]
+        completed = sc["completed"]
 
         local_data = utils.num_bytes_to_str(self.local_data)
         max_memory = utils.num_bytes_to_str(max(self.memory_usage) * 1024 * 1024)
         max_runtime = str(max(self.runtime))
         total_runtime = str(sum(self.runtime, datetime.timedelta()))
 
-        return "<th> {} </th><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td><td> {} </td>".format(
-            tag,
-            held,
-            errored,
-            idle,
-            running,
-            completed,
-            local_data,
-            max_memory,
-            max_runtime,
-            total_runtime,
+        return "".join(
+            f"<td> {h} </td>"
+            for h in [
+                tag,
+                held,
+                errored,
+                idle,
+                running,
+                completed,
+                local_data,
+                max_memory,
+                max_runtime,
+                total_runtime,
+            ]
         )
 
     def _repr_html_table(self):
         table = [
             "<table>",
             "  <thead>",
-            "    <tr>{}</tr>".format(self._repr_header_()),
+            "    <tr>%s</tr>" % (self._repr_header_()),
             "  </thead>",
             "  <tbody>",
-            "    <tr>{}</tr>".format(self._repr_grid_()),
+            "    <tr>%s</tr>" % (self._repr_grid_()),
             "  </tbody>",
             "</table>",
         ]
