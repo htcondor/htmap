@@ -142,6 +142,57 @@ class Map(collections.abc.Sequence):
 
             return cls(tag=tag, map_dir=map_dir,)
 
+    def _repr_html_(self):
+        return self._repr_html_table()
+
+    def _repr_header_(self):
+        return "<th> TAG </th>" + "".join(
+            f"<td> {h} </td>"
+            for h in [
+                *state.ComponentStatus.display_statuses(),
+                "Local Data",
+                "Max Memory",
+                "Max Runtime",
+                "Total Runtime",
+            ]
+        )
+
+    def _repr_grid_(self):
+        sc = collections.Counter(self.component_statuses)
+
+        local_data = utils.num_bytes_to_str(self.local_data)
+        max_memory = utils.num_bytes_to_str(max(self.memory_usage) * 1024 * 1024)
+        max_runtime = str(max(self.runtime))
+        total_runtime = str(sum(self.runtime, datetime.timedelta()))
+
+        return f"<th> {self.tag} </th>" + "".join(
+            f"<td> {h} </td>"
+            for h in [
+                *[
+                    sc[component_state]
+                    for component_state in state.ComponentStatus.display_statuses()
+                ],
+                local_data,
+                max_memory,
+                max_runtime,
+                total_runtime,
+            ]
+        )
+
+    def _repr_html_table(self):
+        table = [
+            "<table>",
+            "  <thead>",
+            f"    <tr>{self._repr_header_()}</tr>",
+            "  </thead>",
+            "  <tbody>",
+            f"    <tr>{self._repr_grid_()}</tr>",
+            "  </tbody>",
+            "</table>",
+        ]
+
+        return "\n".join(table)
+
     def __repr__(self):
         return f"{self.__class__.__name__}(tag = {self.tag})"
 
