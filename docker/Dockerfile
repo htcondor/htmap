@@ -34,7 +34,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # install HTCondor version specified in config
 RUN : \
  && apt-get update \
- && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace \
+ && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace nodejs npm \
  && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
  && locale-gen \
  && wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg.key | apt-key add - \
@@ -67,6 +67,10 @@ ENTRYPOINT ["/home/mapper/htmap/docker/entrypoint.sh"]
 CMD ["bash"]
 
 COPY --chown=mapper:mapper . /home/${USER}/htmap
-RUN python -m pip install --user --no-cache-dir --disable-pip-version-check --use-feature=2020-resolver "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.*
+RUN : \
+ && python -m pip install --user --no-cache-dir --disable-pip-version-check --use-feature=2020-resolver "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.* \
+ && jupyter nbextension enable --py widgetsnbextension \
+ && jupyter labextension install @jupyter-widgets/jupyterlab-manager \
+ && :
 
 WORKDIR /home/${USER}/htmap
