@@ -165,8 +165,8 @@ class Map(collections.abc.Sequence):
         max_runtime = str(max(self.runtime))
         total_runtime = str(sum(self.runtime, datetime.timedelta()))
 
-        return f"<th> {self.tag} </th>" + "".join(
-            f"<td> {h} </td>"
+        return f'<th align = "center"> {self.tag} </th>' + "".join(
+            f'<td align = "center"> {h} </td>'
             for h in [
                 *[
                     sc[component_state]
@@ -181,7 +181,7 @@ class Map(collections.abc.Sequence):
 
     def _repr_html_table(self):
         table = [
-            "<table>",
+            '<table cellpadding="5" border = "1">',
             "  <thead>",
             f"    <tr>{self._repr_header_()}</tr>",
             "  </thead>",
@@ -192,6 +192,34 @@ class Map(collections.abc.Sequence):
         ]
 
         return "\n".join(table)
+
+    def get_completed_and_total(self):
+        sc = collections.Counter(self.component_statuses)
+        completed = sc[state.ComponentStatus.COMPLETED]
+        total = sum(
+            [sc[component_state] for component_state in state.ComponentStatus.display_statuses()]
+        )
+        return completed, total
+
+    def _ipython_display_(self, **kwargs):
+        from IPython.display import display
+        from ipywidgets import HTML, Accordion, Button, HBox, IntText, Layout, VBox, widgets
+
+        table_widget = widgets.HTML(value=self._repr_html_(), layout=Layout(min_width="150px"),)
+
+        completed, total = self.get_completed_and_total()
+
+        progress_bar_widget = widgets.IntProgress(
+            value=completed,
+            min=0,
+            max=total,
+            step=1,
+            bar_style="",  # 'success', 'info', 'warning', 'danger' or ''
+            orientation="horizontal",
+        )
+        v_box = VBox([table_widget, progress_bar_widget])
+        # display(v_box)
+        return v_box._ipython_display_(**kwargs)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(tag = {self.tag})"
