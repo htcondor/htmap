@@ -33,26 +33,26 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # install utils and dependencies
 # install HTCondor version specified in config
 RUN : \
- && apt-get update \
- && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace nodejs npm \
- && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
- && locale-gen \
- && wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg.key | apt-key add - \
- && echo "deb http://research.cs.wisc.edu/htcondor/debian/${HTCONDOR_VERSION}/buster buster contrib" >> /etc/apt/sources.list.d/htcondor.list \
- && apt-get -y update \
- && apt-get -y install --no-install-recommends htcondor \
- && apt-get -y clean \
- && rm -rf /var/lib/apt/lists/* \
- && :
+    && apt-get update \
+    && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace nodejs npm \
+    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+    && locale-gen \
+    && wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg.key | apt-key add - \
+    && echo "deb http://research.cs.wisc.edu/htcondor/debian/${HTCONDOR_VERSION}/buster buster contrib" >> /etc/apt/sources.list.d/htcondor.list \
+    && apt-get -y update \
+    && apt-get -y install --no-install-recommends htcondor \
+    && apt-get -y clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && :
 
 # create a user, set their PATH and PYTHONPATH
 ENV USER=mapper \
     PATH="/home/mapper/.local/bin:${PATH}" \
     PYTHONPATH="/home/mapper/htmap:${PYTHONPATH}"
 RUN : \
- && groupadd ${USER} \
- && useradd -m -g ${USER} ${USER} \
- && :
+    && groupadd ${USER} \
+    && useradd -m -g ${USER} ${USER} \
+    && :
 
 # switch to the user, don't need root anymore
 USER ${USER}
@@ -68,9 +68,9 @@ CMD ["bash"]
 
 COPY --chown=mapper:mapper . /home/${USER}/htmap
 RUN : \
- && python -m pip install --user --no-cache-dir --disable-pip-version-check --use-feature=2020-resolver "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.* \
- && jupyter nbextension enable --py widgetsnbextension \
- && jupyter labextension install @jupyter-widgets/jupyterlab-manager \
- && :
+    && python -m pip install --user --no-cache-dir --disable-pip-version-check --use-feature=2020-resolver "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.* \
+    && jupyter nbextension enable --py widgetsnbextension \
+    && jupyter labextension install --minimize=False @jupyter-widgets/jupyterlab-manager \
+    && :
 
 WORKDIR /home/${USER}/htmap
