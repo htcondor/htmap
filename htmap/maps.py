@@ -218,7 +218,6 @@ class Map(collections.abc.Sequence):
             orientation="horizontal",
         )
         v_box = VBox([table_widget, progress_bar_widget])
-        # display(v_box)
         return v_box._ipython_display_(**kwargs)
 
     def __repr__(self):
