@@ -682,14 +682,38 @@ class Map(collections.abc.Sequence):
         }
 
     def status(self) -> str:
-        """Return a string containing the number of jobs in each status."""
-        counts = collections.Counter(self.component_statuses)
-        stat = " | ".join(
-            f"{str(js)} = {counts[js]}" for js in state.ComponentStatus.display_statuses()
-        )
-        msg = f"{self.__class__.__name__} {self.tag} ({len(self)} components): {stat}"
+        # """Return a string containing the number of jobs in each status."""
+        # counts = collections.Counter(self.component_statuses)
+        # stat = " | ".join(
+        #     f"{str(js)} = {counts[js]}" for js in state.ComponentStatus.display_statuses()
+        # )
+        # msg = f"{self.__class__.__name__} {self.tag} ({len(self)} components): {stat}"
 
-        return utils.rstr(msg)
+        # return utils.rstr(msg)
+
+        from IPython.display import display
+        from ipywidgets import HTML, Accordion, Button, HBox, IntText, Layout, VBox, widgets
+
+        table_widget = widgets.HTML(value=self._repr_html_(), layout=Layout(min_width="150px"),)
+
+        completed, total = self.get_completed_and_total()
+
+        progress_bar_widget = widgets.IntProgress(
+            value=completed,
+            min=0,
+            max=total,
+            step=1,
+            bar_style="",  # 'success', 'info', 'warning', 'danger' or ''
+            orientation="horizontal",
+        )
+        v_box = VBox([table_widget, progress_bar_widget])
+        display(v_box)
+        while True:
+            table_widget.value = self._repr_html_()
+            completed, total = self.get_completed_and_total()
+            progress_bar_widget.value = completed
+            time.sleep(1)
+        # return v_box._ipython_display_(**kwargs)
 
     @property
     def holds(self) -> Dict[int, holds.ComponentHold]:
