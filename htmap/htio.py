@@ -67,11 +67,13 @@ def save_inputs(map_dir: Path, args_and_kwargs: Iterable[ARGS_AND_KWARGS],) -> N
 
 
 def save_num_components(map_dir: Path, num_components: int) -> None:
+    """Save the number of components in a map."""
     path = _num_components_path(map_dir)
     path.write_text(str(num_components))
 
 
 def load_num_components(map_dir: Path) -> int:
+    """Load the number of components in a map."""
     path = _num_components_path(map_dir)
     return int(path.read_text())
 
@@ -81,11 +83,13 @@ def _num_components_path(map_dir: Path) -> Path:
 
 
 def append_cluster_id(map_dir: Path, cluster_id: int) -> None:
+    """Add a cluster ID to a map."""
     with _cluster_ids_path(map_dir).open(mode="a") as file:
         file.write(str(cluster_id) + "\n")
 
 
 def load_cluster_ids(map_dir: Path) -> List[int]:
+    """Load the cluster IDs for a map."""
     return [int(cid.strip()) for cid in _cluster_ids_path(map_dir).read_text().splitlines()]
 
 
