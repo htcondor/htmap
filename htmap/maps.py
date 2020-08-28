@@ -202,23 +202,7 @@ class Map(collections.abc.Sequence):
         return completed, total
 
     def _ipython_display_(self, **kwargs):
-        from IPython.display import display
-        from ipywidgets import HTML, Accordion, Button, HBox, IntText, Layout, VBox, widgets
-
-        table_widget = widgets.HTML(value=self._repr_html_(), layout=Layout(min_width="150px"),)
-
-        completed, total = self.get_completed_and_total()
-
-        progress_bar_widget = widgets.IntProgress(
-            value=completed,
-            min=0,
-            max=total,
-            step=1,
-            bar_style="",  # 'success', 'info', 'warning', 'danger' or ''
-            orientation="horizontal",
-        )
-        v_box = VBox([table_widget, progress_bar_widget])
-        return v_box._ipython_display_(**kwargs)
+        self.status()
 
     def __repr__(self):
         return f"{self.__class__.__name__}(tag = {self.tag})"
@@ -699,12 +683,7 @@ class Map(collections.abc.Sequence):
         completed, total = self.get_completed_and_total()
 
         progress_bar_widget = widgets.IntProgress(
-            value=completed,
-            min=0,
-            max=total,
-            step=1,
-            bar_style="",  # 'success', 'info', 'warning', 'danger' or ''
-            orientation="horizontal",
+            value=completed, min=0, max=total, step=1, orientation="horizontal",
         )
         v_box = VBox([table_widget, progress_bar_widget])
         display(v_box)
@@ -712,8 +691,8 @@ class Map(collections.abc.Sequence):
             table_widget.value = self._repr_html_()
             completed, total = self.get_completed_and_total()
             progress_bar_widget.value = completed
+            progress_bar_widget.max = total
             time.sleep(1)
-        # return v_box._ipython_display_(**kwargs)
 
     @property
     def holds(self) -> Dict[int, holds.ComponentHold]:
