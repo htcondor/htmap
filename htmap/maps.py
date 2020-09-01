@@ -20,6 +20,7 @@ import functools
 import inspect
 import logging
 import shutil
+import threading
 import time
 import weakref
 from copy import copy
@@ -70,6 +71,32 @@ def maps_by_tag() -> Dict[str, "Map"]:
     return {m.tag: m for m in MAPS}
 
 
+def update_widgets():
+    while True:
+        for map in MAPS.copy():
+            try:
+                _, update = map._widget()
+
+                if update is not None:
+                    update()
+            except:
+                logger.exception("Widget update thread encountered error!")
+
+        time.sleep(settings["WAIT_TIME"])
+
+
+WIDGET_UPDATE_THREAD = threading.Thread(target=update_widgets, daemon=True)
+
+
+def start_widget_update_thread():
+    try:
+        if not WIDGET_UPDATE_THREAD.is_alive():
+            WIDGET_UPDATE_THREAD.start()
+    except RuntimeError:
+        # Someone else started the thread before we did, no worries
+        pass
+
+
 @_protect_map_after_remove
 class Map(collections.abc.Sequence):
     """
@@ -104,6 +131,8 @@ class Map(collections.abc.Sequence):
         self._stdout: MapStdOut = MapStdOut(self)
         self._stderr: MapStdErr = MapStdErr(self)
         self._output_files: MapOutputFiles = MapOutputFiles(self)
+
+        self._cached_widget = (None, None)
 
         MAPS.add(self)
 
@@ -140,12 +169,89 @@ class Map(collections.abc.Sequence):
 
             logger.debug(f"Loaded map {tag} from {map_dir}")
 
-            return cls(tag=tag, map_dir=map_dir,)
+            return cls(tag=tag, map_dir=map_dir)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(tag={self.tag})"
+
+    def status(self):
+        """Display a string containing the number of jobs in each status."""
+        counts = collections.Counter(self.component_statuses)
+        stat = " | ".join(
+            f"{str(js)} = {counts[js]}" for js in state.ComponentStatus.display_statuses()
+        )
+        plain = f"{self.__class__.__name__} {self.tag} ({len(self)} components): {stat}"
+
+        if not utils.is_jupyter():
+            print(plain)
+            return
+
+        from IPython.display import display
+
+        widget, _ = self._widget()
+
+        if widget is not None:
+            display(widget)
+            return
+
+        data = {"text/plain": plain, "text/html": self._repr_html_()}
+
+        display(data, raw=True)
+
+    def _ipython_display_(self, **kwargs):
+        self.status()
+
+    def _widget(self):
+        try:
+            from ipywidgets import Layout, VBox, widgets
+        except ImportError:
+            return self._cached_widget
+
+        if self._cached_widget != (None, None):
+            return self._cached_widget
+
+        table = widgets.HTML(value=self._repr_html_(), layout=Layout(min_width="150px"))
+
+        pbar = widgets.IntProgress(
+            value=0, min=0, max=len(self), orientation="horizontal", layout=Layout(width="90%"),
+        )
+        widget = VBox([table, pbar])
+
+        def update():
+            table.value = self._repr_html_()
+            pbar.value = len(self.components_by_status().get(state.ComponentStatus.COMPLETED, []))
+
+        update()
+
+        self._cached_widget = widget, update
+
+        start_widget_update_thread()
+
+        return self._cached_widget
 
     def _repr_html_(self):
-        return self._repr_html_table()
+        return self._html_table()
 
-    def _repr_header_(self):
+    def _html_table(self):
+        table = [
+            # Hacked together by looking at the classes of the parent div in
+            # the version formatted by Jupyter... probably not very stable.
+            '<div class="lm-Widget p-Widget jp-RenderedHTMLCommon jp-RenderedHTML jp-mod-trusted jp-OutputArea-output">',
+            '<table cellpadding="5" border = "1">',
+            "  <thead>",
+            f"    <tr>{self._html_table_header()}</tr>",
+            "  </thead>",
+            "  <tbody>",
+            f"    <tr>{self._html_table_body()}</tr>",
+            "  </tbody>",
+            "</table>",
+            "</div>",
+        ]
+
+        return "\n".join(table)
+
+    @staticmethod
+    def _html_table_header():
         return "<th> TAG </th>" + "".join(
             f"<td> {h} </td>"
             for h in [
@@ -157,7 +263,7 @@ class Map(collections.abc.Sequence):
             ]
         )
 
-    def _repr_grid_(self):
+    def _html_table_body(self):
         sc = collections.Counter(self.component_statuses)
 
         local_data = utils.num_bytes_to_str(self.local_data)
@@ -178,50 +284,6 @@ class Map(collections.abc.Sequence):
                 total_runtime,
             ]
         )
-
-    def _repr_html_table(self):
-        table = [
-            '<table cellpadding="5" border = "1">',
-            "  <thead>",
-            f"    <tr>{self._repr_header_()}</tr>",
-            "  </thead>",
-            "  <tbody>",
-            f"    <tr>{self._repr_grid_()}</tr>",
-            "  </tbody>",
-            "</table>",
-        ]
-
-        return "\n".join(table)
-
-    def get_completed_and_total(self):
-        sc = collections.Counter(self.component_statuses)
-        completed = sc[state.ComponentStatus.COMPLETED]
-        total = sum(
-            [sc[component_state] for component_state in state.ComponentStatus.display_statuses()]
-        )
-        return completed, total
-
-    def _ipython_display_(self, **kwargs):
-        from IPython.display import display
-        from ipywidgets import HTML, Accordion, Button, HBox, IntText, Layout, VBox, widgets
-
-        table_widget = widgets.HTML(value=self._repr_html_(), layout=Layout(min_width="150px"),)
-
-        completed, total = self.get_completed_and_total()
-
-        progress_bar_widget = widgets.IntProgress(
-            value=completed,
-            min=0,
-            max=total,
-            step=1,
-            bar_style="",  # 'success', 'info', 'warning', 'danger' or ''
-            orientation="horizontal",
-        )
-        v_box = VBox([table_widget, progress_bar_widget])
-        return v_box._ipython_display_(**kwargs)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}(tag = {self.tag})"
 
     def __gt__(self, other):
         return self.tag > other.tag
@@ -300,7 +362,7 @@ class Map(collections.abc.Sequence):
     def wait(
         self,
         timeout: utils.Timeout = None,
-        show_progress_bar: bool = False,
+        show_progress_bar: Optional[bool] = None,
         holds_ok: bool = False,
         errors_ok: bool = False,
     ) -> None:
@@ -318,6 +380,8 @@ class Map(collections.abc.Sequence):
             If ``None``, wait forever.
         show_progress_bar
             If ``True``, a progress bar will be displayed.
+            If ``None`` (the default), a progress bar will be displayed if you
+            are running Python interactively (e.g., in a REPL or Jupyter session).
         holds_ok
             If ``True``, will not raise exceptions if components are held.
         errors_ok
@@ -326,11 +390,22 @@ class Map(collections.abc.Sequence):
         start_time = time.time()
         timeout = utils.timeout_to_seconds(timeout)
 
-        try:
-            if show_progress_bar:
-                pbar = tqdm(desc=self.tag, total=len(self), unit="component", ascii=True,)
+        if show_progress_bar is None and utils.is_interactive_session():
+            show_progress_bar = True
 
-                previous_pbar_len = 0
+        try:
+            pbar = None
+            if show_progress_bar:
+                # TODO: what if no widget
+                widget, update = self._widget()
+                if utils.is_jupyter() and widget is not None:
+                    from IPython.display import display
+
+                    display(widget)
+                else:
+                    pbar = tqdm(desc=self.tag, total=len(self), unit="component", ascii=True,)
+
+                    previous_pbar_len = 0
 
             ok_statuses = {state.ComponentStatus.COMPLETED}
             if holds_ok:
@@ -340,10 +415,15 @@ class Map(collections.abc.Sequence):
 
             while True:
                 num_incomplete = sum(cs not in ok_statuses for cs in self.component_statuses)
+
                 if show_progress_bar:
-                    pbar_len = self._num_components - num_incomplete
-                    pbar.update(pbar_len - previous_pbar_len)
-                    previous_pbar_len = pbar_len
+                    if pbar:
+                        pbar_len = self._num_components - num_incomplete
+                        pbar.update(pbar_len - previous_pbar_len)
+                        previous_pbar_len = pbar_len
+                    else:
+                        update()
+
                 if num_incomplete == 0:
                     break
 
@@ -362,7 +442,7 @@ class Map(collections.abc.Sequence):
 
                 time.sleep(settings["WAIT_TIME"])
         finally:
-            if show_progress_bar:
+            if show_progress_bar and pbar:
                 pbar.close()
 
     def _wait_for_component(self, component: int, timeout: utils.Timeout = None) -> None:
@@ -680,16 +760,6 @@ class Map(collections.abc.Sequence):
         return {
             status: tuple(sorted(components)) for status, components in status_to_components.items()
         }
-
-    def status(self) -> str:
-        """Return a string containing the number of jobs in each status."""
-        counts = collections.Counter(self.component_statuses)
-        stat = " | ".join(
-            f"{str(js)} = {counts[js]}" for js in state.ComponentStatus.display_statuses()
-        )
-        msg = f"{self.__class__.__name__} {self.tag} ({len(self)} components): {stat}"
-
-        return utils.rstr(msg)
 
     @property
     def holds(self) -> Dict[int, holds.ComponentHold]:
