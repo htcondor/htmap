@@ -23,3 +23,10 @@ To release a new version of HTMap:
 #. Upload to PyPI:
    ``python3 -m twine upload dist/*``.
    You will be prompted for your PyPI login.
+
+HTMap's default Docker image is defined by the ``docker/`` directory in this
+repository. It is built automatically by Docker Hub, see
+`the builds page <https://hub.docker.com/repository/docker/htcondor/htmap-exec/builds>`_.
+The Binder-served tutorials also use an image built by Docker Hub:
+see `here <https://hub.docker.com/repository/docker/htcondor/htmap-tutorials>`_,
+and are defined by the ``binder/`` directory in this repository.

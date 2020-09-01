@@ -24,7 +24,7 @@ resource requests were also treated specially).
 
 
 Guiding Principles
-++++++++++++++++++
+------------------
 
 * The only identifying piece of information about a map a **user** should ever
   need is a ``tag``.
