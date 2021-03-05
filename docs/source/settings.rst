@@ -52,8 +52,6 @@ They do not belong to any header.
 ``HTMAP_DIR`` - the path to the directory to use as the HTMap directory.
 If not given, defaults to ``~/.htmap``.
 
-``MAPS_DIR_NAME`` - the name of the directory inside the ``HTMAP_DIR`` to store map information in.
-
 ``DELIVERY_METHOD`` - the name of the delivery method to use.
 The different delivery methods are discussed in :ref:`dependency-management`.
 Defaults to ``docker``.
