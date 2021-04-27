@@ -112,7 +112,7 @@ class MapState:
         with self._event_reader_lock:  # no thread can be in here at the same time as another
             if self._event_reader is None:
                 logger.debug(f"Created event log reader for map {self.map.tag}")
-                self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix()).events(0)
+                self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix())
 
             with utils.Timer() as timer:
                 handled_events = self._handle_events()
@@ -133,7 +133,7 @@ class MapState:
         """
         handled_events = 0
 
-        for event in self._event_reader:
+        for event in self._event_reader.events(1):
             handled_events += 1
 
             # skip the late materialization submit event
