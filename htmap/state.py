@@ -133,7 +133,9 @@ class MapState:
         """
         handled_events = 0
 
-        for event in self._event_reader.events(1):
+        # Workaround HTCONDOR-463
+        os.stat(self._event_log_path.as_posix())
+        for event in self._event_reader.events(0):
             handled_events += 1
 
             # skip the late materialization submit event
