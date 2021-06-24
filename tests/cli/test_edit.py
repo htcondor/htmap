@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
 import pytest
 
 import htmap
@@ -48,7 +50,7 @@ def test_edit_memory_rejects_bad_units(cli, unit):
 
     result = cli(["edit", "memory", m.tag, f"1", "--unit", unit])
 
-    assert "invalid choice" in result.output
+    assert re.search(r"[Ii]nvalid (choice|value)", result.output)
     assert result.exit_code != 0
 
 
@@ -82,5 +84,5 @@ def test_edit_disk_rejects_bad_units(cli, unit):
 
     result = cli(["edit", "disk", m.tag, f"1", "--unit", unit])
 
-    assert "invalid choice" in result.output
+    assert re.search(r"[Ii]nvalid (choice|value)", result.output)
     assert result.exit_code != 0
