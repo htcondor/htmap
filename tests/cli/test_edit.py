@@ -48,7 +48,7 @@ def test_edit_memory_rejects_bad_units(cli, unit):
 
     result = cli(["edit", "memory", m.tag, f"1", "--unit", unit])
 
-    assert "invalid choice" in result.output or "Invalid choice" in result.output
+    assert re.search(r"[Ii]nvalid (choice|value)", result.output)
     assert result.exit_code != 0
 
 
@@ -82,5 +82,5 @@ def test_edit_disk_rejects_bad_units(cli, unit):
 
     result = cli(["edit", "disk", m.tag, f"1", "--unit", unit])
 
-    assert "invalid choice" in result.output or "Invalid choice" in result.output
+    assert re.search(r"[Ii]nvalid (choice|value)", result.output)
     assert result.exit_code != 0
