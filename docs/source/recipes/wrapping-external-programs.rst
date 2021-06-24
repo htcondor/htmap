@@ -24,7 +24,11 @@ To use HTMap with ``dbl``, you could write a mapped function that looks somethin
     import htmap
 
 
-    @htmap.mapped(map_options=htmap.MapOptions(fixed_input_files="dbl",))
+    @htmap.mapped(
+        map_options=htmap.MapOptions(
+            fixed_input_files="dbl",
+        )
+    )
     def dbl(x):
         process = subprocess.run(
             ["dbl", str(x)],

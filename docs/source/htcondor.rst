@@ -50,7 +50,11 @@ might be used:
 
 .. code:: python
 
-   options = htmap.MapOptions(request_cpus="1", request_disk="10GB", request_memory="4GB",)
+   options = htmap.MapOptions(
+       request_cpus="1",
+       request_disk="10GB",
+       request_memory="4GB",
+   )
    htmap.map(..., map_options=options)
 
 When it's mentioned that "the option ``foo`` needs to be set" in a
