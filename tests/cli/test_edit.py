@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import pytest
+import re
 
 import htmap
 
