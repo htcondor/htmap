@@ -68,9 +68,10 @@ CMD ["bash"]
 
 COPY --chown=mapper:mapper . /home/${USER}/htmap
 RUN : \
-    && python -m pip install --user --no-cache-dir --disable-pip-version-check --use-feature=2020-resolver "/home/${USER}/htmap[tests,docs,widgets]" htcondor==${HTCONDOR_VERSION}.* \
+    && python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs,widgets]" htcondor==${HTCONDOR_VERSION}.* \
     && jupyter nbextension enable --py widgetsnbextension \
-    && jupyter labextension install --minimize=False @jupyter-widgets/jupyterlab-manager \
+    # && jupyter labextension install --minimize=False @jupyter-widgets/jupyterlab-manager \
+    #    ^^^ disabled because it requires nodejs >= 12 and this container only has 10
     && :
 
 WORKDIR /home/${USER}/htmap
