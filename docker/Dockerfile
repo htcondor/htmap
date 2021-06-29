@@ -19,7 +19,7 @@ ARG PYTHON_VERSION=3.6
 FROM python:${PYTHON_VERSION}
 
 # build config
-ARG HTCONDOR_VERSION=8.9
+ARG HTCONDOR_VERSION=9.0
 
 # switch to root to do root-level config
 USER root
@@ -33,17 +33,23 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # install utils and dependencies
 # install HTCondor version specified in config
 RUN : \
-    && apt-get update \
-    && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace nodejs npm \
-    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
-    && locale-gen \
-    && wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg.key | apt-key add - \
-    && echo "deb http://research.cs.wisc.edu/htcondor/debian/${HTCONDOR_VERSION}/buster buster contrib" >> /etc/apt/sources.list.d/htcondor.list \
-    && apt-get -y update \
-    && apt-get -y install --no-install-recommends htcondor \
-    && apt-get -y clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && :
+ && apt-get update \
+ && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace nodejs npm \
+ && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+ && locale-gen \
+ && if expr "$HTCONDOR_VERSION" : '8\.[89]' >/dev/null; then \
+        wget -qO - https://research.cs.wisc.edu/htcondor/debian/HTCondor-Release.gpg.key | apt-key add -; \
+    else \
+        wget -qO - https://research.cs.wisc.edu/htcondor/repo/keys/HTCondor-$HTCONDOR_VERSION-Key | apt-key add -; \
+    fi \
+ && echo "deb https://research.cs.wisc.edu/htcondor/repo/debian/${HTCONDOR_VERSION} buster main" >> /etc/apt/sources.list.d/htcondor.list \
+ && apt-get -y update \
+ && apt-get -y install --no-install-recommends htcondor \
+ && condor_version | grep -E '^[$]CondorVersion: '"${HTCONDOR_VERSION}" \
+ #  ^^ sanity check \
+ && apt-get -y clean \
+ && rm -rf /var/lib/apt/lists/* \
+ && :
 
 # create a user, set their PATH and PYTHONPATH
 ENV USER=mapper \

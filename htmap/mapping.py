@@ -57,6 +57,7 @@ def map(
     args: Iterable[Any],
     map_options: Optional[options.MapOptions] = None,
     tag: Optional[str] = None,
+    quiet: bool = False,
 ) -> maps.Map:
     """
     Map a function call over a one-dimensional iterable of arguments.
@@ -72,6 +73,8 @@ def map(
         An instance of :class:`htmap.MapOptions`.
     tag
         The ``tag`` to assign to this map.
+    quiet
+        Do not print the map name in an interactive shell.
 
     Returns
     -------
@@ -80,7 +83,7 @@ def map(
     """
     args = ((arg,) for arg in args)
     args_and_kwargs: Iterator[ARGS_AND_KWARGS] = zip(args, itertools.repeat({}))
-    return create_map(tag, func, args_and_kwargs, map_options=map_options,)
+    return create_map(tag, func, args_and_kwargs, map_options=map_options, quiet=quiet,)
 
 
 def starmap(
@@ -89,6 +92,7 @@ def starmap(
     kwargs: Optional[Iterable[KWARGS]] = None,
     map_options: Optional[options.MapOptions] = None,
     tag: Optional[str] = None,
+    quiet: bool = False,
 ) -> maps.Map:
     """
     Map a function call over aligned iterables of arguments and keyword arguments.
@@ -107,6 +111,8 @@ def starmap(
         An instance of :class:`htmap.MapOptions`.
     tag
         The ``tag`` to assign to this map.
+    quiet
+        Do not print the map name in an interactive shell.
 
     Returns
     -------
@@ -119,7 +125,7 @@ def starmap(
         kwargs = ()
 
     args_and_kwargs = zip_args_and_kwargs(args, kwargs)
-    return create_map(tag, func, args_and_kwargs, map_options=map_options,)
+    return create_map(tag, func, args_and_kwargs, map_options=map_options, quiet=quiet,)
 
 
 class MapBuilder:
@@ -226,6 +232,7 @@ def create_map(
     func: Callable,
     args_and_kwargs: Iterator[ARGS_AND_KWARGS],
     map_options: Optional[options.MapOptions] = None,
+    quiet: bool = False,
 ) -> maps.Map:
     """
     All map calls lead here.
@@ -245,6 +252,8 @@ def create_map(
         The arguments and keyword arguments to map over - the output of :func:`zip_args_and_kwargs`.
     map_options
         An instance of :class:`htmap.MapOptions`.
+    quiet
+        Do not print the map name in an interactive shell.
 
     Returns
     -------
@@ -307,7 +316,7 @@ def create_map(
 
         m._submit()
 
-        if utils.is_interactive_session():
+        if utils.is_interactive_session() and not quiet:
             print(f"Created map {m.tag} with {len(m)} components")
 
         return m
