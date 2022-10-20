@@ -256,7 +256,7 @@ def _multi_tag_args(func):
             "tags",
             nargs=-1,
             callback=_read_tags_from_stdin,
-            autocompletion=_autocomplete_tag,
+            shell_complete=_autocomplete_tag,
             required=False,
         ),
         click.option(
@@ -510,7 +510,7 @@ def reasons(tags, pattern, all):
     click.echo("\n".join(reps))
 
 
-tag = click.argument("tag", autocompletion=_autocomplete_tag)
+tag = click.argument("tag", shell_complete=_autocomplete_tag)
 
 component = click.argument("component", type=int,)
 
