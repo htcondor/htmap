@@ -56,6 +56,16 @@ ENTRYPOINT ["/home/mapper/htmap/docker/entrypoint.sh"]
 CMD ["bash"]
 
 COPY --chown=mapper:mapper . /home/${USER}/htmap
-RUN python -m pip install --user --no-cache-dir --disable-pip-version-check --use-feature=2020-resolver "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.*
+RUN : \
+ && htcondor_version_major=$(echo "$HTCONDOR_VERSION" | cut -d. -f1) \
+ && htcondor_version_minor=$(echo "$HTCONDOR_VERSION" | cut -d. -f2) \
+ && if [ "$htcondor_version_minor" = x ]; then \
+        requirement="htcondor~=${htcondor_version_major}.1"; \
+        # ^^ gets translated into e.g. htcondor>=9.1,<10.0 \
+    else \
+        requirement="htcondor~=${htcondor_version_major}.0.0"; \
+        # ^^ gets translated into e.g. >=9.0.0,<9.1 \
+    fi \
+ && python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs]" "$requirement"
 
 WORKDIR /home/${USER}/htmap
