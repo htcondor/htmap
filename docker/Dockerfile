@@ -24,16 +24,15 @@ ARG HTCONDOR_VERSION=9.0
 # switch to root to do root-level config
 USER root
 
-# environment setup
-ENV DEBIAN_FRONTEND=noninteractive \
-    LC_ALL=en_US.UTF-8 \
-    LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8
-
 # install utils and dependencies
 # install HTCondor version specified in config
 COPY docker/install-htcondor.sh /root/install-htcondor.sh
 RUN /bin/bash /root/install-htcondor.sh
+
+# Set locale (now that we have generated it with locale-gen)
+ENV LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8
 
 # create a user, set their PATH and PYTHONPATH
 ENV USER=mapper \

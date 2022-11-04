@@ -2,6 +2,8 @@
 
 set -eu
 
+export DEBIAN_FRONTEND=noninteractive
+
 apt-get update
 apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
