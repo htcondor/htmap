@@ -24,29 +24,15 @@ ARG HTCONDOR_VERSION=9.0
 # switch to root to do root-level config
 USER root
 
-# environment setup
-ENV DEBIAN_FRONTEND=noninteractive \
-    LC_ALL=en_US.UTF-8 \
-    LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8
-
 # install utils and dependencies
 # install HTCondor version specified in config
-RUN : \
- && apt-get update \
- && apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace \
- && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
- && locale-gen \
- && wget -qO - "https://research.cs.wisc.edu/htcondor/repo/keys/HTCondor-$HTCONDOR_VERSION-Key" | apt-key add - \
- && eval "$(grep '^VERSION_CODENAME=' /etc/os-release)" \
- && echo "deb https://research.cs.wisc.edu/htcondor/repo/debian/${HTCONDOR_VERSION} ${VERSION_CODENAME} main" >> /etc/apt/sources.list.d/htcondor.list \
- && apt-get -y update \
- && apt-get -y install --no-install-recommends htcondor \
- && condor_version | grep -E '^[$]CondorVersion: '"${HTCONDOR_VERSION}" \
- #  ^^ sanity check \
- && apt-get -y clean \
- && rm -rf /var/lib/apt/lists/* \
- && :
+COPY docker/install-htcondor.sh /root/install-htcondor.sh
+RUN /bin/bash /root/install-htcondor.sh
+
+# Set locale (now that we have generated it with locale-gen)
+ENV LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8
 
 # create a user, set their PATH and PYTHONPATH
 ENV USER=mapper \
@@ -70,6 +56,16 @@ ENTRYPOINT ["/home/mapper/htmap/docker/entrypoint.sh"]
 CMD ["bash"]
 
 COPY --chown=mapper:mapper . /home/${USER}/htmap
-RUN python -m pip install --user --no-cache-dir --disable-pip-version-check --use-feature=2020-resolver "/home/${USER}/htmap[tests,docs]" htcondor==${HTCONDOR_VERSION}.*
+RUN : \
+ && htcondor_version_major=$(echo "$HTCONDOR_VERSION" | cut -d. -f1) \
+ && htcondor_version_minor=$(echo "$HTCONDOR_VERSION" | cut -d. -f2) \
+ && if [ "$htcondor_version_minor" = x ]; then \
+        requirement="htcondor~=${htcondor_version_major}.1"; \
+        # ^^ gets translated into e.g. htcondor>=9.1,<10.0 \
+    else \
+        requirement="htcondor~=${htcondor_version_major}.0.0"; \
+        # ^^ gets translated into e.g. >=9.0.0,<9.1 \
+    fi \
+ && python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs]" "$requirement"
 
 WORKDIR /home/${USER}/htmap
