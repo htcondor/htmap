@@ -21,6 +21,8 @@ FROM python:${PYTHON_VERSION}
 # build config
 ARG HTCONDOR_VERSION=9.0
 
+ARG DISABLE_NODEJS=
+
 # switch to root to do root-level config
 USER root
 
@@ -39,9 +41,9 @@ ENV USER=mapper \
     PATH="/home/mapper/.local/bin:${PATH}" \
     PYTHONPATH="/home/mapper/htmap:${PYTHONPATH}"
 RUN : \
- && groupadd ${USER} \
- && useradd -m -g ${USER} ${USER} \
- && :
+    && groupadd ${USER} \
+    && useradd -m -g ${USER} ${USER} \
+    && :
 
 # switch to the user, don't need root anymore
 USER ${USER}
@@ -66,6 +68,9 @@ RUN : \
         requirement="htcondor~=${htcondor_version_major}.0.0"; \
         # ^^ gets translated into e.g. >=9.0.0,<9.1 \
     fi \
- && python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs]" "$requirement"
+ && python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs,widgets]" "$requirement" \
+ && jupyter nbextension enable --py widgetsnbextension \
+ && [ "X${DISABLE_NODEJS}" != X ] || jupyter labextension install --minimize=False @jupyter-widgets/jupyterlab-manager \
+ && :
 
 WORKDIR /home/${USER}/htmap

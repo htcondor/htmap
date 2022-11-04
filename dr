@@ -6,4 +6,10 @@ set -e
 
 docker build -t ${CONTAINER_TAG} --file docker/Dockerfile .
 
-docker run -it --rm --mount type=bind,src="$PWD",dst=/home/mapper/htmap -p 8000:8000 ${CONTAINER_TAG} $@
+docker run \
+  -it --rm \
+  --mount type=bind,src="$PWD",dst=/home/mapper/htmap \
+  -p 8000:8000 \
+  -p 8888:8888 \
+  ${CONTAINER_TAG} \
+  $@
