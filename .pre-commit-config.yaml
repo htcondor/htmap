@@ -18,10 +18,11 @@ repos:
       - id: mixed-line-ending
       - id: check-case-conflict
       - id: forbid-new-submodules
-  - repo: https://github.com/psf/black
-    rev: 19.10b0
-    hooks:
-      - id: black
+  # broken:
+  # - repo: https://github.com/psf/black
+  #   rev: 19.10b0
+  #   hooks:
+  #     - id: black
   - repo: https://github.com/asottile/blacken-docs
     rev: v1.7.0
     hooks:
