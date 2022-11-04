@@ -68,8 +68,7 @@ RUN : \
     fi \
  && python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs,widgets]" "$requirement" \
  && jupyter nbextension enable --py widgetsnbextension \
- # && jupyter labextension install --minimize=False @jupyter-widgets/jupyterlab-manager \
- #    ^^^ disabled because it requires nodejs >= 12 and this container only has 10 \
+ && jupyter labextension install --minimize=False @jupyter-widgets/jupyterlab-manager \
  && :
 
 WORKDIR /home/${USER}/htmap
