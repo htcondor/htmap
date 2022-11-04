@@ -12,7 +12,10 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
-apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace nodejs npm
+apt-get -y install --no-install-recommends vim less git gnupg wget ca-certificates locales graphviz pandoc strace
+if [[ ! $DISABLE_NODEJS ]]; then
+    apt-get -y install --no-install-recommends nodejs npm
+fi
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
 wget -qO - "https://research.cs.wisc.edu/htcondor/repo/keys/HTCondor-${HTCONDOR_VERSION}-Key" | apt-key add -

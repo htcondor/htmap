@@ -21,6 +21,8 @@ FROM python:${PYTHON_VERSION}
 # build config
 ARG HTCONDOR_VERSION=9.0
 
+ARG DISABLE_NODEJS=
+
 # switch to root to do root-level config
 USER root
 
@@ -68,7 +70,7 @@ RUN : \
     fi \
  && python -m pip install --user --no-cache-dir --disable-pip-version-check "/home/${USER}/htmap[tests,docs,widgets]" "$requirement" \
  && jupyter nbextension enable --py widgetsnbextension \
- && jupyter labextension install --minimize=False @jupyter-widgets/jupyterlab-manager \
+ && [ "X${DISABLE_NODEJS}" != X ] || jupyter labextension install --minimize=False @jupyter-widgets/jupyterlab-manager \
  && :
 
 WORKDIR /home/${USER}/htmap
