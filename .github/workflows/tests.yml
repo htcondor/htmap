@@ -15,7 +15,7 @@ jobs:
         python-version: ["3.6", "3.7", "3.8"]
         htcondor-version: ["9.0", "9.x"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Build the Docker image for testing
         run: docker build -t htmap-test:$GITHUB_RUN_ID --file docker/Dockerfile --build-arg HTCONDOR_VERSION=${{ matrix.htcondor-version }} --build-arg PYTHON_VERSION=${{ matrix.python-version }} .
       - name: Run tests inside the Docker image (and upload coverage)
