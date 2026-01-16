@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-import htcondor
+import htcondor2 as htcondor
 
 from . import exceptions, names, settings, transfer, utils
 from .types import REMAPS, TRANSFER_PATH

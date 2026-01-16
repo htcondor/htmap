@@ -21,7 +21,7 @@ from pathlib import Path
 from pprint import pformat
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
-import htcondor
+import htcondor2 as htcondor
 
 from . import condor, exceptions, htio, maps, names, options, settings, tags, transfer, utils
 from .types import ARGS, ARGS_AND_KWARGS, ARGS_OR_KWARGS, KWARGS

@@ -21,7 +21,7 @@ import threading
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import htcondor
+import htcondor2 as htcondor
 
 from . import exceptions, holds, names, utils
 

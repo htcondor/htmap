@@ -16,7 +16,7 @@
 
 from pathlib import Path
 
-import htcondor
+import htcondor2 as htcondor
 import pytest
 
 import htmap

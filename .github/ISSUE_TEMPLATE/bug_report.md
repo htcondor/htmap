@@ -18,7 +18,7 @@ A clear and concise description of what you expected to happen.
 
 **Software Versions:**
 Include the results of running each of the following from the command line:
-*  `python -c "import htcondor, htmap; print(htcondor.version()); print(htmap.version())"` (can run the part in `"` directly inside Python if desired)
+*  `python -c "import htcondor2 as htcondor, htmap; print(htcondor.version()); print(htmap.version())"` (can run the part in `"` directly inside Python if desired)
 * `condor_version`
 * ` cat /etc/os-release`
 * `cat /proc/version`

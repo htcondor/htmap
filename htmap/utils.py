@@ -24,8 +24,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Mapping, MutableMapping, Optional, Tuple, Union
 
-import htcondor
-from classad import ClassAd
+import htcondor2 as htcondor
+from classad2 import ClassAd
 
 from . import exceptions
 

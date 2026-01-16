@@ -26,8 +26,8 @@ from copy import copy
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, MutableMapping, Optional, Tuple
 
-import classad
-import htcondor
+import classad2 as classad
+import htcondor2 as htcondor
 from tqdm import tqdm
 
 from . import condor, errors, exceptions, holds, htio, mapping, names, settings, state, tags, utils
