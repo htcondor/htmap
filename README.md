@@ -1,5 +1,11 @@
 # HTMap
 
+# HTMap is archived
+
+HTMap is no longer being developed or maintained. We recommend using 
+[TaskVine](https://ccl.cse.nd.edu/software/taskvine/) for new projects
+that require similar functionality.
+
 [![PyPI version](https://badge.fury.io/py/htmap.svg)](https://badge.fury.io/py/htmap)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/htmap/badges/version.svg)](https://anaconda.org/conda-forge/htmap)
 
