@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, List
 
 import cloudpickle
-import htcondor
+import htcondor2 as htcondor
 
 from . import names
 from .types import ARGS_AND_KWARGS

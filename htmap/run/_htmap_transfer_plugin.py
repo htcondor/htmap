@@ -8,8 +8,8 @@ import textwrap
 import traceback
 from pathlib import Path
 
-import classad
-import htcondor
+import classad2 as classad
+import htcondor2 as htcondor
 
 TRANSFER_PLUGIN_CACHE = "_htmap_transfer_plugin_cache"
 USER_URL_TRANSFER_DIR = "_htmap_user_url_transfer"

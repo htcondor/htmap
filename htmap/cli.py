@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Collection, List, Optional, Tuple
 
 import click
-import htcondor
+import htcondor2 as htcondor
 from click_didyoumean import DYMGroup
 from halo import Halo
 from spinners import Spinners

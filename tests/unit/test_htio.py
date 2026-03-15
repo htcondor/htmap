@@ -15,7 +15,7 @@
 
 from pathlib import Path
 
-import htcondor
+import htcondor2 as htcondor
 import pytest
 
 from htmap import htio
