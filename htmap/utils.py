@@ -239,6 +239,22 @@ def is_interactive_session() -> bool:
     )
 
 
+def is_jupyter() -> bool:
+    # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook/24937408
+    # This seems quite fragile, but it also seems hard to determine otherwise...
+    # I would not be shocked if this breaks in the future.
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
+            return False  # Terminal running IPython
+        else:
+            return False  # Something else...
+    except NameError:
+        return False  # Probably standard Python interpreter
+
+
 def enable_debug_logging():
     logger = logging.getLogger("htmap")
     logger.setLevel(logging.DEBUG)

@@ -112,8 +112,9 @@ class MapState:
     def _read_events(self):
         with self._event_reader_lock:  # no thread can be in here at the same time as another
             if self._event_reader is None:
-                logger.debug(f"Created event log reader for map {self.map.tag}")
+                self._event_log_path.touch(exist_ok=True)
                 self._event_reader = htcondor.JobEventLog(self._event_log_path.as_posix())
+                logger.debug(f"Created event log reader for map {self.map.tag}")
 
             with utils.Timer() as timer:
                 handled_events = self._handle_events()

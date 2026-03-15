@@ -309,7 +309,7 @@ def create_map(
 
         tags.tag_file_path(tag).write_text(str(uid))
 
-        m = maps.Map(tag=tag, map_dir=map_dir,)
+        m = maps.Map(tag=tag, map_dir=map_dir)
 
         if transient:
             m._make_transient()
